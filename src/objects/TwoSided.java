@@ -14,7 +14,7 @@ import java.util.Map;
 
 /**
  *
- * @author InvisibleManCZ
+ * @author Josef Litoš
  * @param <T> object which has two versions, but only one is supposed to
  * manipulate with
  */
@@ -38,14 +38,14 @@ public abstract class TwoSided<T extends TwoSided> extends Element {
       return chdrn.toArray(mkArray(chdrn.size()));
    }
 
-   abstract T[] mkArray(int size);
+   public abstract T[] mkArray(int size);
 
    public void removeChild(T child, Chapter parent) {
       if (isMain) {
          child.destroy(parent);
          remove(parent, child);
       } else {
-         throw new IllegalArgumentException("Child can be removed only by main Picture");
+         throw new IllegalArgumentException("Child can be removed only by main Element");
       }
    }
 

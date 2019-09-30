@@ -29,16 +29,16 @@ public abstract class ReadElement {
    public static class Source {
 
       /**
-       * Source to be read from starting at position defined by {@link #index}.
+       * Source to be read, starting at position {@link #index}.
        */
-      final String s;
+      public final String str;
       /**
-       * Where the given {@link #s source} should be read from.
+       * Where the given {@link #str source} should be read from.
        */
-      int index;
+      public int index;
 
       public Source(String s, int index) {
-         this.s = s;
+         this.str = s;
          this.index = index;
       }
    }
@@ -199,7 +199,7 @@ public abstract class ReadElement {
       char ch;
       boolean ctn;
       do {
-         ch = src.s.charAt(src.index++);
+         ch = src.str.charAt(src.index++);
          if (ctn = (ch == ' ' || ch == ':')) {
             continue;
          }
@@ -220,9 +220,9 @@ public abstract class ReadElement {
       StringBuilder sb = new StringBuilder();
       dumpSpace(src, '"', ignore);
       char ch;
-      while ((ch = src.s.charAt(src.index++)) != '"') {
+      while ((ch = src.str.charAt(src.index++)) != '"') {
          if (ch == '\\') {
-            ch = src.s.charAt(src.index++);
+            ch = src.str.charAt(src.index++);
          }
          sb.append(ch);
       }

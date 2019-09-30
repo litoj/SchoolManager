@@ -14,9 +14,9 @@ import objects.SaveChapter;
 
 /**
  * This class is used to operate with text files. Mainly to writeElement and get
- MainChapters and their content. The format of the saved files is supposed to
- look like json, but the code is all thought and writen by the author of this
- project. Noones code has been used as an example to make json format.
+ * MainChapters and their content. The format of the saved files is supposed to
+ * look like json, but the code is all thought and writen by the author of this
+ * project. Noones code has been used as an example to make json format.
  *
  * @author Josef Litoš
  */

@@ -156,7 +156,7 @@ public class Word extends TwoSided<Word> {
    }
 
    @Override
-   Word[] mkArray(int size) {
+   public Word[] mkArray(int size) {
       return new Word[size];
    }
 

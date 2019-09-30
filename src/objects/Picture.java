@@ -194,7 +194,7 @@ public class Picture extends TwoSided<Picture> {
    }
 
    @Override
-   Picture[] mkArray(int size) {
+   public Picture[] mkArray(int size) {
       return new Picture[size];
    }
 
