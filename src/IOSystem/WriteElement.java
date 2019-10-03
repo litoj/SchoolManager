@@ -6,16 +6,24 @@
 package IOSystem;
 
 import java.io.File;
+import objects.Chapter;
 import objects.Element;
 import objects.MainChapter;
 import objects.SaveChapter;
 
 /**
+ * This class provides many methods used in proccess of saving the data of
+ * {@link Element} which extend this class.
  *
  * @author Josef Litoš
  */
 public abstract class WriteElement {
 
+   /**
+    * Saves the given object and its containment into their own files.
+    *
+    * @param toSave {@link MainChapter} that you want to save
+    */
    public static void saveAll(MainChapter toSave) {
       save(toSave);
       for (SaveChapter sch : toSave.getChildren()) {
@@ -26,21 +34,30 @@ public abstract class WriteElement {
    }
 
    /**
+    * Saves the given object into its own file.
     *
-    * @param toSave MainChapter that you want to save to file
+    * @param toSave {@link SaveChapter} that you want to save
     */
    public static void save(SaveChapter toSave) {
       Formater.saveFile(toSave.writeElement(new StringBuilder(), 0, null).toString(), new File(toSave.save));
    }
 
    /**
+    * Adds multiple tags to the given {@code sb}.
     *
-    * @param e this object
-    * @param clasS
-    * @param name
-    * @param sf
-    * @param desc
-    * @param child
+    * @param sb object containing the data those will be written to the
+    * coresponding {@link SaveChapter} file
+    * @param e the currently written {@link Element}
+    * @param clasS if {@link Formater#CLASS} tag and the coresponding data
+    * should be added
+    * @param name if {@link Formater#NAME} tag and the coresponding data should
+    * be added
+    * @param sf if {@link Formater#SUCCESS} and {@link Formater#FAIL} tags and
+    * the coresponding data should be added
+    * @param desc if {@link Formater#DESC} tag and the coresponding data should
+    * be added
+    * @param child if {@link Formater#CHILDREN} tag and the coresponding data
+    * should be added
     * @return the written form of this object
     */
    public StringBuilder add(StringBuilder sb, Element e, boolean clasS, boolean name, boolean sf, boolean desc, boolean child) {
@@ -83,6 +100,13 @@ public abstract class WriteElement {
       return sb;
    }
 
+   /**
+    * Adds to every {@code '\\'} and {@code '"'} chars from the
+    * {@link #toString()} method an additional {@code '\\'}.
+    *
+    * @param obj object whichs name will be made safe
+    * @return
+    */
    public String mkSafe(Object obj) {
       return obj.toString().replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"");
    }
@@ -97,13 +121,15 @@ public abstract class WriteElement {
    }
 
    /**
-    * This method is for Formater class to writeElement Element's children, for
+    * This method is for Formater class to writeElement Element's children. For
     * different implementations of Element class can occure different ways of
-    * writing
+    * writing.
     *
+    * @param sb object containing the data those will be written to the
+    * coresponding {@link SaveChapter} file
     * @param tabs current amount of spaces on every new line
     * @param currentParent parent of the object providing this method
-    * @return the same object as paramter sb
+    * @return the same object as paramter {@code sb}
     */
-   public abstract StringBuilder writeElement(StringBuilder sb, int tabs, Element currentParent);
+   public abstract StringBuilder writeElement(StringBuilder sb, int tabs, Chapter currentParent);
 }

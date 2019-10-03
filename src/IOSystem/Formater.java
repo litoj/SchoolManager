@@ -5,18 +5,24 @@
  */
 package IOSystem;
 
+import static IOSystem.Formater.settings;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.HashMap;
+import java.util.Map;
 import objects.MainChapter;
 import objects.SaveChapter;
 
 /**
- * This class is used to operate with text files. Mainly to writeElement and get
- * MainChapters and their content. The format of the saved files is supposed to
- * look like json, but the code is all thought and writen by the author of this
- * project. Noones code has been used as an example to make json format.
+ * This class is used to operate with text files. The format of all files
+ * containing necessary data of every {@link objects.Element} is supposed to
+ * look like json, but the code is all thought and writen by the author.
  *
  * @author Josef Litoš
  */
@@ -25,18 +31,25 @@ public class Formater {
    static String objDir;
    static final String DIR = "SchlMgr\\";
    public static final String CLASS = "class", NAME = "name", SUCCESS = "s", FAIL = "f", CHILDREN = "cdrn", DESC = "desc";
-   static String settings;
+   static Map<String, String> settings = new HashMap<>();
 
    public static String getPath() {
       return objDir;
    }
 
-   public static String getSettings() {
-      return settings;
+   /**
+    * @see Map#get(java.lang.Object)
+    */
+   public static String getSetting(String key) {
+      return settings.get(key);
    }
 
-   public static void setSettings(String newSetts) {
-      saveFile(settings = newSetts, new File(DIR + "options.txt"));
+   /**
+    * @see Map#put(java.lang.Object, java.lang.Object)
+    */
+   public static void putSetting(String key, String value) {
+      settings.put(key, value);
+      deserializeTo("SchlMgr\\settings.txt", settings);
    }
 
    /**
@@ -47,12 +60,21 @@ public class Formater {
    public static void changeDir(File path) {
       String s = ("".equals(path.getPath()) ? "" : path.getPath() + "\\")
               + (path.getName().equals("School objects") ? "" : "School objects\\");
-      saveFile(settings = settings.replace("objdir:" + objDir, "objdir:" + s), new File(DIR + "options.txt"));
-      setDir(s);
+      putSetting("objdir", s);
+      createDir(s);
    }
 
-   private static void setDir(String path) {
-      createDir(objDir = path);
+   public static File createDir(String dirStr) {
+      File dir = new File(dirStr);
+      if (!dir.exists()) {
+         dir.mkdir();
+         try {
+            dir.createNewFile();
+         } catch (IOException ex) {
+            throw new IllegalArgumentException(ex);
+         }
+      }
+      return dir;
    }
 
    /**
@@ -62,20 +84,30 @@ public class Formater {
       createDir(DIR);
       File setts = new File(DIR + "options.txt");
       if (setts.exists()) {
-         settings = loadFile(setts);
-         setDir(getData(settings, "objdir:"));
+         settings = (Map<String, String>) serialize("SchlMgr\\settings.txt");
+         createDir(objDir = settings.get("objdir"));
       } else {
-         setDir(DIR + "School objects\\");
-         saveFile(settings = new StringBuilder().append("objdir:").append(objDir).append("\nlanguage:cz\n").toString(), new File(DIR + "options.txt"));
+         createDir(objDir = (DIR + "School objects\\"));
+         settings.put("objdir", "SchlMgr\\School objects");
+         settings.put("language", "cz");
+         deserializeTo("SchlMgr\\settings.txt", settings);
       }
    }
 
-   public static String getData(String source, String objective) {
-      return getData(source, objective, "\n");
+   public static void deserializeTo(String destination, Object toSave) {
+      try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(destination))) {
+         oos.writeObject(toSave);
+      } catch (IOException ex) {
+         throw new IllegalArgumentException(ex);
+      }
    }
 
-   public static String getData(String source, String objective, String end) {
-      return source.split(objective)[1].split(end)[0];
+   public static Object serialize(String filePath) {
+      try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath))) {
+         return ois.readObject();
+      } catch (IOException | ClassNotFoundException ex) {
+         throw new IllegalArgumentException(ex);
+      }
    }
 
    public static String loadFile(File toLoad) {
@@ -98,19 +130,6 @@ public class Formater {
       } catch (IOException ex) {
          throw new IllegalArgumentException(ex);
       }
-   }
-
-   public static File createDir(String dirStr) {
-      File dir = new File(dirStr);
-      if (!dir.exists()) {
-         dir.mkdir();
-         try {
-            dir.createNewFile();
-         } catch (IOException ex) {
-            throw new IllegalArgumentException(ex);
-         }
-      }
-      return dir;
    }
 
    public static class BasicData {
@@ -155,10 +174,9 @@ public class Formater {
 
    public static void main(String[] args) {
       loadSettings();
-      MainChapter mch = ReadElement.loadMCh(new File(objDir + "newIOSystem\\newIOSystem.json"));
+      MainChapter mch = ReadElement.loadMCh(new File(objDir + "newSetts\\newSetts.json"));
       SaveChapter sch = mch.getChildren()[0];
       ReadElement.loadSCh(new File(sch.save), sch.identifier);
       WriteElement.saveAll(mch);
    }
-
 }

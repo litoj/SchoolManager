@@ -67,7 +67,7 @@ public class Chapter extends Element {
    }
 
    @Override
-   public StringBuilder writeElement(StringBuilder sb, int tabs, Element currentParent) {
+   public StringBuilder writeElement(StringBuilder sb, int tabs, Chapter currentParent) {
       tabs(sb, tabs++, "{ ").add(sb, this, true, true, true, true, true);
       boolean first = true;
       for (Element e : children) {

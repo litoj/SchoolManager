@@ -21,15 +21,21 @@ import objects.Chapter;
 import objects.MainChapter;
 
 /**
+ * This class provides methods used for reading the data of any {@link Element}
+ * from its file.
  *
  * @author Josef Litoš
  */
 public abstract class ReadElement {
 
+   /**
+    * Used for any text reading to keep track of the current position of
+    * reading.
+    */
    public static class Source {
 
       /**
-       * Source to be read, starting at position {@link #index}.
+       * Source to be read, from position {@link #index}.
        */
       public final String str;
       /**
@@ -43,6 +49,13 @@ public abstract class ReadElement {
       }
    }
 
+   /**
+    * Creates {@link MainChapter} object with information from the given file.
+    *
+    * @param save the file the returned object is saved in
+    * @return created head-object of the hierarchy containing basic information
+    * about its content
+    */
    public static MainChapter loadMCh(File save) {
       loadSCh(save, null);
       String name = save.getName().split("\\.")[0];
@@ -54,6 +67,13 @@ public abstract class ReadElement {
       return null;
    }
 
+   /**
+    * Loads all data into the respective {@link SaveChapter} using {@link #readElement(IOSystem.ReadElement.Source, objects.Chapter)
+    * } method which all objects have to implement in static form.
+    *
+    * @param toLoad should contain the data of the loaded object
+    * @param identifier the parent of the loaded object
+    */
    public static void loadSCh(File toLoad, MainChapter identifier) {
       Source src = new Source(loadFile(toLoad), 0);
 
@@ -61,6 +81,15 @@ public abstract class ReadElement {
       read(src, identifier);
    }
 
+   /**
+    * Calls the coresponding {@link #readElement(IOSystem.ReadElement.Source, objects.Chapter)
+    * } method implementation to create its instance. Middle–step between every
+    * loaded {@link objects.Element}.
+    *
+    * @param src {@link Source}
+    * @param parent the {@link Chapter} containing the currently being loaded
+    * object
+    */
    public static void read(Source src, Chapter parent) {
       if (next(src).equals(CLASS)) {
          try {
@@ -75,7 +104,7 @@ public abstract class ReadElement {
    }
 
    /**
-    * Gets values for the basic tags and the given tags
+    * Gets values for the basic tags and the given tags.
     *
     * @param src contains the reading data
     * @param name if should read {@link #NAME} tag
@@ -216,6 +245,15 @@ public abstract class ReadElement {
       }
    }
 
+   /**
+    * Reads the next value contained in "", ignoring chars defined by
+    * {@code ignore} parameter using {@link #dumpSpace(IOSystem.ReadElement.Source, char, char...)
+    * } method.
+    *
+    * @param src {@link Source}
+    * @param ignore chars whose will be ignored
+    * @return the found {@link String}
+    */
    public static String next(Source src, char... ignore) {
       StringBuilder sb = new StringBuilder();
       dumpSpace(src, '"', ignore);
@@ -229,5 +267,11 @@ public abstract class ReadElement {
       return sb.toString();
    }
 
+   /**
+    * Creates an {@link objects.Element} from the loaded data.
+    *
+    * @param src {@link Source}
+    * @param parent parent of the currently being loaded object
+    */
    public abstract void readElement(Source src, Chapter parent);
 }

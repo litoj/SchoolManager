@@ -5,7 +5,6 @@
  */
 package testing;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import objects.Element;
@@ -19,13 +18,33 @@ import objects.TwoSided;
 public class Test<T extends TwoSided> {
 
    /**
-    * Default duration of any test (in seconds).
+    * Default duration of a test in seconds.
     */
-   public static int DEFAULT_TIME = 120;
+   private static int DEFAULT_TIME;
 
-   List<T> source;
-   int time;
-   Timer doOnSec;
+   public static int getDefaultTime() {
+      if (DEFAULT_TIME <= 0) {
+         try {
+            return Integer.parseInt(IOSystem.Formater.getSetting("defaultTestTime"));
+         } catch (NumberFormatException e) {
+            setDefaultTime(180);
+            return 180;
+         }
+      }
+      return DEFAULT_TIME;
+   }
+
+   public static void setDefaultTime(int newTime) {
+      if (newTime < 1) {
+         throw new IllegalArgumentException("Duration of any test can't be less than 1 second!");
+      }
+      IOSystem.Formater.putSetting("defaultTestTime", "" + (DEFAULT_TIME = newTime));
+   }
+
+   private List<T> source;
+   private boolean[] answers;
+   private int time;
+   private Timer doOnSec;
 
    /**
     * Prepares everything for the next test.
@@ -58,6 +77,7 @@ public class Test<T extends TwoSided> {
       this.source = source;
       time = timeSec;
       this.doOnSec = doOnSec;
+      answers = new boolean[source.size()];
    }
 
    /**
@@ -67,7 +87,9 @@ public class Test<T extends TwoSided> {
       new Thread(() -> {
          try {
             for (; time >= 0; time--) {
-               doOnSec.doOnSec(time);
+               if (doOnSec != null) {
+                  doOnSec.doOnSec(time);
+               }
                Thread.sleep(1000);
             }
          } catch (InterruptedException ex) {
@@ -86,6 +108,9 @@ public class Test<T extends TwoSided> {
     *
     */
    public boolean isAnswer(T source, String answer) {
+      if (time <= 0) {
+         throw new IllegalArgumentException("Time for the test has ended!");
+      }
       for (TwoSided t : source.getChildren()) {
          boolean isAnswer = false;
          for (TwoSided ch : t.getChildren()) {
@@ -99,7 +124,12 @@ public class Test<T extends TwoSided> {
             return false;
          }
       }
+      answers[this.source.indexOf(source)] = true;
       return true;
+   }
+
+   public boolean[] getAnswers() {
+      return answers.clone();
    }
 
    /**
@@ -110,11 +140,5 @@ public class Test<T extends TwoSided> {
     */
    public T[] getTested(int pos) {
       return (T[]) source.get(pos).getChildren();
-   }
-
-   public TwoSided[][] getTested() {
-      ArrayList<TwoSided[]> list = new ArrayList<>();
-      source.forEach((t) -> list.add(t.getChildren()));
-      return list.toArray(new TwoSided[list.size()][]);
    }
 }

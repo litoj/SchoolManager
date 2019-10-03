@@ -30,7 +30,12 @@ public abstract class Element extends IOSystem.WriteElement {
    /**
     * Name of this object.
     */
-   public String name;
+   String name;
+
+   public void setName(String name) {
+      this.name = name;
+   }
+
    /**
     * The head hierarchy object which this object belongs to.
     */
@@ -106,21 +111,23 @@ public abstract class Element extends IOSystem.WriteElement {
       char D = 'D';
       Formater.loadSettings();
       //Formater.changeDir(new File(""));
-      String imgs = D + ":\\Poznávačka\\k poznání\\";
-      MainChapter mch = new MainChapter(new BasicData("newIOSystem", null, 2, 3, "new way of saving and loading hierarchies"));
+      String imgs = D + ":\\skola\\poznavacka\\k poznání\\";
+      MainChapter mch = new MainChapter(new BasicData("newSetts", null, 2, 3, "new picture parenCount use"));
       SaveChapter sch1 = SaveChapter.mkElement(new BasicData("8.5.", mch));
       Chapter ch1 = new Chapter(new BasicData("Society", mch, 6, 7), sch1);
-      Word.mkElement(new BasicData("hard", mch), Arrays.asList(new BasicData("těžk\\ý\\á\\é", mch, 1, 5), new BasicData("těžce", mch, "Desciption test")), sch1);
+      Word.mkElement(new BasicData("hard", mch), Arrays.asList(new BasicData("těžk/ý/á/é", mch, 1, 5), new BasicData("těžce", mch, "Description test")), sch1);
       Word.mkElement(new BasicData("hardly", mch), Arrays.asList(new BasicData("sotva", mch), new BasicData("stěží", mch)), sch1);
       Word.mkElement(new BasicData("hard", mch), Arrays.asList(new BasicData("tvrd/ý/á/é/ě", mch), new BasicData("náročn\"/ý/á/é/ě", mch)), ch1);
-      Picture pic = Picture.mkElement(new BasicData("broskvoň", mch, "biologie"), Arrays.asList(new BasicData(D + ":\\asdf.jpg", mch),
-              new BasicData(D + ":\\_vyr_1013boskvon-Catherina.jpg", mch)), ch1, true);
+      Picture pic = Picture.mkElement(new BasicData("broskvoň", mch, "biologie"), Arrays.asList(new BasicData(D + ":\\skola\\poznavacka\\asdf.jpg", mch),
+              new BasicData(D + ":\\skola\\poznavacka\\_vyr_1013boskvon-Catherina.jpg", mch)), ch1, true);
       //SaveChapter sch2 = SaveChapter.mkElement(new BasicData("6.8.", mch, 4, 5));
       Reference.mkElement(sch1, new Chapter(new BasicData("refSChTest", mch), ch1), null);
+      Picture pic2 = Picture.mkElement(new BasicData("broskve", mch), Arrays.asList(new BasicData(imgs + "broskvoň 2.jpg", mch),
+              new BasicData(imgs + "broskvoň 3.jpg", mch)), sch1, true);
       Reference.mkElement(pic, SaveChapter.mkElement(new BasicData("reftest", mch, 20, 3)), "8.5.");
-      Picture.mkElement(new BasicData("broskvoň", mch), Arrays.asList(new BasicData(imgs + "broskvoň 1.jpg", mch),
-              new BasicData(imgs + "broskvoň 2.jpg", mch), new BasicData(imgs + "broskvoň 3.jpg", mch)), sch1, true);
+      Picture.mkElement(new BasicData("broskvoň", mch), Arrays.asList(new BasicData(imgs + "broskvoň 1.jpg", mch)), sch1, true);
       pic.removeChild(pic.children.get(ch1)[1], ch1);
+      pic2.setName("broskvoň");
       //((SaveChapter)e.get(1)).destroy(null);
       IOSystem.WriteElement.saveAll(mch);
    }

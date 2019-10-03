@@ -38,7 +38,7 @@ public abstract class TwoSided<T extends TwoSided> extends Element {
       return chdrn.toArray(mkArray(chdrn.size()));
    }
 
-   public abstract T[] mkArray(int size);
+   abstract T[] mkArray(int size);
 
    public void removeChild(T child, Chapter parent) {
       if (isMain) {
@@ -52,10 +52,10 @@ public abstract class TwoSided<T extends TwoSided> extends Element {
    abstract void remove(Chapter parent, T child);
 
    @Override
-   public StringBuilder writeElement(StringBuilder sb, int tabs, Element cp) {
+   public StringBuilder writeElement(StringBuilder sb, int tabs, Chapter cp) {
       tabs(sb, tabs++, "{ ").add(sb, this, true, true, true, true, true);
       boolean first = true;
-      for (T e : children.get((Chapter) cp)) {
+      for (T e : children.get(cp)) {
          if (first) {
             first = false;
          } else {

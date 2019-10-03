@@ -81,7 +81,7 @@ public class Reference extends Element {
    }
 
    @Override
-   public StringBuilder writeElement(StringBuilder sb, int tabs, Element cp) {
+   public StringBuilder writeElement(StringBuilder sb, int tabs, Chapter cp) {
       tabs(sb, tabs, "{ ").add(sb, this, true, true, false, false, false).append(", \"refCls\": \"")
               .append(reference.getClass().getName());
       if (!(reference instanceof SaveChapter)) {
@@ -92,7 +92,7 @@ public class Reference extends Element {
 
    public static void readElement(IOSystem.ReadElement.Source src, Chapter parent) {
       BasicData data = get(src, true, parent.identifier, false, false, false, "refCls");
-      String org = null;// = (tags[0].equals("objects.SaveChapter") ? bd.name : ((String[]) get(s, false, identifier, false, false, false, "origin")[1])[0]);
+      String org = null;
       if (data.tagVals[0].equals("objects.SaveChapter")) {
          org = data.name;
       } else {

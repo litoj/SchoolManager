@@ -6,7 +6,6 @@
 package objects;
 
 import IOSystem.Formater.BasicData;
-import static IOSystem.Formater.getData;
 import static IOSystem.ReadElement.get;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -39,9 +38,10 @@ public class Picture extends TwoSided<Picture> {
     * The only allowed way to create Picture objects. Automaticaly controls its
     * existence and returns the proper Picture.
     *
+    * @param bd all the needed data to create new {@link Picture} object
     * @param images the files containing an image each
     * @param parent the Chapter which this Picture belongs to
-    * @param isNew if the object to be created is new or just loading hierarchy
+    * @param isNew if the object to be created is new or just being loaded
     * @return new
     * {@linkplain #Picture(java.lang.String, objects.Chapter, objects.MainChapter, int, int, boolean) Picture object}
     * if the name doesn't exist yet, otherwise returns the picture object with
@@ -62,9 +62,7 @@ public class Picture extends TwoSided<Picture> {
                   }
                }
                if (isNew) {
-                  String search = bd.name + ":parCount:";
-                  bd.identifier.pictures = bd.identifier.pictures.replace(search + p.parentCount,
-                          search + ++p.parentCount);
+                  bd.identifier.pictures.put(bd.name, ++p.parentCount);
                }
                parent.children.add(p);
             }
@@ -73,6 +71,38 @@ public class Picture extends TwoSided<Picture> {
          }
       }
       return new Picture(bd, images, parent, isNew);
+   }
+
+   /**
+    * This method allows you for potencial doubling of an image.
+    *
+    * @param images names of imgs for this picture in the specified Chapter
+    * @param parent Chapter containing this picture
+    * @param sfs the successes and fails for every image
+    */
+   private void addImages(List<BasicData> images, Chapter parent, boolean isNew) {
+      if (children.get(parent) == null) {
+         children.put(parent, new Picture[0]);
+      }
+      Picture[] imgs = Arrays.copyOf(children.get(parent), images.size() + children.get(parent).length);
+      int differ = imgs.length - images.size();
+      int serialINum = -1;
+      String front = identifier.dir.getPath() + "\\Pictures\\" + this.name + ' ';
+      for (int i = 0; i < images.size(); i++) {
+         File pic;
+         if (isNew) {
+            String back = images.get(i).name.substring(images.get(i).name.lastIndexOf('.'));
+            do {
+               pic = new File(front + ++serialINum + back);
+            } while (pic.exists());
+         } else {
+            pic = new File(images.get(i).name);
+         }
+         File source = new File(images.get(i).name);
+         images.get(i).name = pic.getName();
+         imgs[i + differ] = new Picture(this, parent, source, images.get(i), pic, isNew);
+      }
+      children.put(parent, imgs);
    }
 
    /**
@@ -108,59 +138,65 @@ public class Picture extends TwoSided<Picture> {
       parent.children.add(this);
    }
 
-   private void picParentCount(boolean isNew) {
-      String search = name + ":parCount:";
-      try {
-         parentCount = Integer.parseInt(getData(identifier.pictures, search));
-      } catch (ArrayIndexOutOfBoundsException ex) {
-         parentCount = 0;
-         identifier.pictures += search + "0\n";//kam s tim
+   @Override
+   public void setName(String name) {
+      if (this.name.equals(name)) {
+         return;
       }
-      if (isNew) {
-         identifier.pictures = identifier.pictures.replace(search + parentCount,
-                 search + ++parentCount);
+      if (isMain) {
+         String path = identifier.dir.getPath() + "\\Pictures\\";
+         for (Picture p : ELEMENTS.get(identifier)) {
+            if (p.name.equals(name)) {//Umožňuje splynutí obrázků v případě shody názvu
+               for (Chapter ch : children.keySet()) {
+                  ch.children.remove(this);
+                  if (!ch.children.contains(p)) {
+                     ch.children.add(p);
+                     p.children.put(ch, children.remove(ch));
+                  } else {
+                     Picture[] allImgs = p.children.get(ch);
+                     int length = allImgs.length;
+                     Picture[] oldImgs = children.get(ch);
+                     allImgs = Arrays.copyOf(allImgs, length + children.get(ch).length);
+                     for (int i = oldImgs.length - 1; i >= 0; i--) {
+                        allImgs[length + i] = oldImgs[i];
+                     }
+                     p.children.put(ch, allImgs);
+                  }
+               }
+               ELEMENTS.get(identifier).remove(this);
+               int serialINum = -1;
+               String front = path + name + ' ';
+               for (Picture img : getChildren()) {
+                  String back = img.name.substring(img.name.lastIndexOf('.'));
+                  File pic = new File(path + img.name);
+                  while (!pic.renameTo(new File(front + ++serialINum + back)));
+                  img.name = pic.getName();
+               }
+               return;
+            }
+         }
+         identifier.pictures.put(name, identifier.pictures.remove(this.name));
+         for (Picture p : getChildren()) {
+            String newName = p.name.replaceFirst(this.name, name);
+            identifier.pictures.put(newName, identifier.pictures.remove(p.name));
+            new File(path + p.name).renameTo(new File(path + newName));
+            p.name = newName;
+         }
+         this.name = name;
+      } else {
+         throw new IllegalArgumentException("Name of an image file can't be changed.");
       }
    }
 
-   /**
-    * This method allows you for potencial doubling of an image.
-    *
-    * @param images names of imgs for this picture in the specified Chapter
-    * @param parent Chapter containing this picture
-    * @param sfs the successes and fails for every image
-    */
-   private void addImages(List<BasicData> images, Chapter parent, boolean isNew) {
-      if (children.get(parent) == null) {
-         children.put(parent, new Picture[0]);
+   private void picParentCount(boolean isNew) {
+      if (isNew) {
+         Integer i = identifier.pictures.get(name);
+         identifier.pictures.put(name, parentCount = i == null ? 1 : (i + 1));
       }
-      Picture[] imgs = Arrays.copyOf(children.get(parent), images.size() + children.get(parent).length);
-      int differ = imgs.length - images.size();
-      for (int i = 0; i < images.size(); i++) {
-         File pic;
-         if (isNew) {
-            int serialINum = -1;
-            String[] fix = images.get(i).name.split("\\.");
-            fix[1] = '.' + fix[fix.length - 1];
-            fix[0] = identifier.dir.getPath() + "\\Pictures\\" + this.name + ' ';
-            do {
-               serialINum++;
-               pic = new File(fix[0] + serialINum + fix[1]);
-            } while (pic.exists());
-         } else {
-            pic = new File(images.get(i).name);
-         }
-         File source = new File(images.get(i).name);
-         images.get(i).name = pic.getName();
-         imgs[i + differ] = new Picture(this, parent, source, images.get(i), pic, isNew);
-      }
-      children.put(parent, imgs);
    }
 
    @Override
    public void destroy(Chapter parent) {
-      String search = name + ":parCount:";
-      identifier.pictures = identifier.pictures.replace(search + parentCount + '\n',
-              (--parentCount == 0 ? "" : (search + parentCount + '\n')));
       if (isMain) {
          for (Picture child : children.get(parent)) {
             child.remove(parent, this);
@@ -169,13 +205,16 @@ public class Picture extends TwoSided<Picture> {
          children.remove(parent);
          parent.children.remove(this);
       }
-      if (parentCount == 0) {
+      if (--parentCount == 0) {
+         identifier.pictures.remove(name);
          if (isMain) {
             ELEMENTS.get(identifier).remove(this);
          } else {
             IMAGES.get(identifier).remove(this);
             new File(identifier.dir.getPath() + "\\Pictures\\" + name).delete();
          }
+      } else {
+         identifier.pictures.replace(name, parentCount);
       }
    }
 
@@ -194,7 +233,7 @@ public class Picture extends TwoSided<Picture> {
    }
 
    @Override
-   public Picture[] mkArray(int size) {
+   Picture[] mkArray(int size) {
       return new Picture[size];
    }
 

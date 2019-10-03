@@ -7,12 +7,12 @@ package objects;
 
 import static IOSystem.Formater.getPath;
 import static IOSystem.Formater.createDir;
-import static IOSystem.Formater.saveFile;
-import IOSystem.Formater.BasicData;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -23,7 +23,7 @@ import java.util.Set;
  *
  * @author Josef Litoš
  */
-public class MainChapter extends SaveChapter {
+public final class MainChapter extends SaveChapter {
 
    /**
     * @see Element#ELEMENTS
@@ -37,7 +37,7 @@ public class MainChapter extends SaveChapter {
     * This file contains everything about this object and its {@link #children}.
     */
    public final File dir;
-   String pictures;
+   Map<String, Integer> pictures = new HashMap<>();
 
    /**
     * Only this constructor creates the head object of the hierarchy. The
@@ -45,14 +45,16 @@ public class MainChapter extends SaveChapter {
     *
     * @param bd should contain {@link #name} and {@link #sf}
     */
-   public MainChapter(BasicData bd) {
+   public MainChapter(IOSystem.Formater.BasicData bd) {
       super(bd, getPath() + bd.name + '\\' + bd.name + ".json");
       ELEMENTS.add(this);
       dir = createDir(getPath() + name);
       createDir(dir.getPath() + "\\Pictures");
       createDir(dir.getPath() + "\\Chapters");
       File pics = new File(dir + "\\pictures.json");
-      pictures = (pics.exists() ? IOSystem.Formater.loadFile(pics) : "");
+      if (pics.exists()) {
+         pictures = (Map<String, Integer>) IOSystem.Formater.serialize(pics.getPath());
+      }
    }
 
    @Override
@@ -78,9 +80,9 @@ public class MainChapter extends SaveChapter {
    }
 
    @Override
-   public StringBuilder writeElement(StringBuilder sb, int tabs, Element cp) {
+   public StringBuilder writeElement(StringBuilder sb, int tabs, Chapter cp) {
       tabs(sb, tabs++, "{ ").add(sb, this, true, true, true, true, true);
-      saveFile(pictures, new File(dir + "\\pictures.json"));
+      IOSystem.Formater.deserializeTo(dir + "\\pictures.json", pictures);
       boolean first = true;
       for (SaveChapter sch : children) {
          if (sch.children.isEmpty()) {
