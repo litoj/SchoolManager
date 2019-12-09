@@ -5,84 +5,71 @@
  */
 package objects;
 
-import IOSystem.Formater.BasicData;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
+import IOSystem.Formatter.Data;
 import java.util.List;
-import java.util.Map;
+import objects.templates.BasicData;
+import objects.templates.Container;
 
 /**
- * Instances of this class can contain any other {@link Element} instances.
+ * Instances of this class can contain any other hierarchy objects.
  *
  * @author Josef Litoš
  */
-public class Chapter extends Element {
+public class Chapter extends objects.templates.SemiElementContainer {
 
    /**
-    * @see Element#ELEMENTS
+    * read-only data
     */
-   public static final Map<MainChapter, List<Chapter>> ELEMENTS = new HashMap<>();
+   public static final java.util.Map<MainChapter, List<Chapter>> ELEMENTS = new java.util.HashMap<>();
 
-   protected final List<Element> children = new ArrayList<>();
+   protected Container parent;
+
+   @Override
+   public Container removeChild(BasicData e) {
+      children.remove(e);
+      return parent;
+   }
+
+   /**
+    * The head hierarchy object which this object belongs to.
+    */
+   protected final MainChapter identifier;
+
+   @Override
+   public MainChapter getIdentifier() {
+      return identifier;
+   }
 
    /**
     *
-    * @param bd doesn't have to have {@link #sf} or {@link #description}
-    * @param parent the parent of this Chapter
+    * @param d must contain {@link #name name} and
+    * {@link #identifier identifier} and mainly the parent of this object
     */
-   public Chapter(BasicData bd, Chapter parent) {
-      super(bd);
-      parent.children.add(this);
+   public Chapter(Data d) {
+      super(d);
+      parent = d.par;
+      identifier = d.identifier;
       if (ELEMENTS.get(identifier) == null) {
-         ELEMENTS.put(identifier, new LinkedList<>());
+         ELEMENTS.put(identifier, new java.util.LinkedList<>());
       }
       ELEMENTS.get(identifier).add(this);
    }
 
-   /**
-    * This constructor can be used only to create {@link SaveChapter} and its
-    * extensions.
-    */
-   Chapter(BasicData bd) {
-      super(bd);
-   }
-
-   public boolean hasChild() {
-      return !children.isEmpty();
-   }
-
    @Override
-   public void destroy(Chapter parent) {
-      parent.children.remove(this);
-      children.forEach((E) -> {
-         E.destroy(this);
-      });
+   public boolean destroy(Container parent) {
       ELEMENTS.get(identifier).remove(this);
+      return super.destroy(parent);
    }
 
    @Override
-   public Element[] getChildren() {
-      return children.toArray(new Element[children.size()]);
+   public StringBuilder writeData(StringBuilder sb, int tabs, Container cp) {
+      tabs(sb, tabs++, "{ ").add(sb, this, cp, true, true, true, true, true);
+      return writeData0(sb, tabs, cp);
    }
 
-   @Override
-   public StringBuilder writeElement(StringBuilder sb, int tabs, Chapter currentParent) {
-      tabs(sb, tabs++, "{ ").add(sb, this, true, true, true, true, true);
-      boolean first = true;
-      for (Element e : children) {
-         if (first) {
-            first = false;
-         } else {
-            sb.append(',');
-         }
-         e.writeElement(sb, tabs, this);
-      }
-      return sb.append(" ] }");
-   }
-
-   public static void readElement(IOSystem.ReadElement.Source src, Chapter parent) {
-      IOSystem.ReadElement.loadChildren(src, new Chapter(IOSystem.ReadElement.get(
-              src, true, parent.identifier, true, true, true), parent));
+   public static BasicData readData(IOSystem.ReadElement.Source src, Container parent) {
+      Chapter ch = new Chapter(IOSystem.ReadElement.get(src, true, true, true, true, parent));
+      IOSystem.ReadElement.loadChildren(src, ch).forEach((e) -> ch.putChild(parent, e));
+      return ch;
    }
 }

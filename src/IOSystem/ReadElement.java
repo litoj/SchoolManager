@@ -5,24 +5,18 @@
  */
 package IOSystem;
 
-import static IOSystem.Formater.BasicData;
-import static IOSystem.Formater.CHILDREN;
-import static IOSystem.Formater.CLASS;
-import static IOSystem.Formater.DESC;
-import static IOSystem.Formater.FAIL;
-import static IOSystem.Formater.NAME;
-import static IOSystem.Formater.SUCCESS;
-import static IOSystem.Formater.loadFile;
+import static IOSystem.Formatter.Data;
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
-import objects.Chapter;
 import objects.MainChapter;
+import objects.SaveChapter;
+import objects.templates.BasicData;
+import objects.templates.Container;
 
 /**
- * This class provides methods used for reading the data of any {@link Element}
- * from its file.
+ * This class provides methods used for reading the data of any
+ * {@link objects.Element} from its file.
  *
  * @author Josef Litoš
  */
@@ -35,7 +29,7 @@ public abstract class ReadElement {
    public static class Source {
 
       /**
-       * Source to be read, from position {@link #index}.
+       * Source to be read, from position {@link #index index}.
        */
       public final String str;
       /**
@@ -43,10 +37,26 @@ public abstract class ReadElement {
        */
       public int index;
 
-      public Source(String s, int index) {
+      public final MainChapter i;
+
+      public Source(String s, int index, MainChapter identifier) {
          this.str = s;
          this.index = index;
+         i = identifier;
       }
+   }
+
+   /**
+    * Loads the full hierarchy fro, its folder.
+    *
+    * @param mchDir the hierarchy folder to be read
+    * @return returns the loaded {@link MainChapter}
+    */
+   public static MainChapter loadAll(File mchDir) {
+      MainChapter mch = loadMch(new File(mchDir + "\\main.json"));
+//      Arrays.asList(mch.getChildren()).forEach((sch)
+//              -> loadSch(new File(mchDir + "\\Chapters\\" + sch + ".json"), mch,mch));
+      return mch;
    }
 
    /**
@@ -56,9 +66,10 @@ public abstract class ReadElement {
     * @return created head-object of the hierarchy containing basic information
     * about its content
     */
-   public static MainChapter loadMCh(File save) {
-      loadSCh(save, null);
-      String name = save.getName().split("\\.")[0];
+   public static MainChapter loadMch(File save) {
+      loadSch(save, null, null);
+      String[] str = save.toString().split("\\\\");
+      String name = str[str.length - 2];
       for (MainChapter mch : MainChapter.ELEMENTS) {
          if (mch.toString().equals(name)) {
             return mch;
@@ -69,53 +80,55 @@ public abstract class ReadElement {
 
    /**
     * Loads all data into the respective {@link SaveChapter} using {@link #readElement(IOSystem.ReadElement.Source, objects.Chapter)
-    * } method which all objects have to implement in static form.
+    * readData} method which all objects have to implement in static form.
     *
     * @param toLoad should contain the data of the loaded object
     * @param identifier the parent of the loaded object
     */
-   public static void loadSCh(File toLoad, MainChapter identifier) {
-      Source src = new Source(loadFile(toLoad), 0);
-
+   public static void loadSch(File toLoad, MainChapter identifier, Container parent) {
+      Source src = new Source(Formatter.loadFile(toLoad), 0, identifier);
       dumpSpace(src, '{', '\t', '\n');
-      read(src, identifier);
+      read(src, parent);
    }
 
    /**
     * Calls the coresponding {@link #readElement(IOSystem.ReadElement.Source, objects.Chapter)
-    * } method implementation to create its instance. Middle–step between every
-    * loaded {@link objects.Element}.
+    * readData} method implementation to create its instance. Middle–step
+    * between every loaded {@link objects.Element}.
     *
     * @param src {@link Source}
-    * @param parent the {@link Chapter} containing the currently being loaded
-    * object
+    * @param cp parent of the read object
+    * @return the loaded object
     */
-   public static void read(Source src, Chapter parent) {
-      if (next(src).equals(CLASS)) {
+   public static BasicData read(Source src, Container cp) {
+      BasicData bd = null;
+      if (next(src).equals(Formatter.CLASS)) {
          try {
-            Class.forName(next(src)).getDeclaredMethod("readElement", Source.class, Chapter.class).invoke(null, src, parent);
-         } catch (IllegalAccessException | IllegalArgumentException
-                 | InvocationTargetException | NoSuchMethodException
-                 | SecurityException | ClassNotFoundException ex) {
+            bd = (BasicData) Class.forName(next(src)).getDeclaredMethod("readData",
+                    Source.class, Container.class).invoke(null, src, cp);
+         } catch (IllegalAccessException | java.lang.reflect.InvocationTargetException
+                 | NoSuchMethodException | SecurityException | ClassNotFoundException ex) {
             throw new IllegalArgumentException(ex);
          }
       }
       dumpSpace(src, '}');
+      return bd;
    }
 
    /**
     * Gets values for the basic tags and the given tags.
     *
     * @param src contains the reading data
-    * @param name if should read {@link #NAME} tag
-    * @param identifier the hierarchy the loaded objects belong to
-    * @param sf if should read {@link #SUCCESS} and {@link #FAIL} tags
-    * @param desc if should read {@link #DESC description} tag
-    * @param child if should read {@link #CHILDREN} tag
+    * @param name if should read {@link Formatter#NAME name} tag
+    * @param sf if should read {@link Formatter#SUCCESS success} and
+    * {@link Formatter#FAIL fail} tags
+    * @param desc if should read {@link Formatter#DESC description} tag
+    * @param child if should read {@link Formatter#CHILDREN children} tag
+    * @param parent parent of this object
     * @param tags other tags you want to get value for
     * @return contains all found values for the given {@code tags}
     */
-   public static BasicData get(Source src, boolean name, MainChapter identifier, boolean sf, boolean desc, boolean child, String... tags) {
+   public static Data get(Source src, boolean name, boolean sf, boolean desc, boolean child, Container parent, String... tags) {
       String[] data = new String[2];
       int[] sucfail = {0, 0};
       String[] info = new String[tags.length];
@@ -127,7 +140,7 @@ public abstract class ReadElement {
          } catch (IllegalArgumentException iae) {
             if (iae.getMessage().contains("'}'")) {
                src.index--;
-               return new BasicData(data[0], identifier, sucfail[0], sucfail[1], data[1], info);
+               return new Data(data[0], src.i, sucfail[0], sucfail[1], data[1], parent, info);
 
             } else {
                throw iae;
@@ -135,19 +148,19 @@ public abstract class ReadElement {
          }
          sorter:
          switch (holder) {
-            case NAME:
+            case Formatter.NAME:
                data[0] = next(src);
                break;
-            case SUCCESS:
+            case Formatter.SUCCESS:
                sucfail[0] = Integer.parseInt(next(src));
                break;
-            case FAIL:
+            case Formatter.FAIL:
                sucfail[1] = Integer.parseInt(next(src));
                break;
-            case DESC:
+            case Formatter.DESC:
                data[1] = next(src);
                break;
-            case CHILDREN:
+            case Formatter.CHILDREN:
                dumpSpace(src, '[');
                i = 0;
                break;
@@ -158,10 +171,11 @@ public abstract class ReadElement {
                      break sorter;
                   }
                }
-               throw new IllegalArgumentException("Unknown field while getting value for " + holder + ", char num: " + src.index);
+               throw new IllegalArgumentException("Unknown field while getting value for "
+                       + holder + ", char num: " + src.index);
          }
       }
-      return new BasicData(data[0], identifier, sucfail[0], sucfail[1], data[1], info);
+      return new Data(data[0], src.i, sucfail[0], sucfail[1], data[1], parent, info);
    }
 
    /**
@@ -170,20 +184,21 @@ public abstract class ReadElement {
     * specified data for each child.
     *
     * @param src contains the reading data
-    * @param name if should read {@link #NAME} tag
-    * @param identifier the hierarchy the loaded objects belong to
-    * @param sf if should read {@link #SUCCESS} and {@link #FAIL} tags
-    * @param desc if should read {@link #DESC description} tag
+    * @param name if should read {@link Formater#NAME name} tag
+    * @param sf if should read {@link Formater#SUCCESS success} and
+    * {@link Formater#FAIL fail} tags
+    * @param desc if should read {@link Formater#DESC description} tag
+    * @param parent parent of the read children
     * @param tags other tags you want to get value for
     * @return data of all children
     * @see #get(java.lang.String, boolean, boolean, boolean, boolean,
     * java.lang.String...)
     */
-   public static List<BasicData> readChildren(Source src, boolean name, MainChapter identifier, boolean sf, boolean desc, String... tags) {
-      List<BasicData> datas = new ArrayList<>();
+   public static List<Data> readChildren(Source src, boolean name, boolean sf, boolean desc, Container parent, String... tags) {
+      List<Data> datas = new java.util.ArrayList<>();
       try {
          while (dumpSpace(src, '{', ',', '\n', '\t')) {
-            datas.add(get(src, name, identifier, sf, desc, false));
+            datas.add(get(src, name, sf, desc, false, parent));
             dumpSpace(src, '}');
          }
       } catch (IllegalArgumentException iae) {
@@ -198,19 +213,21 @@ public abstract class ReadElement {
     * Loads all the children from the calling object.
     *
     * @param src contains the reading data
-    * @param parent the {@link Chapter} object containing the loaded children
-    * loading objects belong to
+    * @param cp parent of the loaded children
+    * @return the loaded children
     */
-   public static void loadChildren(Source src, Chapter parent) {
+   public static List<BasicData> loadChildren(Source src, Container cp) {
+      List<BasicData> bds = new LinkedList<>();
       try {
          while (dumpSpace(src, '{', ',', '\n', '\t')) {
-            read(src, parent);
+            bds.add(read(src, cp));
          }
       } catch (IllegalArgumentException iae) {
          if (!iae.getMessage().contains("']'")) {
             throw iae;
          }
       }
+      return bds;
    }
 
    /**
@@ -268,10 +285,11 @@ public abstract class ReadElement {
    }
 
    /**
-    * Creates an {@link objects.Element} from the loaded data.
+    * Creates an {@link objects.templates.BasicData} from the loaded data.
     *
     * @param src {@link Source}
-    * @param parent parent of the currently being loaded object
+    * @param cp parent of the created object
+    * @return the loaded object
     */
-   public abstract void readElement(Source src, Chapter parent);
+   public abstract BasicData readData(Source src, Container cp);
 }

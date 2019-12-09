@@ -5,131 +5,172 @@
  */
 package objects;
 
-import static IOSystem.ReadElement.get;
-import static IOSystem.ReadElement.loadSCh;
-import static IOSystem.ReadElement.next;
-import IOSystem.Formater.BasicData;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
+import IOSystem.Formatter.Data;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import objects.templates.BasicData;
+import objects.templates.Element;
+import objects.templates.Container;
+import objects.templates.ContainerFile;
 
 /**
- * References to another {@link Element} instance named after the reference.
+ * References to another {@link Element} instance other than {@link MainChapter}
+ * and its extensions.
  *
  * @author Josef Litoš
  */
-public class Reference extends Element {
+public final class Reference implements BasicData {
 
    /**
-    * @see Element#ELEMENTS
+    * read-only data
     */
-   public static final Map<MainChapter, List<Reference>> ELEMENTS = new HashMap<>();
+   public static final Map<MainChapter, List<Reference>> ELEMENTS = new java.util.HashMap<>();
+   /**
+    * the original {@link objects.templates.ContainerFile} of the referenced
+    * object
+    */
+   protected final Container[] path;
 
-   public final String originalContainer;
-   public final Element reference;
+   public Container[] getRefPath() {
+      return path.clone();
+   }
+
+   public final BasicData reference;
    int parentCount;
 
    /**
     *
-    * @param ref referenced element
-    * @param parent parent of this object
-    * @param origin name of the {@link SaveChapter} the argument {@code ref} is
-    * saved in
-    * @return
+    * @param ref the referenced element
+    * @param path path to the parent of this object
+    * @param refPath path starting from MainChapter (inclusive) to the
+    * referenced object (exclusive)
+    * @return new instance of this class
     */
-   public static final Reference mkElement(Element ref, Chapter parent, String origin) {
+   public static final Reference mkElement(BasicData ref, List<Container> path, Container[] refPath) {
       if (ref instanceof MainChapter) {
          throw new IllegalArgumentException("Hierarchy can't be referenced!");
+      } else if (ref instanceof Container && path.stream().anyMatch((e) -> (e == ref))) {
+         throw new IllegalArgumentException("Can't reference " + ref + ",\nwith path: " + path);
       }
-      if (ELEMENTS.get(ref.identifier) == null) {
-         ELEMENTS.put(ref.identifier, new ArrayList<>());
+      if (ELEMENTS.get(ref.getIdentifier()) == null) {
+         ELEMENTS.put(ref.getIdentifier(), new java.util.ArrayList<>());
       }
-      for (Reference r : ELEMENTS.get(ref.identifier)) {
-         if (ref == r.reference) {
-            r.parentCount++;
-            parent.children.add(r);
-            return r;
-         }
-      }
-      return new Reference(ref, parent, origin);
-   }
-
-   private Reference(Element ref, Chapter parent, String origin) {
-      super(new BasicData(ref.name, ref.identifier));
-      this.reference = ref;
-      parent.children.add(this);
-      originalContainer = origin;
-      parentCount = 1;
-      ELEMENTS.get(identifier).add(this);
-   }
-
-   @Override
-   public void destroy(Chapter parent) {
-      parent.children.remove(this);
-      if (--parentCount == 0) {
-         ELEMENTS.get(identifier).remove(this);
-      }
-   }
-
-   @Override
-   public Element[] getChildren() {
-      return new Element[]{reference};
-   }
-
-   @Override
-   public StringBuilder writeElement(StringBuilder sb, int tabs, Chapter cp) {
-      tabs(sb, tabs, "{ ").add(sb, this, true, true, false, false, false).append(", \"refCls\": \"")
-              .append(reference.getClass().getName());
-      if (!(reference instanceof SaveChapter)) {
-         sb.append("\", \"origin\": \"").append(mkSafe(originalContainer));
-      }
-      return sb.append("\" }");
-   }
-
-   public static void readElement(IOSystem.ReadElement.Source src, Chapter parent) {
-      BasicData data = get(src, true, parent.identifier, false, false, false, "refCls");
-      String org = null;
-      if (data.tagVals[0].equals("objects.SaveChapter")) {
-         org = data.name;
-      } else {
-         if (next(src, ',').equals("origin")) {
-            org = next(src);
-         }
-      }
-      try {
-         SaveChapter origin;
-         for (SaveChapter sch : SaveChapter.ELEMENTS.get(parent.identifier)) {
-            if (org.equals(sch.toString())) {
-               origin = sch;
-               if (!sch.loaded) {
-                  loadSCh(new File(origin.save), parent.identifier);
+      for (Reference r : ELEMENTS.get(ref.getIdentifier())) {
+         if (ref == r.reference && refPath.length == r.path.length) {
+            boolean found = true;
+            for (int i = 0; i < refPath.length; i++) {
+               if (refPath[i] != r.path[i]) {
+                  found = false;
                   break;
                }
             }
-         }
-      } catch (IllegalArgumentException iae) {
-         if (!iae.getMessage().contains("']'")) {
-            throw iae;
-         }
-      }
-      Map<MainChapter, List<Element>> elements = null;
-      try {
-         elements = (Map<MainChapter, List<Element>>) Class.forName(data.tagVals[0]).getDeclaredField("ELEMENTS").get(null);
-      } catch (ClassNotFoundException | NoSuchFieldException | SecurityException
-              | IllegalArgumentException | IllegalAccessException ex) {
-         Logger.getLogger(Reference.class.getName()).log(Level.SEVERE, null, ex);
-      }
-      for (Element e : elements.get(parent.identifier)) {
-         if (data.name.equals(e.toString())) {
-            mkElement(e, parent, org);
-            return;
+            if (found) {
+               r.parentCount++;
+               return r;
+            }
          }
       }
-      throw new IllegalArgumentException("Reference to " + data.name + " of type " + data.tagVals[0] + "doesn't exist in file " + org);
+      return new Reference(ref, refPath);
    }
 
+   private Reference(BasicData ref, Container[] refPath) {
+      this.reference = ref;
+      path = refPath;
+      parentCount = 1;
+      ELEMENTS.get(getIdentifier()).add(this);
+   }
+
+   @Override
+   public boolean destroy(Container parent) {
+      if (--parentCount == 0) {
+         ELEMENTS.get(getIdentifier()).remove(this);
+      }
+      return parent.removeChild(this) != null;
+   }
+
+   @Override
+   public StringBuilder writeData(StringBuilder sb, int tabs, Container cp) {
+      tabs(sb, tabs, "{ ").add(sb, this, cp, true, true, false, false, false)
+              .append(", \"refCls\": \"").append(reference.getClass().getName())
+              .append("\", \"origin\": \"").append(mkSafe(mkPath()));
+      return sb.append("\" }");
+   }
+
+   private String mkPath() {
+      String ret = "";
+      for (Container c : path) {
+         ret += "¤" + c;
+      }
+      return ret.substring(1);
+   }
+
+   public static void readData(IOSystem.ReadElement.Source src, Container parent) {
+      Data data = IOSystem.ReadElement.get(src, true, false, false, false, parent, "refCls", "origin");
+      Container[] org = new Container[data.tagVals[1].split(".").length];
+      org[0] = src.i;
+      BasicData ref = usePath(data.tagVals[1].split("¤"), org, 0);
+      mkElement(ref, Arrays.asList(new Container[]{parent.getIdentifier(), parent}), org);
+   }
+
+   private static BasicData usePath(String[] path, Container[] pathRes, int index) {
+      BasicData found = find(path[index], pathRes[index - 1], index > 1 ? pathRes[index - 2] : null);
+      if (index == path.length) {
+         return found;
+      }
+      pathRes[index++] = (Container) found;
+      return usePath(path, pathRes, index);
+   }
+
+   private static BasicData find(String name, Container par, Container parpar) {
+      if (par instanceof ContainerFile) {
+         ((ContainerFile) par).load(parpar);
+      }
+      for (BasicData bd : par.getChildren(parpar)) {
+         if (name.equals(bd.getName())) {
+            return bd;
+         }
+      }
+      throw new IllegalArgumentException("Name " + name + " couldn't be found in Container " + par + " in " + parpar);
+   }
+
+   @Override
+   public boolean isEmpty(Container c) {
+      return reference.isEmpty(path[path.length - 1]);
+   }
+
+   @Override
+   public MainChapter getIdentifier() {
+      return reference.getIdentifier();
+   }
+
+   @Override
+   public boolean setName(String name) {
+      return reference.setName(name);
+   }
+
+   @Override
+   public String getName() {
+      return reference.getName();
+   }
+
+   @Override
+   public int[] getSF() {
+      return reference.getSF();
+   }
+
+   @Override
+   public String getDesc(Container c) {
+      return reference.getDesc(path[path.length - 1]);
+   }
+
+   @Override
+   public String putDesc(Container c, String desc) {
+      return reference.putDesc(path[path.length - 1], desc);
+   }
+
+   @Override
+   public String toString() {
+      return getName();
+   }
 }

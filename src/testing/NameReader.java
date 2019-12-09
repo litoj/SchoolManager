@@ -8,9 +8,11 @@ package testing;
 import IOSystem.ReadElement;
 import java.util.Arrays;
 import java.util.LinkedList;
-import objects.Element;
+import objects.templates.BasicData;
 
 /**
+ * Can {@link #readName(objects.Element) decode} a String written in a specific
+ * format.
  *
  * @author Josef Litoš
  */
@@ -31,14 +33,17 @@ public class NameReader {
     * "(We/(May you) 're)/He's /out." returns [We're., May you're., He's., We're out., May you're out., He's out.]
     * </pre></blockquote>
     *
-    * @param e the {@link Element} its name will be proccessed
+    * @param bd the {@link BasicData} its name will be proccessed
     * @return all variants of the {@link Element#name}
     */
-   public static String[] readName(Element e) {
-      return getParts(new ReadElement.Source(e.toString(), 0));
+   public static String[] readName(BasicData bd) {
+      return getParts(new ReadElement.Source(bd.getName(), 0, bd.getIdentifier()), true);
    }
 
-   private static String[] getParts(ReadElement.Source src) {
+   private static String[] getParts(ReadElement.Source src, boolean first) {
+      if (first && !src.str.contains("/")) {
+         return new String[]{src.str};
+      }
       boolean slash = false, bracket = false, itpcn = false;
       int start = src.index, index = start;
       String[] ret = {""};
@@ -53,9 +58,9 @@ public class NameReader {
             case '!':
             case '?':
             case ',':
-               itpcn = true;
+               itpcn = true;//interpunction
             case ' ':
-               if (itpcn && !slash) {
+               if (itpcn && !slash && index + 1 < src.str.length()) {
                   itpcn = false;
                   break;
                }
@@ -72,11 +77,11 @@ public class NameReader {
                   slash = false;
                   slashStrs.clear();
                } else {
-                  ret = compile(ret, new String[]{substr(src.str, start, index + (itpcn ? 1 : 0))});
+                  ret = compile(ret, substr(src.str, start, index + (itpcn ? 1 : 0)));
                }
                if (itpcn) {
                   itpcn = false;
-                  if (++index + 1 >= src.str.length()) {
+                  if (index + 1 >= src.str.length()) {
                      src.index = src.str.length() - 1;
                      return ret;
                   }
@@ -85,7 +90,7 @@ public class NameReader {
                break;
             case '(':
                src.index = index + 1;
-               slashStrs.addAll(Arrays.asList(getParts(src)));
+               slashStrs.addAll(java.util.Arrays.asList(getParts(src, false)));
                start = 1 + (index = src.index);
                bracket = true;
                break;
@@ -104,16 +109,16 @@ public class NameReader {
       }
       if (slash) {
          if (start < (src.index = index)) {
-            slashStrs.add(substr(src.str, start, src.index = index));
+            slashStrs.add(substr(src.str, start, index));
          }
          return compile(ret, slashStrs.toArray(new String[slashStrs.size()]));
       } else if (bracket) {
          ret = compile(ret, slashStrs.toArray(new String[slashStrs.size()]));
       }
-      return compile(ret, new String[]{substr(src.str, start, src.index = index)});
+      return compile(ret, substr(src.str, start, src.index = index));
    }
 
-   private static String[] compile(String[] src1, String[] src2) {
+   private static String[] compile(String[] src1, String... src2) {
       String[] ret = new String[src1.length * src2.length];
       for (int i = src2.length - 1; i != -1; i--) {
          int ch = src2[i].isEmpty() ? -1 : src2[i].charAt(0);
@@ -127,5 +132,18 @@ public class NameReader {
 
    private static String substr(String str, int begin, int end) {
       return str.substring(begin, end).replace("\\", "");
+   }
+
+   public static void main(String[] args) {
+      sA("They/(He and she) moved.");
+      sA("/I/You smile.");
+      sA("(I/You smile.)/(Smile!)");
+      sA("I 'm/am here/there.");
+      sA("(We/(May you) 're)/He's /out.");
+      sA("(high/free)way");
+   }
+
+   public static void sA(String str) {
+      System.out.println(Arrays.toString(getParts(new ReadElement.Source(str, 0, null), true)));
    }
 }

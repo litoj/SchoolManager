@@ -5,11 +5,10 @@
  */
 package IOSystem;
 
-import java.io.File;
-import objects.Chapter;
-import objects.Element;
-import objects.MainChapter;
+import objects.templates.Element;
 import objects.SaveChapter;
+import objects.templates.BasicData;
+import objects.templates.Container;
 
 /**
  * This class provides many methods used in proccess of saving the data of
@@ -17,29 +16,16 @@ import objects.SaveChapter;
  *
  * @author Josef Litoš
  */
-public abstract class WriteElement {
+public interface WriteElement {
 
    /**
-    * Saves the given object and its containment into their own files.
+    * Saves the given object into its respective file.
     *
-    * @param toSave {@link MainChapter} that you want to save
+    * @param toSave {@link SaveChapter} that you want to saveSch
     */
-   public static void saveAll(MainChapter toSave) {
-      save(toSave);
-      for (SaveChapter sch : toSave.getChildren()) {
-         if (sch.loaded && sch.hasChild()) {
-            save(sch);
-         }
-      }
-   }
-
-   /**
-    * Saves the given object into its own file.
-    *
-    * @param toSave {@link SaveChapter} that you want to save
-    */
-   public static void save(SaveChapter toSave) {
-      Formater.saveFile(toSave.writeElement(new StringBuilder(), 0, null).toString(), new File(toSave.save));
+   public static void saveSch(SaveChapter toSave) {
+      Formatter.saveFile(toSave.writeData(new StringBuilder(), 0, null).toString(),
+              new java.io.File(toSave.getIdentifier().getDir() + "\\Chapters\\" + toSave + ".json"));
    }
 
    /**
@@ -48,54 +34,61 @@ public abstract class WriteElement {
     * @param sb object containing the data those will be written to the
     * coresponding {@link SaveChapter} file
     * @param e the currently written {@link Element}
-    * @param clasS if {@link Formater#CLASS} tag and the coresponding data
+    * @param parent parent of param {
+    * @conde e}
+    * @param clasS if {@link Formatter#CLASS class} tag and the coresponding
+    * data should be added
+    * @param name if {@link Formatter#NAME name} tag and the coresponding data
     * should be added
-    * @param name if {@link Formater#NAME} tag and the coresponding data should
-    * be added
-    * @param sf if {@link Formater#SUCCESS} and {@link Formater#FAIL} tags and
-    * the coresponding data should be added
-    * @param desc if {@link Formater#DESC} tag and the coresponding data should
-    * be added
-    * @param child if {@link Formater#CHILDREN} tag and the coresponding data
-    * should be added
+    * @param sf if {@link Formatter#SUCCESS success} and
+    * {@link Formatter#FAIL fail} tags and the coresponding data should be added
+    * @param desc if {@link Formatter#DESC decription} tag and the coresponding
+    * data should be added
+    * @param child if {@link Formatter#CHILDREN children} tag and the
+    * coresponding data should be added
     * @return the written form of this object
     */
-   public StringBuilder add(StringBuilder sb, Element e, boolean clasS, boolean name, boolean sf, boolean desc, boolean child) {
+   default StringBuilder add(StringBuilder sb, BasicData e, Container parent, boolean clasS, boolean name, boolean sf, boolean desc, boolean child) {
       if (clasS) {
-         sb.append('"').append(Formater.CLASS).append("\": \"").append(e.getClass().getName()).append('"');
+         sb.append('"').append(Formatter.CLASS).append("\": \"")
+                 .append(e.getClass().getName()).append('"');
       }
       if (name) {
          if (clasS) {
             sb.append(", ");
          }
-         sb.append('"').append(Formater.NAME).append("\": \"").append(mkSafe(e)).append('"');
+         sb.append('"').append(Formatter.NAME).append("\": \"")
+                 .append(mkSafe(e)).append('"');
       }
       if (sf) {
-         if (e.getSuccess() > 0 || e.getFail() > 0) {
+         if (e.getSF()[0] > 0 || e.getSF()[1] > 0) {
             if (clasS || name) {
                sb.append(", ");
             }
-            if (e.getSuccess() > 0) {
-               sb.append('"').append(Formater.SUCCESS).append("\": \"").append(e.getSuccess()).append('"');
+            if (e.getSF()[0] > 0) {
+               sb.append('"').append(Formatter.SUCCESS).append("\": \"")
+                       .append(e.getSF()[0]).append('"');
             }
-            if (e.getFail() > 0) {
-               if (e.getSuccess() > 0) {
+            if (e.getSF()[1] > 0) {
+               if (e.getSF()[0] > 0) {
                   sb.append(", ");
                }
-               sb.append('"').append(Formater.FAIL).append("\": \"").append(e.getFail()).append('"');
+               sb.append('"').append(Formatter.FAIL).append("\": \"")
+                       .append(e.getSF()[1]).append('"');
             }
          } else {
             sf = false;
          }
       }
-      if (desc && !e.description.equals("")) {
+      if (desc && e.getDesc(parent) != null && !e.getDesc(parent).equals("")) {
          if (clasS || name || sf) {
             sb.append(", ");
          }
-         sb.append('"').append(Formater.DESC).append("\": \"").append(mkSafe(e.description)).append('"');
+         sb.append('"').append(Formatter.DESC).append("\": \"")
+                 .append(mkSafe(e.getDesc(parent))).append('"');
       }
       if (child) {
-         sb.append(", \"").append(Formater.CHILDREN).append("\": [");
+         sb.append(", \"").append(Formatter.CHILDREN).append("\": [");
       }
       return sb;
    }
@@ -107,11 +100,11 @@ public abstract class WriteElement {
     * @param obj object whichs name will be made safe
     * @return
     */
-   public String mkSafe(Object obj) {
+   default String mkSafe(Object obj) {
       return obj.toString().replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"");
    }
 
-   public WriteElement tabs(StringBuilder sb, int tabs, String toWrite) {
+   default WriteElement tabs(StringBuilder sb, int tabs, String toWrite) {
       sb.append('\n');
       for (int i = tabs; i > 0; i--) {
          sb.append('\t');
@@ -121,7 +114,7 @@ public abstract class WriteElement {
    }
 
    /**
-    * This method is for Formater class to writeElement Element's children. For
+    * This method is for Formatter class to writeData Element's children. For
     * different implementations of Element class can occure different ways of
     * writing.
     *
@@ -129,7 +122,8 @@ public abstract class WriteElement {
     * coresponding {@link SaveChapter} file
     * @param tabs current amount of spaces on every new line
     * @param currentParent parent of the object providing this method
-    * @return the same object as paramter {@code sb}
+    * @return the same object as paramter {@code sb} or null, if nothing has
+    * been added
     */
-   public abstract StringBuilder writeElement(StringBuilder sb, int tabs, Chapter currentParent);
+   StringBuilder writeData(StringBuilder sb, int tabs, objects.templates.Container currentParent);
 }

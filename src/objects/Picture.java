@@ -5,123 +5,127 @@
  */
 package objects;
 
-import IOSystem.Formater.BasicData;
-import static IOSystem.ReadElement.get;
+import IOSystem.Formatter.Data;
+import static IOSystem.Formatter.createDir;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import objects.templates.BasicData;
+import objects.templates.Container;
 
 /**
+ * This class creates objects containing images under the given name.
  *
  * @author Josef Litoš
  */
 public class Picture extends TwoSided<Picture> {
 
    /**
-    * @see Element#ELEMENTS
+    * read-only data
     */
    public static final Map<MainChapter, List<Picture>> IMAGES = new HashMap<>();
-   /**
-    * @see Element#ELEMENTS
-    */
    public static final Map<MainChapter, List<Picture>> ELEMENTS = new HashMap<>();
 
    /**
     * The only allowed way to create Picture objects. Automaticaly controls its
     * existence and returns the proper Picture.
     *
-    * @param bd all the needed data to create new {@link Picture} object
-    * @param images the files containing an image each
-    * @param parent the Chapter which this Picture belongs to
-    * @param isNew if the object to be created is new or just being loaded
+    * @param bd all the necessary data to create new {@link Picture} object
+    * @param images each must contain its image file path as its
+    * {@link Data#name name}
     * @return new
-    * {@linkplain #Picture(java.lang.String, objects.Chapter, objects.MainChapter, int, int, boolean) Picture object}
+    * {@linkplain #Picture(IOSystem.Formatter.Data, java.util.List, boolean) Picture object}
     * if the name doesn't exist yet, otherwise returns the picture object with
     * the same name and adds the new images.
     */
-   public static final Picture mkElement(BasicData bd, List<BasicData> images, Chapter parent, boolean isNew) {
-      if (ELEMENTS.get(bd.identifier) == null) {
-         ELEMENTS.put(bd.identifier, new ArrayList<>());
-         IMAGES.put(bd.identifier, new ArrayList<>());
+   public static Picture mkElement(Data bd, List<Data> images) {
+      return mkElement(bd, images, true);
+   }
+
+   /**
+    * The only allowed way to create Picture objects. Automaticaly controls its
+    * existence and returns the proper Picture.
+    *
+    * @param d all the necessary data to create new {@link Picture} object
+    * @param images each must contain its image file path as its
+    * {@link Data#name name}
+    * @param isNew if the object to be created is new or just being loaded,
+    * usually {@code true} when called outside this class
+    * @return new
+    * {@linkplain #Picture(IOSystem.Formatter.Data, java.util.List, boolean) Picture object}
+    * if the name doesn't exist yet, otherwise returns the picture object with
+    * the same name and adds the new images.
+    */
+   public static Picture mkElement(Data d, List<Data> images, boolean isNew) {
+      BasicData.isCorrect(d.name);
+      if (ELEMENTS.get(d.identifier) == null) {
+         ELEMENTS.put(d.identifier, new ArrayList<>());
+         IMAGES.put(d.identifier, new ArrayList<>());
+         if (d.identifier.getSetting("picParCount") == null) {
+            d.identifier.putSetting("picParCount", new HashMap<String, Integer>());
+            d.identifier.putSetting("imgRemoved", false);
+         }
       }
-      for (Picture p : ELEMENTS.get(bd.identifier)) {
-         if (bd.name.equals(p.toString())) {
-            condition:
-            {
-               for (Chapter prnt : p.children.keySet()) {
-                  if (prnt == parent) {
-                     break condition;
-                  }
-               }
-               if (isNew) {
-                  bd.identifier.pictures.put(bd.name, ++p.parentCount);
-               }
-               parent.children.add(p);
+      for (Picture p : ELEMENTS.get(d.identifier)) {
+         if (d.name.equals(p.name)) {
+            if (p.children.get(d.par) == null) {
+               p.children.put(d.par, new ArrayList<>(images.size()));
+               ((Map<String, Integer>) d.identifier.getSetting("picParCount")).put(d.name, ++p.parentCount);
             }
-            p.addImages(images, parent, isNew);
+            p.addImages(images, d.par, isNew);
             return p;
          }
       }
-      return new Picture(bd, images, parent, isNew);
+      return new Picture(d, images, isNew);
    }
 
    /**
-    * This method allows you for potencial doubling of an image.
+    * Creates and adds all children to this object. This method doesn't control
+    * potencial doubling of an image.
     *
-    * @param images names of imgs for this picture in the specified Chapter
+    * @param images all the necessary data for every new image reference created
     * @param parent Chapter containing this picture
-    * @param sfs the successes and fails for every image
+    * @param isNew if this object is being created by the user or is already
+    * saved
     */
-   private void addImages(List<BasicData> images, Chapter parent, boolean isNew) {
-      if (children.get(parent) == null) {
-         children.put(parent, new Picture[0]);
-      }
-      Picture[] imgs = Arrays.copyOf(children.get(parent), images.size() + children.get(parent).length);
-      int differ = imgs.length - images.size();
+   private void addImages(List<Data> images, Container parent, boolean isNew) {
       int serialINum = -1;
-      String front = identifier.dir.getPath() + "\\Pictures\\" + this.name + ' ';
+      String front = identifier.getDir().getPath() + "\\Pictures\\" + testing.NameReader.readName(this)[0] + ' ';
       for (int i = 0; i < images.size(); i++) {
-         File pic;
-         if (isNew) {
-            String back = images.get(i).name.substring(images.get(i).name.lastIndexOf('.'));
-            do {
-               pic = new File(front + ++serialINum + back);
-            } while (pic.exists());
-         } else {
-            pic = new File(images.get(i).name);
-         }
          File source = new File(images.get(i).name);
-         images.get(i).name = pic.getName();
-         imgs[i + differ] = new Picture(this, parent, source, images.get(i), pic, isNew);
+         if (isNew) {
+            while (new File(front + ++serialINum + ".jpg").exists());
+            images.get(i).name = testing.NameReader.readName(this)[0] + ' ' + serialINum;
+         }
+         putChild(parent, new Picture(this, source, images.get(i), isNew));
       }
-      children.put(parent, imgs);
    }
 
    /**
-    * This constructor is used only to create images.
+    * This constructor is used only to create an image part.
     */
-   private Picture(Picture pic, Chapter parent, File save, BasicData bd, File dest, boolean isNew) {
+   private Picture(Picture pic, File save, Data bd, boolean isNew) {
       super(bd, false, IMAGES);
-      children.put(parent, new Picture[]{pic});
+      BasicData.isCorrect(name);
+      children.put(bd.par, new ArrayList<>(Arrays.asList(new Picture[]{pic})));
       picParentCount(isNew);
       if (isNew) {
+         File dest = new File(identifier.getDir().getPath() + "\\Pictures\\" + name + ".jpg");
          if (!dest.exists()) {
-            try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(dest));
-                    BufferedInputStream bis = new BufferedInputStream(new FileInputStream(save))) {
+            try (BufferedOutputStream bos = new BufferedOutputStream(
+                    new java.io.FileOutputStream(dest)); BufferedInputStream bis
+                    = new BufferedInputStream(new java.io.FileInputStream(save))) {
                byte[] buffer = new byte[8192];
                int amount;
                while ((amount = bis.read(buffer)) != -1) {
                   bos.write(buffer, 0, amount);
                }
-            } catch (IOException ex) {
+            } catch (java.io.IOException ex) {
                throw new IllegalArgumentException(ex);
             }
          }
@@ -129,117 +133,141 @@ public class Picture extends TwoSided<Picture> {
    }
 
    /**
-    * This constructor is used only to create Pictures.
+    * This constructor is used only to create main instance of this class.
     */
-   private Picture(BasicData bd, List<BasicData> images, Chapter parent, boolean isNew) {
+   private Picture(Data bd, List<Data> images, boolean isNew) {
       super(bd, true, ELEMENTS);
+      createDir(identifier.getDir().getPath() + "\\Pictures");
       picParentCount(isNew);
-      addImages(images, parent, isNew);
-      parent.children.add(this);
+      children.put(bd.par, new ArrayList<>(images.size()));
+      addImages(images, bd.par, isNew);
+   }
+
+   public static void clean(MainChapter mch) {
+      if (!isCleanable(mch)) {
+         return;
+      }
+      mch.loadAll();
+      String exceptions = "";
+      String dir = mch.getDir().getPath() + "\\Pictures\\";
+      int size = ELEMENTS.get(mch).size();
+      for (Picture p : ELEMENTS.get(mch)) {
+         int serialINum = -1;
+         String front = dir + p.name + ' ';
+         for (BasicData img : p.getChildren()) {
+            File pic = new File(dir + img.getName() + ".jpg");
+            while (!pic.renameTo(new File(front + ++serialINum + ".jpg"))) {
+               if (serialINum > size) {
+                  exceptions += "\nFile '" + pic + "' can't be renamed!";
+                  break;
+               }
+            }
+            ((Map<String, Integer>) mch.getSetting("picParCount")).remove(img.getName());
+            ((Map<String, Integer>) mch.getSetting("picParCount")).put(((Picture) img).name = (p.name + ' ' + serialINum), ((Picture) img).parentCount);
+         }
+      }
+      if (!exceptions.isEmpty()) {
+         throw new IllegalArgumentException(exceptions);
+      }
+      mch.putSetting("imgRemoved", false);
+   }
+
+   public static boolean isCleanable(MainChapter mch) {
+      return (boolean) mch.getSetting("imgRemoved");
    }
 
    @Override
-   public void setName(String name) {
-      if (this.name.equals(name)) {
-         return;
+   public boolean setName(String name) {
+      BasicData.isCorrect(name);
+      if (this.name.equals(name) || children.isEmpty()) {
+         return false;
       }
-      if (isMain) {
-         String path = identifier.dir.getPath() + "\\Pictures\\";
-         for (Picture p : ELEMENTS.get(identifier)) {
-            if (p.name.equals(name)) {//Umožňuje splynutí obrázků v případě shody názvu
-               for (Chapter ch : children.keySet()) {
-                  ch.children.remove(this);
-                  if (!ch.children.contains(p)) {
-                     ch.children.add(p);
-                     p.children.put(ch, children.remove(ch));
-                  } else {
-                     Picture[] allImgs = p.children.get(ch);
-                     int length = allImgs.length;
-                     Picture[] oldImgs = children.get(ch);
-                     allImgs = Arrays.copyOf(allImgs, length + children.get(ch).length);
-                     for (int i = oldImgs.length - 1; i >= 0; i--) {
-                        allImgs[length + i] = oldImgs[i];
-                     }
-                     p.children.put(ch, allImgs);
-                  }
-               }
-               ELEMENTS.get(identifier).remove(this);
-               int serialINum = -1;
-               String front = path + name + ' ';
-               for (Picture img : getChildren()) {
-                  String back = img.name.substring(img.name.lastIndexOf('.'));
-                  File pic = new File(path + img.name);
-                  while (!pic.renameTo(new File(front + ++serialINum + back)));
-                  img.name = pic.getName();
-               }
-               return;
-            }
-         }
-         identifier.pictures.put(name, identifier.pictures.remove(this.name));
-         for (Picture p : getChildren()) {
-            String newName = p.name.replaceFirst(this.name, name);
-            identifier.pictures.put(newName, identifier.pictures.remove(p.name));
-            new File(path + p.name).renameTo(new File(path + newName));
-            p.name = newName;
-         }
+      if (!isMain) {
          this.name = name;
-      } else {
-         throw new IllegalArgumentException("Name of an image file can't be changed.");
+         return true;
       }
+      ((Map<String, Integer>) identifier.getSetting("picParCount")).remove(this.name);
+      String path = identifier.getDir().getPath() + "\\Pictures\\";
+      for (Picture p : ELEMENTS.get(identifier)) {
+         if (p.name.equals(name)) {//Umožňuje splynutí obrázků v případě shody názvu
+            for (Container c : description.keySet()) {
+               if (p.getDesc(c) == null || p.getDesc(c).equals("")) {
+                  p.putDesc(c, getDesc(c));
+               }
+            }
+            for (Container ch : children.keySet()) {
+               Container parpar = ch.removeChild(this);
+               if (!ch.hasChild(p)) {
+                  ch.putChild(parpar, p);
+                  p.children.put(ch, children.get(ch));
+                  p.parentCount++;
+               } else {
+                  p.children.get(ch).addAll(Arrays.asList(getChildren(ch)));
+               }
+            }
+            ELEMENTS.get(identifier).remove(this);
+            int serialINum = -1;
+            String front = path + name + ' ';
+            for (BasicData img : getChildren()) {
+               File pic = new File(path + img.getName() + ".jpg");
+               while (!pic.renameTo(new File(front + ++serialINum + ".jpg")));
+               ((Map<String, Integer>) identifier.getSetting("picParCount")).put(name + ' ' + serialINum,
+                       ((Map<String, Integer>) identifier.getSetting("picParCount")).remove(img.getName()));
+               img.setName(name + ' ' + serialINum);
+            }
+            children.clear();
+            ((Map<String, Integer>) identifier.getSetting("picParCount")).put(p.name, p.parentCount);
+            return true;
+         }
+      }
+      ((Map<String, Integer>) identifier.getSetting("picParCount")).put(name,
+              ((Map<String, Integer>) identifier.getSetting("picParCount")).remove(this.name));
+      for (BasicData p : getChildren()) {
+         String newName = p.getName().replaceFirst(this.name, name);
+         ((Map<String, Integer>) identifier.getSetting("picParCount")).put(newName,
+                 ((Map<String, Integer>) identifier.getSetting("picParCount")).remove(p.getName()));
+         new File(path + p.getName() + ".jpg").renameTo(new File(path + newName + ".jpg"));
+         p.setName(newName);
+      }
+      ((Map<String, Integer>) identifier.getSetting("picParCount")).put(this.name = name, parentCount);
+      return true;
    }
 
    private void picParentCount(boolean isNew) {
       if (isNew) {
-         Integer i = identifier.pictures.get(name);
-         identifier.pictures.put(name, parentCount = i == null ? 1 : (i + 1));
+         Integer i = ((Map<String, Integer>) identifier.getSetting("picParCount")).get(name);
+         ((Map<String, Integer>) identifier.getSetting("picParCount")).put(name, parentCount = (i == null ? 1 : (i + 1)));
       }
    }
 
    @Override
-   public void destroy(Chapter parent) {
+   public boolean destroy(Container parent) {
       if (isMain) {
-         for (Picture child : children.get(parent)) {
-            child.remove(parent, this);
+         for (BasicData child : children.get(parent)) {
+            ((Picture) child).remove1(parent, this);
             child.destroy(parent);
          }
          children.remove(parent);
-         parent.children.remove(this);
+         parent.removeChild(this);
       }
       if (--parentCount == 0) {
-         identifier.pictures.remove(name);
+         identifier.putSetting("imgRemoved", true);
+         ((Map<String, Integer>) identifier.getSetting("picParCount")).remove(name);
          if (isMain) {
-            ELEMENTS.get(identifier).remove(this);
-         } else {
-            IMAGES.get(identifier).remove(this);
-            new File(identifier.dir.getPath() + "\\Pictures\\" + name).delete();
+            return ELEMENTS.get(identifier).remove(this);
          }
-      } else {
-         identifier.pictures.replace(name, parentCount);
+         IMAGES.get(identifier).remove(this);
+         return new File(identifier.getDir().getPath() + "\\Pictures\\" + name + ".jpg").delete();
       }
+      ((Map<String, Integer>) identifier.getSetting("picParCount")).replace(name, parentCount);
+      return true;
    }
 
-   @Override
-   void remove(Chapter parent, Picture toRem) {
-      Picture[] prev = children.get(parent);
-      Picture[] chdrn = new Picture[prev.length - 1];
-      for (int i = 0; i < chdrn.length; i++) {
-         if (prev[i] == toRem) {
-            chdrn[i] = prev[chdrn.length];
-         } else {
-            chdrn[i] = prev[i];
-         }
-      }
-      children.put(parent, chdrn);
-   }
-
-   @Override
-   Picture[] mkArray(int size) {
-      return new Picture[size];
-   }
-
-   public static void readElement(IOSystem.ReadElement.Source src, Chapter parent) {
-      BasicData data = get(src, true, parent.identifier, true, true, true);
-      List<BasicData> children = IOSystem.ReadElement.readChildren(src, true, data.identifier, true, true);
-      mkElement(data, children, parent, false);
+   public static void readData(IOSystem.ReadElement.Source src, Container parent) {
+      Data data = IOSystem.ReadElement
+              .get(src, true, true, true, true, parent);
+      List<Data> children = IOSystem.ReadElement
+              .readChildren(src, true, true, true, parent);
+      mkElement(data, children, false);
    }
 }

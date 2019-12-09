@@ -5,101 +5,152 @@
  */
 package objects;
 
-import static IOSystem.Formater.getPath;
-import static IOSystem.Formater.createDir;
+import static IOSystem.Formatter.createDir;
+import static IOSystem.Formatter.deserializeTo;
+import static IOSystem.Formatter.getPath;
+import static IOSystem.Formatter.serialize;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import objects.templates.Container;
+import objects.templates.BasicData;
+import objects.templates.ContainerFile;
 
 /**
- * Head object of hierarchy of all {@link Element} objects. Saves this hierarchy
- * into folder under name of this object in the specified
- * {@link IOSystem.Formater#objDir directory}. Should be {@link #name}d after
- * the school object this hierarchy represents.
+ * Head object of hierarchy of all {@link BasicData elemetary} objects. Saves
+ * this hierarchy into folder under name of this object in the specified
+ * {@link IOSystem.Formatter#objDir directory}. Should be {@link #name named}
+ * after the school object this hierarchy represents.
  *
  * @author Josef Litoš
  */
-public final class MainChapter extends SaveChapter {
+public class MainChapter extends objects.templates.SemiElementContainer implements ContainerFile {
 
    /**
-    * @see Element#ELEMENTS
+    * read-only data
     */
-   public static final Set<MainChapter> ELEMENTS = new HashSet<>();
+   public static final java.util.Set<MainChapter> ELEMENTS = new java.util.HashSet<>();
    /**
-    * Contains all {@link SaveChapter} objects, which are under this object.
+    * This file contains everything about this object and its
+    * {@link #children children}.
     */
-   protected final List<SaveChapter> children = new ArrayList<>();
-   /**
-    * This file contains everything about this object and its {@link #children}.
-    */
-   public final File dir;
-   Map<String, Integer> pictures = new HashMap<>();
+   File dir;
+
+   public File getDir() {
+      return dir;
+   }
+
+   protected Map<String, Object> settings = new java.util.HashMap<>();
+
+   public Object getSetting(String key) {
+      return settings.get(key);
+   }
+
+   public void putSetting(String key, Object value) {
+      settings.put(key, value);
+      deserializeTo(dir + "\\setts.dat", settings);
+   }
+
+   public void removeSetting(String key) {
+      settings.remove(key);
+      deserializeTo(dir + "\\setts.dat", settings);
+   }
+
+   @Override
+   public File getSaveFile(Container c) {
+      return new File(dir + "\\main.json");
+   }
 
    /**
     * Only this constructor creates the head object of the hierarchy. The
     * hierarchy files are saved in its {@link #dir directory}.
     *
-    * @param bd should contain {@link #name} and {@link #sf}
+    * @param d must contain {@link #name name}
     */
-   public MainChapter(IOSystem.Formater.BasicData bd) {
-      super(bd, getPath() + bd.name + '\\' + bd.name + ".json");
-      ELEMENTS.add(this);
+   public MainChapter(IOSystem.Formatter.Data d) {
+      super(d);
+      BasicData.isCorrect(name);
       dir = createDir(getPath() + name);
-      createDir(dir.getPath() + "\\Pictures");
       createDir(dir.getPath() + "\\Chapters");
-      File pics = new File(dir + "\\pictures.json");
-      if (pics.exists()) {
-         pictures = (Map<String, Integer>) IOSystem.Formater.serialize(pics.getPath());
+      File setts = new File(dir + "\\setts.dat");
+      if (setts.exists()) {
+         settings = (Map<String, Object>) serialize(dir + "\\setts.dat");
+      } else {
+         deserializeTo(dir + "\\setts.dat", settings);
       }
+      ELEMENTS.add(this);
    }
 
    @Override
-   public void destroy(Chapter parent) {
-      if (parent != null) {
-         throw new IllegalArgumentException("This chapter can't have a parent, but got: " + parent);
-      }
+   public boolean destroy(Container parent) {
+      children.forEach((bd) -> bd.destroy(this));
+      children.clear();
       ELEMENTS.remove(this);
-      dir.delete();
+      return remFiles(dir);
+   }
+
+   private boolean remFiles(File src) {
+      if (src.isDirectory()) {
+         for (File f : src.listFiles()) {
+            remFiles(f);
+         }
+      }
+      return src.delete();
    }
 
    @Override
-   public SaveChapter[] getChildren() {
-      return children.toArray(new SaveChapter[children.size()]);
+   public boolean setName(String name) {
+      BasicData.isCorrect(name);
+      File newDir = new File(getPath() + name);
+      for (byte i = 0; i < 5; i++) {
+         if (dir.renameTo(newDir)) {
+            dir = newDir;
+            this.name = name;
+            save(null);
+            return true;
+         }
+      }
+      return false;
    }
 
    /**
-    * This methos saves this MainChapter and then removes itself from the list.
+    * This method saves this object and then removes itself from the
+    * {@link #ELEMENTS list}.
     */
    public void close() {
-      save(this);
+      save(null);
       ELEMENTS.remove(this);
    }
 
    @Override
-   public StringBuilder writeElement(StringBuilder sb, int tabs, Chapter cp) {
-      tabs(sb, tabs++, "{ ").add(sb, this, true, true, true, true, true);
-      IOSystem.Formater.deserializeTo(dir + "\\pictures.json", pictures);
-      boolean first = true;
-      for (SaveChapter sch : children) {
-         if (sch.children.isEmpty()) {
-            continue;
-         }
-         if (first) {
-            first = false;
-         } else {
-            sb.append(',');
-         }
-         tabs(sb, tabs, "{ ").add(sb, sch, false, true, true, false, false).append(" }");
-      }
-      return sb.append(" ] }");
+   public MainChapter getIdentifier() {
+      return this;
    }
 
-   public static void readElement(IOSystem.ReadElement.Source src, Chapter parent) {
-      IOSystem.ReadElement.readChildren(src, true, new MainChapter(IOSystem.ReadElement.get(
-              src, true, null, true, true, true)), true, false).forEach((i) -> SaveChapter.mkElement(i));
+   public void loadAll() {
+      do {
+         for (SaveChapter sch : SaveChapter.ELEMENTS.get(this)) {
+            if (!sch.loaded) {
+               sch.load(this);
+            }
+         }
+      } while (SaveChapter.ELEMENTS.get(this).stream().anyMatch((sch) -> !sch.loaded));
+   }
+
+   @Override
+   public boolean isLoaded(Container parent) {
+      return true;
+   }
+
+   @Override
+   public StringBuilder writeData(StringBuilder sb, int tabs, Container cp) {
+      tabs(sb, tabs++, "{ ").add(sb, this, null, true, true, true, true, true);
+      deserializeTo(dir + "\\setts.dat", settings);
+      return writeData0(sb, tabs, cp);
+   }
+
+   public static BasicData readData(IOSystem.ReadElement.Source src, Container parent) {
+      MainChapter mch = new MainChapter(IOSystem.ReadElement.get(src, true, true, true, true, null));
+      IOSystem.ReadElement.loadChildren(src, null).forEach((e) -> mch.putChild(parent, e));
+      return mch;
    }
 }

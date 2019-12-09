@@ -6,7 +6,7 @@
 package testing;
 
 /**
- *
+ * Used for management of a running {@link Test}.
  * @author Josef Litoš
  */
 public interface Timer {
@@ -17,5 +17,5 @@ public interface Timer {
     *
     * @param secsLeft seconds left to the end of the test
     */
-   public void doOnSec(int secsLeft);
+   void doOnSec(int secsLeft);
 }
