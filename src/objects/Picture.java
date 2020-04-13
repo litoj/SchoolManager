@@ -218,6 +218,14 @@ public class Picture extends TwoSided<Picture> {
 		return (boolean) mch.getSetting("imgRemoved");
 	}
 
+	/**
+	 * Gets the file containing the picture which this object represents.
+	 * @return the picture file this object refers to, {@code null} if this {@link #isMain}
+	 */
+	public File getFile(){
+		return isMain ? null : new File(new File(identifier.getDir(), "Pictures"), getName() + ".jpg");
+	}
+	
 	@Override
 	public boolean setName(Container ch, String name) {
 		ContainerFile.isCorrect(name);
