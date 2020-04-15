@@ -77,10 +77,10 @@ public final class Reference implements BasicData {
 			if (ELEMENTS.get(path.get(0).getIdentifier()) == null)
 				ELEMENTS.put(path.get(0).getIdentifier(), new java.util.ArrayList<>(10));
 			for (Reference r : ELEMENTS.get((MainChapter) path.get(0))) {
-				if (r.refStr.equals(ref.toString()) && refPath.length == r.path.length) {
+				if (r.refStr.equals(ref.toString()) && refPath.length == r.pathStr.length) {
 					boolean found = true;
 					for (int i = 0; i < refPath.length; i++) {
-						if (!refPath[i].toString().equals(r.path[i].toString())) {
+						if (!refPath[i].toString().equals(r.pathStr[i])) {
 							found = false;
 							break;
 						}
@@ -141,6 +141,16 @@ public final class Reference implements BasicData {
 		new Thread(() ->
 				defaultReacts.get(Reference.class + ":not_found").react(name, par, parpar)).start();
 		return null;
+	}
+
+	@Override
+	public boolean move(Container oldParent, Container oldParPar, Container newParent, Container newParPar) {
+		throw new UnsupportedOperationException("Reference cannot be moved");
+	}
+
+	@Override
+	public boolean move(Container oldParent, Container newParent, Container newParPar) {
+		throw new UnsupportedOperationException("Reference cannot be moved");
 	}
 
 	@Override

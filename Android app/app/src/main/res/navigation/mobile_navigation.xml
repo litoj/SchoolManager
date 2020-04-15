@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/menu_objects">
+
+    <fragment
+        android:id="@+id/menu_objects"
+        android:name="com.schlmgr.gui.fragments.MainFragment"
+        android:label="@string/menu_objects"
+        tools:layout="@layout/fragment_main" />
+
+    <fragment
+        android:id="@+id/test"
+        android:name="com.schlmgr.gui.fragments.TestFragment"
+        android:label="Test"
+        tools:layout="@layout/fragment_test" />
+
+    <fragment
+        android:id="@+id/menu_choose_dir"
+        android:name="com.schlmgr.gui.fragments.ChooseDirFragment"
+        android:label="@string/menu_choose_dir"/>
+
+    <fragment
+        android:id="@+id/menu_options"
+        android:name="com.schlmgr.gui.fragments.SettingsFragment"
+        android:label="@string/menu_settings"
+        tools:layout="@layout/fragment_settings" />
+
+    <fragment
+        android:id="@+id/menu_about"
+        android:name="com.schlmgr.gui.fragments.AboutFragment"
+        tools:layout="@layout/fragment_about" />
+</navigation>

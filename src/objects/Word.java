@@ -21,13 +21,13 @@ import java.util.Map;
 public class Word extends TwoSided<Word> {
 
 	/**
-	 * Contains all instances of this class created as the {@link #isMain more_main} version. All Words
+	 * Contains all instances of this class created as the {@link #isMain main} version. All Words
 	 * are sorted by the {@link MainChapter hierarchy} they belong to. read-only data
 	 */
 	public static final Map<MainChapter, List<Word>> TRANSLATES = new HashMap<>();
 
 	/**
-	 * Contains all instances of this class created as the {@link #isMain non-more_main} version. All
+	 * Contains all instances of this class created as the {@link #isMain non-main} version. All
 	 * Translates are sorted by the {@link MainChapter hierarchy} they belong to. read-only data
 	 */
 	public static final Map<MainChapter, List<Word>> ELEMENTS = new HashMap<>();
@@ -145,7 +145,7 @@ public class Word extends TwoSided<Word> {
 	}
 
 	/**
-	 * This constructor is used only to create more_main instance of this class.
+	 * This constructor is used only to create main instance of this class.
 	 */
 	private Word(Data bd, List<Data> translates) {
 		super(bd, true, ELEMENTS);
@@ -163,19 +163,21 @@ public class Word extends TwoSided<Word> {
 			children.remove(parent);
 			parent.removeChild(this);
 			if (--parentCount == 0) ELEMENTS.get(identifier).remove(this);
-		} else if (children.get(parent).isEmpty() && --parentCount == 0)
+		} else  
+			
+			if (children.get(parent).isEmpty() && --parentCount == 0)
 			TRANSLATES.get(identifier).remove(this);
 		return true;
 	}
 
 	@Override
 	public boolean setName(Container ch, String name) {
-		if (this.name.equals(name) || children.isEmpty() || !isMain) return false;
-		Container parpar = ch.removeChild(this);
-		for (Word w : ELEMENTS.get(identifier))
+		if (this.name.equals(name) || children.isEmpty()) return false;
+		Container parpar = isMain ? ch.removeChild(this) : null;
+		for (Word w : (isMain ? ELEMENTS : TRANSLATES).get(identifier).toArray(new Word[0]))
 			if (w.name.equals(name)) {
 				if (w.getDesc(ch) == null || w.getDesc(ch).equals("")) w.putDesc(ch, getDesc(ch));
-				if (parentCount == 1) ELEMENTS.get(identifier).remove(this);
+				if (parentCount == 1) (isMain ? ELEMENTS : TRANSLATES).get(identifier).remove(this);
 				setName0(parpar, ch, w);
 				return true;
 			}
@@ -185,16 +187,27 @@ public class Word extends TwoSided<Word> {
 	}
 
 	private Word(Word src, Container par, String newName) {
-		super(new Data(newName, src.identifier, 0, 0, src.description.get(par), par), true, ELEMENTS);
+		super(new Data(newName, src.identifier, 0, 0, src.description.get(par), par),
+				src.isMain, src.isMain ? ELEMENTS : TRANSLATES);
 	}
 
 	private void setName0(Container parpar, Container ch, Word w) {
 		parentCount--;
-		if (!ch.hasChild(w)) {
-			ch.putChild(parpar, w);
+		if (w.children.get(ch) == null) {
+			if(isMain) ch.putChild(parpar, w);
 			w.children.put(ch, children.get(ch));
 			w.parentCount++;
-		} else w.children.get(ch).addAll(children.get(ch));
+		} else {
+			List<Word> toAdd = new LinkedList<>();
+			for(Word word : children.get(ch)){
+				test:
+				{
+					for(Word child : w.children.get(ch)) if(child == word) break test;
+					toAdd.add(word);
+				}
+			}
+			w.children.get(ch).addAll(toAdd);
+		}
 		for (Word trl : children.remove(ch)) {
 			trl.children.get(ch).remove(this);
 			trl.children.get(ch).add(w);

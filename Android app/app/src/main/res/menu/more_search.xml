@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/more_sort"
+        android:title="@string/sort">
+        <menu>
+            <item
+                android:id="@+id/sort_alpha_AZ"
+                android:title="@string/sort_alpha_AZ" />
+            <item
+                android:id="@+id/sort_alpha_ZA"
+                android:title="@string/sort_alpha_ZA" />
+            <item
+                android:id="@+id/sort_sf_01"
+                android:title="@string/sort_sf_01" />
+            <item
+                android:id="@+id/sort_sf_10"
+                android:title="@string/sort_sf_10" />
+            <item
+                android:id="@+id/sort_length_01"
+                android:title="@string/sort_length_01" />
+            <item
+                android:id="@+id/sort_length_10"
+                android:title="@string/sort_length_10" />
+            <item
+                android:id="@+id/sort_default"
+                android:title="@string/sort_default" />
+        </menu>
+    </item>
+</menu>

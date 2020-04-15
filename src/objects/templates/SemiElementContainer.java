@@ -21,9 +21,12 @@ public abstract class SemiElementContainer extends BasicElement implements Conta
 
 	@Override
 	public boolean move(Container op, Container np, Container npp) {
-		if (!super.move(parent, parent, npp)) return false;
-		parent = np;
-		return true;
+		return super.move(op, parent = np, npp);
+	}
+	
+	@Override
+	public boolean move(Container op, Container opp, Container np, Container npp) {
+		return super.move(op, opp, parent = np, npp);
 	}
 
 	@Override

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/nav_head_layout"
+    android:layout_width="match_parent"
+    android:layout_height="55dp"
+    android:background="@drawable/side_nav_bar"
+    android:orientation="vertical"
+    android:theme="@style/AppThemeDark">
+
+    <TextView
+        android:id="@+id/menu_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:drawableStart="@drawable/ic_app"
+        android:drawablePadding="5dp"
+        android:text="Menu"
+        android:textSize="30sp" />
+
+</LinearLayout>

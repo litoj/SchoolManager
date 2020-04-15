@@ -31,9 +31,8 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 	 */
 	public static final List<MainChapter> ELEMENTS = new LinkedList<>();
 	/**
-	 * This file contains everything about this object and its
-	 * {@link #children content} together with its own
-	 * {@link #settings settings}.
+	 * This file contains everything about this object and its {@link #children content}
+	 * together with its own {@link #settings settings}.
 	 */
 	protected File dir;
 
@@ -108,7 +107,8 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 	public boolean setName(Container none, String name) {
 		ContainerFile.isCorrect(name);
 		File newDir = new File(getPath(), name);
-		for (Reference ref : Reference.ELEMENTS.get(this)) ref.pathStr[0] = name;
+		if(Reference.ELEMENTS.get(this)!= null)
+			for (Reference ref : Reference.ELEMENTS.get(this)) ref.pathStr[0] = name;
 		for (byte i = 0; i < 5; i++)
 			if (dir.renameTo(newDir)) {
 				dir = newDir;
@@ -135,10 +135,15 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 	/**
 	 * Contains its children.
 	 */
-	protected final java.util.List<BasicData> children = new java.util.LinkedList<>();
+	protected final List<BasicData> children = new LinkedList<>();
 
 	@Override
 	public boolean move(Container op, Container np, Container npp) {
+		throw new UnsupportedOperationException("This hierarchy object cannot be moved, since it has no parent.");
+	}
+	
+	@Override
+	public boolean move(Container op, Container opp, Container np, Container npp) {
 		throw new UnsupportedOperationException("This hierarchy object cannot be moved, since it has no parent.");
 	}
 

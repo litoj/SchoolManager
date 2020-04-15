@@ -11,6 +11,7 @@ public interface Timer {
 	 * This method is called every second of the {@link Test}, until the time runs out.
 	 *
 	 * @param secsLeft seconds left to the end of the test
+	 * @return if the countdown should continue
 	 */
-	void doOnSec(int secsLeft);
+	boolean doOnSec(int secsLeft);
 }

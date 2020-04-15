@@ -8,9 +8,11 @@ import objects.templates.TwoSided;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import objects.Reference;
 
 /**
  * Creates and manages a test for any {@link TwoSided} object. Resets all values
@@ -31,45 +33,116 @@ public class Test<T extends TwoSided> {
 	}
 
 	/**
-	 * Converts the given list of paths to list of SourcePaths.
-	 *
-	 * @param path the list of paths to be converted
-	 * @return the converted {@code paths}
+	 * Converts all the content of the given paths to SourcePaths. Searching throught the
+	 * hierarchy until a TwoSided object is reached.
+	 * 
+	 * @param src the list of paths to be rendered
+	 * @return the converted content of the given paths
 	 */
-	public List<SrcPath<T>> mkSrcPath(List<List<Container>> path) {
-		List<SrcPath<T>> p = new LinkedList<>();
-		for (List<Container> t : path) p.add(new SrcPath<>(t));
-		return p;
+	public List<SrcPath<T>> convertAll(List<List<Container>> src) {
+		List<SrcPath<T>> ret = new ArrayList<>(src.size() * 2);
+		ArrayList<List<Container>> paths = src instanceof ArrayList ?
+				(ArrayList<List<Container>>) src : new ArrayList<>(src);
+		for (int i = 0; i < paths.size(); i++) createUniquePaths(paths, paths.get(i));
+		for (List<Container> path : src) {
+			if (path.get(path.size() - 1) instanceof TwoSided) ret.add(new SrcPath(path));
+			else ret.addAll(getC0(path, new Getter()));
+		}
+		return ret;
 	}
 
 	/**
-	 * @param path the path to the object which content will be processed and returned
-	 * @return the list of paths to every element of class {@link #t T} contained
-	 * in the last object of the param {@code path}
+	 * 
+	 * 
+	 * @param src
+	 * @param path 
 	 */
-	public List<SrcPath<T>> getContent(List<Container> path) {
-		if (!t.isInstance(path.get(path.size() - 1))) return getC0(path);
-		throw new IllegalArgumentException("Only normal Containers can be read, the TwoSided is the result!");
-	}
-
-	private List<SrcPath<T>> getC0(List<Container> path) {
-		List<SrcPath<T>> list = new LinkedList<>();
-		for (BasicData bd : path.get(path.size() - 1).getChildren(path.get(path.size() - 2))) {
-			bd = bd.getThis();
+	private void createUniquePaths(ArrayList<List<Container>> src, List<Container> path) {
+		if (path.get(path.size() - 1) instanceof TwoSided) return;
+		for (BasicData bd : path.get(path.size() - 1).getChildren(path.size() > 1 ?
+				path.get(path.size() - 2) : null)) {
 			if (bd instanceof Container) {
-				if (bd instanceof TwoSided)
-					if (t.isInstance(bd)) {
-						List<Container> x = new LinkedList<>(path);
-						x.add((Container) bd);
-						list.add(new SrcPath<>(x));
-					}
-			} else {
-				path.add((Container) bd);
-				list.addAll(getC0(path));
+				List<Container> copy = new ArrayList<>(path);
+				copy.add((Container) bd);
+				if (!(bd instanceof TwoSided)) createUniquePaths(src, copy);
+			} else if (bd instanceof Reference) {
+				try {
+					if (!(bd.getThis() instanceof Container) || bd.getThis() instanceof TwoSided &&
+							t.isInstance(bd.getThis())) continue;
+				} catch (IllegalArgumentException iae) {
+					continue;
+				}
+				List<Container> refPath = new ArrayList<>(Arrays.asList(((Reference) bd).getRefPath()));
+				refPath.add((Container) bd.getThis());
+				ArrayList<List<Container>> result = merge(refPath, src);
+				if (result == null) src.add(refPath);
 			}
 		}
-		path.remove(path.size() - 1);
-		return list;
+	}
+
+	private static ArrayList<List<Container>> merge(List<Container> path, ArrayList<List<Container>> list) {
+		boolean noChange = true;
+		for (int pos = 0; pos < list.size(); pos++) {
+			Container[] path1 = list.get(pos).toArray(new Container[0]);
+			isOk:
+			{
+				for (int j = 1; j < path.size() && j < path1.length; j++)
+					if (path.get(j) != path1[j]) break isOk;
+				if (path.size() > path1.length) {
+					list.remove(pos--);
+					noChange = false;
+				} else return list;
+			}
+		}
+		return noChange ? null : list;
+	}
+
+	private class Getter {
+		
+		final List<SrcPath<T>> list = new LinkedList<>();
+		int threads = 7;
+		
+		private synchronized int get() {
+			return threads;
+		}
+		
+		private synchronized void set(boolean add) {
+			threads += add ? 1 : -1;
+		}
+	}
+
+	private List<SrcPath<T>> getC0(List<Container> path, Getter getter) {
+		List<Thread> threads = new LinkedList<>();
+		for (BasicData bd : path.get(path.size() - 1).getChildren(path.size() > 1 ?
+				path.get(path.size() - 2) : null)) {
+			if (bd instanceof Reference) continue;
+			if (bd instanceof Container) {
+				List<Container> copy = new ArrayList<>(path);
+				copy.add((Container) bd);
+				if (bd instanceof TwoSided) {
+					if (t.isInstance(bd)) synchronized (getter.list) {
+						getter.list.add(new SrcPath<>(copy));
+					}
+				} else if (getter.get() < 1) getC0(copy, getter);
+				else {
+					getter.set(false);
+					Thread t = new Thread(() -> {
+						getC0(copy, getter);
+						getter.set(true);
+					});
+					threads.add(t);
+					t.start();
+				}
+			}
+		}
+		try {
+			for (Thread t : threads) if (t.isAlive()) t.join();
+		} catch (InterruptedException ex) {
+			return null;
+		}
+		synchronized (getter.list) {
+			return getter.list;
+		}
 	}
 
 	/**
@@ -149,10 +222,10 @@ public class Test<T extends TwoSided> {
 
 	public static class SrcPath<T extends TwoSided> {
 
-		final List<Container> srcPath;
-		final T t;
+		public final List<Container> srcPath;
+		public final T t;
 
-		SrcPath(List<Container> srcPath) {
+		public SrcPath(List<Container> srcPath) {
 			this.srcPath = srcPath;
 			t = (T) srcPath.get(srcPath.size() - 1);
 		}
@@ -167,7 +240,7 @@ public class Test<T extends TwoSided> {
 
 		@Override
 		public String toString() {
-			return sfc() + "  " + rat() + "  " + t.getName();
+			return t.toString();
 		}
 
 		TwoSided[] getChildren() {
@@ -176,13 +249,9 @@ public class Test<T extends TwoSided> {
 	}
 
 	private List<SrcPath<T>> rndTest(List<SrcPath<T>> source, int amount) {
-		for (int i = source.size() - 1; i > amount; i--) source.remove(i);
-		Random rd = new Random(System.nanoTime());
-		int pos = rd.nextInt(source.size());
-		SrcPath current = source.get(pos);
-		for (int i = 0; i < source.size(); i++)
-			current = source.set(rd.nextInt(source.size()), current);
-		source.set(pos, current);
+		Random rnd = new Random();
+		for (int i = source.size(); i > amount; i--) source.remove(rnd.nextInt(source.size()));
+		Collections.shuffle(source);
 		return source;
 	}
 
@@ -221,15 +290,15 @@ public class Test<T extends TwoSided> {
 	 * Starts the test.
 	 */
 	public void startTest() {
-		(doOnSec == null ? new Thread(() -> {
+		new Thread((doOnSec == null ? () -> {
 			try {
 				for (; time >= 0; time--) Thread.sleep(1000);
 			} catch (InterruptedException ex) {
 			}
-		}) : new Thread(() -> {
+		} : () -> {
 			try {
 				for (; time >= 0; time--) {
-					if (doOnSec != null) doOnSec.doOnSec(time);
+					if (!doOnSec.doOnSec(time)) return;
 					Thread.sleep(1000);
 				}
 			} catch (InterruptedException ex) {

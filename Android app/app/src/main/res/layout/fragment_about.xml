@@ -1,0 +1,1278 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorSecondaryBg"
+    android:theme="@style/AppThemeDark">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/side_nav_bar"
+            android:drawableEnd="@drawable/ic_help"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="15dp"
+            android:paddingVertical="3dp"
+            android:text="@string/help"
+            android:textSize="25sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/help_create"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#5888"
+            android:drawableEnd="@drawable/ic_add_black"
+            android:paddingHorizontal="15dp"
+            android:paddingVertical="7dp"
+            android:text="@string/help_create"
+            android:textSize="19sp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.6dp"
+            android:background="#F000" />
+
+        <LinearLayout
+            android:id="@+id/help_create_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_create_how"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/help_create_mch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:drawableEnd="@drawable/ic_subject"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="@string/help_create_mch"
+                android:textSize="17sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.6dp"
+                android:background="#F000" />
+
+            <TextView
+                android:id="@+id/help_create_mch_how"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_create_mch_how"
+                android:textAlignment="textStart"
+                android:textSize="15sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/help_create_ch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:drawableEnd="@drawable/ic_chapter"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="@string/help_create_ch"
+                android:textSize="17sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.6dp"
+                android:background="#F000" />
+
+            <TextView
+                android:id="@+id/help_create_ch_how"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_create_ch_how"
+                android:textAlignment="textStart"
+                android:textSize="15sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/help_create_word"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:drawableEnd="@drawable/ic_word"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="@string/help_create_word"
+                android:textSize="17sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.6dp"
+                android:background="#F000" />
+
+            <TextView
+                android:id="@+id/help_create_word_how"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_create_word_how"
+                android:textAlignment="textStart"
+                android:textSize="15sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/help_create_pic"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:drawableEnd="@drawable/ic_image"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="@string/help_create_pic"
+                android:textSize="17sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.6dp"
+                android:background="#F000" />
+
+            <TextView
+                android:id="@+id/help_create_pic_how"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_create_pic_how"
+                android:textAlignment="textStart"
+                android:textSize="15sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/help_create_ref"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:drawableEnd="@drawable/ic_ref"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="@string/help_create_ref"
+                android:textSize="17sp" />
+
+            <TextView
+                android:id="@+id/help_create_ref_how"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_create_ref_how"
+                android:textAlignment="textStart"
+                android:textSize="15sp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/help_select"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#5888"
+            android:drawableEnd="@drawable/ic_select_black"
+            android:paddingHorizontal="15dp"
+            android:paddingVertical="7dp"
+            android:text="@string/help_select"
+            android:textSize="19sp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.6dp"
+            android:background="#F000" />
+
+        <LinearLayout
+            android:id="@+id/help_select_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_select_how"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/help_select_delete"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:drawableEnd="@drawable/ic_delete"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="@string/delete"
+                android:textSize="17sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.6dp"
+                android:background="#F000" />
+
+            <TextView
+                android:id="@+id/help_select_delete_how"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_select_delete"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/help_select_ref"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:drawableEnd="@drawable/ic_reference"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="@string/select_ref"
+                android:textSize="17sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.6dp"
+                android:background="#F000" />
+
+            <TextView
+                android:id="@+id/help_select_ref_how"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_select_ref"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/help_select_cut"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:drawableEnd="@drawable/ic_cut"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="@string/cut"
+                android:textSize="17sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.6dp"
+                android:background="#F000" />
+
+            <TextView
+                android:id="@+id/help_select_cut_how"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_select_move"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/help_select_edit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:drawableEnd="@drawable/ic_edit"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="@string/edit"
+                android:textSize="17sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.6dp"
+                android:background="#F000" />
+
+            <TextView
+                android:id="@+id/help_select_edit_how"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_select_edit"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/help_search"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#5888"
+            android:drawableEnd="@drawable/ic_search"
+            android:paddingHorizontal="15dp"
+            android:paddingVertical="7dp"
+            android:text="@string/help_search"
+            android:textSize="19sp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.6dp"
+            android:background="#F000" />
+
+        <LinearLayout
+            android:id="@+id/help_search_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_search_how"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/help_search_types"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="@string/help_search_types"
+                android:textSize="17sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.6dp"
+                android:background="#F000" />
+
+            <TextView
+                android:id="@+id/help_search_types_how"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_search_types_how"
+                android:textSize="15sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/help_search_regex"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="@string/help_search_regex"
+                android:textSize="17sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.6dp"
+                android:background="#F000" />
+
+            <LinearLayout
+                android:id="@+id/help_search_regex_how"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp"
+                    android:text="@string/help_search_regex_how_1"
+                    android:textSize="15sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="8dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/help_search_regex_0_1"
+                        android:layout_width="100dp"
+                        android:layout_height="wrap_content"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/help_search_regex_1_1"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp"
+                    android:text="@string/help_search_regex_how_2"
+                    android:textSize="15sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="8dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/help_search_regex_0_2"
+                        android:layout_width="70dp"
+                        android:layout_height="wrap_content"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/help_search_regex_1_2"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp"
+                    android:text="@string/help_search_regex_how_3"
+                    android:textSize="15sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="8dp"
+                    android:layout_marginBottom="8dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/help_search_regex_0_3"
+                        android:layout_width="70dp"
+                        android:layout_height="wrap_content"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/help_search_regex_1_3"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textSize="13sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/help_subjdir"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#5888"
+            android:drawableEnd="@drawable/ic_set_help"
+            android:paddingHorizontal="15dp"
+            android:paddingVertical="7dp"
+            android:text="@string/help_subjdir"
+            android:textSize="19sp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.6dp"
+            android:background="#F000" />
+
+        <TextView
+            android:id="@+id/help_subjdir_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/help_subjdir_how"
+            android:textAlignment="textStart"
+            android:textSize="15sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/help_test"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#5888"
+            android:drawableEnd="@drawable/ic_test"
+            android:paddingHorizontal="15dp"
+            android:paddingVertical="7dp"
+            android:text="@string/help_test"
+            android:textSize="19sp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.6dp"
+            android:background="#F000" />
+
+        <LinearLayout
+            android:id="@+id/help_test_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_test_how"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/help_test_select"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="@string/help_test_select"
+                android:textSize="17sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.6dp"
+                android:background="#F000" />
+
+            <TextView
+                android:id="@+id/help_test_select_how"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_test_select_how"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/help_test_run"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="@string/help_test_run"
+                android:textSize="17sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.6dp"
+                android:background="#F000" />
+
+            <TextView
+                android:id="@+id/help_test_run_how"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_test_run_how"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/help_test_results"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="@string/help_test_results"
+                android:textSize="17sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.6dp"
+                android:background="#F000" />
+
+            <TextView
+                android:id="@+id/help_test_results_how"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_test_results_how"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/help_extra"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#5888"
+            android:drawableEnd="@drawable/ic_extra"
+            android:paddingHorizontal="15dp"
+            android:paddingVertical="7dp"
+            android:text="@string/help_extra"
+            android:textSize="19sp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.6dp"
+            android:background="#F000" />
+
+        <LinearLayout
+            android:id="@+id/help_extra_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_extra_how"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/help_extra_naming"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="@string/help_extra_naming"
+                android:textSize="17sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.6dp"
+                android:background="#F000" />
+
+            <TextView
+                android:id="@+id/help_extra_naming_how"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_extra_naming_how"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/help_extra_words_import"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="@string/help_extra_words_import"
+                android:textSize="17sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.6dp"
+                android:background="#F000" />
+
+            <TextView
+                android:id="@+id/help_extra_words_import_how"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_extra_words_import_how"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/help_extra_words_export"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="@string/help_extra_words_export"
+                android:textSize="17sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.6dp"
+                android:background="#F000" />
+
+            <TextView
+                android:id="@+id/help_extra_words_export_how"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_extra_words_export_how"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/help_extra_import_mch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="@string/help_extra_import_mch"
+                android:textSize="17sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.6dp"
+                android:background="#F000" />
+
+            <TextView
+                android:id="@+id/help_extra_import_mch_how"
+                android:drawableEnd="@drawable/ic_import"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_extra_import_mch_how"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/side_nav_bar"
+            android:drawableEnd="@drawable/ic_versions"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="15dp"
+            android:paddingVertical="3dp"
+            android:text="@string/versions"
+            android:textSize="25sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/versions_release"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#5888"
+            android:paddingHorizontal="15dp"
+            android:paddingVertical="7dp"
+            android:text="Release"
+            android:textSize="19sp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.6dp"
+            android:background="#F000" />
+
+        <LinearLayout
+            android:id="@+id/versions_release_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="1.0"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="- customized 'About' tab\n- added help\n- formatted this tab"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/versions_beta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#5888"
+            android:paddingHorizontal="15dp"
+            android:paddingVertical="7dp"
+            android:text="Beta"
+            android:textSize="19sp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.6dp"
+            android:background="#F000" />
+
+        <LinearLayout
+            android:id="@+id/versions_beta_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 8.6"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- added test result with correct answers window\n
+- fixed directory chooser crashes when between storage\n
+- fixed test with reference bug\n
+- fixed test item duplication"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 8.4"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- changed reference button function while in search list\n
+- fixed items not selectable when using select button in search list\n
+- fixed test with reference bug\n
+- fixed test item duplication"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 8.2"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- changed creating interface\n
+- fixed back-button presses\n
+- fixed library testing and reference issues"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 8.0"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- added test source picker\n
+- implemented testing\n
+- changed testing interface"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 7.5"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- implemented menu after selecting\n
+- added delete function\n
+- added reference function\n
+- added cut function\n
+- added edit function"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 7.0"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- new picture function implemented\n
+- new word function adapted for multiple translates\n
+- fixed popup stays on screen"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 6.6"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- rapidly improved startup time\n
+- restructured code to use more inheritance\n
+- improved library's platform independency\n
+- added choose dir options\n
+- added external storage workflow\n
+- fixed permission issues\n
+- fix: app crash after removed dir"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 6.3"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- added settings functions\n
+- corrected design\n
+- added interface options"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 6.2"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- added showing parsed names (set as default behaviour)\n
+- added more sorting methods\n
+- fix: search not parsing searched text"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 6.1"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- fix: translate description not saving\n
+- fix: word creation not creating last word"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 6.0"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- added 'New Subject/Chapter/Word' option\n
+- fix: not auto-saving after change"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 5.3"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- added 'Change source folder' option\n
+- fix: autosaving not working (data loss)"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 5.1"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- remake: Searching interface and GUI, Search field auto-hide\n
+- added search syntax variants\n
+- fix: Reference change search path (app crash)"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 5.0"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- added Search field, IOException handlers\n
+- fix: database data loss, fix: not saving added objects"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 4.1"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="- added App Icon, remake: Sorting interface"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 4.0"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- added Sorting options (alphabet + success rate)\n
+- fix: Reference bugs"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 3.1"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="- added Word hierarchy import, Word description screen"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 3.0"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="- added 'more' menu, Word hierarchy export"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 2.1"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- improved Exception handling, added copy button\n
+- remake: app menu design"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 2.0"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- added Image displaying, Exception informer\n
+- fix: Reference bugs"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 1.2"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- added Reference support, AutoSave changes\n
+- fix: large description"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 1.1"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- added icons and success color indication,\n
+- added Word translation toggle, multiple description support"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="Beta 1.0"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="Able to show content of compiled hierarchies"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/side_nav_bar"
+            android:drawableEnd="@drawable/ic_app_mini"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="15dp"
+            android:paddingVertical="3dp"
+            android:text="@string/menu_about"
+            android:textSize="25sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:text="This program was developed to help people with school subjects, especially with foreign languages and biology.\n\nFor any further help contact me at LitosPepa@gmail.com"
+            android:textSize="13sp" />
+    </LinearLayout>
+</ScrollView>

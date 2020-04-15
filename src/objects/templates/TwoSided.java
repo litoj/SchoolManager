@@ -15,9 +15,9 @@ import java.util.Map;
 public abstract class TwoSided<T extends TwoSided> extends Element implements Container {
 
 	/**
-	 * {@code true} if and only if the object is the more_main one (all its methods can be used).
+	 * {@code true} if and only if the object is the main one (all its methods can be used).
 	 */
-	protected final boolean isMain;
+	public final boolean isMain;
 	/**
 	 * Amount of parents this object is stored in
 	 */
@@ -33,7 +33,7 @@ public abstract class TwoSided<T extends TwoSided> extends Element implements Co
 	/**
 	 * Contains all objects, which belong to this object.
 	 */
-	public final Map<Container, List<T>> children = new java.util.HashMap<>();
+	protected final Map<Container, List<T>> children = new java.util.HashMap<>();
 
 	@Override
 	public TwoSided[] getChildren() {
@@ -59,18 +59,14 @@ public abstract class TwoSided<T extends TwoSided> extends Element implements Co
 
 	@Override
 	public boolean removeChild(Container parent, BasicData child) {
-		if (isMain) {
-			child.destroy(parent);
-			remove1(parent, (T) child);
-			return true;
-		}
-		throw new IllegalArgumentException("Child can be removed only by main object");
+		child.destroy(parent);
+		remove1(parent, (T) child);
+		return true;
 	}
 
 	@Override
 	public Container removeChild(BasicData e) {
 		if (!(e instanceof TwoSided)) return null;
-		if (!isMain) throw new IllegalArgumentException("Child can be removed only by main object");
 		for (Container c : children.keySet())
 			if (children.get(c).remove(e)) {
 				e.destroy(c);
@@ -79,9 +75,45 @@ public abstract class TwoSided<T extends TwoSided> extends Element implements Co
 			}
 		return null;
 	}
+	
+	@Override
+	public boolean move(Container op, Container np, Container npp) {
+		if (children.get(op) == null || !super.move(op, np, npp) || !isMain) return false;
+		move(op, np);
+		return true;
+	}
+	
+	@Override
+	public boolean move(Container op, Container opp, Container np, Container npp) {
+		if (children.get(op) == null || !super.move(op, opp, np, npp) || !isMain) return false;
+		move(op, np);
+		return true;
+	}
+	
+	/**
+	 * Takes care of moving this object from one parent to another.
+	 * 
+	 * @param op old parent of this object
+	 * @param np new parent to associate with
+	 */
+	protected void move(Container op, Container np) {
+		List<T> list = children.remove(op);
+		if (children.get(np) != null) {
+			List<T> newContent = children.get(np);
+			List<T> toAdd = new LinkedList<>();
+			for (T old : list)
+				cycle :
+				{
+					for (T t : newContent) if (t == old) break cycle;
+					toAdd.add(old);
+					if (isMain) old.move(op, np);
+				}
+			newContent.addAll(toAdd);
+		} else children.put(np, list);
+	}
 
 	/**
-	 * Called to end the process of removing a child from the more_main object.
+	 * Called to end the process of removing a child from the main object.
 	 *
 	 * @param parent where the object is located
 	 * @param toRem  the object to be removed
@@ -90,7 +122,7 @@ public abstract class TwoSided<T extends TwoSided> extends Element implements Co
 		children.get(parent).remove(toRem);
 		if (children.get(parent).isEmpty()) {
 			children.remove(parent);
-			parent.removeChild(this);
+			if (isMain) parent.removeChild(this);
 		}
 	}
 
@@ -100,26 +132,12 @@ public abstract class TwoSided<T extends TwoSided> extends Element implements Co
 	}
 
 	@Override
-	public boolean move(Container op, Container np, Container npp) {
-		if (isMain && super.move(op, np, npp)) {
-			for (T ch : children.remove(op)) {
-				putChild(np, ch);
-				ch.remove1(op, this);
-				ch.putChild(np, this);
-			}
-			return true;
-		}
-		return false;
-	}
-
-	@Override
 	public StringBuilder writeData(StringBuilder sb, int tabs, Container cp) {
 		tabs(sb, tabs++, '{').add(sb, this, cp, true, true, true, true, null, null, true);
 		boolean first = true;
 		for (BasicData bd : getChildren(cp))
 			if (!bd.isEmpty(this)) {
-				if (first)
-					first = false;
+				if (first) first = false;
 				else sb.append(',');
 				tabs(sb, tabs, '{').add(sb, bd, cp, false, true, true, true, null, null, false).append('}');
 			}

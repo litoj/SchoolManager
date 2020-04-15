@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#2888"
+        android:paddingHorizontal="15dp"
+        android:paddingVertical="2dp"
+        android:text="@string/setts_interface"
+        android:textSize="15sp" />
+
+    <Switch
+        android:id="@+id/setts_him_parse"
+        android:layout_width="match_parent"
+
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="5dp"
+        android:text="@string/setts_him_parse"
+        android:textSize="18sp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="5dp"
+        android:background="#3888" />
+
+    <Switch
+        android:id="@+id/setts_him_flipped"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="5dp"
+        android:text="@string/setts_him_flipped"
+        android:textSize="18sp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginBottom="5dp"
+        android:background="#3888" />
+
+    <Switch
+        android:id="@+id/setts_him_allflip"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="5dp"
+        android:text="@string/setts_him_allflip"
+        android:textSize="18sp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#2888"
+        android:paddingHorizontal="15dp"
+        android:paddingVertical="2dp"
+        android:text="Test"
+        android:textSize="15sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:padding="5dp"
+            android:text="@string/setts_test_amount"
+            android:textAlignment="viewStart"
+            android:textColor="#F000"
+            android:textSize="18sp" />
+
+        <EditText
+            android:id="@+id/setts_test_amount"
+            android:layout_width="60dp"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:inputType="number"
+            android:textSize="15sp" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#3888" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:padding="5dp"
+            android:text="@string/setts_test_time"
+            android:textAlignment="viewStart"
+            android:textColor="#F000"
+            android:textSize="18sp" />
+
+        <EditText
+            android:id="@+id/setts_test_time"
+            android:layout_width="60dp"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:inputType="number"
+            android:textSize="15sp" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#3888" />
+
+    <Switch
+        android:id="@+id/setts_test_clever"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="5dp"
+        android:text="@string/setts_test_clever"
+        android:textSize="18sp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#3888" />
+
+    <Switch
+        android:id="@+id/setts_test_type"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="5dp"
+        android:text="@string/setts_test_type"
+        android:textSize="18sp" />
+</LinearLayout>

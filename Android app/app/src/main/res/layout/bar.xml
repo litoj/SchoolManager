@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".gui.activity.MainActivity">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:theme="@style/AppThemeDark">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="?attr/colorAccent"
+            android:orientation="horizontal"
+            android:theme="@style/AppTheme.AppBarOverlay">
+
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/bar"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:id="@+id/bar_select"
+                android:layout_width="50dp"
+                android:layout_height="55dp"
+                android:background="@drawable/ic_select"
+                android:scaleX="0.65"
+                android:scaleY="0.55" />
+
+            <ImageView
+                android:id="@+id/bar_more"
+                android:layout_width="50dp"
+                android:layout_height="55dp"
+                android:background="@drawable/ic_more"
+                android:scaleX="0.65"
+                android:scaleY="0.55" />
+        </LinearLayout>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <include
+        android:id="@+id/include"
+        layout="@layout/activity_main"
+        app:layout_anchor="@+id/include"
+        app:layout_anchorGravity="center" />
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

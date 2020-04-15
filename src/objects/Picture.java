@@ -27,13 +27,13 @@ import static testing.NameReader.readName;
 public class Picture extends TwoSided<Picture> {
 
 	/**
-	 * Contains all instances of this class created as the {@link #isMain more_main} version. All Pictures
+	 * Contains all instances of this class created as the {@link #isMain main} version. All Pictures
 	 * are sorted by the {@link MainChapter hierarchy} they belong to. read-only data
 	 */
 	public static final Map<MainChapter, List<Picture>> IMAGES = new HashMap<>();
 
 	/**
-	 * Contains all instances of this class created as the {@link #isMain non-more_main} version. All
+	 * Contains all instances of this class created as the {@link #isMain non-main} version. All
 	 * Images are sorted by the {@link MainChapter hierarchy} they belong to. read-only data
 	 */
 	public static final Map<MainChapter, List<Picture>> ELEMENTS = new HashMap<>();
