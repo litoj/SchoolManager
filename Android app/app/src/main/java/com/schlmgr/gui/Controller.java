@@ -129,7 +129,7 @@ public class Controller {
 	/**
 	 * Code to create a File from the given URI created by an Intent, has to be a file, not a folder.
 	 * Original source code available at:
-	 * https://stackoverflow.com/questions/6935497/android-get-gallery-image-uri-path
+	 * https://stackoverflow.com/a/7726604/12174842
 	 *
 	 * @author Allan Jiang
 	 */
