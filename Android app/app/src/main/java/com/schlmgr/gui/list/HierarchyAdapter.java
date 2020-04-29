@@ -38,7 +38,7 @@ public class HierarchyAdapter extends OpenListAdapter<HierarchyItemModel> {
 		HierarchyItemModel item = list.get(index);
 		((TextView) view.findViewById(R.id.h_item_name)).setText(item.toShow);
 		TextView num = view.findViewById(R.id.h_item_number);
-		num.setBackgroundColor(item.bd instanceof Reference ? 0x400000FF : background(item.bd.getRatio()));
+		num.setBackgroundColor(item.bd instanceof Reference ? 0x600000FF : background(item.bd.getRatio()));
 		num.setText((index + 1) + ".");
 		if (item.bd instanceof Picture)
 			item.ic.setBounds((int) dp, 0, (int) (dp * 33), (int) (dp * 33));

@@ -251,7 +251,7 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 		for (SaveChapter sch : ELEMENTS.get(mch)) {
 			short hash = 1;
 			File src = new File(dir, sch.name + ".json");
-			while (hash < sch.hash && !src.renameTo(new File(dir, sch.name + '[' + ++hash + "].json")))
+			while (hash < sch.hash && !src.renameTo(new File(dir, sch.name + "[" + ++hash + "].json")))
 				if (hash == 256) {
 					exceptions += "\nFile '" + src + "' can't be renamed!";
 					break;
@@ -277,7 +277,7 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	@Override
 	public File getSaveFile() {
 		return new File(new File(identifier.getDir(), "Chapters"), name
-				+ (hash == -128 ? ".json" : ('[' + (hash + 129) + "].json")));
+				+ (hash == -128 ? ".json" : ("[" + (hash + 129) + "].json")));
 	}
 
 	/**
@@ -286,14 +286,19 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	 */
 	@Override
 	public boolean setName(Container none, String name) {
-		byte current = ((Map<String, Byte>) identifier.getSetting("schNameCount")).get(name);
+		load();
+		Object newCount = ((Map<String, Byte>) identifier.getSetting("schNameCount")).get(name);
+		byte current = newCount == null ? (byte) 127 : (Byte) newCount;
 		if (++current == 127)
 			throw new IllegalArgumentException("Maximum amount (255) for SaveChapters called: '" + name
 					+ "' has been already reached!");
+		try {
+			while (!loaded) Thread.sleep(10);
+		} catch (InterruptedException ie) {}
 		if (new File(new File(identifier.getDir(), "Chapters"), this.name
-				+ (hash == -128 ? ".json" : ('[' + (hash + 129) + "].json")))
+				+ (hash == -128 ? ".json" : ("[" + (hash + 129) + "].json")))
 				.renameTo(new File(new File(identifier.getDir(), "Chapters"), name
-						+ (current == -128 ? ".json" : ('.' + (current + 129) + ".json"))))) {
+						+ (current == -128 ? ".json" : ("[" + (current + 129) + "].json"))))) {
 			((Map<String, Byte>) identifier.getSetting("schNameCount")).put(this.name = name, hash = current);
 			return true;
 		}
@@ -303,7 +308,7 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	@Override
 	public boolean destroy(Container parent) {
 		if (new File(new File(identifier.getDir(), "Chapters"), name
-				+ (hash == -128 ? ".json" : ('[' + (hash + 129) + "].json"))).delete()) {
+				+ (hash == -128 ? ".json" : ("[" + (hash + 129) + "].json"))).delete()) {
 			identifier.putSetting("schRemoved", true);
 			int i = ((Map<String, Byte>) identifier.getSetting("schNameCount")).get(name) - 1;
 			if (i < -128) ((Map<String, Byte>) identifier.getSetting("schNameCount")).remove(name);

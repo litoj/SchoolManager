@@ -4,17 +4,18 @@ import com.google.android.material.snackbar.Snackbar;
 import com.schlmgr.R;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 import IOSystem.Formatter;
 import IOSystem.Formatter.Data;
 import objects.MainChapter;
 import objects.templates.BasicData;
+import objects.templates.Container;
 import objects.templates.ContainerFile;
-
-import static IOSystem.Formatter.defaultReacts;
 
 public class CurrentData {
 
@@ -184,16 +185,31 @@ public class CurrentData {
 		}
 	}
 
+	public static final List<Container> newChapters = new ArrayList<>();
+
 	public static void save() {
 		new Thread(() -> {
-			for (int i = backLog.path.size() - 1; i >= 0; i--)
-				if (backLog.path.get(i) instanceof ContainerFile) {
-					ContainerFile cf = (ContainerFile) backLog.path.get(i);
-					try {
-						cf.save();
-					} catch (Exception e) {
-						defaultReacts.get(ContainerFile.class + ":save").react(e, cf.getSaveFile(), cf);
-						changed.add(cf);
+			BasicData[] bLpath = backLog.path.toArray(new BasicData[0]);
+			for (int i = bLpath.length - 1; i >= 0; i--)
+				if (bLpath[i] instanceof ContainerFile) {
+					((ContainerFile) bLpath[i]).save();
+					int saveAbove = i + 1;
+					for (Container c : newChapters.toArray(new Container[0])) {
+						int index = -1;
+						for (int j = i; j >= 0; j--) {
+							if (bLpath[j] == c) {
+								index = j;
+								break;
+							}
+						}
+						if (index != -1) {
+							if (index < saveAbove) saveAbove = index;
+							newChapters.remove(c);
+						}
+					}
+					if (saveAbove != i + 1) {
+						while (!(bLpath[--saveAbove] instanceof ContainerFile)) ;
+						((ContainerFile) bLpath[saveAbove]).save();
 					}
 					return;
 				}

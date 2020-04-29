@@ -68,10 +68,6 @@ public class Controller {
 		control.popupRepaint.remove(forRepaint);
 	}
 
-	public static void clearPopupRepaint() {
-		control.popupRepaint.clear();
-	}
-
 	public interface ControlListener extends Runnable, OnClickListener, OnMenuItemClickListener {
 		/**
 		 * This method is called when 'back' button is pressed.

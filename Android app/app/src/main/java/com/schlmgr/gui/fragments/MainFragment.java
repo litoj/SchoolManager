@@ -811,6 +811,7 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 										.isChecked() ? SaveChapter.mkElement(d) : new Chapter(d);
 								VS.aa.add(new HierarchyItemModel(ch, par, es.lv.getCount() + 1));
 								par.putChild((Container) backLog.path.get(-2), ch);
+								CurrentData.newChapters.add(ch);
 								cp.dismiss();
 							} catch (IllegalArgumentException iae) {
 								if (iae.getMessage().contains("Name can't"))

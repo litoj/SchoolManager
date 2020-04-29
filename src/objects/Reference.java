@@ -155,12 +155,7 @@ public final class Reference implements BasicData {
 
 	@Override
 	public boolean isEmpty(Container c) {
-		try {
-			load();
-		} catch (IllegalArgumentException iae) {
-			return false;
-		}
-		return reference.isEmpty(path[path.length - 1]);
+		return false;
 	}
 
 	@Override

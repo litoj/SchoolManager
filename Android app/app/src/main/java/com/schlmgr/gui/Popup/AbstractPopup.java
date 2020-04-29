@@ -46,7 +46,6 @@ public abstract class AbstractPopup {
 	public void dismiss(boolean forever) {
 		backBtnDismiss = false;
 		pw.dismiss();
-		//TODO: doesn't this command fit better in onDismissListener()?
 		showed.remove(pw);
 		isActive = false;
 		if (forever) Controller.removePopupRepaint(creator);
