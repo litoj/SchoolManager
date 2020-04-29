@@ -1,12 +1,10 @@
 package com.schlmgr.gui.activity;
 
 import android.os.Bundle;
-import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -52,12 +50,7 @@ public class TestActivity extends AppCompatActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		taInstance = this;
-		setContentView(R.layout.activity_test);
-		timer = findViewById(R.id.test_timer);
-		findViewById(R.id.ok).setOnClickListener(v -> onSubmit());
-		ListView lv = findViewById(R.id.test_list);
 		if (test == null) {
-			adapter = new Adapter();
 			test = picTest ? new Test<Picture>(Picture.class) : new Test<Word>(Word.class);
 			ArrayList<List<Container>> list = new ArrayList<>(TestFragment.list.size());
 			for (SearchItemModel sim : TestFragment.list) {
@@ -65,6 +58,14 @@ public class TestActivity extends AppCompatActivity {
 				path.add((Container) sim.bd);
 				list.add(path);
 			}
+			List<SrcPath> paths = test.convertAll(list);
+			if (paths.isEmpty()) {
+				test = null;
+				Toast.makeText(getApplicationContext(), R.string.fail_no_objects, Toast.LENGTH_SHORT).show();
+				super.onBackPressed();
+				return;
+			}
+			adapter = new Adapter();
 			test.setTested(Integer.parseInt(TestFragment.amount.getText().toString()), sl -> {
 				if (test == null) return false;
 				runOnUiThread(() -> {
@@ -73,10 +74,14 @@ public class TestActivity extends AppCompatActivity {
 					else onSubmit();
 				});
 				return true;
-			}, Integer.parseInt(TestFragment.time.getText().toString()), test.convertAll(list));
+			}, Integer.parseInt(TestFragment.time.getText().toString()), paths);
 			for (Object sp : test.getTestSrc()) this.list.add(new TestItemModel((SrcPath) sp));
 			test.startTest();
 		}
+		setContentView(R.layout.activity_test);
+		timer = findViewById(R.id.test_timer);
+		findViewById(R.id.ok).setOnClickListener(v -> onSubmit());
+		ListView lv = findViewById(R.id.test_list);
 		adapter.li = getLayoutInflater();
 		lv.setAdapter(adapter);
 	}

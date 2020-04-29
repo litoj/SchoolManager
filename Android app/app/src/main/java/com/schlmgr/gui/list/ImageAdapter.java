@@ -11,7 +11,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 
 import com.schlmgr.R;
-import com.schlmgr.gui.Popup.FullPicture;
+import com.schlmgr.gui.popup.FullPicture;
 
 import java.util.List;
 
@@ -33,19 +33,19 @@ public class ImageAdapter extends ArrayAdapter<ImageItemModel> {
 		if (view == null) view = li.inflate(R.layout.item_image, parent, false);
 		ImageItemModel iim = list.get(pos);
 		ImageView iv = view.findViewById(R.id.item_img_1);
-		iv.setOnClickListener(v -> new FullPicture(iim.pic1));
-		iv.setImageBitmap(iim.pic1);
-		iv.setContentDescription(iim.p1.toString());
+		iv.setOnClickListener(v -> new FullPicture(iim.bm1));
+		iv.setImageBitmap(iim.bm1);
+		iv.setContentDescription(iim.pic1.toString());
 		TextView tv = view.findViewById(R.id.item_img_d1);
-		String desc = iim.p1.getDesc(this.parent);
+		String desc = iim.pic1.getDesc(this.parent);
 		if (desc.isEmpty()) tv.setVisibility(View.GONE);
 		else tv.setText(desc);
 		if (iim.pic2 != null) {
-			(iv = view.findViewById(R.id.item_img_2)).setImageBitmap(iim.pic2);
-			iv.setContentDescription(iim.p2.toString());
-			iv.setOnClickListener(v -> new FullPicture(iim.pic2));
+			(iv = view.findViewById(R.id.item_img_2)).setImageBitmap(iim.bm1);
+			iv.setContentDescription(iim.pic2.toString());
+			iv.setOnClickListener(v -> new FullPicture(iim.bm2));
 			tv = view.findViewById(R.id.item_img_d2);
-			desc = iim.p2.getDesc(this.parent);
+			desc = iim.pic2.getDesc(this.parent);
 			if (desc.isEmpty()) tv.setVisibility(View.GONE);
 			else tv.setText(desc);
 		} else view.findViewById(R.id.item_img_l2).setVisibility(View.GONE);

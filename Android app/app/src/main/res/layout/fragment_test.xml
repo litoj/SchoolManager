@@ -2,8 +2,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:padding="5dp">
+    android:layout_height="match_parent">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -13,6 +12,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="40dp"
+            android:layout_marginHorizontal="5dp"
             android:orientation="horizontal">
 
             <TextView
@@ -32,11 +32,13 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="0.6dp"
+            android:layout_marginHorizontal="5dp"
             android:background="#5888" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="40dp"
+            android:layout_marginHorizontal="5dp"
             android:orientation="horizontal">
 
             <TextView
@@ -59,11 +61,13 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="0.6dp"
+            android:layout_marginHorizontal="5dp"
             android:background="#5888" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="40dp"
+            android:layout_marginHorizontal="5dp"
             android:orientation="horizontal">
 
             <TextView
@@ -86,13 +90,14 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="0.6dp"
-            android:layout_marginBottom="5dp"
+            android:layout_marginHorizontal="5dp"
             android:background="#8888" />
 
         <TextView
             android:id="@+id/add"
             android:layout_width="match_parent"
             android:layout_height="30dp"
+            android:layout_margin="5dp"
             android:drawableStart="@drawable/ic_add"
             android:gravity="center_vertical"
             android:text="@string/test_add"
@@ -101,13 +106,14 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="0.6dp"
-            android:layout_marginTop="5dp"
+            android:layout_marginHorizontal="5dp"
             android:background="#8888" />
 
         <ListView
             android:id="@+id/test_list"
             android:layout_width="match_parent"
             android:layout_height="0dp"
+            android:layout_marginHorizontal="5dp"
             android:layout_weight="1"
             tools:listitem="@layout/item_add_test" />
 
@@ -118,6 +124,7 @@
         android:layout_width="wrap_content"
         android:layout_height="40dp"
         android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="5dp"
         android:background="#FBBB"
         android:gravity="center"
         android:text="@string/start" />

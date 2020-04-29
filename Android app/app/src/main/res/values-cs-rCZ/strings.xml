@@ -163,4 +163,5 @@
     <string name="select_dir_import">Import</string>
     <string name="select_dir_src">Zdroj</string>
     <string name="help_extra_import_mch">Import předmětů</string>
+    <string name="fail_no_objects">Žádné objekty tohoto typu nebyly nalezeny</string>
 </resources>
