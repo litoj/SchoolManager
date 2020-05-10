@@ -3,6 +3,7 @@ package objects;
 import IOSystem.Formatter;
 import IOSystem.Formatter.Data;
 import IOSystem.Formatter.Reactioner;
+import IOSystem.Formatter.Synchronizer;
 import IOSystem.ReadElement.Source;
 import objects.templates.BasicData;
 import objects.templates.Container;
@@ -29,7 +30,9 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	 * by the {@link MainChapter hierarchy} they belong to. read-only data
 	 */
 	public static final Map<MainChapter, java.util.List<SaveChapter>> ELEMENTS = new HashMap<>();
-
+	
+	private static final Synchronizer USED = new Synchronizer();
+	
 	private boolean loaded;
 
 	@Override
@@ -47,7 +50,10 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 		return identifier;
 	}
 
-	private byte hash;
+	/**
+	 * Inefficient, int wouldn't have to be casted. This should be fixed once, aware of 
+	 */
+	private int hash;
 
 	/**
 	 * @param d necessary information to create the new object
@@ -57,36 +63,29 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 		return mkElement(d, true);
 	}
 
-	private static boolean creating = false;
-
 	protected static final SaveChapter mkElement(Data d, boolean full) {
-		synchronized (ELEMENTS) {
-			if (creating) try {
-				ELEMENTS.wait();
-			} catch (InterruptedException ex) {
+		Integer hashCode = d.identifier.hashCode();
+		USED.waitForAccess(hashCode);
+		SaveChapter ret;
+		if (ELEMENTS.get(d.identifier) == null) {
+			ELEMENTS.put(d.identifier, new java.util.LinkedList<>());
+			if (d.identifier.getSetting("schNameCount") == null) {
+				d.identifier.putSetting("schNameCount", new HashMap<String, Byte>());
+				d.identifier.putSetting("schRemoved", false);
 			}
-			if (ELEMENTS.get(d.identifier) == null) {
-				ELEMENTS.put(d.identifier, new java.util.LinkedList<>());
-				if (d.identifier.getSetting("schNameCount") == null) {
-					d.identifier.putSetting("schNameCount", new HashMap<String, Byte>());
-					d.identifier.putSetting("schRemoved", false);
-				}
-			} else {
-				short hash = d.tagVals == null || d.tagVals[0] == null ? 1 : (short) (long) d.tagVals[0];
-				for (SaveChapter sch : ELEMENTS.get(d.identifier)) {
-					if (d.name.equals(sch.toString()) && hash == (sch.hash + 129)) {
-						sch.loaded = full;
-						creating = false;
-						ELEMENTS.notify();
-						return sch;
-					}
+		} else {
+			int hash = d.tagVals == null || d.tagVals[0] == null ? 1 : (int) (long) d.tagVals[0];
+			for (SaveChapter sch : ELEMENTS.get(d.identifier)) {
+				if (d.name.equals(sch.toString()) && hash == sch.hash) {
+					sch.loaded = full;
+					USED.endAccess(hashCode);
+					return sch;
 				}
 			}
-			SaveChapter sch = new SaveChapter(d, full);
-			creating = false;
-			ELEMENTS.notify();
-			return sch;
 		}
+		ret = new SaveChapter(d, full);
+		USED.endAccess(hashCode);
+		return ret;
 	}
 
 	protected SaveChapter(Data d, boolean full) {
@@ -97,15 +96,12 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 		loaded = full;
 		//hash-creator
 		if (!full) {
-			hash = (byte) (d.tagVals[0] == null ? -128 : ((long) d.tagVals[0]) - 129);
+			hash = d.tagVals[0] == null ? 1 : (int) (long) d.tagVals[0];
 		} else {
-			Byte b = ((Map<String, Byte>) identifier.getSetting("schNameCount")).get(name);
-			((Map<String, Byte>) identifier.getSetting("schNameCount")).put(name, hash = (byte) (b == null ? -128 : (b + 1)));
-			if (hash == 127) {
-				throw new IllegalArgumentException("Maximum amount (255) for SaveChapters called: '"
-						+ name + "' has been already reached!");
-			}
-			((Map<String, Byte>) identifier.getSetting("schNameCount")).put(name, hash);
+			Map<String, Integer> map = (Map<String, Integer>) identifier.getSetting("schNameCount");
+			Integer i = map.get(name);
+			map.put(name, hash = (byte) (i == null ? 1 : (i + 1)));
+			map.put(name, hash);
 		}
 		ELEMENTS.get(d.identifier).add(this);
 	}
@@ -159,80 +155,41 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 		return super.getChildren(parent);
 	}
 
-	private boolean saving;
+	private volatile boolean saving;
 
-	/**
-	 * Saves this object into its {@link #getSaveFile() own file}.
-	 *
-	 * @param rtr what to do, if the operation doesn't succeed, {@code null} for no action
-	 */
+	@Override
 	public void save(Reactioner rtr, boolean thread) {
-		if (thread) new Thread(() -> {
+		Runnable r = () -> {
 			try {
-				synchronized (this) {
-					while (saving) return;
-					saving = true;
-				}
+				if (saving) return;
+				saving = true;
 				Formatter.saveFile(writeData(new StringBuilder(), 0, null).toString(), getSaveFile());
-				synchronized (this) {
-					saving = false;
-					notifyAll();
-				}
+				saving = false;
 			} catch (Exception e) {
 				if (rtr != null) rtr.react(e, getSaveFile(), this);
 			}
-		}).start();
-		else try {
-			synchronized (this) {
-				while (saving) return;
-				saving = true;
-			}
-			Formatter.saveFile(writeData(new StringBuilder(), 0, null).toString(), getSaveFile());
-			synchronized (this) {
-				saving = false;
-				notifyAll();
-			}
-		} catch (Exception e) {
-			if (rtr != null) rtr.react(e, getSaveFile(), this);
-		}
+		};
+		if (thread) new Thread(r).start();
+		else r.run();
 	}
 
-	private boolean loading;
+	private volatile boolean loading;
 
 	@Override
 	public void load(Reactioner rtr, boolean thread) {
 		if (!isLoaded()) {
-			if (thread) new Thread(() -> {
+			Runnable r = () -> {
 				try {
-					synchronized (this) {
-						while (loading) return;
-						loading = true;
-					}
+					if (loading) return;
+					loading = true;
 					IOSystem.ReadElement.loadSch(getSaveFile(), getIdentifier(), null);
-					synchronized (this) {
-						loading = false;
-						notifyAll();
-					}
+					loading = false;
 				} catch (Exception e) {
 					if (rtr != null) rtr.react(e, getSaveFile(), this);
 				}
-			}).start();
-			else try {
-				synchronized (this) {
-					while (loading) {
-						wait();
-						return;
-					}
-					loading = true;
-				}
-				IOSystem.ReadElement.loadSch(getSaveFile(), getIdentifier(), null);
-				synchronized (this) {
-					loading = false;
-					notifyAll();
-				}
-			} catch (Exception e) {
-				if (rtr != null) rtr.react(e, getSaveFile(), this);
-			}
+			};
+			if (thread) new Thread(r).start();
+			else r.run();
 		}
 	}
 
@@ -247,19 +204,21 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 		mch.load(false);
 		String exceptions = "";
 		File dir = new File(mch.getDir(), "Chapters");
-		Map<String, Byte> schNC = new HashMap<>();
+		Map<String, Integer> map = new HashMap<>();
+		USED.waitForAccess(mch.hashCode());
 		for (SaveChapter sch : ELEMENTS.get(mch)) {
-			short hash = 1;
+			int hash = 1;
 			File src = new File(dir, sch.name + ".json");
 			while (hash < sch.hash && !src.renameTo(new File(dir, sch.name + "[" + ++hash + "].json")))
-				if (hash == 256) {
+				if (hash == 1024) {
 					exceptions += "\nFile '" + src + "' can't be renamed!";
 					break;
 				}
-			if ((hash -= 129) < 127 && (schNC.get(sch.name) == null
-					|| (sch.hash = (byte) hash) > schNC.get(sch.name))) schNC.put(sch.name, (byte) hash);
+			if (hash < 1024 && (map.get(sch.name) == null
+					|| (sch.hash = hash) > map.get(sch.name))) map.put(sch.name, hash);
 		}
-		mch.putSetting("schNameCount", schNC);
+		USED.endAccess(mch.hashCode());
+		mch.putSetting("schNameCount", map);
 		if (!exceptions.isEmpty()) throw new IllegalArgumentException(exceptions);
 		mch.putSetting("schRemoved", false);
 	}
@@ -277,7 +236,7 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	@Override
 	public File getSaveFile() {
 		return new File(new File(identifier.getDir(), "Chapters"), name
-				+ (hash == -128 ? ".json" : ("[" + (hash + 129) + "].json")));
+				+ (hash == 1 ? ".json" : "[" + hash + "].json"));
 	}
 
 	/**
@@ -287,19 +246,14 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	@Override
 	public boolean setName(Container none, String name) {
 		load();
-		Object newCount = ((Map<String, Byte>) identifier.getSetting("schNameCount")).get(name);
-		byte current = newCount == null ? (byte) 127 : (Byte) newCount;
-		if (++current == 127)
-			throw new IllegalArgumentException("Maximum amount (255) for SaveChapters called: '" + name
-					+ "' has been already reached!");
+		Integer newCount = ((Map<String, Integer>) identifier.getSetting("schNameCount")).get(name);
+		int current = newCount == null ? 1 : newCount;
 		try {
-			while (!loaded) Thread.sleep(10);
+			while (loading) Thread.sleep(20);
 		} catch (InterruptedException ie) {}
-		if (new File(new File(identifier.getDir(), "Chapters"), this.name
-				+ (hash == -128 ? ".json" : ("[" + (hash + 129) + "].json")))
-				.renameTo(new File(new File(identifier.getDir(), "Chapters"), name
-						+ (current == -128 ? ".json" : ("[" + (current + 129) + "].json"))))) {
-			((Map<String, Byte>) identifier.getSetting("schNameCount")).put(this.name = name, hash = current);
+		if (getSaveFile().renameTo(new File(new File(identifier.getDir(), "Chapters"), name
+						+ (current == 1 ? ".json" : "[" + current + "].json")))) {
+			((Map<String, Integer>) identifier.getSetting("schNameCount")).put(this.name = name, hash = current);
 			return true;
 		}
 		return false;
@@ -307,14 +261,15 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 
 	@Override
 	public boolean destroy(Container parent) {
-		if (new File(new File(identifier.getDir(), "Chapters"), name
-				+ (hash == -128 ? ".json" : ("[" + (hash + 129) + "].json"))).delete()) {
+		if (getSaveFile().delete()) {
 			identifier.putSetting("schRemoved", true);
-			int i = ((Map<String, Byte>) identifier.getSetting("schNameCount")).get(name) - 1;
-			if (i < -128) ((Map<String, Byte>) identifier.getSetting("schNameCount")).remove(name);
-			else ((Map<String, Byte>) identifier.getSetting("schNameCount")).put(name, (byte) i);
+			Map<String, Integer> map = (Map<String, Integer>) identifier.getSetting("schNameCount");
+			int i = map.get(name) - 1;
+			USED.waitForAccess(identifier.hashCode());
+			if (i < 1) map.remove(name);
+			else map.put(name, i);
 			parent.removeChild(this);
-			ELEMENTS.get(identifier).remove(this);
+			USED.endAccess(identifier.hashCode());
 			return true;
 		}
 		return false;
@@ -325,12 +280,12 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 		if (tabs == 0) {
 			sb.append('{');
 			add(sb, this, cp, true, true, true, true,
-					hash == -128 ? null : str("hash"), hash == -128 ? null : obj(hash + 129), true);
+					hash == 1 ? null : str("hash"), hash == 1 ? null : obj(hash), true);
 			return writeData0(sb, 1, cp);
 		}
 		if (loaded) save();
 		tabs(sb, tabs++, '{').add(sb, this, cp, true, true, true, true,
-				hash == -128 ? null : str("hash"), hash == -128 ? null : obj(hash + 129), false);
+				hash == 1 ? null : str("hash"), hash == 1 ? null : obj(hash), false);
 		return sb.append('}');
 	}
 

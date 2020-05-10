@@ -1,6 +1,7 @@
 package objects;
 
 import IOSystem.Formatter.Data;
+import java.util.LinkedList;
 
 import java.util.List;
 
@@ -9,6 +10,7 @@ import objects.templates.Container;
 
 /**
  * Stores other {@link BasicData hierarchy objects}.
+ * One of the simplest objects of the database hierarchy.
  *
  * @author Josef Litoš
  */
@@ -31,14 +33,14 @@ public class Chapter extends objects.templates.SemiElementContainer {
 	}
 
 	/**
-	 * @param d must contain {@link #name name} and
-	 *          {@link #identifier identifier} and mainly the parent of this object
+	 * @param d must contain {@link #name name} and {@link #identifier identifier}
+	 *				and mainly the parent of this object
 	 */
 	public Chapter(Data d) {
 		super(d);
 		parent = d.par;
 		identifier = d.identifier;
-		if (ELEMENTS.get(identifier) == null) ELEMENTS.put(identifier, new java.util.LinkedList<>());
+		if (ELEMENTS.get(identifier) == null) ELEMENTS.put(identifier, new LinkedList<>());
 		ELEMENTS.get(identifier).add(this);
 	}
 

@@ -1023,28 +1023,28 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (resultCode == Activity.RESULT_OK) {
 			new Thread(() -> {
+				File f;
 				switch (requestCode) {
 					case FILE_READ:
+						f = Controller.getFileFromUri(data.getData());
 						try {
 							defaultReacts.get(SimpleReader.class + ":success").react(
-									SimpleReader.simpleLoad(Formatter.loadFile(activity.getContentResolver()
-													.openInputStream(data.getData())), (Container) backLog.path.get(-1),
+									SimpleReader.simpleLoad(Formatter.loadFile(f), (Container) backLog.path.get(-1),
 											(Container) backLog.path.get(-2), 0, -1, -1));
 							CurrentData.save();
 						} catch (Exception e) {
 							if (e instanceof IllegalArgumentException) return;
 							defaultReacts.get(ContainerFile.class + ":load").react(e,
-									data.getData().getPath(), backLog.path.get(-1));
+									f.getPath(), backLog.path.get(-1));
 						}
 						break;
 					case FILE_WRITE:
+						f = Controller.getFileFromUri(data.getData());
 						try {
-							SimpleWriter.saveWords(activity.getContentResolver()
-											.openOutputStream(data.getData(), "wa"),
-									(Container) backLog.path.get(-2), (Container) backLog.path.get(-1));
+							SimpleWriter.saveWords(f, (Container) backLog.path.get(-2), (Container) backLog.path.get(-1));
 						} catch (Exception e) {
 							defaultReacts.get(ContainerFile.class + ":save").react(e,
-									data.getData().getPath(), backLog.path.get(-1));
+									f.getPath(), backLog.path.get(-1));
 						}
 						break;
 					case IMAGE_PICK:

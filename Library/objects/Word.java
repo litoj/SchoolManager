@@ -1,5 +1,6 @@
 package objects;
 
+import IOSystem.Formatter;
 import IOSystem.Formatter.Data;
 import IOSystem.ReadElement;
 import objects.templates.BasicData;
@@ -31,8 +32,8 @@ public class Word extends TwoSided<Word> {
 	 * Translates are sorted by the {@link MainChapter hierarchy} they belong to. read-only data
 	 */
 	public static final Map<MainChapter, List<Word>> ELEMENTS = new HashMap<>();
-
-	private static boolean creating = false;
+	
+	private static final Formatter.Synchronizer USED = new Formatter.Synchronizer();
 
 	/**
 	 * The only allowed way to create Word objects. Automatically controls its
@@ -45,34 +46,28 @@ public class Word extends TwoSided<Word> {
 	 * otherwise returns the word object with the same name and adds the new translations.
 	 */
 	public static Word mkElement(Data d, List<Data> translates) {
-		synchronized (ELEMENTS) {
-			if (creating) try {
-				ELEMENTS.wait();
-			} catch (InterruptedException ex) {
-			}
-			creating = true;
-			if (translates == null || translates.isEmpty()) throw new NullPointerException();
-			if (ELEMENTS.get(d.identifier) == null) {
-				ELEMENTS.put(d.identifier, new LinkedList<>());
-				TRANSLATES.put(d.identifier, new LinkedList<>());
-			}
-			for (Word w : ELEMENTS.get(d.identifier)) {
-				if (d.name.equals(w.name)) {
-					if (w.children.get(d.par) == null) {
-						w.children.put(d.par, new LinkedList<>());
-						w.parentCount++;
-					}
-					if (d.description != null && !d.description.isEmpty()) w.putDesc(d.par, d.description);
-					w.addTranslates(translates, d.par);
-					creating = false;
-					ELEMENTS.notify();
-					return w;
-				}
-			}
-			creating = false;
-			ELEMENTS.notify();
-			return new Word(d, translates);
+		if (translates == null || translates.isEmpty()) throw new NullPointerException();
+		if (ELEMENTS.get(d.identifier) == null) {
+			ELEMENTS.put(d.identifier, new LinkedList<>());
+			TRANSLATES.put(d.identifier, new LinkedList<>());
 		}
+		Integer hashCode = d.identifier.hashCode();
+		USED.waitForAccess(hashCode);
+		for (Word w : ELEMENTS.get(d.identifier)) {
+			if (d.name.equals(w.name)) {
+				if (w.children.get(d.par) == null) {
+					w.children.put(d.par, new LinkedList<>());
+					w.parentCount++;
+				}
+				if (d.description != null && !d.description.isEmpty()) w.putDesc(d.par, d.description);
+				w.addTranslates(translates, d.par);
+				USED.endAccess(hashCode);
+				return w;
+			}
+		}
+		Word ret = new Word(d, translates);
+		USED.endAccess(hashCode);
+		return ret;
 	}
 
 	/**
@@ -83,6 +78,8 @@ public class Word extends TwoSided<Word> {
 	 * @return the created translate
 	 */
 	public static Word mkTranslate(Data d, Word main) {
+		Integer hashCode = main.identifier.hashCode();
+		USED.waitForAccess(hashCode);
 		for (Word t : TRANSLATES.get(d.identifier)) {
 			if (d.name.equals(t.name)) {
 				if (t.children.get(d.par) != null) {
@@ -95,11 +92,13 @@ public class Word extends TwoSided<Word> {
 					t.putDesc(d.par, d.description);
 				t.children.get(d.par).add(main);
 				main.children.get(d.par).add(t);
+				USED.endAccess(hashCode);
 				return t;
 			}
 		}
 		Word w = new Word(d, main);
 		main.children.get(d.par).add(w);
+		USED.endAccess(hashCode);
 		return w;
 	}
 	
@@ -154,35 +153,22 @@ public class Word extends TwoSided<Word> {
 	}
 
 	@Override
-	public boolean destroy(Container parent) {
-		if (isMain) {
-			for (BasicData t : children.get(parent)) {
-				((Word) t).remove1(parent, this);
-				t.destroy(parent);
-			}
-			children.remove(parent);
-			parent.removeChild(this);
-			if (--parentCount == 0) ELEMENTS.get(identifier).remove(this);
-		} else  
-			
-			if (children.get(parent).isEmpty() && --parentCount == 0)
-			TRANSLATES.get(identifier).remove(this);
-		return true;
-	}
-
-	@Override
 	public boolean setName(Container ch, String name) {
 		if (this.name.equals(name) || children.isEmpty()) return false;
 		Container parpar = isMain ? ch.removeChild(this) : null;
+		Integer hashCode = identifier.hashCode();
+		USED.waitForAccess(hashCode);
 		for (Word w : (isMain ? ELEMENTS : TRANSLATES).get(identifier).toArray(new Word[0]))
 			if (w.name.equals(name)) {
 				if (w.getDesc(ch) == null || w.getDesc(ch).equals("")) w.putDesc(ch, getDesc(ch));
 				if (parentCount == 1) (isMain ? ELEMENTS : TRANSLATES).get(identifier).remove(this);
 				setName0(parpar, ch, w);
+				USED.endAccess(hashCode);
 				return true;
 			}
 		if (children.keySet().size() == 1) this.name = name;
 		else setName0(parpar, ch, new Word(this, ch, name));
+		USED.endAccess(hashCode);
 		return true;
 	}
 
@@ -212,6 +198,30 @@ public class Word extends TwoSided<Word> {
 			trl.children.get(ch).remove(this);
 			trl.children.get(ch).add(w);
 		}
+	}
+
+	@Override
+	public boolean destroy(Container parent) {
+		if (isMain) {
+			for (BasicData t : children.get(parent)) {
+				((Word) t).remove1(parent, this);
+				t.destroy(parent);
+			}
+			children.remove(parent);
+			parent.removeChild(this);
+			if (--parentCount == 0) {
+				Integer hashCode = identifier.hashCode();
+				USED.waitForAccess(hashCode);
+				ELEMENTS.get(identifier).remove(this);
+				USED.endAccess(hashCode);
+			}
+		} else if (children.get(parent).isEmpty() && --parentCount == 0) {
+			Integer hashCode = identifier.hashCode();
+			USED.waitForAccess(hashCode);
+			TRANSLATES.get(identifier).remove(this);
+			USED.endAccess(hashCode);
+		}
+		return true;
 	}
 
 	/**

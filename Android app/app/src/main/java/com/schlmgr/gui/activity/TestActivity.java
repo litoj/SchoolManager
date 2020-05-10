@@ -41,7 +41,7 @@ public class TestActivity extends AppCompatActivity {
 
 	private static long backTime;
 	private static Test test;
-	private static TextView timer;
+	private static volatile TextView timer;
 	private static Adapter adapter;
 	private static final List<TestItemModel> list = new ArrayList<>();
 	private static TestActivity taInstance;

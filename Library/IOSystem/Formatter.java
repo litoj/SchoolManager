@@ -14,6 +14,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -135,16 +137,7 @@ public class Formatter {
 		}
 		return null;
 	}
-
-	public static String loadFile(InputStream source) {
-		try {
-			return ios.fileContent(source);
-		} catch (Exception e) {
-			Formatter.defaultReacts.get(ContainerFile.class + ":load").react(e, source, null);
-		}
-		return null;
-	}
-
+	
 	public static void saveFile(String toSave, File filePath) {
 		ios.saveFile(toSave, filePath);
 	}
@@ -203,9 +196,15 @@ public class Formatter {
 						defaultReacts.get(Formatter.class + ":newSrcDir").react(e, settings.get("objdir"));
 						(objDir = new File("School objects")).mkdirs();
 					}
-					Test.setDefaultTime((Integer) settings.get("defaultTestTime"));
-					Test.setClever((Boolean) settings.get("isClever"));
-					Test.setAmount((Integer) settings.get("testAmount"));
+					if (settings.get("defaultTestTime") != null)
+						Test.setDefaultTime((Integer) settings.get("defaultTestTime"));
+					else settings.put("defaultTestTime", 180);
+					if (settings.get("isClever") != null)
+						Test.setClever((Boolean) settings.get("isClever"));
+					else settings.put("isClever", true);
+					if (settings.get("testAmount") != null)
+						Test.setAmount((Integer) settings.get("testAmount"));
+					else settings.put("testAmount", 10);
 					setDefaults(false);
 				} catch (Exception e) {
 					defaultReacts.get(Formatter.class + ":newSrcDir").react(e, settsFile);
@@ -339,6 +338,35 @@ public class Formatter {
 		@Override
 		public String toString() {
 			return name;
+		}
+	}
+	
+	/**
+	 * Used to avoid data loss, corruption and possible concurrent modification exceptions.
+	 */
+	public static class Synchronizer {
+		/**
+		 * All keys' of {@link #ELEMENTS} hashCodes, which values are currently being used.
+		 */
+		private final List<Integer> USED = new LinkedList<>();
+
+		public void waitForAccess(Integer hashCode) {
+			int index = USED.indexOf(hashCode);
+			if (index != -1) try {
+				synchronized (USED.get(index)) {
+					while ((index = USED.indexOf(hashCode)) != -1) USED.get(index).wait();
+				}
+			} catch (InterruptedException ie) {
+				throw new IllegalThreadStateException("Interrupting is not allowed!");
+			}
+			USED.add(hashCode);
+		}
+
+		public void endAccess(Integer hashCode) {
+			synchronized (hashCode) {
+				USED.remove(hashCode);
+				hashCode.notify();
+			}
 		}
 	}
 }

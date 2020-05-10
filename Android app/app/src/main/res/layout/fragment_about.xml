@@ -772,6 +772,23 @@
                 android:background="#2888"
                 android:paddingHorizontal="15dp"
                 android:paddingVertical="2dp"
+                android:text="1.2"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="- redesigned inefficient and unsafe database operations\n- fixed test end possible crash"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
                 android:text="1.1"
                 android:textSize="17sp" />
 
