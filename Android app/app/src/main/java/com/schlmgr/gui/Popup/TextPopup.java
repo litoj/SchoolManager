@@ -3,7 +3,7 @@ package com.schlmgr.gui.popup;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
-import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.schlmgr.R;
@@ -22,7 +22,7 @@ public class TextPopup extends AbstractPopup {
 	}
 
 	@Override
-	protected void addContent(View view) {
+	protected void addContent(ViewGroup view) {
 		((TextView) view.findViewById(R.id.text)).setText(msg);
 		view.findViewById(R.id.copy).setOnClickListener(x -> {
 			((ClipboardManager) activity.getSystemService(Context.CLIPBOARD_SERVICE))

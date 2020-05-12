@@ -41,7 +41,7 @@ public class TestActivity extends AppCompatActivity {
 
 	private static long backTime;
 	private static Test test;
-	private static volatile TextView timer;
+	private static TextView timer;
 	private static Adapter adapter;
 	private static final List<TestItemModel> list = new ArrayList<>();
 	private static TestActivity taInstance;
@@ -69,6 +69,7 @@ public class TestActivity extends AppCompatActivity {
 			test.setTested(Integer.parseInt(TestFragment.amount.getText().toString()), sl -> {
 				if (test == null) return false;
 				runOnUiThread(() -> {
+					if (timer == null) return;
 					if (sl <= 30) timer.setTextColor(sl % 2 == 0 ? 0xFFDD0000 : 0xFFDDDDDD);
 					if (sl > 0) timer.setText(sl + "s");
 					else onSubmit();
@@ -145,20 +146,20 @@ public class TestActivity extends AppCompatActivity {
 						View vImg = li.inflate(R.layout.item_test_image, (LinearLayout) v, false);
 						((LinearLayout) v).addView(vImg, 0);
 						ImageView iv = vImg.findViewById(R.id.img_1);
-						iv.setOnClickListener(view -> new FullPicture(iim.bm1));
-						iv.setImageBitmap(iim.bm1);
+						iv.setOnClickListener(view -> new FullPicture(iim.pic1));
+						iv.setImageBitmap(iim.getBitmap(true));
 						iv.setContentDescription(iim.pic1.toString());
-						(iv = vImg.findViewById(R.id.img_2)).setImageBitmap(iim.bm2);
+						(iv = vImg.findViewById(R.id.img_2)).setImageBitmap(iim.getBitmap(false));
 						iv.setContentDescription(iim.pic2.toString());
-						iv.setOnClickListener(view -> new FullPicture(iim.bm2));
+						iv.setOnClickListener(view -> new FullPicture(iim.pic2));
 					}
 					if (pics.length % 2 == 1) {
 						ImageItemModel iim = new ImageItemModel((Picture) pics[pics.length - 1], null);
 						View vImg = li.inflate(R.layout.item_test_image, (LinearLayout) v, false);
 						((LinearLayout) v).addView(vImg, 0);
 						ImageView iv = vImg.findViewById(R.id.img_1);
-						iv.setOnClickListener(view -> new FullPicture(iim.bm1));
-						iv.setImageBitmap(iim.bm1);
+						iv.setOnClickListener(view -> new FullPicture(iim.pic1));
+						iv.setImageBitmap(iim.getBitmap(true));
 						iv.setContentDescription(iim.pic1.toString());
 						vImg.findViewById(R.id.img_2).setVisibility(View.GONE);
 					}

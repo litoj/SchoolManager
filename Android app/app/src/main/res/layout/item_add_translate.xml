@@ -25,17 +25,17 @@
             android:orientation="vertical">
 
             <EditText
-                android:id="@+id/item_adder_name"
+                android:id="@+id/item_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="5dp"
                 android:background="@drawable/outline_gray"
                 android:hint="@string/data_translate"
-                android:maxLines="1"
+                android:singleLine="true"
                 android:textSize="15sp" />
 
             <EditText
-                android:id="@+id/item_adder_desc"
+                android:id="@+id/item_desc"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/outline_gray"
@@ -58,7 +58,7 @@
                 android:textStyle="bold" />
 
             <ImageButton
-                android:id="@+id/item_adder_remove"
+                android:id="@+id/btn_remove"
                 android:layout_width="30dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"

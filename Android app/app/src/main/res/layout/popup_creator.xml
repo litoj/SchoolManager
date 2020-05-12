@@ -26,6 +26,7 @@
 
         <ScrollView
             android:layout_width="match_parent"
+            android:id="@+id/popup_new_scroll"
             android:layout_height="wrap_content">
 
             <LinearLayout
@@ -41,7 +42,7 @@
                     android:layout_marginTop="10dp"
                     android:background="@drawable/outline_gray"
                     android:hint="@string/data_name"
-                    android:maxLines="1"
+                    android:singleLine="true"
                     android:textSize="17sp" />
 
                 <EditText

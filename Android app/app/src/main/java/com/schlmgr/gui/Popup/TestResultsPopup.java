@@ -39,10 +39,10 @@ public class TestResultsPopup extends AbstractPopup {
 	}
 
 	@Override
-	protected void addContent(View view) {
+	protected void addContent(ViewGroup view) {
 		view.findViewById(R.id.ok).setOnClickListener(v -> dismiss());
 		((TextView) view.findViewById(R.id.popup_test_success)).setText(activity.getString(R.string.success_rate) + ": " + success + "%");
-		LayoutInflater li = activity.getLayoutInflater();
+		LayoutInflater li = LayoutInflater.from(view.getContext());
 		((ListView) view.findViewById(R.id.popup_test_list)).setAdapter(
 				new ArrayAdapter<TestedItem>(view.getContext(), picTest ? R.layout.item_results_pic :
 						R.layout.item_results_word, R.id.test_name, list) {
@@ -59,20 +59,20 @@ public class TestResultsPopup extends AbstractPopup {
 									View vImg = li.inflate(R.layout.item_test_image, (LinearLayout) v, false);
 									((LinearLayout) v).addView(vImg, 0);
 									ImageView iv = vImg.findViewById(R.id.img_1);
-									iv.setOnClickListener(view -> new FullPicture(iim.bm1));
-									iv.setImageBitmap(iim.bm1);
+									iv.setOnClickListener(view -> new FullPicture(iim.pic1));
+									iv.setImageBitmap(iim.getBitmap(true));
 									iv.setContentDescription(iim.pic1.toString());
-									(iv = vImg.findViewById(R.id.img_2)).setImageBitmap(iim.bm2);
+									(iv = vImg.findViewById(R.id.img_2)).setImageBitmap(iim.getBitmap(false));
 									iv.setContentDescription(iim.pic2.toString());
-									iv.setOnClickListener(view -> new FullPicture(iim.bm2));
+									iv.setOnClickListener(view -> new FullPicture(iim.pic2));
 								}
 								if (pics.length % 2 == 1) {
 									ImageItemModel iim = new ImageItemModel((Picture) pics[pics.length - 1], null);
 									View vImg = li.inflate(R.layout.item_test_image, (LinearLayout) v, false);
 									((LinearLayout) v).addView(vImg, 0);
 									ImageView iv = vImg.findViewById(R.id.img_1);
-									iv.setOnClickListener(view -> new FullPicture(iim.bm1));
-									iv.setImageBitmap(iim.bm1);
+									iv.setOnClickListener(view -> new FullPicture(iim.pic1));
+									iv.setImageBitmap(iim.getBitmap(true));
 									iv.setContentDescription(iim.pic1.toString());
 									vImg.findViewById(R.id.img_2).setVisibility(View.GONE);
 								}

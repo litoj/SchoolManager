@@ -51,8 +51,7 @@ public class Word extends TwoSided<Word> {
 			ELEMENTS.put(d.identifier, new LinkedList<>());
 			TRANSLATES.put(d.identifier, new LinkedList<>());
 		}
-		Integer hashCode = d.identifier.hashCode();
-		USED.waitForAccess(hashCode);
+		USED.waitForAccess(d.identifier);
 		for (Word w : ELEMENTS.get(d.identifier)) {
 			if (d.name.equals(w.name)) {
 				if (w.children.get(d.par) == null) {
@@ -61,12 +60,12 @@ public class Word extends TwoSided<Word> {
 				}
 				if (d.description != null && !d.description.isEmpty()) w.putDesc(d.par, d.description);
 				w.addTranslates(translates, d.par);
-				USED.endAccess(hashCode);
+				USED.endAccess(d.identifier);
 				return w;
 			}
 		}
 		Word ret = new Word(d, translates);
-		USED.endAccess(hashCode);
+		USED.endAccess(d.identifier);
 		return ret;
 	}
 
@@ -78,8 +77,7 @@ public class Word extends TwoSided<Word> {
 	 * @return the created translate
 	 */
 	public static Word mkTranslate(Data d, Word main) {
-		Integer hashCode = main.identifier.hashCode();
-		USED.waitForAccess(hashCode);
+		USED.waitForAccess(main.identifier);
 		for (Word t : TRANSLATES.get(d.identifier)) {
 			if (d.name.equals(t.name)) {
 				if (t.children.get(d.par) != null) {
@@ -92,13 +90,13 @@ public class Word extends TwoSided<Word> {
 					t.putDesc(d.par, d.description);
 				t.children.get(d.par).add(main);
 				main.children.get(d.par).add(t);
-				USED.endAccess(hashCode);
+				USED.endAccess(main.identifier);
 				return t;
 			}
 		}
 		Word w = new Word(d, main);
 		main.children.get(d.par).add(w);
-		USED.endAccess(hashCode);
+		USED.endAccess(main.identifier);
 		return w;
 	}
 	
@@ -156,25 +154,24 @@ public class Word extends TwoSided<Word> {
 	public boolean setName(Container ch, String name) {
 		if (this.name.equals(name) || children.isEmpty()) return false;
 		Container parpar = isMain ? ch.removeChild(this) : null;
-		Integer hashCode = identifier.hashCode();
-		USED.waitForAccess(hashCode);
+		USED.waitForAccess(identifier);
 		for (Word w : (isMain ? ELEMENTS : TRANSLATES).get(identifier).toArray(new Word[0]))
 			if (w.name.equals(name)) {
 				if (w.getDesc(ch) == null || w.getDesc(ch).equals("")) w.putDesc(ch, getDesc(ch));
 				if (parentCount == 1) (isMain ? ELEMENTS : TRANSLATES).get(identifier).remove(this);
 				setName0(parpar, ch, w);
-				USED.endAccess(hashCode);
+				USED.endAccess(identifier);
 				return true;
 			}
 		if (children.keySet().size() == 1) this.name = name;
 		else setName0(parpar, ch, new Word(this, ch, name));
-		USED.endAccess(hashCode);
+		USED.endAccess(identifier);
 		return true;
 	}
 
 	private Word(Word src, Container par, String newName) {
-		super(new Data(newName, src.identifier, 0, 0, src.description.get(par), par),
-				src.isMain, src.isMain ? ELEMENTS : TRANSLATES);
+		super(new Data(newName, src.identifier).addSF(new int[]{0, 0}).addDesc(src.description.get(par))
+				.addPar(par), src.isMain, src.isMain ? ELEMENTS : TRANSLATES);
 	}
 
 	private void setName0(Container parpar, Container ch, Word w) {
@@ -203,23 +200,20 @@ public class Word extends TwoSided<Word> {
 	@Override
 	public boolean destroy(Container parent) {
 		if (isMain) {
-			for (BasicData t : children.get(parent)) {
+			for (TwoSided t : children.remove(parent)) {
 				((Word) t).remove1(parent, this);
 				t.destroy(parent);
 			}
-			children.remove(parent);
 			parent.removeChild(this);
 			if (--parentCount == 0) {
-				Integer hashCode = identifier.hashCode();
-				USED.waitForAccess(hashCode);
+				USED.waitForAccess(identifier);
 				ELEMENTS.get(identifier).remove(this);
-				USED.endAccess(hashCode);
+				USED.endAccess(identifier);
 			}
-		} else if (children.get(parent).isEmpty() && --parentCount == 0) {
-			Integer hashCode = identifier.hashCode();
-			USED.waitForAccess(hashCode);
+		} else if (children.get(parent) == null && --parentCount == 0) {
+			USED.waitForAccess(identifier);
 			TRANSLATES.get(identifier).remove(this);
-			USED.endAccess(hashCode);
+			USED.endAccess(identifier);
 		}
 		return true;
 	}

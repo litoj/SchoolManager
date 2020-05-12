@@ -6,7 +6,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
@@ -33,22 +32,14 @@ public class ImageAdapter extends ArrayAdapter<ImageItemModel> {
 		if (view == null) view = li.inflate(R.layout.item_image, parent, false);
 		ImageItemModel iim = list.get(pos);
 		ImageView iv = view.findViewById(R.id.item_img_1);
-		iv.setOnClickListener(v -> new FullPicture(iim.bm1));
-		iv.setImageBitmap(iim.bm1);
+		iv.setOnClickListener(v -> new FullPicture(iim.pic1));
+		iv.setImageBitmap(iim.getBitmap(true));
 		iv.setContentDescription(iim.pic1.toString());
-		TextView tv = view.findViewById(R.id.item_img_d1);
-		String desc = iim.pic1.getDesc(this.parent);
-		if (desc.isEmpty()) tv.setVisibility(View.GONE);
-		else tv.setText(desc);
 		if (iim.pic2 != null) {
-			(iv = view.findViewById(R.id.item_img_2)).setImageBitmap(iim.bm1);
+			(iv = view.findViewById(R.id.item_img_2)).setImageBitmap(iim.getBitmap(false));
 			iv.setContentDescription(iim.pic2.toString());
-			iv.setOnClickListener(v -> new FullPicture(iim.bm2));
-			tv = view.findViewById(R.id.item_img_d2);
-			desc = iim.pic2.getDesc(this.parent);
-			if (desc.isEmpty()) tv.setVisibility(View.GONE);
-			else tv.setText(desc);
-		} else view.findViewById(R.id.item_img_l2).setVisibility(View.GONE);
+			iv.setOnClickListener(v -> new FullPicture(iim.pic2));
+		} else view.findViewById(R.id.item_img_2).setVisibility(View.GONE);
 		return view;
 	}
 }

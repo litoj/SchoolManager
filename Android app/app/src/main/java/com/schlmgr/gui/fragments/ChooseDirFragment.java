@@ -19,7 +19,7 @@ public class ChooseDirFragment extends Fragment {
 
 	public View onCreateView(@NonNull LayoutInflater inflater,
 	                         ViewGroup container, Bundle savedInstanceState) {
-		SelectDirActivity.titleID = R.string.select_dir_src;
+		SelectDirActivity.importing = false;
 		startActivity(new Intent(getContext(), SelectDirActivity.class));
 		on = true;
 		return null;

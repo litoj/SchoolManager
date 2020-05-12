@@ -108,7 +108,7 @@ public class TestFragment extends Fragment implements ControlListener {
 		final LayoutInflater li;
 
 		Adapter() {
-			super(TestFragment.this.getContext(), R.layout.item_add_test, R.id.item_adder_name, list);
+			super(TestFragment.this.getContext(), R.layout.item_add_test, R.id.item_name, list);
 			li = LayoutInflater.from(getContext());
 			notifyDataSetChanged();
 		}
@@ -117,13 +117,13 @@ public class TestFragment extends Fragment implements ControlListener {
 		public View getView(int index, @Nullable View view, @NonNull ViewGroup parent) {
 			view = li.inflate(R.layout.item_add_test, parent, false);
 			SearchItemModel item = list.get(index);
-			TextView tv = view.findViewById(R.id.item_adder_name);
+			TextView tv = view.findViewById(R.id.item_name);
 			tv.setText(item.bd.getName());
 			if (item.bd instanceof Picture)
 				item.ic.setBounds((int) dp, 0, (int) (dp * 33), (int) (dp * 33));
 			else item.ic.setBounds(0, 0, (int) (dp * 30), (int) (dp * 30));
 			tv.setCompoundDrawablesRelative(item.ic, null, null, null);
-			view.findViewById(R.id.item_adder_remove).setOnClickListener(v -> {
+			view.findViewById(R.id.btn_remove).setOnClickListener(v -> {
 				list.remove(index);
 				notifyDataSetChanged();
 			});

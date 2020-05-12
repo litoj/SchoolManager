@@ -11,6 +11,6 @@
         android:layout_margin="5dp"
         android:hint="@string/data_name"
         android:inputType="textNoSuggestions"
-        android:maxLines="1"
+        android:singleLine="true"
         android:textSize="15sp" />
 </LinearLayout>

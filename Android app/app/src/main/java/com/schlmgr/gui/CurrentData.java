@@ -122,14 +122,14 @@ public class CurrentData {
 			if (Formatter.getPath().listFiles() != null) for (File f : Formatter.getPath().listFiles())
 				load:{
 					for (MainChapter mch : MainChapter.ELEMENTS)
-						if (mch.getName().equals(f.getName())) break load;
+						if (mch.getDir().equals(f)) break load;
 					if (new File(f, "setts.dat").exists())
 						toLoad.add(new MainChapter(new Data(f.getName(), null)));
 				}
 			for (File f : ImportedMchs.get())
 				load:{
 					for (MainChapter mch : MainChapter.ELEMENTS)
-						if (mch.getName().equals(f.getName())) break load;
+						if (mch.getDir().equals(f)) break load;
 					if (f.exists()) toLoad.add(new MainChapter(new Data(f.getName(), null), f));
 				}
 		}

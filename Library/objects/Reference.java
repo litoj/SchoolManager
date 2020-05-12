@@ -74,8 +74,7 @@ public final class Reference implements BasicData {
 					throw new IllegalArgumentException("Can't reference " + ref + ",\nwith path: " + path);
 		if (ELEMENTS.get(path.get(0).getIdentifier()) == null)
 			ELEMENTS.put(path.get(0).getIdentifier(), new java.util.ArrayList<>(10));
-		Integer hashCode = path.get(0).getIdentifier().hashCode();
-		USED.waitForAccess(hashCode);
+		USED.waitForAccess(path.get(0).getIdentifier());
 		for (Reference r : ELEMENTS.get((MainChapter) path.get(0))) {
 			if (r.refStr.equals(ref.toString()) && refPath.length == r.pathStr.length) {
 				boolean found = true;
@@ -87,13 +86,13 @@ public final class Reference implements BasicData {
 				}
 				if (found) {
 					r.parentCount++;
-					USED.endAccess(hashCode);
+					USED.endAccess(path.get(0).getIdentifier());
 					return r;
 				}
 			}
 		}
 		Reference ret = new Reference(ref, refPath, (MainChapter) path.get(0));
-		USED.endAccess(hashCode);
+		USED.endAccess(path.get(0).getIdentifier());
 		return ret;
 	}
 
@@ -208,9 +207,9 @@ public final class Reference implements BasicData {
 
 	@Override
 	public boolean destroy(Container parent) {
-		USED.waitForAccess(getIdentifier().hashCode());
+		USED.waitForAccess(getIdentifier());
 		if (--parentCount == 0) ELEMENTS.get(getIdentifier()).remove(this);
-		USED.endAccess(getIdentifier().hashCode());
+		USED.endAccess(getIdentifier());
 		return parent.removeChild(this) != null || parent instanceof MainChapter;
 	}
 

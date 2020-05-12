@@ -2,9 +2,11 @@ package com.schlmgr.gui.popup;
 
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.schlmgr.R;
@@ -16,7 +18,7 @@ public class CreatorPopup extends AbstractPopup {
 	public Button ok;
 	public EditText et_name;
 	public EditText et_desc;
-	public View view;
+	public ViewGroup view;
 
 	final String type;
 	final Includer toInclude;
@@ -29,7 +31,7 @@ public class CreatorPopup extends AbstractPopup {
 	}
 
 	@Override
-	protected void addContent(View view) {
+	protected void addContent(ViewGroup view) {
 		this.view = view;
 		((TextView) view.findViewById(R.id.popup_new_type)).setText(type);
 		String text = "";
@@ -39,7 +41,7 @@ public class CreatorPopup extends AbstractPopup {
 		(et_desc = view.findViewById(R.id.popup_new_desc)).setText(text);
 		ok = view.findViewById(R.id.ok);
 		view.findViewById(R.id.cancel).setOnClickListener(x -> dismiss());
-		View include = toInclude.onInclude(activity.getLayoutInflater(), this);
+		View include = toInclude.onInclude(LayoutInflater.from(view.getContext()), this);
 		if (include != null) ((LinearLayout) et_desc.getParent()).addView(include, 2);
 	}
 

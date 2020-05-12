@@ -3,6 +3,8 @@ package com.schlmgr.gui.popup;
 import android.graphics.drawable.ColorDrawable;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
 import android.widget.PopupWindow;
 
@@ -54,7 +56,7 @@ public abstract class AbstractPopup {
 	protected void create() {
 		isActive = isShowing = true;
 		activity.runOnUiThread(() -> {
-			View view = activity.getLayoutInflater().inflate(resId, null);
+			ViewGroup view = (ViewGroup) activity.getLayoutInflater().inflate(resId, null);
 			pw = new PopupWindow(view, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT, true);
 			pw.setOnDismissListener(() -> {
 				isShowing = false;
@@ -68,5 +70,5 @@ public abstract class AbstractPopup {
 		});
 	}
 
-	abstract protected void addContent(View view);
+	abstract protected void addContent(ViewGroup view);
 }

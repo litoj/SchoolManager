@@ -16,7 +16,7 @@
         android:textSize="18sp" />
 
     <TextView
-        android:id="@+id/h_item_name"
+        android:id="@+id/item_name"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginVertical="2dp"
@@ -41,7 +41,7 @@
         android:layout_height="30dp"
         android:visibility="gone" />
     <ImageView
-        android:id="@+id/item_remove"
+        android:id="@+id/btn_remove"
         android:layout_width="30dp"
         android:src="@drawable/ic_cancel_round"
         android:layout_height="30dp"

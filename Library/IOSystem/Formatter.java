@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -289,55 +290,36 @@ public class Formatter {
 		public String description = "";
 		public Object[] tagVals;
 		public Container par;
-
-		Data(String name, MainChapter identifier, int s, int f, String description, Container parent, Object... tagValues) {
-			this(name, identifier, s, f, description, parent);
-			tagVals = tagValues;
-		}
-
-		public Data(String name, MainChapter identifier, int s, int f, String description, Container parent) {
-			this(name, identifier, s, f, description);
-			par = parent;
-		}
-
-		public Data(String name, MainChapter identifier, String description, Container parent) {
-			this(name, identifier, description);
-			par = parent;
-		}
-
-		public Data(String name, MainChapter identifier, int s, int f, Container parent) {
-			this(name, identifier, s, f);
-			par = parent;
-		}
-
-		public Data(String name, MainChapter identifier, int s, int f, String description) {
-			this(name, identifier, description);
-			this.sf = new int[]{s, f};
-		}
-
-		public Data(String name, MainChapter identifier, int s, int f) {
-			this(name, identifier);
-			this.sf = new int[]{s, f};
-		}
-
-		public Data(String name, MainChapter identifier, String description) {
-			this(name, identifier);
-			this.description = description == null ? "" : description;
-		}
-
-		public Data(String name, MainChapter identifier, Container parent) {
-			this(name, identifier);
-			par = parent;
-		}
-
+		
 		public Data(String name, MainChapter identifier) {
 			this.name = name;
 			this.identifier = identifier;
 		}
+		
+		public Data addSF(int[] successAndFail) {
+			sf = successAndFail;
+			return this;
+		}
+		
+		public Data addDesc(String description) {
+			this.description = description == null ? "" : description;
+			return this;
+		}
+		
+		public Data addPar(Container parent) {
+			par = parent;
+			return this;
+		}
+		
+		public Data addExtra(Object... tagValues) {
+			tagVals = tagValues;
+			return this;
+		}
 
 		@Override
 		public String toString() {
-			return name;
+			return "name=\"" + name + "\", description=" + description + "\", success=" + sf[0]
+					+ ", fail=" + sf[1] + ", parent=" + par + ", extra=" + Arrays.toString(tagVals);
 		}
 	}
 	
@@ -345,16 +327,20 @@ public class Formatter {
 	 * Used to avoid data loss, corruption and possible concurrent modification exceptions.
 	 */
 	public static class Synchronizer {
+		
+		private final Map<MainChapter, Integer> hashes = new HashMap<>();
+		
 		/**
 		 * All keys' of {@link #ELEMENTS} hashCodes, which values are currently being used.
 		 */
 		private final List<Integer> USED = new LinkedList<>();
 
-		public void waitForAccess(Integer hashCode) {
-			int index = USED.indexOf(hashCode);
-			if (index != -1) try {
-				synchronized (USED.get(index)) {
-					while ((index = USED.indexOf(hashCode)) != -1) USED.get(index).wait();
+		public void waitForAccess(MainChapter lock) {
+			Integer hashCode = hashes.get(lock);
+			if (hashCode == null) hashes.put(lock, hashCode = lock.hashCode());
+			else if (USED.contains(hashCode)) try {
+				synchronized (hashCode) {
+					while (USED.contains(hashCode)) hashCode.wait();
 				}
 			} catch (InterruptedException ie) {
 				throw new IllegalThreadStateException("Interrupting is not allowed!");
@@ -362,9 +348,10 @@ public class Formatter {
 			USED.add(hashCode);
 		}
 
-		public void endAccess(Integer hashCode) {
+		public void endAccess(MainChapter unlock) {
+			Integer hashCode = hashes.get(unlock);
+			USED.remove(hashCode);
 			synchronized (hashCode) {
-				USED.remove(hashCode);
 				hashCode.notify();
 			}
 		}

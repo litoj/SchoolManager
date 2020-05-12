@@ -4,12 +4,9 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.os.Build.VERSION;
 import android.os.Bundle;
-import android.provider.MediaStore.Images.Media;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -37,10 +34,13 @@ import com.schlmgr.gui.ExplorerStuff;
 import com.schlmgr.gui.activity.SelectDirActivity;
 import com.schlmgr.gui.list.HierarchyAdapter;
 import com.schlmgr.gui.list.HierarchyItemModel;
+import com.schlmgr.gui.list.ImageAdapter;
 import com.schlmgr.gui.list.ImageItemModel;
+import com.schlmgr.gui.list.ImageRecyclerAdapter;
 import com.schlmgr.gui.list.OpenListAdapter;
 import com.schlmgr.gui.list.SearchAdapter;
 import com.schlmgr.gui.list.SearchItemModel;
+import com.schlmgr.gui.list.TranslateRecyclerAdapter;
 import com.schlmgr.gui.popup.ContinuePopup;
 import com.schlmgr.gui.popup.CreatorPopup;
 import com.schlmgr.gui.popup.CreatorPopup.Includer;
@@ -97,7 +97,7 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 	private static Drawable icPaste_disabled;
 
 	private static long backTime;
-	private static ExplorerStuff es;
+	public static ExplorerStuff es;
 	public static ViewState VS = new ViewState();
 
 	public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -118,25 +118,25 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 		if (icCut == null) {
 			Resources res = activity.getResources();
 			(icDelete = res.getDrawable(R.drawable.ic_delete))
-					.setBounds((int) dp, 0, (int) (dp * 40), (int) (dp * 40));
+					.setBounds(0, 0, (int) (dp * 40), (int) (dp * 40));
 			(icDelete_disabled = res.getDrawable(R.drawable.ic_delete_disabled))
-					.setBounds((int) dp, 0, (int) (dp * 40), (int) (dp * 40));
+					.setBounds(0, 0, (int) (dp * 40), (int) (dp * 40));
 			(icReference = res.getDrawable(R.drawable.ic_reference))
-					.setBounds((int) dp, 0, (int) (dp * 40), (int) (dp * 40));
+					.setBounds(0, 0, (int) (dp * 40), (int) (dp * 40));
 			(icReference_disabled = res.getDrawable(R.drawable.ic_reference_disabled))
-					.setBounds((int) dp, 0, (int) (dp * 40), (int) (dp * 40));
+					.setBounds(0, 0, (int) (dp * 40), (int) (dp * 40));
 			(icCut = res.getDrawable(R.drawable.ic_cut))
-					.setBounds((int) dp, 0, (int) (dp * 40), (int) (dp * 40));
+					.setBounds(0, 0, (int) (dp * 40), (int) (dp * 40));
 			(icCut_disabled = res.getDrawable(R.drawable.ic_cut_disabled))
-					.setBounds((int) dp, 0, (int) (dp * 40), (int) (dp * 40));
+					.setBounds(0, 0, (int) (dp * 40), (int) (dp * 40));
 			(icEdit = res.getDrawable(R.drawable.ic_edit))
-					.setBounds((int) dp, 0, (int) (dp * 35), (int) (dp * 35));
+					.setBounds(0, 0, (int) (dp * 35), (int) (dp * 35));
 			(icEdit_disabled = res.getDrawable(R.drawable.ic_edit_disabled))
-					.setBounds((int) dp, 0, (int) (dp * 35), (int) (dp * 35));
+					.setBounds(0, 0, (int) (dp * 35), (int) (dp * 35));
 			(icPaste = res.getDrawable(R.drawable.ic_paste))
-					.setBounds((int) dp, 0, (int) (dp * 33), (int) (dp * 33));
+					.setBounds(0, 0, (int) (dp * 33), (int) (dp * 33));
 			(icPaste_disabled = res.getDrawable(R.drawable.ic_paste_disabled))
-					.setBounds((int) dp, 0, (int) (dp * 33), (int) (dp * 33));
+					.setBounds(0, 0, (int) (dp * 33), (int) (dp * 33));
 			if (VERSION.SDK_INT < 21) {
 				DrawableCompat.setTint(DrawableCompat.wrap(icDelete_disabled), 0x55FFFFFF);
 				DrawableCompat.setTint(DrawableCompat.wrap(icReference_disabled), 0x55FFFFFF);
@@ -221,85 +221,17 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 							}));
 						} else if (him.bd instanceof Word) {
 							activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.edit), new Includer() {
-								class Translate {
-									final Word trl;
-									View v;
-
-									Translate(Word trl) {
-										this.trl = trl;
-									}
-								}
-
-								List<Translate> list;
-								List<Word> toRemove = new ArrayList<>();
-
-								void addView(int index, LayoutInflater li, LinearLayout ll) {
-									View view = li.inflate(R.layout.item_add_translate, ll, false);
-									Translate item = list.get(index);
-									((TextView) view.findViewById(R.id.item_trl_header)).setText("" + (list.size() - index));
-									if (item.v != null || item.trl != null) {
-										((TextView) view.findViewById(R.id.item_adder_name)).setText(
-												item.v != null ? ((TextView) item.v.findViewById(R.id.item_adder_name))
-														.getText().toString() : item.trl.getName());
-										((TextView) view.findViewById(R.id.item_adder_desc)).setText(
-												item.v != null ? ((TextView) item.v.findViewById(R.id.item_adder_desc))
-														.getText().toString() : item.trl.getDesc(him.parent));
-									}
-									item.v = view;
-									view.findViewById(R.id.item_adder_remove).setOnClickListener(v -> {
-										Translate t = list.remove(index);
-										if (t.trl != null) toRemove.add(t.trl);
-										ll.removeView(view);
-									});
-									ll.addView(view, 2);
-								}
+								TranslateRecyclerAdapter content;
 
 								@Override
 								public View onInclude(LayoutInflater li, CreatorPopup cp) {
 									LinearLayout ll = (LinearLayout) li.inflate(R.layout.new_twosided, null);
-									if (list == null) {
-										list = new ArrayList<>();
-										for (TwoSided trl : ((Word) him.bd).getChildren(him.parent)) {
-											list.add(0, new Translate((Word) trl));
-											addView(0, li, ll);
-										}
-										cp.et_name.setText(him.bd.getName());
-										cp.et_desc.setText(him.bd.getDesc(him.parent));
-									} else for (int i = list.size() - 1; i >= 0; i--) addView(i, li, ll);
-									TextView tv = ll.findViewById(R.id.new_add);
-									tv.setText(R.string.add_word);
-									tv.setOnClickListener(v -> {
-										list.add(0, new Translate(null));
-										addView(0, li, ll);
-									});
+									if (content == null) content = new TranslateRecyclerAdapter(him, cp);
+									Runnable onClick = content.onClick(ll);
 									cp.ok.setOnClickListener(v -> {
-										String name = cp.et_name.getText().toString();
-										if (name.isEmpty() || list.isEmpty()) return;
-										MainChapter mch = (MainChapter) backLog.path.get(0);
 										try {
-											for (Translate item : list) {
-												String[] trls = SimpleReader.nameResolver(((TextView)
-														item.v.findViewById(R.id.item_adder_name)).getText().toString());
-												String[] trlDescs = SimpleReader.nameResolver(((TextView)
-														item.v.findViewById(R.id.item_adder_desc)).getText().toString());
-												if (item.trl != null && trls.length == 1) {
-													item.trl.putDesc(him.parent, trlDescs[0]);
-													item.trl.setName(him.parent, trls[0]);
-												} else for (int i = 0; i < trls.length; i++)
-													Word.mkTranslate(new Data(trls[i], mch, i < trlDescs.length
-															? trlDescs[i] : null, him.parent), (Word) him.bd);
-											}
-											for (Word w : toRemove)
-												((Word) him.bd).removeChild(him.parent, w);
-											him.bd.putDesc(him.parent, cp.et_desc.getText().toString());
-											if (!him.bd.getName().equals(name)) {
-												him.bd.setName(him.parent, name);
-												for (Word w : Word.ELEMENTS.get(mch))
-													if (name.equals(w.getName())) {
-														him.bd = w;
-														break;
-													}
-											}
+											onClick.run();
+											if (content.toRemove != null) return;
 											CurrentData.save();
 											VS.ola.selected = -1;
 											setSelectOpts(false);
@@ -308,7 +240,8 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 											VS.aa.notifyDataSetChanged();
 											cp.dismiss();
 										} catch (IllegalArgumentException iae) {
-											System.out.println("An Exception occurred:\n" + iae.getMessage() + "\n" + Formatter.getStackTrace(iae));
+											System.out.println("An Exception occurred:\n" + iae.getMessage()
+													+ "\n" + Formatter.getStackTrace(iae));
 										}
 									});
 									return ll;
@@ -317,90 +250,20 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 						} else if (him.bd instanceof Picture) {
 							if (!AndroidIOSystem.requestWrite()) return;
 							activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.edit), new Includer() {
-								class Image {
-
-									final Picture img;
-									final File f;
-									final Bitmap bm;
-
-									Image(File file) {
-										f = file;
-										bm = BitmapFactory.decodeFile(f.toString());
-										img = null;
-									}
-
-									Image(TwoSided pic) {
-										img = (Picture) pic;
-										f = img.getFile();
-										bm = BitmapFactory.decodeFile(f.toString());
-									}
-								}
-
-								List<Image> list;
-								List<Picture> toRemove = new ArrayList<>();
-
-								void addView(int index, LayoutInflater li, LinearLayout ll) {
-									View view = li.inflate(R.layout.item_add_image, ll, false);
-									Image item = list.get(index);
-									((TextView) view.findViewById(R.id.item_adder_name)).setText(item.f.getName());
-									ImageView iv = view.findViewById(R.id.item_img);
-									iv.setImageBitmap(item.bm);
-									iv.setOnClickListener(v -> new FullPicture(item.bm));
-									view.findViewById(R.id.item_adder_remove).setOnClickListener(v -> {
-										Image i = list.remove(index);
-										if (i.img != null) toRemove.add(i.img);
-										ll.removeView(view);
-									});
-									ll.addView(view, 2);
-								}
+								ImageRecyclerAdapter content;
 
 								@Override
 								public View onInclude(LayoutInflater li, CreatorPopup cp) {
 									LinearLayout ll = (LinearLayout) li.inflate(R.layout.new_twosided, null);
-									TextView tv = ll.findViewById(R.id.new_add);
-									tv.setText(R.string.add_picture);
-									tv.setOnClickListener(v -> VS.mfInstance.startActivityForResult(
-											new Intent(Intent.ACTION_PICK, Media.EXTERNAL_CONTENT_URI), IMAGE_PICK));
-									if (list == null) {
-										list = new ArrayList<>();
-										for (TwoSided img : ((Picture) him.bd).getChildren(him.parent)) {
-											list.add(0, new Image(img));
-											addView(0, li, ll);
-										}
-										cp.et_name.setText(him.bd.getName());
-										cp.et_desc.setText(him.bd.getDesc(him.parent));
-									} else for (int i = list.size() - 1; i >= 0; i--) addView(i, li, ll);
-									defaultReacts.put("NotifyNewImage", (o) -> {
-										File file = ((File) o[0]);
-										if (!file.exists()) return;
-										for (Image img : list) if (img.f.equals(file)) return;
-										Image img = new Image(file);
-										list.add(0, img);
-										ll.post(() -> addView(0, li, ll));
-									});
+									if (content == null) content = new ImageRecyclerAdapter(him, cp);
+									Runnable onClick = content.onClick(ll);
 									cp.ok.setOnClickListener(v -> {
-										String name = cp.et_name.getText().toString();
-										if (name.isEmpty() || list.isEmpty()) return;
-										MainChapter mch = (MainChapter) backLog.path.get(0);
-										for (Image i : list)
-											if (i.img == null)
-												Picture.mkImage(new Data(i.f.getAbsolutePath(), mch, him.parent), (Picture) him.bd);
 										try {
-											for (Picture p : toRemove)
-												((Picture) him.bd).removeChild(him.parent, p);
-											him.bd.putDesc(him.parent, cp.et_desc.getText().toString());
-											if (!him.bd.getName().equals(name)) {
-												him.bd.setName(him.parent, name);
-												for (Picture p : Picture.ELEMENTS.get(mch))
-													if (name.equals(p.getName())) {
-														him.bd = p;
-														break;
-													}
-											}
+											onClick.run();
+											if (content.toRemove != null) return;
 											CurrentData.save();
 											VS.ola.selected = -1;
 											setSelectOpts(false);
-											;
 											him.toShow = him.bd.toString();
 											VS.aa.notifyDataSetChanged();
 											cp.dismiss();
@@ -448,19 +311,24 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 			if (!VS.sv_visible) es.sv.setVisibility(View.GONE);
 			es.onChange(true);
 		}
+		setVisibleOpts();
+		pasteOpts.setVisibility(VS.paster ? View.VISIBLE : View.GONE);
 		return root;
 	}
+
+	private static List<Container> original = new ArrayList<>();
+	private static List<HierarchyItemModel> toMove = new ArrayList<>();
 
 	private void move(boolean ref) {
 		VS.paster = true;
 		Controller.toggleSelectBtn(false);
 		pasteOpts.setVisibility(View.VISIBLE);
-		tglEnabled(paste, true);
+		tglEnabled(paste, false);
 		boolean search = VS.aa instanceof SearchAdapter;
-		List<HierarchyItemModel> list = new ArrayList<>();
+		toMove = new ArrayList<>();
 		for (HierarchyItemModel him : VS.ola.list)
-			if (him.isSelected()) list.add(him);
-		List<Container> original = new ArrayList<>();
+			if (him.isSelected()) toMove.add(him);
+		original = new ArrayList<>();
 		for (BasicData bd : backLog.path) original.add((Container) bd);
 		paste.setOnClickListener(v -> {
 			if (backLog.path.size() == original.size()) {
@@ -472,11 +340,11 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 			Container npp = (Container) backLog.path.get(-2);
 			Container np = (Container) backLog.path.get(-1);
 			boolean searchNow = VS.aa instanceof SearchAdapter;
-			for (BasicData bd : np.getChildren(npp)) list.remove(bd);
+			for (BasicData bd : np.getChildren(npp)) toMove.remove(bd);
 			if (ref) {
 				List<Container> cp = new ArrayList<>(backLog.path.size());
 				for (BasicData bd : backLog.path) cp.add((Container) bd);
-				for (HierarchyItemModel him : list) {
+				for (HierarchyItemModel him : toMove) {
 					Reference r;
 					try {
 						r = Reference.mkElement(him.bd, cp,
@@ -489,7 +357,7 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 				}
 			} else {
 				List<ContainerFile> toSave = new LinkedList<>();
-				for (HierarchyItemModel him : list) {
+				for (HierarchyItemModel him : toMove) {
 					him.bd.move(him.parent, search ? (Container) ((SearchItemModel) him).path.get(-2)
 							: original.get(original.size() - 2), np, npp);
 					if (search) {
@@ -529,7 +397,6 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 		});
 		VS.ola.selected = -1;
 		setSelectOpts(false);
-		;
 	}
 
 	/**
@@ -557,7 +424,7 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 	}
 
 	private void tglEnabled(TextView tv, boolean enabled) {
-		if (tv.isClickable() == enabled) return;
+		if (tv.isEnabled() == enabled) return;
 		if (tv == delete)
 			tv.setCompoundDrawables(null, enabled ? icDelete : icDelete_disabled, null, null);
 		else if (tv == reference)
@@ -569,7 +436,7 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 		else if (tv == paste)
 			tv.setCompoundDrawables(null, enabled ? icPaste : icPaste_disabled, null, null);
 		tv.setTextColor(enabled ? 0xFFFFFFFF : 0x66FFFFFF);
-		tv.setClickable(enabled);
+		tv.setEnabled(enabled);
 	}
 
 	@Override
@@ -641,6 +508,7 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 
 	@Override
 	public void onItemClick(AdapterView<?> par, View v, int pos, long id) {
+		if (VS.aa instanceof ImageAdapter) return;
 		HierarchyItemModel him = (HierarchyItemModel) par.getItemAtPosition(pos);
 		BasicData bd = him.bd;
 		if (bd instanceof Word) {
@@ -716,6 +584,27 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 	}
 
 	private void setContainerContent(Container bd, Container parent) {
+		if (VS.paster) test:{
+			BasicData holder = original.get(original.size() - 1);
+			int i = 0;
+			for (BasicData c : backLog.path) {
+				i++;
+				if (c == holder) {
+					for (; i < backLog.path.size(); i++) {
+						holder = backLog.path.get(i);
+						for (HierarchyItemModel him : toMove) {
+							if (holder == him.bd) {
+								tglEnabled(paste, false);
+								break test;
+							}
+						}
+					}
+					tglEnabled(paste, c != holder);
+					break test;
+				}
+			}
+			tglEnabled(paste, true);
+		}
 		Controller.setMenuRes(VS.menuRes = R.menu.more_container);
 		if (!VS.paster) Controller.toggleSelectBtn(true);
 		es.svc.update(false);
@@ -744,22 +633,14 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 				if (view == null) view = li.inflate(R.layout.item_image, parent, false);
 				ImageItemModel iim = list.get(pos);
 				ImageView iv = view.findViewById(R.id.item_img_1);
-				iv.setOnClickListener(v -> new FullPicture(iim.bm1));
-				iv.setImageBitmap(iim.bm1);
+				iv.setOnClickListener(v -> new FullPicture(iim.pic1));
+				iv.setImageBitmap(iim.getBitmap(true));
 				iv.setContentDescription(iim.pic1.toString());
-				TextView tv = view.findViewById(R.id.item_img_d1);
-				String desc = iim.pic1.getDesc(this.parent);
-				if (desc.isEmpty()) tv.setVisibility(View.GONE);
-				else tv.setText(desc);
-				if (iim.bm2 != null) {
-					(iv = view.findViewById(R.id.item_img_2)).setImageBitmap(iim.bm2);
+				if (iim.pic2 != null) {
+					(iv = view.findViewById(R.id.item_img_2)).setImageBitmap(iim.getBitmap(false));
 					iv.setContentDescription(iim.pic2.toString());
-					iv.setOnClickListener(v -> new FullPicture(iim.bm2));
-					tv = view.findViewById(R.id.item_img_d2);
-					desc = iim.pic2.getDesc(this.parent);
-					if (desc.isEmpty()) tv.setVisibility(View.GONE);
-					else tv.setText(desc);
-				} else view.findViewById(R.id.item_img_l2).setVisibility(View.GONE);
+					iv.setOnClickListener(v -> new FullPicture(iim.pic2));
+				} else view.findViewById(R.id.item_img_2).setVisibility(View.GONE);
 				return view;
 			}
 		}
@@ -788,8 +669,8 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 								return;
 							}
 							try {
-								VS.aa.add(new HierarchyItemModel(new MainChapter(new Data(
-										name, null, cp.et_desc.getText().toString())), null, es.lv.getCount() + 1));
+								VS.aa.add(new HierarchyItemModel(new MainChapter(new Data(name, null)
+										.addDesc(cp.et_desc.getText().toString())), null, es.lv.getCount() + 1));
 								VS.aa.notifyDataSetChanged();
 								cp.dismiss();
 							} catch (IllegalArgumentException iae) {
@@ -806,9 +687,11 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 							if (name.isEmpty()) return;
 							Container par = (Container) backLog.path.get(-1);
 							try {
-								Data d = new Data(name, (MainChapter) backLog.path.get(0), cp.et_desc.getText().toString(), par);
+								Data d = new Data(name, (MainChapter) backLog.path.get(0))
+										.addDesc(cp.et_desc.getText().toString()).addPar(par);
 								Container ch = ((CheckBox) cp.view.findViewById(R.id.chapter_file))
 										.isChecked() ? SaveChapter.mkElement(d) : new Chapter(d);
+								System.out.println("in");
 								VS.aa.add(new HierarchyItemModel(ch, par, es.lv.getCount() + 1));
 								par.putChild((Container) backLog.path.get(-2), ch);
 								CurrentData.newChapters.add(ch);
@@ -824,66 +707,22 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 				case R.id.more_new_word:
 					activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.new_word), new Includer() {
 
-						List<View> list;
-
-						void addView(int index, LayoutInflater li, LinearLayout ll) {
-							View view = li.inflate(R.layout.item_add_translate, ll, false);
-							View item = list.get(index);
-							((TextView) view.findViewById(R.id.item_trl_header)).setText("" + (list.size() - index));
-							if (item != null) {
-								((TextView) view.findViewById(R.id.item_adder_name)).setText(((TextView)
-										item.findViewById(R.id.item_adder_name)).getText().toString());
-								((TextView) view.findViewById(R.id.item_adder_desc)).setText(((TextView)
-										item.findViewById(R.id.item_adder_desc)).getText().toString());
-							}
-							list.set(index, view);
-							view.findViewById(R.id.item_adder_remove).setOnClickListener(v -> {
-								list.remove(index);
-								ll.removeView(view);
-							});
-							ll.addView(view, 2);
-						}
+						TranslateRecyclerAdapter content;
 
 						@Override
 						public View onInclude(LayoutInflater li, CreatorPopup cp) {
 							LinearLayout ll = (LinearLayout) li.inflate(R.layout.new_twosided, null);
-							if (list == null) list = new ArrayList<>();
-							else for (int i = list.size() - 1; i >= 0; i--) addView(i, li, ll);
-							TextView tv = ll.findViewById(R.id.new_add);
-							tv.setText(R.string.add_word);
-							tv.setOnClickListener(v -> {
-								list.add(0, null);
-								addView(0, li, ll);
-							});
+							if (content == null) content = new TranslateRecyclerAdapter(null, cp);
+							Runnable onClick = content.onClick(ll);
 							cp.ok.setOnClickListener(v -> {
-								String name = cp.et_name.getText().toString();
-								if (name.isEmpty() || list.isEmpty()) return;
-								Container par = (Container) backLog.path.get(-1);
-								MainChapter mch = (MainChapter) backLog.path.get(0);
-								LinkedList<Data> translates = new LinkedList<>();
 								try {
-									for (View view : list) {
-										String[] trls = SimpleReader.nameResolver(((TextView)
-												view.findViewById(R.id.item_adder_name)).getText().toString());
-										String[] trlDescs = SimpleReader.nameResolver(((TextView)
-												view.findViewById(R.id.item_adder_desc)).getText().toString());
-										for (int i = 0; i < trls.length; i++)
-											translates.add(new Data(trls[i], mch, i < trlDescs.length ? trlDescs[i] : null, par));
-									}
-									String[] names = SimpleReader.nameResolver(name);
-									String[] descs = SimpleReader.nameResolver(cp.et_desc.getText().toString());
-									Data d = new Data(null, mch, par);
-									for (int i = 0; i < names.length; i++) {
-										d.name = names[i];
-										d.description = i < descs.length ? descs[i] : null;
-										Word w = Word.mkElement(d, translates);
-										VS.aa.add(new HierarchyItemModel(w, par, es.lv.getCount() + 1));
-										par.putChild((Container) backLog.path.get(-2), w);
-									}
+									onClick.run();
+									if (content.toRemove != null) return;
 									CurrentData.save();
 									cp.dismiss();
 								} catch (IllegalArgumentException iae) {
-									System.out.println("An Exception occurred:\n" + iae.getMessage() + "\n" + Formatter.getStackTrace(iae));
+									System.out.println("An Exception occurred:\n" + iae.getMessage()
+											+ "\n" + Formatter.getStackTrace(iae));
 								}
 							});
 							return ll;
@@ -893,66 +732,22 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 				case R.id.more_new_picture:
 					if (!AndroidIOSystem.requestWrite()) return;
 					activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.new_picture), new Includer() {
-						class Image {
-							final File f;
-							final Bitmap bm;
-
-							Image(File file) {
-								f = file;
-								bm = BitmapFactory.decodeFile(f.toString());
-							}
-						}
-
-						List<Image> list;
-
-						void addView(int index, LayoutInflater li, LinearLayout ll) {
-							View view = li.inflate(R.layout.item_add_image, ll, false);
-							Image item = list.get(index);
-							((TextView) view.findViewById(R.id.item_adder_name)).setText(item.f.getName());
-							ImageView iv = view.findViewById(R.id.item_img);
-							iv.setImageBitmap(item.bm);
-							iv.setOnClickListener(v -> new FullPicture(item.bm));
-							view.findViewById(R.id.item_adder_remove).setOnClickListener(v -> {
-								list.remove(index);
-								ll.removeView(view);
-							});
-							ll.addView(view, 2);
-						}
+						ImageRecyclerAdapter content;
 
 						@Override
 						public View onInclude(LayoutInflater li, CreatorPopup cp) {
 							LinearLayout ll = (LinearLayout) li.inflate(R.layout.new_twosided, null);
-							TextView tv = ll.findViewById(R.id.new_add);
-							tv.setText(R.string.add_picture);
-							tv.setOnClickListener(v -> VS.mfInstance.startActivityForResult(
-									new Intent(Intent.ACTION_PICK, Media.EXTERNAL_CONTENT_URI), IMAGE_PICK));
-							if (list == null) list = new ArrayList<>();
-							else for (int i = list.size() - 1; i >= 0; i--) addView(i, li, ll);
-							defaultReacts.put("NotifyNewImage", (o) -> {
-								File file = ((File) o[0]);
-								if (!file.exists()) return;
-								for (Image img : list) if (img.f.equals(file)) return;
-								Image img = new Image(file);
-								list.add(0, img);
-								ll.post(() -> addView(0, li, ll));
-							});
+							if (content == null) content = new ImageRecyclerAdapter(null, cp);
+							Runnable onClick = content.onClick(ll);
 							cp.ok.setOnClickListener(v -> {
-								String name = cp.et_name.getText().toString();
-								if (name.isEmpty() || list.isEmpty()) return;
-								String desc = cp.et_desc.getText().toString();
-								Container par = (Container) backLog.path.get(-1);
-								MainChapter mch = (MainChapter) backLog.path.get(0);
-								LinkedList<Data> images = new LinkedList<>();
-								for (Image i : list)
-									images.add(new Data(i.f.getAbsolutePath(), mch, par));
 								try {
-									Picture p = Picture.mkElement(new Data(name, mch, desc, par), images);
-									VS.aa.add(new HierarchyItemModel(p, par, es.lv.getCount() + 1));
-									par.putChild((Container) backLog.path.get(-2), p);
+									onClick.run();
+									if (content.toRemove != null) return;
 									CurrentData.save();
 									cp.dismiss();
 								} catch (IllegalArgumentException iae) {
-									System.out.println("An Exception occurred:\n" + iae.getMessage() + "\n" + Formatter.getStackTrace(iae));
+									System.out.println("An Exception occurred:\n" + iae.getMessage()
+											+ "\n" + Formatter.getStackTrace(iae));
 								}
 							});
 							return ll;
@@ -995,7 +790,7 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 							activity.getString(R.string.action_chooser_file)), FILE_WRITE);
 					break;
 				case R.id.more_import_mch:
-					SelectDirActivity.titleID = R.string.select_dir_import;
+					SelectDirActivity.importing = true;
 					startActivity(new Intent(getContext(), SelectDirActivity.class));
 			}
 		}).start();

@@ -26,7 +26,7 @@ public class SearchAdapter extends OpenListAdapter<SearchItemModel> {
 	private LayoutInflater li;
 
 	public SearchAdapter(@NonNull Context context, @NonNull List<SearchItemModel> objects, Runnable occ, boolean selectActivity) {
-		super(context, R.layout.item_search, R.id.h_item_name, objects, occ, selectActivity);
+		super(context, R.layout.item_search, R.id.item_name, objects, occ, selectActivity);
 		li = LayoutInflater.from(context);
 	}
 
@@ -34,7 +34,7 @@ public class SearchAdapter extends OpenListAdapter<SearchItemModel> {
 	public View getView(int index, View view, ViewGroup parent) {
 		if (view == null) view = li.inflate(R.layout.item_search, parent, false);
 		SearchItemModel item = list.get(index);
-		((TextView) view.findViewById(R.id.h_item_name)).setText(item.toShow);
+		((TextView) view.findViewById(R.id.item_name)).setText(item.toShow);
 		TextView num = view.findViewById(R.id.h_item_number);
 		num.setBackgroundColor(item.bd instanceof Reference ? 0x400000FF : background(item.bd.getRatio()));
 		num.setText((index + 1) + ".");

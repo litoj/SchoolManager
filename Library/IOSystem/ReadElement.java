@@ -116,7 +116,7 @@ public abstract class ReadElement {
 			} catch (IllegalArgumentException iae) {
 				if (iae.getMessage().contains("'}'")) {
 					src.index--;
-					return new Data(data[0], src.i, sucfail[0], sucfail[1], data[1], parent, info);
+					return new Data(data[0], src.i).addSF(sucfail).addDesc(data[1]).addPar(parent).addExtra(info);
 				} else {
 					throw iae;
 				}
@@ -137,7 +137,7 @@ public abstract class ReadElement {
 					break;
 				case Formatter.CHILDREN:
 					dumpSpace(src, '[');
-					return new Data(data[0], src.i, sucfail[0], sucfail[1], data[1], parent, info);
+					return new Data(data[0], src.i).addSF(sucfail).addDesc(data[1]).addPar(parent).addExtra(info);
 				default:
 					for (int j = tags.length - 1; j >= 0; j--) {
 						if (holder.equals(tags[j])) {
@@ -151,7 +151,7 @@ public abstract class ReadElement {
 							src.index > 100 ? src.index - 100 : 0, src.index) + "<-- this");
 			}
 		}
-		return new Data(data[0], src.i, sucfail[0], sucfail[1], data[1], parent, info);
+		return new Data(data[0], src.i).addSF(sucfail).addDesc(data[1]).addPar(parent).addExtra(info);
 	}
 
 	private static String holdersExpected(boolean name, boolean sf, boolean desc, boolean child, String... tags) {

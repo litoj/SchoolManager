@@ -28,7 +28,7 @@ public class HierarchyAdapter extends OpenListAdapter<HierarchyItemModel> {
 	private LayoutInflater li;
 
 	public HierarchyAdapter(@NonNull Context context, @NonNull List<HierarchyItemModel> objects, Runnable occ, boolean selectActivity) {
-		super(context, R.layout.item_hierarchy, R.id.h_item_name, objects, occ, selectActivity);
+		super(context, R.layout.item_hierarchy, R.id.item_name, objects, occ, selectActivity);
 		li = LayoutInflater.from(context);
 	}
 
@@ -36,7 +36,7 @@ public class HierarchyAdapter extends OpenListAdapter<HierarchyItemModel> {
 	public View getView(int index, View view, ViewGroup parent) {
 		if (view == null) view = li.inflate(R.layout.item_hierarchy, parent, false);
 		HierarchyItemModel item = list.get(index);
-		((TextView) view.findViewById(R.id.h_item_name)).setText(item.toShow);
+		((TextView) view.findViewById(R.id.item_name)).setText(item.toShow);
 		TextView num = view.findViewById(R.id.h_item_number);
 		num.setBackgroundColor(item.bd instanceof Reference ? 0x600000FF : background(item.bd.getRatio()));
 		num.setText((index + 1) + ".");
@@ -62,7 +62,7 @@ public class HierarchyAdapter extends OpenListAdapter<HierarchyItemModel> {
 		} else view.findViewById(R.id.item_selected).setVisibility(View.GONE);
 		if (item.bd instanceof MainChapter &&
 				!((MainChapter) item.bd).getDir().getPath().contains(Formatter.getPath().getPath())) {
-			ImageView remove = view.findViewById(R.id.item_remove);
+			ImageView remove = view.findViewById(R.id.btn_remove);
 			remove.setVisibility(View.VISIBLE);
 			remove.setOnClickListener(v -> {
 				MainChapter mch = (MainChapter) item.bd;

@@ -772,6 +772,48 @@
                 android:background="#2888"
                 android:paddingHorizontal="15dp"
                 android:paddingVertical="2dp"
+                android:text="2.0"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- improved pictures loading speed\n
+- added nested scroll for image editing + creating\n
+- fixed twosided partially renaming (deleting its children)"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="1.5"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- improved dir selector behavior\n
+- fixed transition between explorer and dir selector\n
+- fixed gui bad icon display\n
+- fixed word deletion null-pointer\n
+- fixed SaveChapter hash errors"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
                 android:text="1.2"
                 android:textSize="17sp" />
 
@@ -779,7 +821,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="8dp"
-                android:text="- redesigned inefficient and unsafe database operations\n- fixed test end possible crash"
+                android:text="
+- redesigned inefficient and unsafe database operations\n
+- fixed test end possible crash"
                 android:textAlignment="textStart"
                 android:textSize="15sp" />
 
@@ -796,7 +840,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="8dp"
-                android:text="- fixed chapters with file not saving\n- fixed renaming file-chapter - app crash"
+                android:text="
+- fixed chapters with file not saving\n
+- fixed renaming file-chapter - app crash"
                 android:textAlignment="textStart"
                 android:textSize="15sp" />
 
@@ -1306,7 +1352,9 @@
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp"
-            android:text="This program was developed to help people with school subjects, especially with foreign languages and biology.\n\nFor any further help contact me at LitosPepa@gmail.com"
+            android:text="
+This program was developed to help people with school subjects, especially with foreign languages and biology.
+\n\nFor any further help contact me at LitosPepa@gmail.com"
             android:textSize="13sp" />
     </LinearLayout>
 </ScrollView>

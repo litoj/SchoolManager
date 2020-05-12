@@ -44,7 +44,7 @@ public class SimpleReader {
 		int[] ret = {0, 0, 0};
 		if (minWords == -1) minWords = Integer.MAX_VALUE;
 		MainChapter mch = saveTo.getIdentifier();
-		Data bd = new Data(null, mch, saveTo);
+		Data bd = new Data(null, mch).addPar(saveTo);
 		if (source.chaps != null) {
 			if (endIndex == -1) endIndex = source.chaps.length;
 			startIndex--;
@@ -61,7 +61,7 @@ public class SimpleReader {
 		}
 		for (SimpleLine sl : source.lines) {
 			ArrayList<Data> bds = new ArrayList<>(sl.words[1].length);
-			for (String trl : sl.words[1]) bds.add(new Data(trl, mch, saveTo));
+			for (String trl : sl.words[1]) bds.add(new Data(trl, mch).addPar(saveTo));
 			for (String s : sl.words[0]) {
 				bd.name = s;
 				saveTo.putChild(parent, Word.mkElement(bd, new ArrayList<>(bds)));
@@ -95,7 +95,7 @@ public class SimpleReader {
 		if (sch.chaps != null)
 			if (endIndex == -1 || endIndex > sch.chaps.length) endIndex = sch.chaps.length;
 		do {
-			Data bd = new Data(psFix[0] + startNum++ + psFix[1], mch, parent);
+			Data bd = new Data(psFix[0] + startNum++ + psFix[1], mch).addPar(parent);
 			Container c = b ? SaveChapter.mkElement(bd) : new Chapter(bd);
 			i = loadWords(c, parent, sch, startIndex, -1, wordCount);
 			res[0] += i[0];

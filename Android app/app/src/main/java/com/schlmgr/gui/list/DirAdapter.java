@@ -18,7 +18,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.schlmgr.gui.Controller.activity;
 import static com.schlmgr.gui.activity.MainActivity.ic_check_empty;
 import static com.schlmgr.gui.activity.MainActivity.ic_check_filled;
 
@@ -48,8 +47,6 @@ public class DirAdapter extends ArrayAdapter<DirItemModel> {
 				DirItemModel item = new DirItemModel(f, f.getName());
 				try {
 					if (f.listFiles() == null) continue;
-					if (f.getName().equals("emulated") && f.listFiles().length > 0)
-						item.f = f.listFiles()[0];
 					list.add(item);
 				} catch (Exception e) {
 					continue;
@@ -59,11 +56,16 @@ public class DirAdapter extends ArrayAdapter<DirItemModel> {
 						item.name = usbotg;
 						break;
 					case "emulated":
+						if (!foundInternal && f.listFiles().length > 0) for (File child : f.listFiles())
+							if (child.getName().equals("0")) {
+								item.f = child;
+								break;
+							}
 					case "sdcard0":
 					case "external0":
 					case "0":
 						if (foundInternal) {
-							list.remove(f);
+							list.remove(item);
 							break;
 						}
 						foundInternal = true;
@@ -78,6 +80,9 @@ public class DirAdapter extends ArrayAdapter<DirItemModel> {
 					case "external":
 						suspicious = item;
 						list.remove(item);
+					default:
+						if (f.getName().matches(".*\\w{4}[-]\\w{4}") || f.getName().contains("ext")
+								|| f.getName().contains("sdcard")) item.name = external;
 				}
 			}
 			if (suspicious != null)
@@ -106,45 +111,7 @@ public class DirAdapter extends ArrayAdapter<DirItemModel> {
 	}
 
 	public static String storageName(File f) {
-		if (external == null) {
-			external = activity.getString(R.string.storage_external);
-			internal = activity.getString(R.string.storage_internal);
-			usbotg = activity.getString(R.string.storage_usbotg);
-		}
-		File[] files = new File(AndroidIOSystem.storageDir).listFiles();
-		if (files.length == 1 || f.getName().equals("0"))
-			return internal;
-		Boolean ext = null;
-		File suspicious = null;
-		for (File file : files) {
-			switch (file.getName()) {
-				case "usbotg":
-					if (file.equals(f)) return usbotg;
-					break;
-				case "sdcard0":
-				case "external0":
-				case "emulated":
-					if (file.equals(f)) return internal;
-					if (ext == null) ext = false;
-					break;
-				case "sdcard1":
-				case "external1":
-				case "ext":
-					if (file.equals(f)) return external;
-					ext = true;
-					break;
-				case "sdcard":
-				case "external":
-					if (file.equals(f)) {
-						if (ext == null) suspicious = file;
-						else return ext ? internal : external;
-					}
-					break;
-				default:
-					if (file.equals(f)) return file.getName();
-			}
-		}
-		if (suspicious != null) return ext ? internal : external;
+		for (DirItemModel dim : convert(null)) if (dim.f.equals(f)) return dim.name;
 		return f.getName();
 	}
 

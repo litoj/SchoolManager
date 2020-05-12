@@ -7,9 +7,9 @@ import objects.templates.Container;
 import objects.templates.ContainerFile;
 import objects.templates.TwoSided;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -82,8 +82,7 @@ public class Picture extends TwoSided<Picture> {
 				d.identifier.putSetting("imgRemoved", false);
 			}
 		}
-		Integer hashCode = d.identifier.hashCode();
-		USED.waitForAccess(hashCode);
+		USED.waitForAccess(d.identifier);
 		for (Picture p : ELEMENTS.get(d.identifier)) {
 			if (d.name.equals(p.name)) {
 				if (p.children.get(d.par) == null) {
@@ -93,12 +92,12 @@ public class Picture extends TwoSided<Picture> {
 				if (d.description != null && !d.description.isEmpty())
 					p.putDesc(d.par, d.description);
 				p.addImages(images, d.par, isNew);
-				USED.endAccess(hashCode);
+				USED.endAccess(d.identifier);
 				return p;
 			}
 		}
 		Picture ret = new Picture(d, images, isNew);
-		USED.endAccess(hashCode);
+		USED.endAccess(d.identifier);
 		return ret;
 	}
 	
@@ -112,7 +111,7 @@ public class Picture extends TwoSided<Picture> {
 	 */
 	public static Picture mkImage(Data d, Picture main) {
 		int serialINum = -1;
-		File par = new File(d.identifier.getDir().getPath(), "Pictures");
+		File par = new File(d.identifier.getDir(), "Pictures");
 		String front = readName(main)[0] + ' ';
 		File source = new File(d.name);
 		while (new File(par, front + ++serialINum + ".jpg").exists());
@@ -132,7 +131,7 @@ public class Picture extends TwoSided<Picture> {
 	 */
 	private void addImages(List<Data> images, Container parent, boolean isNew) {
 		int serialINum = -1;
-		File par = new File(identifier.getDir().getPath(), "Pictures");
+		File par = new File(identifier.getDir(), "Pictures");
 		String front = readName(this)[0] + ' ';
 		for (int i = 0; i < images.size(); i++) {
 			File source = new File(images.get(i).name);
@@ -152,10 +151,9 @@ public class Picture extends TwoSided<Picture> {
 		children.put(bd.par, new ArrayList<>(Arrays.asList(new Picture[]{pic})));
 		parentCount = 1;
 		if (isNew) {
-			File dest = new File(new File(identifier.getDir().getPath(), "Pictures"), name + ".jpg");
-			if (!dest.exists()) try (BufferedOutputStream bos = new BufferedOutputStream(
-					new java.io.FileOutputStream(dest)); BufferedInputStream bis
-					                         = new BufferedInputStream(new java.io.FileInputStream(save))) {
+			File dest = new File(new File(identifier.getDir(), "Pictures"), name + ".jpg");
+			if (!dest.exists()) try (FileOutputStream bos = new FileOutputStream(dest);
+					FileInputStream bis = new FileInputStream(save)) {
 				byte[] buffer = new byte[8192];
 				int amount;
 				while ((amount = bis.read(buffer)) != -1) bos.write(buffer, 0, amount);
@@ -187,8 +185,7 @@ public class Picture extends TwoSided<Picture> {
 		mch.load(false);
 		String exceptions = "";
 		File dir = new File(mch.getDir(), "Pictures");
-		Integer hashCode = mch.hashCode();
-		USED.waitForAccess(hashCode);
+		USED.waitForAccess(mch);
 		for (Picture p : ELEMENTS.get(mch)) {
 			int serialINum = -1;
 			String front = p.name + ' ';
@@ -202,7 +199,7 @@ public class Picture extends TwoSided<Picture> {
 				}
 			}
 		}
-		USED.endAccess(hashCode);
+		USED.endAccess(mch);
 		if (!exceptions.isEmpty()) throw new IllegalArgumentException(exceptions);
 		mch.putSetting("imgRemoved", false);
 	}
@@ -231,8 +228,7 @@ public class Picture extends TwoSided<Picture> {
 		if (this.name.equals(name) || children.isEmpty() || !isMain) return false;
 		Container parpar = ch.removeChild(this);
 		Map<String, Integer> map = (Map<String, Integer>) identifier.getSetting("picParCount");
-		Integer hashCode = identifier.hashCode();
-		USED.waitForAccess(hashCode);
+		USED.waitForAccess(identifier);
 		for (Picture p : ELEMENTS.get(identifier))
 			if (p.name.equals(name)) {//Umožňuje splynutí obrázků v případě shody názvu
 				if (p.getDesc(ch) == null || p.getDesc(ch).equals("")) p.putDesc(ch, getDesc(ch));
@@ -250,12 +246,13 @@ public class Picture extends TwoSided<Picture> {
 			parentCount--;
 			setName0(parpar, ch, new Picture(this, ch, name));
 		}
-		USED.endAccess(hashCode);
+		USED.endAccess(identifier);
 		return true;
 	}
 
 	private Picture(Picture src, Container par, String newName) {
-		super(new Data(newName, src.identifier, 0, 0, src.description.get(par), par), true, ELEMENTS);
+		super(new Data(newName, src.identifier).addSF(new int[]{0, 0})
+				.addDesc(src.description.get(par)).addPar(par), true, ELEMENTS);
 		picParentCount(true);
 		parentCount--;
 	}
@@ -306,11 +303,10 @@ public class Picture extends TwoSided<Picture> {
 	@Override
 	public boolean destroy(Container parent) {
 		if (isMain) {
-			for (BasicData child : children.get(parent)) {
+			for (BasicData child : children.remove(parent)) {
 				((Picture) child).remove1(parent, this);
 				child.destroy(parent);
 			}
-			children.remove(parent);
 			parent.removeChild(this);
 			if (--parentCount != 0) {
 				((Map<String, Integer>) identifier.getSetting("picParCount")).put(name, parentCount);
@@ -318,17 +314,16 @@ public class Picture extends TwoSided<Picture> {
 			}
 		}
 		identifier.putSetting("imgRemoved", true);
-		Integer hashCode = identifier.hashCode();
-		USED.waitForAccess(hashCode);
+		USED.waitForAccess(identifier);
 		if (isMain) {
 			((Map<String, Integer>) identifier.getSetting("picParCount")).remove(name);
 			ELEMENTS.get(identifier).remove(this);
-			USED.endAccess(hashCode);
+			USED.endAccess(identifier);
 			return true;
 		}
 		IMAGES.get(identifier).remove(this);
-		USED.endAccess(hashCode);
-		return new File(new File(identifier.getDir().getPath(), "Pictures"), name + ".jpg").delete();
+		USED.endAccess(identifier);
+		return new File(new File(identifier.getDir(), "Pictures"), name + ".jpg").delete();
 	}
 
 	/**

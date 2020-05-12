@@ -50,9 +50,6 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 		return identifier;
 	}
 
-	/**
-	 * Inefficient, int wouldn't have to be casted. This should be fixed once, aware of 
-	 */
 	private int hash;
 
 	/**
@@ -64,13 +61,12 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	}
 
 	protected static final SaveChapter mkElement(Data d, boolean full) {
-		Integer hashCode = d.identifier.hashCode();
-		USED.waitForAccess(hashCode);
+		USED.waitForAccess(d.identifier);
 		SaveChapter ret;
 		if (ELEMENTS.get(d.identifier) == null) {
 			ELEMENTS.put(d.identifier, new java.util.LinkedList<>());
 			if (d.identifier.getSetting("schNameCount") == null) {
-				d.identifier.putSetting("schNameCount", new HashMap<String, Byte>());
+				d.identifier.putSetting("schNameCount", new HashMap<String, Integer>());
 				d.identifier.putSetting("schRemoved", false);
 			}
 		} else {
@@ -78,13 +74,13 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 			for (SaveChapter sch : ELEMENTS.get(d.identifier)) {
 				if (d.name.equals(sch.toString()) && hash == sch.hash) {
 					sch.loaded = full;
-					USED.endAccess(hashCode);
+					USED.endAccess(d.identifier);
 					return sch;
 				}
 			}
 		}
 		ret = new SaveChapter(d, full);
-		USED.endAccess(hashCode);
+		USED.endAccess(d.identifier);
 		return ret;
 	}
 
@@ -98,10 +94,10 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 		if (!full) {
 			hash = d.tagVals[0] == null ? 1 : (int) (long) d.tagVals[0];
 		} else {
-			Map<String, Integer> map = (Map<String, Integer>) identifier.getSetting("schNameCount");
-			Integer i = map.get(name);
-			map.put(name, hash = (byte) (i == null ? 1 : (i + 1)));
-			map.put(name, hash);
+			Map<String, Number> map = (Map<String, Number>) identifier.getSetting("schNameCount");
+			Number i = map.get(name);
+			map.put(name, hash = i == null ? 1 : i.intValue() + 1);
+			identifier.putSetting("schNameCount", map);
 		}
 		ELEMENTS.get(d.identifier).add(this);
 	}
@@ -204,8 +200,8 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 		mch.load(false);
 		String exceptions = "";
 		File dir = new File(mch.getDir(), "Chapters");
-		Map<String, Integer> map = new HashMap<>();
-		USED.waitForAccess(mch.hashCode());
+		Map<String, Number> map = new HashMap<>();
+		USED.waitForAccess(mch);
 		for (SaveChapter sch : ELEMENTS.get(mch)) {
 			int hash = 1;
 			File src = new File(dir, sch.name + ".json");
@@ -215,9 +211,9 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 					break;
 				}
 			if (hash < 1024 && (map.get(sch.name) == null
-					|| (sch.hash = hash) > map.get(sch.name))) map.put(sch.name, hash);
+					|| (sch.hash = hash) > map.get(sch.name).intValue())) map.put(sch.name, hash);
 		}
-		USED.endAccess(mch.hashCode());
+		USED.endAccess(mch);
 		mch.putSetting("schNameCount", map);
 		if (!exceptions.isEmpty()) throw new IllegalArgumentException(exceptions);
 		mch.putSetting("schRemoved", false);
@@ -230,7 +226,7 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	 * @return {@code true} if an image has been deleted from the hierarchy
 	 */
 	public static boolean isCleanable(MainChapter mch) {
-		return (boolean) mch.getSetting("schRemoved");
+		return (Boolean) mch.getSetting("schRemoved");
 	}
 
 	@Override
@@ -246,14 +242,15 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	@Override
 	public boolean setName(Container none, String name) {
 		load();
-		Integer newCount = ((Map<String, Integer>) identifier.getSetting("schNameCount")).get(name);
-		int current = newCount == null ? 1 : newCount;
+		Map<String, Number> map = (Map<String, Number>) identifier.getSetting("schNameCount");
+		Number newCount = map.get(name);
+		int current = newCount == null ? 1 : newCount.intValue();
 		try {
 			while (loading) Thread.sleep(20);
 		} catch (InterruptedException ie) {}
 		if (getSaveFile().renameTo(new File(new File(identifier.getDir(), "Chapters"), name
 						+ (current == 1 ? ".json" : "[" + current + "].json")))) {
-			((Map<String, Integer>) identifier.getSetting("schNameCount")).put(this.name = name, hash = current);
+			map.put(this.name = name, hash = current);
 			return true;
 		}
 		return false;
@@ -263,13 +260,13 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	public boolean destroy(Container parent) {
 		if (getSaveFile().delete()) {
 			identifier.putSetting("schRemoved", true);
-			Map<String, Integer> map = (Map<String, Integer>) identifier.getSetting("schNameCount");
-			int i = map.get(name) - 1;
-			USED.waitForAccess(identifier.hashCode());
+			Map<String, Number> map = (Map<String, Number>) identifier.getSetting("schNameCount");
+			int i = map.get(name) == null ? 0 : map.get(name).intValue() - 1;
+			USED.waitForAccess(identifier);
 			if (i < 1) map.remove(name);
 			else map.put(name, i);
 			parent.removeChild(this);
-			USED.endAccess(identifier.hashCode());
+			USED.endAccess(identifier);
 			return true;
 		}
 		return false;

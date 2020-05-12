@@ -40,14 +40,14 @@ import static com.schlmgr.gui.CurrentData.backLog;
 
 public class SelectDirActivity extends AppCompatActivity implements OnItemClickListener, OnItemLongClickListener {
 
-	public static int titleID;
 	private static long backTime;
 	private HorizontalScrollView path_handler;
 	private LinearLayout path;
 	private TextView set_subjdir;
 	private ListView list;
 	private Context context;
-	static ViewState VS;
+	public static boolean importing;
+	private static ViewState VS;
 
 	private static Drawable icSetDir;
 	private static Drawable icSetDir_disabled;
@@ -56,44 +56,50 @@ public class SelectDirActivity extends AppCompatActivity implements OnItemClickL
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_select_dir);
-		((TextView) findViewById(R.id.bar)).setText(titleID);
+		((TextView) findViewById(R.id.bar)).setText(importing ? R.string.select_dir_import : R.string.select_dir_src);
 		findViewById(R.id.bar_more).setOnClickListener(v -> {
 			PopupMenu pm = new PopupMenu(Controller.CONTEXT, v);
-			pm.inflate(R.menu.more_choose_dir);
+			pm.inflate(importing ? R.menu.more_current_dir : R.menu.more_choose_dir);
 			pm.setOnMenuItemClickListener(this::onMenuItemClick);
 			pm.show();
 		});
 		findViewById(R.id.bar_select).setOnClickListener(v -> allCheck());
 		findViewById(R.id.cancel).setOnClickListener(v -> super.onBackPressed());
 		findViewById(R.id.select_all).setOnClickListener(v -> allCheck());
-		(set_subjdir = findViewById(R.id.dir_set_subjdir)).setOnClickListener(v -> {
-			for (DirItemModel item : VS.da.list) {
-				if (item.selected) {
-					if (Formatter.changeDir(item.f.getAbsolutePath())) {
-						MainFragment.VS = new MainFragment.ViewState();
-						backLog.clear();
-						CurrentData.createMchs();
-						runOnUiThread(() -> Toast.makeText(
-								context, getString(R.string.choose_dir), Toast.LENGTH_SHORT).show());
-					}
-					super.onBackPressed();
-					break;
-				}
-			}
-		});
-		findViewById(R.id.dir_import).setOnClickListener(v -> {
-			if (VS.path.get(-1).equals(Formatter.getPath()) || VS.da.list.size() < 1) return;
-			for (DirItemModel item : VS.da.list)
-				if (item.selected) for (File f : item.f.listFiles())
-					if (f.getName().equals("main.json")) {
-						CurrentData.ImportedMchs.importMch(item.f);
+		set_subjdir = findViewById(R.id.dir_set_subjdir);
+		TextView mch_import = findViewById(R.id.dir_import);
+		if (importing) {
+			set_subjdir.setVisibility(View.GONE);
+			mch_import.setOnClickListener(v -> {
+				if (VS.path.get(-1).equals(Formatter.getPath()) || VS.da.list.size() < 1) return;
+				for (DirItemModel item : VS.da.list)
+					if (item.selected) for (File f : item.f.listFiles())
+						if (f.getName().equals("main.json")) {
+							CurrentData.ImportedMchs.importMch(item.f);
+							break;
+						}
+				CurrentData.createMchs();
+				if (backLog.path.isEmpty()) MainFragment.VS.mfInstance.setContent(null, null, 0);
+				super.onBackPressed();
+			});
+		} else {
+			mch_import.setVisibility(View.GONE);
+			set_subjdir.setOnClickListener(v -> {
+				for (DirItemModel item : VS.da.list) {
+					if (item.selected) {
+						if (Formatter.changeDir(item.f.getAbsolutePath())) {
+							MainFragment.VS = new MainFragment.ViewState();
+							backLog.clear();
+							CurrentData.createMchs();
+							runOnUiThread(() -> Toast.makeText(
+									context, getString(R.string.choose_dir), Toast.LENGTH_SHORT).show());
+						}
+						super.onBackPressed();
 						break;
 					}
-			MainFragment.VS = new MainFragment.ViewState();
-			backLog.clear();
-			CurrentData.createMchs();
-			super.onBackPressed();
-		});
+				}
+			});
+		}
 		context = getApplicationContext();
 		path_handler = findViewById(R.id.dir_path_handler);
 		path = findViewById(R.id.dir_path);
@@ -156,6 +162,7 @@ public class SelectDirActivity extends AppCompatActivity implements OnItemClickL
 	}
 
 	public void checkSelected() {
+		if (importing) return;
 		boolean enabled = VS.da.selected == 1;
 		set_subjdir.setCompoundDrawables(null, enabled ? icSetDir : icSetDir_disabled, null, null);
 		set_subjdir.setTextColor(enabled ? 0xFFFFFFFF : 0x66FFFFFF);

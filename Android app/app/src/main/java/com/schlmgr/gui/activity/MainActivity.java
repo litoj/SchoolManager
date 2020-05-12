@@ -3,6 +3,7 @@ package com.schlmgr.gui.activity;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.DisplayMetrics;
 import android.widget.PopupMenu;
 import android.widget.Toast;
 
@@ -19,7 +20,9 @@ import com.schlmgr.gui.AndroidIOSystem;
 import com.schlmgr.gui.Controller;
 import com.schlmgr.gui.CurrentData;
 import com.schlmgr.gui.fragments.MainFragment;
+import com.schlmgr.gui.list.DirAdapter;
 import com.schlmgr.gui.popup.AbstractPopup;
+import com.schlmgr.gui.popup.FullPicture;
 
 import java.io.File;
 
@@ -68,8 +71,14 @@ public class MainActivity extends AppCompatActivity {
 		NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
 		NavigationUI.setupWithNavController((NavigationView) findViewById(R.id.nav_menu), navController);
 		if (background == null) {
-			ic_check_empty=getResources().getDrawable(R.drawable.ic_check_box_empty);
-			ic_check_filled=getResources().getDrawable(R.drawable.ic_check_box_filled);
+			DisplayMetrics dm = new DisplayMetrics();
+			getWindowManager().getDefaultDisplay().getMetrics(dm);
+			FullPicture.size = dm.heightPixels > dm.widthPixels ? dm.heightPixels : dm.widthPixels;
+			DirAdapter.internal = getString(R.string.storage_internal);
+			DirAdapter.external = getString(R.string.storage_external);
+			DirAdapter.usbotg = getString(R.string.storage_usbotg);
+			ic_check_empty = getResources().getDrawable(R.drawable.ic_check_box_empty);
+			ic_check_filled = getResources().getDrawable(R.drawable.ic_check_box_filled);
 			Controller.dp = getResources().getDimension(R.dimen.dp);
 			defDir = Environment.getExternalStorageDirectory().getAbsolutePath();
 			AndroidIOSystem.storageDir = defDir.substring(0, defDir.lastIndexOf(File.separatorChar +

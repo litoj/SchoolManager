@@ -1,19 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ScrollView
-        android:layout_width="match_parent"
+    <HorizontalScrollView
+        android:id="@+id/popup_pic_hscroll"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="10dp"
-        android:background="@drawable/outline_green">
+        android:layout_gravity="center"
+        android:visibility="gone">
 
         <ImageView
-            android:id="@+id/popup_pic"
+            android:id="@+id/popup_pic_h"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:adjustViewBounds="true" />
+    </HorizontalScrollView>
+
+    <ScrollView
+        android:id="@+id/popup_pic_vscroll"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/popup_pic_v"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:adjustViewBounds="true" />
     </ScrollView>
-</LinearLayout>
+</FrameLayout>

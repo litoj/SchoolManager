@@ -18,6 +18,6 @@
         android:layout_marginHorizontal="5dp"
         android:hint="@string/data_translate"
         android:inputType="textNoSuggestions"
-        android:maxLines="1"
+        android:singleLine="true"
         android:textSize="15sp" />
 </LinearLayout>
