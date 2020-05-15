@@ -31,4 +31,8 @@ public class PopupCareActivity extends AppCompatActivity {
 		runOnUiThread(() -> AbstractPopup.clean());
 		super.onDestroy();
 	}
+
+	protected void oldDestroy() {
+		super.onDestroy();
+	}
 }

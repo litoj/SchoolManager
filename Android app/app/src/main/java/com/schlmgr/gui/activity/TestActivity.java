@@ -13,7 +13,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 
 import com.schlmgr.R;
 import com.schlmgr.gui.Controller;
@@ -21,7 +20,6 @@ import com.schlmgr.gui.fragments.TestFragment;
 import com.schlmgr.gui.list.HierarchyItemModel;
 import com.schlmgr.gui.list.ImageItemModel;
 import com.schlmgr.gui.list.SearchItemModel;
-import com.schlmgr.gui.popup.AbstractPopup;
 import com.schlmgr.gui.popup.FullPicture;
 import com.schlmgr.gui.popup.TestResultsPopup;
 import com.schlmgr.gui.popup.TestResultsPopup.TestedItem;
@@ -40,7 +38,6 @@ import testing.Test;
 import testing.Test.SrcPath;
 
 import static com.schlmgr.gui.Controller.dp;
-import static com.schlmgr.gui.activity.MainActivity.c;
 import static com.schlmgr.gui.fragments.TestFragment.picTest;
 
 public class TestActivity extends PopupCareActivity {
@@ -107,6 +104,12 @@ public class TestActivity extends PopupCareActivity {
 
 	private void defaultBack() {
 		super.onBackPressed();
+	}
+
+	@Override
+	public void onDestroy() {
+		if (test == null) oldDestroy();
+		else super.onDestroy();
 	}
 
 	private void onSubmit() {
