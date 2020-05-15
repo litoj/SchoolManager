@@ -89,12 +89,6 @@ public abstract class NestedRecyclerAdapter<T, H extends ViewHolder> extends Rec
 		switch (event.getAction()) {
 			case MotionEvent.ACTION_UP:
 				sv.requestDisallowInterceptTouchEvent(false);
-				if (first && v != container && v.isClickable()) {
-					event.setAction(MotionEvent.ACTION_DOWN);
-					v.onTouchEvent(event);
-					event.setAction(MotionEvent.ACTION_UP);
-					v.onTouchEvent(event);
-				}
 				break;
 			case MotionEvent.ACTION_DOWN:
 				sv.requestDisallowInterceptTouchEvent(true);
@@ -113,6 +107,10 @@ public abstract class NestedRecyclerAdapter<T, H extends ViewHolder> extends Rec
 				} else sv.requestDisallowInterceptTouchEvent(true);
 		}
 		y = event.getY();
+		if (v != container) {
+			v.onTouchEvent(event);
+			return false;
+		}
 		container.onTouchEvent(event);
 		return true;
 	}
