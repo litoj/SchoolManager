@@ -24,7 +24,7 @@ public class CreatorPopup extends AbstractPopup {
 	final Includer toInclude;
 
 	public CreatorPopup(String header, Includer toInclude) {
-		super(R.layout.popup_creator);
+		super(R.layout.popup_creator, true);
 		type = header;
 		this.toInclude = toInclude;
 		create();

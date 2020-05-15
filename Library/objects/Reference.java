@@ -126,7 +126,7 @@ public final class Reference implements BasicData {
 		if (index == pathStr.length)
 			return find(refStr, path[index - 1], index > 1 ? path[index - 2] : null, true);
 		BasicData found = find(pathStr[index], path[index - 1], index > 1 ? path[index - 2] : null, false);
-		path[index++] = (Container) found;
+		if ((path[index++] = (Container) found) == null) return null;
 		return usePath(index);
 	}
 

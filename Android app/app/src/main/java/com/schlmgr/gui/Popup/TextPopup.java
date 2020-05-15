@@ -15,7 +15,7 @@ public class TextPopup extends AbstractPopup {
 	final String msg, fullMsg;
 
 	public TextPopup(String msg, String fullMsg) {
-		super(R.layout.popup_text);
+		super(R.layout.popup_text, false);
 		this.msg = msg;
 		this.fullMsg = fullMsg;
 		create();

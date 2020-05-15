@@ -15,6 +15,7 @@ import androidx.loader.content.CursorLoader;
 
 import com.schlmgr.R;
 import com.schlmgr.gui.activity.MainActivity;
+import com.schlmgr.gui.activity.PopupCareActivity;
 
 import java.io.File;
 import java.util.LinkedList;
@@ -22,6 +23,7 @@ import java.util.List;
 
 public class Controller {
 	public static MainActivity activity;
+	public static PopupCareActivity currentActivity;
 	public static Runnable defaultBack;
 	public static float dp;
 	public static Context CONTEXT;

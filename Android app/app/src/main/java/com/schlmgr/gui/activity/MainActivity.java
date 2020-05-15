@@ -8,7 +8,6 @@ import android.widget.PopupMenu;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -33,14 +32,13 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static com.schlmgr.gui.AndroidIOSystem.defDir;
 import static com.schlmgr.gui.fragments.MainFragment.STORAGE_PERMISSION;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends PopupCareActivity {
 
 	private AppBarConfiguration mAppBarConfiguration;
 	private NavController navController;
-	private static final Controller c = Controller.getControl();
+	static final Controller c = Controller.getControl();
 	private static boolean loaded;
 	private static Thread background;
-	private boolean exists;
 
 	public static Drawable ic_check_empty;
 	public static Drawable ic_check_filled;
@@ -48,7 +46,7 @@ public class MainActivity extends AppCompatActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		Controller.activity = this;
+		Controller.currentActivity = Controller.activity = this;
 		Controller.CONTEXT = getApplicationContext();
 		Controller.defaultBack = super::onBackPressed;
 		setContentView(R.layout.nav_menu);
@@ -114,14 +112,6 @@ public class MainActivity extends AppCompatActivity {
 	}
 
 	@Override
-	protected void onPostResume() {
-		super.onPostResume();
-		if (!c.popupRepaint.isEmpty() && !exists)
-			for (Runnable r : c.popupRepaint) new Thread(r).start();
-		exists = true;
-	}
-
-	@Override
 	public boolean onSupportNavigateUp() {
 		return NavigationUI.navigateUp(navController, mAppBarConfiguration)
 				|| super.onSupportNavigateUp();
@@ -129,8 +119,7 @@ public class MainActivity extends AppCompatActivity {
 
 	@Override
 	public void onBackPressed() {
-		if (AbstractPopup.isActive) AbstractPopup.clear();
-		else (c != null ? c.onBackPressed : Controller.defaultBack).run();
+		if (!clear()) (c != null ? c.onBackPressed : Controller.defaultBack).run();
 	}
 
 	@Override

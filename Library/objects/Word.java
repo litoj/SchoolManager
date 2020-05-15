@@ -153,18 +153,17 @@ public class Word extends TwoSided<Word> {
 	@Override
 	public boolean setName(Container ch, String name) {
 		if (this.name.equals(name) || children.isEmpty()) return false;
-		Container parpar = isMain ? ch.removeChild(this) : null;
 		USED.waitForAccess(identifier);
 		for (Word w : (isMain ? ELEMENTS : TRANSLATES).get(identifier).toArray(new Word[0]))
 			if (w.name.equals(name)) {
 				if (w.getDesc(ch) == null || w.getDesc(ch).equals("")) w.putDesc(ch, getDesc(ch));
 				if (parentCount == 1) (isMain ? ELEMENTS : TRANSLATES).get(identifier).remove(this);
-				setName0(parpar, ch, w);
+				setName0(isMain ? ch.removeChild(this) : null, ch, w);
 				USED.endAccess(identifier);
 				return true;
 			}
 		if (children.keySet().size() == 1) this.name = name;
-		else setName0(parpar, ch, new Word(this, ch, name));
+		else setName0(isMain ? ch.removeChild(this) : null, ch, new Word(this, ch, name));
 		USED.endAccess(identifier);
 		return true;
 	}

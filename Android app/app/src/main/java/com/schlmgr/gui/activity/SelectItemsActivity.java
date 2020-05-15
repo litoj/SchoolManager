@@ -10,7 +10,6 @@ import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.drawable.DrawableCompat;
 
 import com.schlmgr.R;
@@ -36,11 +35,12 @@ import objects.templates.BasicData;
 import objects.templates.Container;
 import objects.templates.TwoSided;
 
+import static com.schlmgr.gui.Controller.currentActivity;
 import static com.schlmgr.gui.Controller.dp;
 import static com.schlmgr.gui.fragments.TestFragment.list;
 import static com.schlmgr.gui.list.HierarchyItemModel.convert;
 
-public class SelectItemsActivity extends AppCompatActivity implements OnItemClickListener, OnItemLongClickListener {
+public class SelectItemsActivity extends PopupCareActivity implements OnItemClickListener, OnItemLongClickListener {
 
 	private static long backTime;
 	public static BackLog backLog;
@@ -55,6 +55,7 @@ public class SelectItemsActivity extends AppCompatActivity implements OnItemClic
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		currentActivity = this;
 		setContentView(R.layout.activity_select_item);
 		findViewById(R.id.objects_cancel).setOnClickListener(v -> super.onBackPressed());
 		findViewById(R.id.select_all).setOnClickListener(v -> {
@@ -150,6 +151,7 @@ public class SelectItemsActivity extends AppCompatActivity implements OnItemClic
 
 	@Override
 	public void onBackPressed() {
+		if (clear()) return;
 		VS.sv_focused = false;
 		es.sv.clearFocus();
 		if (!backLog.path.isEmpty() && list.isEmpty() || backLog.path.size() > 1) {

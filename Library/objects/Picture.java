@@ -46,10 +46,12 @@ public class Picture extends TwoSided<Picture> {
 	 * existence and returns the proper Picture.
 	 *
 	 * @param bd     all the necessary data to create new {@link Picture} object
-	 * @param images each must contain its image file path as its {@link Data#name name}, the list can lose its content
+	 * @param images each must contain its image file path as its {@link Data#name name},
+	 *			        the list can lose its content
 	 * @return new
 	 * {@linkplain #Picture(IOSystem.Formatter.Data, java.util.List, boolean) Picture object}
-	 * if the name doesn't exist yet, otherwise returns the picture object with the same name and adds the new images.
+	 * if the name doesn't exist yet, otherwise returns the picture object
+	 * with the same name and adds the new images.
 	 */
 	public static Picture mkElement(Data bd, List<Data> images) {
 		return mkElement(bd, images, true);
@@ -144,10 +146,11 @@ public class Picture extends TwoSided<Picture> {
 	}
 
 	/**
-	 * This constructor is used only to create an image part.
+	 * This constructor is used only to construct an image part.
 	 */
 	private Picture(Picture pic, File save, Data bd, boolean isNew) {
 		super(bd, false, IMAGES);
+		if (bd.tagVals != null && bd.tagVals.length == 1) imageRender = bd.tagVals[0];
 		children.put(bd.par, new ArrayList<>(Arrays.asList(new Picture[]{pic})));
 		parentCount = 1;
 		if (isNew) {
@@ -164,7 +167,7 @@ public class Picture extends TwoSided<Picture> {
 	}
 
 	/**
-	 * This constructor is used only to create the main instance of this class.
+	 * This constructor is used only to construct the main instance of this class.
 	 */
 	private Picture(Data bd, List<Data> images, boolean isNew) {
 		super(bd, true, ELEMENTS);
@@ -222,11 +225,16 @@ public class Picture extends TwoSided<Picture> {
 		return isMain ? null : new File(new File(identifier.getDir(), "Pictures"), getName() + ".jpg");
 	}
 	
+	/**
+	 * This variable is for storing object which is used to display the image itself.
+	 * Therefore after the first value is given, no need to read its file again.
+	 */
+	public Object imageRender;
+	
 	@Override
 	public boolean setName(Container ch, String name) {
 		ContainerFile.isCorrect(name);
 		if (this.name.equals(name) || children.isEmpty() || !isMain) return false;
-		Container parpar = ch.removeChild(this);
 		Map<String, Integer> map = (Map<String, Integer>) identifier.getSetting("picParCount");
 		USED.waitForAccess(identifier);
 		for (Picture p : ELEMENTS.get(identifier))
@@ -236,41 +244,32 @@ public class Picture extends TwoSided<Picture> {
 					ELEMENTS.get(identifier).remove(this);
 					map.remove(this.name);
 				} else map.put(this.name, --parentCount);
-				setName0(parpar, ch, p);
+				setName0(ch.removeChild(this), ch, p);
 				return true;
 			}
 		if (parentCount <= 1) {
+			map.put(name, map.remove(this.name));
 			this.name = name;
-			fileName(ch, false, this);
+			File path = new File(identifier.getDir(), "Pictures");
+			int serialINum = -1;
+			for (Picture img : children.get(ch)) {
+				File pic = new File(path, img.getName() + ".jpg");
+				while (!pic.renameTo(new File(path, name + ' ' + ++serialINum + ".jpg")))
+					if (serialINum > 256) serialINum = -1;				
+				if (serialINum > -1)	img.name = name + ' ' + serialINum;
+			}
 		} else {
 			parentCount--;
-			setName0(parpar, ch, new Picture(this, ch, name));
+			setName0(ch.removeChild(this), ch, new Picture(this, ch, name));
 		}
 		USED.endAccess(identifier);
 		return true;
 	}
 
 	private Picture(Picture src, Container par, String newName) {
-		super(new Data(newName, src.identifier).addSF(new int[]{0, 0})
-				.addDesc(src.description.get(par)).addPar(par), true, ELEMENTS);
+		super(new Data(newName, src.identifier).addDesc(src.description.get(par)).addPar(par), true, ELEMENTS);
 		picParentCount(true);
 		parentCount--;
-	}
-
-	private void fileName(Container ch, boolean newPic, Picture p) {
-		Map<String, Integer> map = (Map<String, Integer>) identifier.getSetting("picParCount");
-		File path = new File(identifier.getDir(), "Pictures");
-		for (Picture img : children.remove(ch)) {
-			int serialINum = -1;
-			File pic = new File(path, img.getName() + ".jpg");
-			while (!pic.renameTo(new File(path, p.name + ' ' + ++serialINum + ".jpg"))) ;
-			img.name = p.name + ' ' + serialINum;
-			if (newPic) {
-				img.children.get(ch).remove(this);
-				img.children.get(ch).add(p);
-			}
-		}
-		map.put(p.name, p.parentCount);
 	}
 
 	private void setName0(Container parpar, Container ch, Picture p) {
@@ -279,7 +278,18 @@ public class Picture extends TwoSided<Picture> {
 			p.children.put(ch, children.get(ch));
 			p.parentCount++;
 		} else p.children.get(ch).addAll(children.get(ch));
-		fileName(ch, true, p);
+		Map<String, Integer> map = (Map<String, Integer>) identifier.getSetting("picParCount");
+		File path = new File(identifier.getDir(), "Pictures");
+		int serialINum = -1;
+		for (Picture img : children.remove(ch)) {
+			File pic = new File(path, img.getName() + ".jpg");
+			while (!pic.renameTo(new File(path, p.name + ' ' + ++serialINum + ".jpg")))
+				if (serialINum > 256) serialINum = -1;				
+			if (serialINum > -1)	img.name = p.name + ' ' + serialINum;
+			img.children.get(ch).remove(this);
+			img.children.get(ch).add(p);
+		}
+		map.put(p.name, p.parentCount);
 	}
 
 	private void picParentCount(boolean isNew) {

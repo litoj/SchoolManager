@@ -18,7 +18,6 @@ import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.drawable.DrawableCompat;
 
 import com.schlmgr.R;
@@ -38,7 +37,7 @@ import IOSystem.Formatter;
 import static com.schlmgr.gui.Controller.dp;
 import static com.schlmgr.gui.CurrentData.backLog;
 
-public class SelectDirActivity extends AppCompatActivity implements OnItemClickListener, OnItemLongClickListener {
+public class SelectDirActivity extends PopupCareActivity implements OnItemClickListener, OnItemLongClickListener {
 
 	private static long backTime;
 	private HorizontalScrollView path_handler;
@@ -55,6 +54,7 @@ public class SelectDirActivity extends AppCompatActivity implements OnItemClickL
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		Controller.currentActivity = this;
 		setContentView(R.layout.activity_select_dir);
 		((TextView) findViewById(R.id.bar)).setText(importing ? R.string.select_dir_import : R.string.select_dir_src);
 		findViewById(R.id.bar_more).setOnClickListener(v -> {
@@ -182,6 +182,7 @@ public class SelectDirActivity extends AppCompatActivity implements OnItemClickL
 
 	@Override
 	public void onBackPressed() {
+		if (clear()) return;
 		if (!VS.path.isEmpty()) {
 			if (makeFiles(VS.path.get(-2))) {
 				VS.path.remove(-1);

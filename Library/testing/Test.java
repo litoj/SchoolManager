@@ -43,8 +43,9 @@ public class Test<T extends TwoSided> {
 		List<SrcPath<T>> ret = new ArrayList<>(src.size() * 2);
 		ArrayList<List<Container>> paths = src instanceof ArrayList ?
 				(ArrayList<List<Container>>) src : new ArrayList<>(src);
-		for (int i = 0; i < paths.size(); i++) createUniquePaths(paths, paths.get(i));
-		for (List<Container> path : src) {
+		if (src.size() != 1 || src.get(0).size() > 1)
+			for (int i = 0; i < paths.size(); i++) createUniquePaths(paths, paths.get(i));
+		for (List<Container> path : paths) {
 			if (path.get(path.size() - 1) instanceof TwoSided) ret.add(new SrcPath(path));
 			else ret.addAll(getC0(path, new Getter()));
 		}
@@ -52,10 +53,11 @@ public class Test<T extends TwoSided> {
 	}
 
 	/**
+	 * All paths that do not contact with each other. Their possible Reference objects
+	 * have been processed.
 	 * 
-	 * 
-	 * @param src
-	 * @param path 
+	 * @param src where to put the content
+	 * @param path the path to the object to be processed, mustn't contain Reference
 	 */
 	private void createUniquePaths(ArrayList<List<Container>> src, List<Container> path) {
 		if (path.get(path.size() - 1) instanceof TwoSided) return;
@@ -68,7 +70,7 @@ public class Test<T extends TwoSided> {
 			} else if (bd instanceof Reference) {
 				try {
 					if (!(bd.getThis() instanceof Container) || bd.getThis() instanceof TwoSided &&
-							t.isInstance(bd.getThis())) continue;
+							!t.isInstance(bd.getThis())) continue;
 				} catch (IllegalArgumentException iae) {
 					continue;
 				}
@@ -80,21 +82,21 @@ public class Test<T extends TwoSided> {
 		}
 	}
 
-	private static ArrayList<List<Container>> merge(List<Container> path, ArrayList<List<Container>> list) {
+	private static ArrayList<List<Container>> merge(List<Container> path, ArrayList<List<Container>> paths) {
 		boolean noChange = true;
-		for (int pos = 0; pos < list.size(); pos++) {
-			Container[] path1 = list.get(pos).toArray(new Container[0]);
+		for (int pos = 0; pos < paths.size(); pos++) {
+			Container[] path1 = paths.get(pos).toArray(new Container[0]);
 			isOk:
 			{
 				for (int j = 1; j < path.size() && j < path1.length; j++)
 					if (path.get(j) != path1[j]) break isOk;
-				if (path.size() > path1.length) {
-					list.remove(pos--);
+				if (path.size() < path1.length) {
+					paths.remove(pos--);
 					noChange = false;
-				} else return list;
+				} else return paths;
 			}
 		}
-		return noChange ? null : list;
+		return noChange ? null : paths;
 	}
 
 	private class Getter {

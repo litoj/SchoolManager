@@ -33,10 +33,10 @@ public class ImageAdapter extends ArrayAdapter<ImageItemModel> {
 		ImageItemModel iim = list.get(pos);
 		ImageView iv = view.findViewById(R.id.item_img_1);
 		iv.setOnClickListener(v -> new FullPicture(iim.pic1));
-		iv.setImageBitmap(iim.getBitmap(true));
+		iim.setBm(true, iv);
 		iv.setContentDescription(iim.pic1.toString());
 		if (iim.pic2 != null) {
-			(iv = view.findViewById(R.id.item_img_2)).setImageBitmap(iim.getBitmap(false));
+			iim.setBm(false, iv = view.findViewById(R.id.item_img_2));
 			iv.setContentDescription(iim.pic2.toString());
 			iv.setOnClickListener(v -> new FullPicture(iim.pic2));
 		} else view.findViewById(R.id.item_img_2).setVisibility(View.GONE);

@@ -31,7 +31,7 @@ public class TestResultsPopup extends AbstractPopup {
 	private final float success;
 
 	public TestResultsPopup(List<TestedItem> items, float success) {
-		super(R.layout.popup_test_results);
+		super(R.layout.popup_test_results, true);
 		list = items;
 		picTest = items.get(0).ts instanceof Picture;
 		this.success = success;
@@ -60,9 +60,9 @@ public class TestResultsPopup extends AbstractPopup {
 									((LinearLayout) v).addView(vImg, 0);
 									ImageView iv = vImg.findViewById(R.id.img_1);
 									iv.setOnClickListener(view -> new FullPicture(iim.pic1));
-									iv.setImageBitmap(iim.getBitmap(true));
+									iim.setBm(true, iv);
 									iv.setContentDescription(iim.pic1.toString());
-									(iv = vImg.findViewById(R.id.img_2)).setImageBitmap(iim.getBitmap(false));
+									iim.setBm(false, iv = vImg.findViewById(R.id.img_2));
 									iv.setContentDescription(iim.pic2.toString());
 									iv.setOnClickListener(view -> new FullPicture(iim.pic2));
 								}
@@ -72,7 +72,7 @@ public class TestResultsPopup extends AbstractPopup {
 									((LinearLayout) v).addView(vImg, 0);
 									ImageView iv = vImg.findViewById(R.id.img_1);
 									iv.setOnClickListener(view -> new FullPicture(iim.pic1));
-									iv.setImageBitmap(iim.getBitmap(true));
+									iim.setBm(true, iv);
 									iv.setContentDescription(iim.pic1.toString());
 									vImg.findViewById(R.id.img_2).setVisibility(View.GONE);
 								}

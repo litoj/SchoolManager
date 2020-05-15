@@ -13,13 +13,13 @@ import objects.Picture;
 public class FullPicture extends AbstractPopup {
 
 	public static int size;//the bigger value of display dimensions
-	final Bitmap pic;
-	final boolean wide;
+	private final Bitmap pic;
+	private final boolean wide;
 
 	public FullPicture(Picture picture) {
-		super(R.layout.popup_pic);
-		pic = ImageItemModel.getScaledBitmap(picture.getFile().getAbsolutePath(), size);
-		wide = pic.getWidth() / pic.getHeight() > 1;
+		super(R.layout.popup_pic, false);
+		pic = ImageItemModel.getScaledBitmap(picture.getFile().getAbsolutePath(), size, true);
+		wide = pic.getWidth() > pic.getHeight();
 		create();
 	}
 

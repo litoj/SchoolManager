@@ -2,9 +2,7 @@ package com.schlmgr.gui.popup;
 
 import android.graphics.drawable.ColorDrawable;
 import android.view.Gravity;
-import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
 import android.widget.PopupWindow;
 
@@ -13,6 +11,7 @@ import com.schlmgr.gui.Controller;
 import java.util.LinkedList;
 
 import static com.schlmgr.gui.Controller.activity;
+import static com.schlmgr.gui.Controller.currentActivity;
 
 public abstract class AbstractPopup {
 
@@ -21,11 +20,17 @@ public abstract class AbstractPopup {
 
 	private static final LinkedList<AbstractPopup> showed = new LinkedList<>();
 
+	/**
+	 * Will display again.
+	 */
 	public static void clean() {
 		for (AbstractPopup ap : showed) ap.dismiss(false);
 		showed.clear();
 	}
 
+	/**
+	 * Won't be displayed again.
+	 */
 	public static void clear() {
 		for (AbstractPopup ap : showed) ap.dismiss(true);
 		showed.clear();
@@ -35,9 +40,11 @@ public abstract class AbstractPopup {
 	private boolean backBtnDismiss = true;
 	public PopupWindow pw;
 	private final Runnable creator = () -> create();
+	private final boolean onlyMain;
 
-	protected AbstractPopup(int resourceID) {
+	protected AbstractPopup(int resourceID, boolean onlyMain) {
 		resId = resourceID;
+		this.onlyMain = onlyMain;
 		Controller.addPopupRepaint(creator);
 	}
 
@@ -55,12 +62,13 @@ public abstract class AbstractPopup {
 
 	protected void create() {
 		isActive = isShowing = true;
-		activity.runOnUiThread(() -> {
-			ViewGroup view = (ViewGroup) activity.getLayoutInflater().inflate(resId, null);
+		(onlyMain ? activity : currentActivity).runOnUiThread(() -> {
+			ViewGroup view = (ViewGroup)
+					(onlyMain ? activity : currentActivity).getLayoutInflater().inflate(resId, null);
 			pw = new PopupWindow(view, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT, true);
 			pw.setOnDismissListener(() -> {
 				isShowing = false;
-				if (backBtnDismiss) activity.onBackPressed();
+				if (backBtnDismiss) (onlyMain ? activity : currentActivity).onBackPressed();
 			});
 			view.setOnClickListener(v -> dismiss(true));
 			pw.setBackgroundDrawable(new ColorDrawable(0x90000000));

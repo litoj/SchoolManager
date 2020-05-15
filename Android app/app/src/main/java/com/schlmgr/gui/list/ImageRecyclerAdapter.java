@@ -29,6 +29,7 @@ import objects.templates.Container;
 import objects.templates.TwoSided;
 
 import static IOSystem.Formatter.defaultReacts;
+import static com.schlmgr.gui.Controller.dp;
 import static com.schlmgr.gui.CurrentData.backLog;
 import static com.schlmgr.gui.fragments.MainFragment.IMAGE_PICK;
 import static com.schlmgr.gui.fragments.MainFragment.VS;
@@ -45,13 +46,13 @@ public class ImageRecyclerAdapter extends NestedRecyclerAdapter<Image, ImageHold
 
 		public Image(File file) {
 			f = file;
-			bm = getScaledBitmap(f.getAbsolutePath());
+			bm = getScaledBitmap(f.getAbsolutePath(), 150 * dp);
 			twosided = null;
 		}
 
 		public Image(Picture pic) {
 			f = (twosided = pic).getFile();
-			bm = getScaledBitmap(pic);
+			bm = getScaledBitmap(pic, 150 * dp);
 		}
 	}
 

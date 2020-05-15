@@ -16,28 +16,34 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.schlmgr.R;
+import com.schlmgr.gui.Controller;
 import com.schlmgr.gui.fragments.TestFragment;
 import com.schlmgr.gui.list.HierarchyItemModel;
 import com.schlmgr.gui.list.ImageItemModel;
 import com.schlmgr.gui.list.SearchItemModel;
+import com.schlmgr.gui.popup.AbstractPopup;
 import com.schlmgr.gui.popup.FullPicture;
 import com.schlmgr.gui.popup.TestResultsPopup;
 import com.schlmgr.gui.popup.TestResultsPopup.TestedItem;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import objects.MainChapter;
 import objects.Picture;
 import objects.Word;
-import objects.templates.BasicData;
 import objects.templates.Container;
+import objects.templates.TwoSided;
 import testing.Test;
 import testing.Test.SrcPath;
 
+import static com.schlmgr.gui.Controller.dp;
+import static com.schlmgr.gui.activity.MainActivity.c;
 import static com.schlmgr.gui.fragments.TestFragment.picTest;
 
-public class TestActivity extends AppCompatActivity {
+public class TestActivity extends PopupCareActivity {
 
 	private static long backTime;
 	private static Test test;
@@ -49,7 +55,7 @@ public class TestActivity extends AppCompatActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		taInstance = this;
+		Controller.currentActivity = taInstance = this;
 		if (test == null) {
 			test = picTest ? new Test<Picture>(Picture.class) : new Test<Word>(Word.class);
 			ArrayList<List<Container>> list = new ArrayList<>(TestFragment.list.size());
@@ -119,14 +125,6 @@ public class TestActivity extends AppCompatActivity {
 		reset();
 	}
 
-	@Override
-	public void onBackPressed() {
-		if (System.currentTimeMillis() - backTime > 3000) {
-			backTime = System.currentTimeMillis();
-			Toast.makeText(getApplicationContext(), R.string.press_exit, Toast.LENGTH_SHORT).show();
-		} else reset();
-	}
-
 	private static class Adapter extends ArrayAdapter<TestItemModel> {
 		private LayoutInflater li;
 
@@ -140,32 +138,32 @@ public class TestActivity extends AppCompatActivity {
 			if (item.v == null) {
 				item.v = v = li.inflate(picTest ? R.layout.item_test_pic : R.layout.item_test_word, par, false);
 				if (picTest) {
-					BasicData[] pics = item.sp.t.getChildren(item.par);
-					for (int i = 1; i < pics.length; i += 2) {
-						ImageItemModel iim = new ImageItemModel((Picture) pics[i - 1], (Picture) pics[i]);
+					for (int i = 1; i < item.children.size(); i += 2) {
+						ImageItemModel iim = new ImageItemModel((Picture) item.children.get(i - 1),
+								(Picture) item.children.get(i), 50 * dp);
 						View vImg = li.inflate(R.layout.item_test_image, (LinearLayout) v, false);
 						((LinearLayout) v).addView(vImg, 0);
 						ImageView iv = vImg.findViewById(R.id.img_1);
 						iv.setOnClickListener(view -> new FullPicture(iim.pic1));
-						iv.setImageBitmap(iim.getBitmap(true));
+						iim.setBm(true, iv);
 						iv.setContentDescription(iim.pic1.toString());
-						(iv = vImg.findViewById(R.id.img_2)).setImageBitmap(iim.getBitmap(false));
+						iim.setBm(false, iv = vImg.findViewById(R.id.img_2));
 						iv.setContentDescription(iim.pic2.toString());
 						iv.setOnClickListener(view -> new FullPicture(iim.pic2));
 					}
-					if (pics.length % 2 == 1) {
-						ImageItemModel iim = new ImageItemModel((Picture) pics[pics.length - 1], null);
+					if (item.children.size() % 2 == 1) {
+						ImageItemModel iim = new ImageItemModel((Picture) item.children.get(item.children.size() - 1), null);
 						View vImg = li.inflate(R.layout.item_test_image, (LinearLayout) v, false);
 						((LinearLayout) v).addView(vImg, 0);
 						ImageView iv = vImg.findViewById(R.id.img_1);
 						iv.setOnClickListener(view -> new FullPicture(iim.pic1));
-						iv.setImageBitmap(iim.getBitmap(true));
+						iim.setBm(true, iv);
 						iv.setContentDescription(iim.pic1.toString());
 						vImg.findViewById(R.id.img_2).setVisibility(View.GONE);
 					}
 				} else {
 					StringBuilder trls = new StringBuilder();
-					for (BasicData trl : item.sp.t.getChildren(item.par))
+					for (TwoSided trl : item.children)
 						trls.append('\n').append(HierarchyItemModel.nameParser(trl.getName()));
 					((TextView) v.findViewById(R.id.test_hint)).setText(trls.substring(1));
 				}
@@ -178,10 +176,16 @@ public class TestActivity extends AppCompatActivity {
 		private View v;
 		private final SrcPath sp;
 		private final Container par;
+		private final List<TwoSided> children;
 
 		private TestItemModel(SrcPath srcPath) {
 			sp = srcPath;
 			par = (Container) sp.srcPath.get(sp.srcPath.size() - 2);
+			List<TwoSided> initial = new ArrayList<>(Arrays.asList(sp.t.getChildren(par)));
+			if (initial.size() > 4) {
+				Collections.shuffle(initial);
+				children = initial.subList(0, 4);
+			} else children = initial;
 		}
 
 		@NonNull
@@ -190,4 +194,14 @@ public class TestActivity extends AppCompatActivity {
 			return sp.t.toString();
 		}
 	}
+
+	@Override
+	public void onBackPressed() {
+		if (clear()) return;
+		if (System.currentTimeMillis() - backTime > 3000) {
+			backTime = System.currentTimeMillis();
+			Toast.makeText(getApplicationContext(), R.string.press_exit, Toast.LENGTH_SHORT).show();
+		} else reset();
+	}
+
 }
