@@ -25,7 +25,8 @@ public class HierarchyItemModel {
 		return convert(new ArrayList<>(Arrays.asList(content)), parent);
 	}
 
-	public static <T extends BasicData> List<HierarchyItemModel> convert(List<T> list, Container parent) {
+	public static <T extends BasicData> List<HierarchyItemModel>
+	convert(List<T> list, Container parent) {
 		List<HierarchyItemModel> ret = new ArrayList<>(list.size());
 		int pos = 1;
 		for (int i = 0; i < list.size(); i++) {
@@ -89,7 +90,8 @@ public class HierarchyItemModel {
 		for (BasicData trl : ((Word) bd).getChildren(parent)) {
 			trls.append('\n').append(nameParser(trl.getName()));
 			if (!trl.getDesc(parent).isEmpty())
-				desc.append('\n').append(trl.getName()).append(':').append(' ').append(trl.getDesc(parent));
+				desc.append('\n').append(trl.getName()).append(':')
+						.append(' ').append(trl.getDesc(parent));
 		}
 		info = desc.length() > 0 ? desc.substring(1) : "";
 		return trls.substring(1);

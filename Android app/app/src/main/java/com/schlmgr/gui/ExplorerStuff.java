@@ -21,8 +21,8 @@ import com.schlmgr.R;
 import com.schlmgr.gui.CurrentData.BackLog;
 import com.schlmgr.gui.CurrentData.EasyList;
 import com.schlmgr.gui.activity.SelectItemsActivity;
+import com.schlmgr.gui.list.AbstractContainerAdapter;
 import com.schlmgr.gui.list.HierarchyItemModel;
-import com.schlmgr.gui.list.OpenListAdapter;
 import com.schlmgr.gui.list.SearchAdapter;
 import com.schlmgr.gui.list.SearchItemModel;
 
@@ -51,27 +51,28 @@ public class ExplorerStuff {
 
 	public final Content content;
 	public final Runnable onSearchSubmit;
-	private final boolean sA;
+	private final boolean selectMode;
 
 	private final HorizontalScrollView hsv;
 	public final LinearLayout path;
-	private final ScrollView sv_info;
+	private final ScrollView infoScroll;
 	private final TextView info;
-	public final SearchView sv;
+	public final SearchView searchView;
 	public final ListView lv;
 	private boolean opened;
 	private int height_def;
-	public final SVController svc;
+	public final SVController searchControl;
 	public final Context context;
 	private final Runnable onCheckChange;
 	private final BackLog backLog;
 	private final ViewState VS;
 
-	public ExplorerStuff(boolean selectActivity, Content ctr, Runnable oss, Runnable onCheck, ViewState vs,
-	                     BackLog bl, Context c, HorizontalScrollView hsv, ListView lv, LinearLayout path,
-	                     ScrollView sv_info, TextView info, SearchView sv, View touchOutside) {
-		sA = selectActivity;
-		content = ctr;
+	public ExplorerStuff(boolean selectActivity, Content onItemClick, Runnable oss, Runnable onCheck,
+	                     ViewState vs, BackLog bl, Context c, HorizontalScrollView hsv, ListView lv,
+	                     LinearLayout path, ScrollView infoScroll, TextView info,
+	                     SearchView searchView, View touchOutside) {
+		selectMode = selectActivity;
+		content = onItemClick;
 		backLog = bl;
 		VS = vs;
 		context = c;
@@ -80,35 +81,36 @@ public class ExplorerStuff {
 		this.hsv = hsv;
 		this.lv = lv;
 		this.path = path;
-		this.sv_info = sv_info;
+		this.infoScroll = infoScroll;
 		this.info = info;
-		(this.sv = sv).setOnFocusChangeListener((v, hasFocus) -> {
+		(this.searchView = searchView).setOnFocusChangeListener((v, hasFocus) -> {
 			if (!hasFocus) AndroidIOSystem.hideKeyboardFrom(v);
 		});
-		lv.setOnScrollListener(svc = new SVController());
+		lv.setOnScrollListener(searchControl = new SVController());
 		touchOutside.setOnTouchListener((v, event) -> {
-			if (event.getAction() == MotionEvent.ACTION_DOWN && sv.getVisibility() == View.VISIBLE) {
+			if (event.getAction() == MotionEvent.ACTION_DOWN
+					&& searchView.getVisibility() == View.VISIBLE) {
 				Rect outRect = new Rect();
-				sv.getGlobalVisibleRect(outRect);
+				searchView.getGlobalVisibleRect(outRect);
 				if (!outRect.contains((int) event.getRawX(), (int) event.getRawY())) {
 					if (VS.sv_focused) {
 						VS.sv_focused = false;
-						VS.query = sv.getQuery().toString();
-						sv.onActionViewCollapsed();
+						VS.query = searchView.getQuery().toString();
+						searchView.onActionViewCollapsed();
 					}
 				} else if (!VS.sv_focused) {
 					v.performClick();
 					VS.sv_focused = true;
-					sv.onActionViewExpanded();
-					sv.setQuery(VS.query, false);
+					searchView.onActionViewExpanded();
+					searchView.setQuery(VS.query, false);
 					return true;
 				}
 			}
 			return false;
 		});
 		hsv.setHorizontalScrollBarEnabled(false);
-		sv.setOnQueryTextListener(new Searcher());
-		info.setOnClickListener((v) -> sv_info.setLayoutParams(
+		searchView.setOnQueryTextListener(new Searcher());
+		info.setOnClickListener((v) -> infoScroll.setLayoutParams(
 				new LayoutParams(MATCH_PARENT, realHeight(opened = !opened))));
 	}
 
@@ -119,7 +121,7 @@ public class ExplorerStuff {
 
 		public void update(boolean gone) {
 			visible = VS.sv_visible = !gone;
-			sv.setVisibility(gone ? View.GONE : View.VISIBLE);
+			searchView.setVisibility(gone ? View.GONE : View.VISIBLE);
 			fvi = 0;
 		}
 
@@ -131,10 +133,10 @@ public class ExplorerStuff {
 		public void onScroll(AbsListView view, int firstVisible, int visICount, int size) {
 			if (VS.sv_visible && Math.abs(fvi - firstVisible) > 2) {
 				if (visible && firstVisible > fvi) {
-					sv.setVisibility(View.GONE);
+					searchView.setVisibility(View.GONE);
 					visible = false;
 				} else if (!visible && firstVisible < fvi) {
-					sv.setVisibility(View.VISIBLE);
+					searchView.setVisibility(View.VISIBLE);
 					visible = true;
 				}
 				fvi = firstVisible;
@@ -146,7 +148,7 @@ public class ExplorerStuff {
 
 		@Override
 		public boolean onQueryTextSubmit(String query) {
-			sv.onActionViewCollapsed();
+			searchView.onActionViewCollapsed();
 			VS.query = query;
 			VS.sv_focused = false;
 			if (onSearchSubmit != null) onSearchSubmit.run();
@@ -161,16 +163,25 @@ public class ExplorerStuff {
 			return false;
 		}
 
-		public class Finder {
+		/**
+		 * Searches for all occurrences matching the compare sequence.
+		 */
+		class Finder {
 
 			String comp;
 			Pattern p;
-			byte threads = 1;
+			volatile int threads = 1;
 			Correct correct;
 			long start;
 			Set<BasicData> set = new HashSet<>();
 
-			Finder(EasyList<Container> parents, String compare) {
+			/**
+			 * Prepares and starts the searching, resolves the comparing method by prefix.
+			 *
+			 * @param path    path to the element who's content will be searched
+			 * @param compare the sequence with optional prefix to be used as comparator
+			 */
+			Finder(EasyList<Container> path, String compare) {
 				if (compare.charAt(0) == '\\') {
 					switch (compare.charAt(1)) {
 						case 'r':
@@ -221,18 +232,22 @@ public class ExplorerStuff {
 					};
 					comp = compare.toLowerCase();
 				}
-				lv.setAdapter(VS.aa = VS.ola = new SearchAdapter(context, new ArrayList<>(), onCheckChange, sA));
-				svc.update(false);
+				lv.setAdapter(VS.mAdapter = VS.contentAdapter = new SearchAdapter(
+						context, new ArrayList<>(), onCheckChange, selectMode));
+				searchControl.update(false);
 				info.setText(activity.getString(R.string.data_child_count) + 0);
-				sv_info.setLayoutParams(new LayoutParams(MATCH_PARENT, (int) (18 * dp)));
+				infoScroll.setLayoutParams(new LayoutParams(MATCH_PARENT, (int) (18 * dp)));
 				start = System.currentTimeMillis();
 				new Thread(() -> {
-					search(parents.get(-1).getChildren(parents.get(-2)), parents, false);
+					search(path.get(-1).getChildren(path.get(-2)), path, false);
 					threads--;
 				}).start();
 			}
 
-			void search(BasicData[] src, EasyList<Container> path, boolean threaded) {
+			/**
+			 * Searches the given content for matching elements.
+			 */
+			private void search(BasicData[] src, EasyList<Container> path, boolean threaded) {
 				if (src == null) return;
 				EasyList<Container> path2 = new EasyList<>();
 				path2.addAll(path);
@@ -244,7 +259,7 @@ public class ExplorerStuff {
 						continue;
 					}
 					boolean found;
-					if (VS.aa instanceof SearchAdapter) found = correct(bd, path);
+					if (VS.mAdapter instanceof SearchAdapter) found = correct(bd, path);
 					else return;
 					if (bd instanceof Reference) {
 						ref = true;
@@ -280,6 +295,9 @@ public class ExplorerStuff {
 				}
 			}
 
+			/**
+			 * Validates the given element by the selected {@link #correct comparing} method.
+			 */
 			boolean correct(BasicData bd, EasyList<Container> path) {
 				boolean yes = false;
 				if (correct.verify(bd.toString())) yes = true;
@@ -288,7 +306,8 @@ public class ExplorerStuff {
 					EasyList<Container> copy = new EasyList<>();
 					copy.addAll(path);
 					lv.post(() -> {
-						VS.aa.add(new SearchItemModel(bd, copy, ((OpenListAdapter) VS.aa).list.size() + 1));
+						VS.mAdapter.add(new SearchItemModel(bd, copy,
+								((AbstractContainerAdapter) VS.mAdapter).list.size() + 1));
 						info.setText(activity.getString(R.string.data_child_count) + set.size() + ";\t" +
 								activity.getString(R.string.time) + (System.currentTimeMillis() - start) + "ms");
 					});
@@ -302,6 +321,11 @@ public class ExplorerStuff {
 		boolean verify(String name);
 	}
 
+	/**
+	 * When the {@link #lv ListView's} content changes.
+	 *
+	 * @param allChanged if the currently displayed path to the element has to be fully altered.
+	 */
 	public void onChange(boolean allChanged) {
 		if (allChanged) {
 			path.removeAllViews();
@@ -311,22 +335,12 @@ public class ExplorerStuff {
 		setInfo(backLog.path.get(-1), (Container) backLog.path.get(-2));
 	}
 
-	public void setInfo(BasicData bd, Container parent) {
-		String txt;
-		if (!backLog.path.isEmpty()) {
-			String desc = bd.getDesc(parent);
-			info.setText(txt = (activity.getString(R.string.data_child_count) + lv.getAdapter().getCount()
-					+ ", " + activity.getString(R.string.success_rate) + ": " + bd.getRatio()
-					+ (desc.isEmpty() ? '%' : "%\n" + desc)));
-		} else
-			info.setText(txt = (activity.getString(R.string.data_child_count) + lv.getAdapter().getCount()));
-		hsv.post(() -> hsv.fullScroll(View.FOCUS_RIGHT));
-		info.setClickable((height_def = height(txt)) >= 3);
-		sv_info.setLayoutParams(new LayoutParams(MATCH_PARENT, realHeight(opened)));
-		sv_info.post(() -> sv_info.fullScroll(View.FOCUS_UP));
-	}
-
-	public void addPathButton(BasicData bd) {
+	/**
+	 * Adds another item to the {@link #path breadCrumbs} tracker.
+	 *
+	 * @param bd the item to be added
+	 */
+	private void addPathButton(BasicData bd) {
 		TextView btn = new Button(context);
 		btn.setTextSize(17);
 		btn.setAllCaps(false);
@@ -365,24 +379,53 @@ public class ExplorerStuff {
 		path.addView(btn);
 	}
 
-	public int realHeight(boolean opened) {
+	/**
+	 * Setts the {@link #infoScroll}
+	 *
+	 * @param bd
+	 * @param parent
+	 */
+	public void setInfo(BasicData bd, Container parent) {
+		String txt;
+		if (!backLog.path.isEmpty()) {
+			String desc = bd.getDesc(parent);
+			info.setText(txt = (activity.getString(R.string.data_child_count) + lv.getAdapter().getCount()
+					+ ", " + activity.getString(R.string.success_rate) + ": " + bd.getRatio()
+					+ (desc.isEmpty() ? '%' : "%\n" + desc)));
+		} else
+			info.setText(txt = (activity.getString(R.string.data_child_count) + lv.getAdapter().getCount()));
+		hsv.post(() -> hsv.fullScroll(View.FOCUS_RIGHT));
+		info.setClickable((height_def = height(txt)) >= 3);
+		infoScroll.setLayoutParams(new LayoutParams(MATCH_PARENT, realHeight(opened)));
+		infoScroll.post(() -> infoScroll.fullScroll(View.FOCUS_UP));
+	}
+
+	/**
+	 * Calculates the height parameter for {@link android.view.ViewGroup.LayoutParams#LayoutParams(int, int)}.
+	 *
+	 * @param opened toggles the unlimited height option - opened means maximum height
+	 */
+	private int realHeight(boolean opened) {
 		return height_def >= 3 && opened ? LayoutParams.WRAP_CONTENT :
 				(int) (activity.getResources().getDimension(R.dimen.dp) * (height_def == 1 ? 19 : 36));
 	}
 
-	public byte height(String src) {
-		byte i = 1;
+	/**
+	 * Returns the height code for the given String, height code represents lines of the view.
+	 * 1 when no '\n' chars, 2 for 1 '\n' char and 3 for more than 1 '\n' char.
+	 */
+	public int height(String src) {
+		int i = 1;
 		for (char ch : src.toCharArray()) if (ch == '\n' && ++i > 2) break;
 		return i;
 	}
 
 	public static class ViewState {
-		public ArrayAdapter aa;
+		public ArrayAdapter mAdapter;
 		/**
-		 * In most cases this is the same object as the ArrayAdapter above, just with easier accessibility.
-		 * Overriding it in child classes doesn't result the object saved to the extended variable.
+		 * This adapter is the {@link #mAdapter} if not an {@link com.schlmgr.gui.list.ImageAdapter}.
 		 */
-		public OpenListAdapter<? extends HierarchyItemModel> ola;
+		public AbstractContainerAdapter<? extends HierarchyItemModel> contentAdapter;
 		public int breadCrumbs = 0;
 		public boolean sv_focused;
 		public boolean sv_visible;
@@ -390,6 +433,13 @@ public class ExplorerStuff {
 	}
 
 	public interface Content {
-		void setContent(BasicData bd, Container parent, int size);
+		/**
+		 * What to do with the selected item.
+		 *
+		 * @param bd         the selected item
+		 * @param parent     the item's parent
+		 * @param pathLength length of the path to the item
+		 */
+		void setContent(BasicData bd, Container parent, int pathLength);
 	}
 }

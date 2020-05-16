@@ -32,6 +32,7 @@ import java.util.List;
 import objects.MainChapter;
 import objects.Picture;
 import objects.Word;
+import objects.templates.BasicData;
 import objects.templates.Container;
 import objects.templates.TwoSided;
 import testing.Test;
@@ -64,7 +65,8 @@ public class TestActivity extends PopupCareActivity {
 			List<SrcPath> paths = test.convertAll(list);
 			if (paths.isEmpty()) {
 				test = null;
-				Toast.makeText(getApplicationContext(), R.string.fail_no_objects, Toast.LENGTH_SHORT).show();
+				Toast.makeText(getApplicationContext(),
+						R.string.fail_no_objects, Toast.LENGTH_SHORT).show();
 				super.onBackPressed();
 				return;
 			}
@@ -118,10 +120,11 @@ public class TestActivity extends PopupCareActivity {
 		List<TestedItem> items = new ArrayList<>(list.size());
 		for (TestItemModel tim : list) {
 			boolean correct;
-			String text = tim.v == null ? "" : ((TextView) tim.v.findViewById(R.id.test_name)).getText().toString();
+			String text = tim.v == null ? "" :
+					((TextView) tim.v.findViewById(R.id.test_name)).getText().toString();
 			if (correct = test.isAnswer(i++, text))
 				success++;
-			items.add(new TestedItem(correct, tim.sp.t, tim.par, text));
+			items.add(new TestedItem(correct, tim.sp.t, tim.children.toArray(new BasicData[0]), text));
 		}
 		((MainChapter) list.get(0).sp.srcPath.get(0)).save();
 		new TestResultsPopup(items, success * 100f / list.size());
@@ -132,14 +135,16 @@ public class TestActivity extends PopupCareActivity {
 		private LayoutInflater li;
 
 		public Adapter() {
-			super(taInstance.getApplicationContext(), picTest ? R.layout.item_test_pic : R.layout.item_test_word, R.id.test_name, list);
+			super(taInstance.getApplicationContext(), picTest ? R.layout.item_test_pic
+					: R.layout.item_test_word, R.id.test_name, list);
 		}
 
 		@Override
 		public View getView(int pos, @Nullable View v, @NonNull ViewGroup par) {
 			TestItemModel item = list.get(pos);
 			if (item.v == null) {
-				item.v = v = li.inflate(picTest ? R.layout.item_test_pic : R.layout.item_test_word, par, false);
+				item.v = v = li.inflate(picTest ?
+						R.layout.item_test_pic : R.layout.item_test_word, par, false);
 				if (picTest) {
 					for (int i = 1; i < item.children.size(); i += 2) {
 						ImageItemModel iim = new ImageItemModel((Picture) item.children.get(i - 1),
@@ -155,7 +160,8 @@ public class TestActivity extends PopupCareActivity {
 						iv.setOnClickListener(view -> new FullPicture(iim.pic2));
 					}
 					if (item.children.size() % 2 == 1) {
-						ImageItemModel iim = new ImageItemModel((Picture) item.children.get(item.children.size() - 1), null);
+						ImageItemModel iim = new ImageItemModel((Picture)
+								item.children.get(item.children.size() - 1), null, 50 * dp);
 						View vImg = li.inflate(R.layout.item_test_image, (LinearLayout) v, false);
 						((LinearLayout) v).addView(vImg, 0);
 						ImageView iv = vImg.findViewById(R.id.img_1);

@@ -20,9 +20,10 @@ import com.schlmgr.gui.list.HierarchyItemModel;
 import IOSystem.Formatter;
 import testing.Test;
 
-import static android.view.KeyEvent.ACTION_UP;
-
 public class SettingsFragment extends Fragment implements ControlListener {
+
+	private EditText amount;
+	private EditText time;
 
 	public View onCreateView(@NonNull LayoutInflater inflater,
 	                         ViewGroup container, Bundle savedInstanceState) {
@@ -40,13 +41,8 @@ public class SettingsFragment extends Fragment implements ControlListener {
 		flipAll.setChecked(HierarchyItemModel.flipAllOnClick);
 		flipAll.setOnClickListener(v -> HierarchyItemModel.setFlipAllOnClick(flipAll.isChecked()));
 
-		EditText amount = root.findViewById(R.id.setts_test_amount);
+		amount = root.findViewById(R.id.setts_test_amount);
 		amount.setText("" + Test.getAmount(), BufferType.EDITABLE);
-		amount.setOnEditorActionListener((v, actionId, event) -> {
-			if (event.getAction() == ACTION_UP)
-				Test.setAmount(Integer.parseInt(amount.getText().toString()));
-			return true;
-		});
 		amount.setOnFocusChangeListener((v, hasFocus) -> {
 			if (!hasFocus) {
 				if (amount.getText().toString().isEmpty())
@@ -55,13 +51,8 @@ public class SettingsFragment extends Fragment implements ControlListener {
 			}
 		});
 
-		EditText time = root.findViewById(R.id.setts_test_time);
+		time = root.findViewById(R.id.setts_test_time);
 		time.setText("" + Test.getDefaultTime(), BufferType.EDITABLE);
-		time.setOnEditorActionListener((v, actionId, event) -> {
-			if (event.getAction() == ACTION_UP)
-				Test.setDefaultTime(Integer.parseInt(time.getText().toString()));
-			return true;
-		});
 		time.setOnFocusChangeListener((v, hasFocus) -> {
 			if (!hasFocus) {
 				if (time.getText().toString().isEmpty())
@@ -78,6 +69,13 @@ public class SettingsFragment extends Fragment implements ControlListener {
 		testPic.setChecked((Boolean) Formatter.getSetting("testTypePicture"));
 		testPic.setOnClickListener(v -> Formatter.putSetting("testTypePicture", testPic.isChecked()));
 		return root;
+	}
+
+	@Override
+	public void onDestroy() {
+		Test.setAmount(Integer.parseInt(amount.getText().toString()));
+		Test.setDefaultTime(Integer.parseInt(time.getText().toString()));
+		super.onDestroy();
 	}
 
 	@Override

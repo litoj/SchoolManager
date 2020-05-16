@@ -103,7 +103,8 @@ public class DirAdapter extends ArrayAdapter<DirItemModel> {
 		return list;
 	}
 
-	public DirAdapter(@NonNull Context context, @NonNull List<DirItemModel> objects, boolean storage, Runnable onClickCheck) {
+	public DirAdapter(@NonNull Context context, @NonNull List<DirItemModel> objects,
+	                  boolean storage, Runnable onClickCheck) {
 		super(context, R.layout.item_dir, objects);
 		occ = onClickCheck;
 		li = LayoutInflater.from(context);

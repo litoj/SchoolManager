@@ -22,10 +22,11 @@ import static com.schlmgr.gui.activity.MainActivity.ic_check_empty;
 import static com.schlmgr.gui.activity.MainActivity.ic_check_filled;
 import static com.schlmgr.gui.list.HierarchyAdapter.background;
 
-public class SearchAdapter extends OpenListAdapter<SearchItemModel> {
+public class SearchAdapter extends AbstractContainerAdapter<SearchItemModel> {
 	private LayoutInflater li;
 
-	public SearchAdapter(@NonNull Context context, @NonNull List<SearchItemModel> objects, Runnable occ, boolean selectActivity) {
+	public SearchAdapter(@NonNull Context context, @NonNull List<SearchItemModel> objects,
+	                     Runnable occ, boolean selectActivity) {
 		super(context, R.layout.item_search, R.id.item_name, objects, occ, selectActivity);
 		li = LayoutInflater.from(context);
 	}

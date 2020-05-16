@@ -772,6 +772,26 @@
                 android:background="#2888"
                 android:paddingHorizontal="15dp"
                 android:paddingVertical="2dp"
+                android:text="2.1"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- fixed settings not saving\n
+- fixed test results not staying on screen\n
+- improved code structure, some javadoc added"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
                 android:text="2.0"
                 android:textSize="17sp" />
 

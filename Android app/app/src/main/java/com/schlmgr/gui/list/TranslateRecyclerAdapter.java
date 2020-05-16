@@ -29,7 +29,10 @@ import static com.schlmgr.gui.CurrentData.backLog;
 import static com.schlmgr.gui.fragments.MainFragment.VS;
 import static com.schlmgr.gui.fragments.MainFragment.es;
 
-public class TranslateRecyclerAdapter extends NestedRecyclerAdapter<Translate, TranslateHolder> {
+/**
+ * Used for creating and editing translates in {@link CreatorPopup}.
+ */
+public class TranslateRecyclerAdapter extends AbstractRecyclerAdapter<Translate, TranslateHolder> {
 	public static class Translate {
 		public final Word twosided;
 		public TextView tvName, tvDesc;
@@ -53,7 +56,7 @@ public class TranslateRecyclerAdapter extends NestedRecyclerAdapter<Translate, T
 		return new Translate((Word) src, src.getDesc(parent));
 	}
 
-	class TranslateHolder extends NestedRecyclerAdapter.ViewHolder {
+	class TranslateHolder extends AbstractRecyclerAdapter.ViewHolder {
 
 		TextView desc;
 		Translate currentItem;
@@ -134,7 +137,7 @@ public class TranslateRecyclerAdapter extends NestedRecyclerAdapter<Translate, T
 					d.name = names[i];
 					d.description = i < descs.length ? descs[i] : null;
 					Word w = Word.mkElement(d, translates);
-					VS.aa.add(new HierarchyItemModel(w, parent, es.lv.getCount() + 1));
+					VS.mAdapter.add(new HierarchyItemModel(w, parent, es.lv.getCount() + 1));
 					parent.putChild((Container) backLog.path.get(-2), w);
 				}
 			} else {

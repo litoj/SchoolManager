@@ -6,6 +6,10 @@ import com.schlmgr.gui.popup.AbstractPopup;
 
 import static com.schlmgr.gui.activity.MainActivity.c;
 
+/**
+ * This class handles {@link AbstractPopup popups} showing and dismissing on screen rotation.
+ * All activities should extend this activity.
+ */
 public class PopupCareActivity extends AppCompatActivity {
 
 	private boolean exists;

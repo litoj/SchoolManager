@@ -1,7 +1,6 @@
 package com.schlmgr.gui.fragments;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
@@ -14,9 +13,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemLongClickListener;
-import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -32,19 +29,18 @@ import com.schlmgr.gui.CurrentData;
 import com.schlmgr.gui.CurrentData.EasyList;
 import com.schlmgr.gui.ExplorerStuff;
 import com.schlmgr.gui.activity.SelectDirActivity;
+import com.schlmgr.gui.list.AbstractContainerAdapter;
 import com.schlmgr.gui.list.HierarchyAdapter;
 import com.schlmgr.gui.list.HierarchyItemModel;
 import com.schlmgr.gui.list.ImageAdapter;
 import com.schlmgr.gui.list.ImageItemModel;
 import com.schlmgr.gui.list.ImageRecyclerAdapter;
-import com.schlmgr.gui.list.OpenListAdapter;
 import com.schlmgr.gui.list.SearchAdapter;
 import com.schlmgr.gui.list.SearchItemModel;
 import com.schlmgr.gui.list.TranslateRecyclerAdapter;
 import com.schlmgr.gui.popup.ContinuePopup;
 import com.schlmgr.gui.popup.CreatorPopup;
 import com.schlmgr.gui.popup.CreatorPopup.Includer;
-import com.schlmgr.gui.popup.FullPicture;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -74,7 +70,8 @@ import static com.schlmgr.gui.CurrentData.backLog;
 import static com.schlmgr.gui.CurrentData.finishLoad;
 import static com.schlmgr.gui.list.HierarchyItemModel.convert;
 
-public class MainFragment extends Fragment implements Controller.ControlListener, OnItemClickListener, OnItemLongClickListener {
+public class MainFragment extends Fragment
+		implements Controller.ControlListener, OnItemClickListener, OnItemLongClickListener {
 
 	private static LinearLayout selectOpts;
 	private static TextView edit;
@@ -100,7 +97,7 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 	public static ExplorerStuff es;
 	public static ViewState VS = new ViewState();
 
-	public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+	public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle oldState) {
 		VS.mfInstance = this;
 		View root = inflater.inflate(R.layout.fragment_main, container, false);
 		selectOpts = root.findViewById(R.id.objects_select);
@@ -110,7 +107,7 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 		edit = root.findViewById(R.id.select_rename);
 		pasteOpts = root.findViewById(R.id.objects_paster);
 		root.findViewById(R.id.objects_cancel).setOnClickListener(v -> {
-			VS.paster = false;
+			VS.pasteMode = false;
 			pasteOpts.setVisibility(View.GONE);
 		});
 		paste = root.findViewById(R.id.objects_paste);
@@ -148,10 +145,10 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 
 		new Thread(() -> {
 			delete.setOnClickListener(v -> {
-				if (((OpenListAdapter) VS.aa).selected > 0)
+				if (((AbstractContainerAdapter) VS.mAdapter).selected > 0)
 					new ContinuePopup(getString(R.string.continue_delete), () -> {
-						for (int i = VS.ola.list.size() - 1; i >= 0; i--) {
-							HierarchyItemModel him = VS.ola.list.get(i);
+						for (int i = VS.contentAdapter.list.size() - 1; i >= 0; i--) {
+							HierarchyItemModel him = VS.contentAdapter.list.get(i);
 							if (him.isSelected()) {
 								if (backLog.path.isEmpty()) him.bd.destroy(null);
 								else {
@@ -159,29 +156,31 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 											((SearchItemModel) him).path.get(-2)
 											: backLog.path.get(-2)), him.bd);
 								}
-								VS.ola.list.remove(i);
+								VS.contentAdapter.list.remove(i);
 							}
 						}
 						if (!backLog.path.isEmpty()) CurrentData.save();
 						root.post(() -> {
-							VS.ola.notifyDataSetChanged();
-							VS.ola.selected = -1;
+							VS.contentAdapter.notifyDataSetChanged();
+							VS.contentAdapter.selected = -1;
 							selectOpts.setVisibility(View.GONE);
 						});
 					});
 			});
 			reference.setOnClickListener(v -> {
-				for (HierarchyItemModel him : VS.ola.list)
+				for (HierarchyItemModel him : VS.contentAdapter.list)
 					if (him.isSelected()) {
 						EasyList<? extends BasicData> list;
-						if (VS.ola instanceof SearchAdapter) list = ((SearchItemModel) him).path;
+						if (VS.contentAdapter instanceof SearchAdapter)
+							list = ((SearchItemModel) him).path;
 						else if (him.bd instanceof Reference)
 							list = EasyList.convert(((Reference) him.bd).getRefPath());
 						else break;
 						backLog.add(true, null, (EasyList<BasicData>) list);
-						setContainerContent(((EasyList<Container>) list).get(-1), ((EasyList<Container>) list).get(-2));
+						setContainerContent(((EasyList<Container>) list).get(-1),
+								((EasyList<Container>) list).get(-2));
 						es.onChange(true);
-						VS.ola.selected = -1;
+						VS.contentAdapter.selected = -1;
 						setSelectOpts(false);
 						return;
 					}
@@ -189,7 +188,7 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 			});
 			cut.setOnClickListener(v -> move(false));
 			edit.setOnClickListener(none -> {
-				for (HierarchyItemModel him : VS.ola.list) {
+				for (HierarchyItemModel him : VS.contentAdapter.list) {
 					if (him.isSelected()) {
 						if (him.bd instanceof Container && !(him.bd instanceof TwoSided)) {
 							activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.edit), (x, cp) -> {
@@ -208,13 +207,14 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 										him.bd.putDesc(him.parent, cp.et_desc.getText().toString());
 										if (him.bd instanceof MainChapter) ((MainChapter) him.bd).save();
 										else CurrentData.save();
-										VS.ola.selected = -1;
+										VS.contentAdapter.selected = -1;
 										setSelectOpts(false);
 										him.toShow = him.bd.toString();
-										VS.aa.notifyDataSetChanged();
+										VS.mAdapter.notifyDataSetChanged();
 										cp.dismiss();
 									} catch (IllegalArgumentException iae) {
-										defaultReacts.get(ContainerFile.class + ":name").react(iae.getMessage().contains("longer"));
+										defaultReacts.get(ContainerFile.class + ":name")
+												.react(iae.getMessage().contains("longer"));
 									}
 								});
 								return null;
@@ -233,15 +233,15 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 											onClick.run();
 											if (content.toRemove != null) return;
 											CurrentData.save();
-											VS.ola.selected = -1;
+											VS.contentAdapter.selected = -1;
 											setSelectOpts(false);
 											him.flipped = !him.flipped;
 											him.flip();
-											VS.aa.notifyDataSetChanged();
+											VS.mAdapter.notifyDataSetChanged();
 											cp.dismiss();
 										} catch (IllegalArgumentException iae) {
-											System.out.println("An Exception occurred:\n" + iae.getMessage()
-													+ "\n" + Formatter.getStackTrace(iae));
+											System.out.println("An Unexpected Exception occurred:\n"
+													+ iae.getMessage() + "\n" + Formatter.getStackTrace(iae));
 										}
 									});
 									return ll;
@@ -262,13 +262,14 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 											onClick.run();
 											if (content.toRemove != null) return;
 											CurrentData.save();
-											VS.ola.selected = -1;
+											VS.contentAdapter.selected = -1;
 											setSelectOpts(false);
 											him.toShow = him.bd.toString();
-											VS.aa.notifyDataSetChanged();
+											VS.mAdapter.notifyDataSetChanged();
 											cp.dismiss();
 										} catch (IllegalArgumentException iae) {
-											System.out.println("An Exception occurred:\n" + iae.getMessage() + "\n" + Formatter.getStackTrace(iae));
+											System.out.println("An Unexpected Exception occurred:\n"
+													+ iae.getMessage() + "\n" + Formatter.getStackTrace(iae));
 										}
 									});
 									return ll;
@@ -279,19 +280,19 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 					}
 				}
 			});
-			if (VS.aa instanceof OpenListAdapter && VS.ola.selected > -1) {
+			if (VS.mAdapter instanceof AbstractContainerAdapter && VS.contentAdapter.selected > -1) {
 				selectOpts.setVisibility(View.VISIBLE);
-				for (HierarchyItemModel him : ((OpenListAdapter<? extends HierarchyItemModel>) VS.aa).list)
+				for (HierarchyItemModel him : ((AbstractContainerAdapter<? extends HierarchyItemModel>) VS.mAdapter).list)
 					if (him.isSelected() && him.bd instanceof Reference) {
 						tglEnabled(edit, false);
 						return;
 					}
-				if (VS.ola.selected > 1) tglEnabled(edit, false);
+				if (VS.contentAdapter.selected > 1) tglEnabled(edit, false);
 			}
 		}).start();
 
 		es = new ExplorerStuff(false, this::setContent, () -> {
-			VS.ola.selected = -1;
+			VS.contentAdapter.selected = -1;
 			setSelectOpts(false);
 		}, this::setVisibleOpts, VS, backLog, getContext(),
 				root.findViewById(R.id.objects_path_handler),
@@ -301,32 +302,37 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 		es.lv.setOnItemClickListener(this);
 		es.lv.setOnItemLongClickListener(this);
 		Formatter.defaultReacts.put("MChLoaded", (o) -> {
-			if (backLog.path.isEmpty()) root.post(() -> VS.aa.notifyDataSetChanged());
+			if (backLog.path.isEmpty()) root.post(() -> VS.mAdapter.notifyDataSetChanged());
 		});
-		if (VS.aa == null) {
+		if (VS.mAdapter == null) {
 			setContent(backLog.path.get(-1), (Container) backLog.path.get(-2), backLog.path.size());
 			es.setInfo(backLog.path.get(-1), (Container) backLog.path.get(-2));
 		} else {
-			es.lv.setAdapter(VS.aa);
-			if (!VS.sv_visible) es.sv.setVisibility(View.GONE);
+			es.lv.setAdapter(VS.mAdapter);
+			if (!VS.sv_visible) es.searchView.setVisibility(View.GONE);
 			es.onChange(true);
 		}
 		setVisibleOpts();
-		pasteOpts.setVisibility(VS.paster ? View.VISIBLE : View.GONE);
+		pasteOpts.setVisibility(VS.pasteMode ? View.VISIBLE : View.GONE);
 		return root;
 	}
 
 	private static List<Container> original = new ArrayList<>();
 	private static List<HierarchyItemModel> toMove = new ArrayList<>();
 
+	/**
+	 * Sets up move-mode.
+	 *
+	 * @param ref if the selected items will be referenced or moved.
+	 */
 	private void move(boolean ref) {
-		VS.paster = true;
+		VS.pasteMode = true;
 		Controller.toggleSelectBtn(false);
 		pasteOpts.setVisibility(View.VISIBLE);
 		tglEnabled(paste, false);
-		boolean search = VS.aa instanceof SearchAdapter;
+		boolean search = VS.mAdapter instanceof SearchAdapter;
 		toMove = new ArrayList<>();
-		for (HierarchyItemModel him : VS.ola.list)
+		for (HierarchyItemModel him : VS.contentAdapter.list)
 			if (him.isSelected()) toMove.add(him);
 		original = new ArrayList<>();
 		for (BasicData bd : backLog.path) original.add((Container) bd);
@@ -339,7 +345,7 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 			}
 			Container npp = (Container) backLog.path.get(-2);
 			Container np = (Container) backLog.path.get(-1);
-			boolean searchNow = VS.aa instanceof SearchAdapter;
+			boolean searchNow = VS.mAdapter instanceof SearchAdapter;
 			for (BasicData bd : np.getChildren(npp)) toMove.remove(bd);
 			if (ref) {
 				List<Container> cp = new ArrayList<>(backLog.path.size());
@@ -348,12 +354,14 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 					Reference r;
 					try {
 						r = Reference.mkElement(him.bd, cp,
-								(search ? (List<Container>) ((SearchItemModel) him).path : original).toArray(new Container[0]));
+								(search ? (List<Container>) ((SearchItemModel) him).path : original)
+										.toArray(new Container[0]));
 					} catch (IllegalArgumentException iae) {
 						continue;
 					}
 					np.putChild(npp, r);
-					if (!searchNow) VS.aa.add(new HierarchyItemModel(r, np, VS.aa.getCount()));
+					if (!searchNow)
+						VS.mAdapter.add(new HierarchyItemModel(r, np, VS.mAdapter.getCount()));
 				}
 			} else {
 				List<ContainerFile> toSave = new LinkedList<>();
@@ -369,9 +377,10 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 							}
 					}
 					if (!searchNow) {
-						if (search) VS.aa.add(new HierarchyItemModel(him.bd, np, VS.aa.getCount()));
+						if (search)
+							VS.mAdapter.add(new HierarchyItemModel(him.bd, np, VS.mAdapter.getCount()));
 						else {
-							VS.aa.add(him);
+							VS.mAdapter.add(him);
 							him.parent = np;
 						}
 					}
@@ -392,10 +401,10 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 					}
 			}
 			CurrentData.save();
-			VS.paster = false;
+			VS.pasteMode = false;
 			pasteOpts.setVisibility(View.GONE);
 		});
-		VS.ola.selected = -1;
+		VS.contentAdapter.selected = -1;
 		setSelectOpts(false);
 	}
 
@@ -405,24 +414,30 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 	 * @param change if an item has been clicked
 	 */
 	private void setSelectOpts(boolean change) {
-		selectOpts.setVisibility(VS.ola.selected > -1 ? View.VISIBLE : View.GONE);
+		selectOpts.setVisibility(VS.contentAdapter.selected > -1 ? View.VISIBLE : View.GONE);
 		setVisibleOpts();
-		if (VS.ola.selected == -1 && !change) {
-			VS.ola.ref = 0;
-			for (HierarchyItemModel him : VS.ola.list) him.setSelected(false);
+		if (VS.contentAdapter.selected == -1 && !change) {
+			VS.contentAdapter.ref = 0;
+			for (HierarchyItemModel him : VS.contentAdapter.list) him.setSelected(false);
 		}
 	}
 
+	/**
+	 * Controls the usability of the {@link #selectOpts} buttons.
+	 */
 	private void setVisibleOpts() {
 		boolean notObj = backLog.path.size() > 0;
-		int selected = VS.ola.selected;
+		int selected = VS.contentAdapter.selected;
 		tglEnabled(delete, selected > 0);
-		tglEnabled(reference, selected > 0 && notObj && VS.ola.ref < 2 &&
-				(!(VS.ola instanceof SearchAdapter) || selected < 2));
-		tglEnabled(cut, selected > 0 && notObj && VS.ola.ref < 1);
-		tglEnabled(edit, selected == 1 && VS.ola.ref < 1);
+		tglEnabled(reference, selected > 0 && notObj && VS.contentAdapter.ref < 2 &&
+				(!(VS.contentAdapter instanceof SearchAdapter) || selected < 2));
+		tglEnabled(cut, selected > 0 && notObj && VS.contentAdapter.ref < 1);
+		tglEnabled(edit, selected == 1 && VS.contentAdapter.ref < 1);
 	}
 
+	/**
+	 * Toggles the usability of the given button.
+	 */
 	private void tglEnabled(TextView tv, boolean enabled) {
 		if (tv.isEnabled() == enabled) return;
 		if (tv == delete)
@@ -442,17 +457,18 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 	@Override
 	public void run() {
 		VS.sv_focused = false;
-		es.sv.clearFocus();
-		if (Controller.isActive(this) && VS.aa instanceof OpenListAdapter && VS.ola.selected > -1) {
-			VS.ola.selected = -1;
+		es.searchView.clearFocus();
+		if (Controller.isActive(this) && VS.mAdapter instanceof AbstractContainerAdapter
+				&& VS.contentAdapter.selected > -1) {
+			VS.contentAdapter.selected = -1;
 			setSelectOpts(false);
 		} else if (Controller.isActive(this) && !backLog.path.isEmpty()) {
-			if (VS.paster && backLog.path.size() == 1) {
+			if (VS.pasteMode && backLog.path.size() == 1) {
 				pasteOpts.setVisibility(View.GONE);
-				VS.paster = false;
+				VS.pasteMode = false;
 				return;
 			}
-			if (VS.aa instanceof SearchAdapter) {
+			if (VS.mAdapter instanceof SearchAdapter) {
 				setContent(backLog.path.get(-1), (Container) backLog.path.get(-2), backLog.path.size());
 				return;
 			}
@@ -476,48 +492,48 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 				if (!backLog.path.isEmpty())
 					Controller.activity.getSupportActionBar().setTitle(backLog.path.get(-1).toString());
 				Controller.setMenuRes(VS.menuRes);
-				if (!VS.sv_visible) es.sv.setVisibility(View.GONE);
-				else es.svc.update(false);
+				if (!VS.sv_visible) es.searchView.setVisibility(View.GONE);
+				else es.searchControl.update(false);
 			}
 		}
 	}
 
 	@Override
 	public void onClick(View v) {
-		if (VS.aa instanceof OpenListAdapter) {
-			if (VS.ola.selected > -1) {
-				if (VS.ola.selected < VS.ola.list.size()) {
-					VS.ola.selected = VS.ola.list.size();
-					for (HierarchyItemModel him : VS.ola.list)
+		if (VS.mAdapter instanceof AbstractContainerAdapter) {
+			if (VS.contentAdapter.selected > -1) {
+				if (VS.contentAdapter.selected < VS.contentAdapter.list.size()) {
+					VS.contentAdapter.selected = VS.contentAdapter.list.size();
+					for (HierarchyItemModel him : VS.contentAdapter.list)
 						if (!him.isSelected()) {
-							if (him.bd instanceof Reference) VS.ola.ref++;
+							if (him.bd instanceof Reference) VS.contentAdapter.ref++;
 							him.setSelected(true);
 						}
 					setSelectOpts(true);
 				} else {
-					VS.ola.selected = -1;
+					VS.contentAdapter.selected = -1;
 					setSelectOpts(false);
 				}
 			} else {
-				VS.ola.selected = 0;
+				VS.contentAdapter.selected = 0;
 				setSelectOpts(false);
 			}
-			VS.ola.notifyDataSetChanged();
+			VS.contentAdapter.notifyDataSetChanged();
 		}
 	}
 
 	@Override
 	public void onItemClick(AdapterView<?> par, View v, int pos, long id) {
-		if (VS.aa instanceof ImageAdapter) return;
+		if (VS.mAdapter instanceof ImageAdapter) return;
 		HierarchyItemModel him = (HierarchyItemModel) par.getItemAtPosition(pos);
 		BasicData bd = him.bd;
 		if (bd instanceof Word) {
 			if (HierarchyItemModel.flipAllOnClick) {
 				boolean flip = !him.flipped;
-				for (HierarchyItemModel item : VS.ola.list)
+				for (HierarchyItemModel item : VS.contentAdapter.list)
 					if (item.flipped != flip) item.flip();
 			} else him.flip();
-			VS.ola.notifyDataSetChanged();
+			VS.contentAdapter.notifyDataSetChanged();
 			return;
 		} else {
 			boolean ref;
@@ -525,7 +541,7 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 				try {
 					him.setNew(bd.getThis(), ((Reference) bd).getRefPathAt(-1));
 					if (bd.getThis() instanceof Word) {
-						VS.ola.notifyDataSetChanged();
+						VS.contentAdapter.notifyDataSetChanged();
 						return;
 					} else {
 						backLog.add(true, null, EasyList.convert(((Reference) bd).getRefPath()));
@@ -534,11 +550,11 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 				} catch (Exception e) {
 					return;
 				}
-			} else if (ref = VS.ola instanceof SearchAdapter) {
+			} else if (ref = VS.contentAdapter instanceof SearchAdapter) {
 				backLog.add(true, null, (EasyList<BasicData>) ((SearchItemModel) him).path);
 				backLog.path.add(him.bd);
 			} else backLog.add(false, bd, null);
-			VS.ola.selected = -1;
+			VS.contentAdapter.selected = -1;
 			setSelectOpts(true);
 			setContent(bd, him.parent, backLog.path.size());
 			es.onChange(ref);
@@ -547,14 +563,15 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 
 	@Override
 	public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-		if (VS.aa instanceof OpenListAdapter && !VS.paster) {
-			boolean selected = !VS.ola.list.get(position).isSelected();
-			if (VS.ola.selected == -1) VS.ola.selected = 0;
-			if (VS.ola.list.get(position).bd instanceof Reference) VS.ola.ref += selected ? 1 : -1;
-			VS.ola.selected += selected ? 1 : -1;
+		if (VS.mAdapter instanceof AbstractContainerAdapter && !VS.pasteMode) {
+			boolean selected = !VS.contentAdapter.list.get(position).isSelected();
+			if (VS.contentAdapter.selected == -1) VS.contentAdapter.selected = 0;
+			if (VS.contentAdapter.list.get(position).bd instanceof Reference)
+				VS.contentAdapter.ref += selected ? 1 : -1;
+			VS.contentAdapter.selected += selected ? 1 : -1;
 			setSelectOpts(false);
-			VS.ola.list.get(position).setSelected(selected);
-			VS.ola.notifyDataSetChanged();
+			VS.contentAdapter.list.get(position).setSelected(selected);
+			VS.contentAdapter.notifyDataSetChanged();
 		} else return false;
 		return true;
 	}
@@ -564,7 +581,7 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 		else if (size == 1) setContainerContent((Container) bd, null);
 		else if (bd instanceof Container)
 			if (bd instanceof TwoSided) {
-				if (bd instanceof Picture && !VS.paster) setPictureContent(bd, parent);
+				if (bd instanceof Picture && !VS.pasteMode) setPictureContent(bd, parent);
 			} else setContainerContent((Container) bd, parent);
 	}
 
@@ -577,14 +594,14 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 			finishLoad();
 		}).start();
 		Controller.setMenuRes(VS.menuRes = R.menu.more_main);
-		es.svc.update(true);
-		es.lv.setAdapter(VS.aa = VS.ola = new HierarchyAdapter(getContext(),
+		es.searchControl.update(true);
+		es.lv.setAdapter(VS.mAdapter = VS.contentAdapter = new HierarchyAdapter(getContext(),
 				convert(new ArrayList<>(MainChapter.ELEMENTS), null), this::setVisibleOpts, false));
 		Controller.activity.getSupportActionBar().setTitle(getString(R.string.menu_objects));
 	}
 
 	private void setContainerContent(Container bd, Container parent) {
-		if (VS.paster) test:{
+		if (VS.pasteMode) test:{
 			BasicData holder = original.get(original.size() - 1);
 			int i = 0;
 			for (BasicData c : backLog.path) {
@@ -606,9 +623,9 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 			tglEnabled(paste, true);
 		}
 		Controller.setMenuRes(VS.menuRes = R.menu.more_container);
-		if (!VS.paster) Controller.toggleSelectBtn(true);
-		es.svc.update(false);
-		es.lv.setAdapter(VS.aa = VS.ola = new HierarchyAdapter(getContext(),
+		if (!VS.pasteMode) Controller.toggleSelectBtn(true);
+		es.searchControl.update(false);
+		es.lv.setAdapter(VS.mAdapter = VS.contentAdapter = new HierarchyAdapter(getContext(),
 				convert(bd.getChildren(parent), bd), this::setVisibleOpts, false));
 		Controller.activity.getSupportActionBar().setTitle(bd.toString());
 	}
@@ -616,40 +633,13 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 	private void setPictureContent(BasicData bd, Container parent) {
 		Controller.setMenuRes(VS.menuRes = 0);
 		Controller.toggleSelectBtn(false);
-		es.svc.update(true);
-		class ImageAdapter extends ArrayAdapter<ImageItemModel> {
-			private final LayoutInflater li;
-			public final List<ImageItemModel> list;
-			private final Container parent;
-
-			public ImageAdapter(@NonNull Context context, @NonNull List<ImageItemModel> objects, Container parent) {
-				super(context, R.layout.item_image, R.id.item_img_ics, objects);
-				li = LayoutInflater.from(context);
-				list = objects;
-				this.parent = parent;
-			}
-
-			public View getView(int pos, View view, ViewGroup parent) {
-				if (view == null) view = li.inflate(R.layout.item_image, parent, false);
-				ImageItemModel iim = list.get(pos);
-				ImageView iv = view.findViewById(R.id.item_img_1);
-				iv.setOnClickListener(v -> new FullPicture(iim.pic1));
-				iim.setBm(true, iv);
-				iv.setContentDescription(iim.pic1.toString());
-				if (iim.pic2 != null) {
-					iim.setBm(false, iv = view.findViewById(R.id.item_img_2));
-					iv.setContentDescription(iim.pic2.toString());
-					iv.setOnClickListener(v -> new FullPicture(iim.pic2));
-				} else view.findViewById(R.id.item_img_2).setVisibility(View.GONE);
-				return view;
-			}
-		}
+		es.searchControl.update(true);
 		ArrayList<ImageItemModel> list = new ArrayList<>();
 		BasicData[] pics = ((Picture) bd).getChildren(parent);
 		for (int i = 1; i < pics.length; i += 2)
 			list.add(new ImageItemModel((Picture) pics[i - 1], (Picture) pics[i]));
 		if (pics.length % 2 == 1) list.add(new ImageItemModel((Picture) pics[pics.length - 1], null));
-		es.lv.setAdapter(VS.aa = new ImageAdapter(getContext(), list, parent));
+		es.lv.setAdapter(VS.mAdapter = new ImageAdapter(getContext(), list, parent));
 		Controller.activity.getSupportActionBar().setTitle(bd.toString());
 	}
 
@@ -665,13 +655,14 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 								if (name.isEmpty()) return;
 								ContainerFile.isCorrect(name);
 							} catch (IllegalArgumentException iae) {
-								defaultReacts.get(ContainerFile.class + ":name").react(iae.getMessage().contains("longer"));
+								defaultReacts.get(ContainerFile.class + ":name")
+										.react(iae.getMessage().contains("longer"));
 								return;
 							}
 							try {
-								VS.aa.add(new HierarchyItemModel(new MainChapter(new Data(name, null)
+								VS.mAdapter.add(new HierarchyItemModel(new MainChapter(new Data(name, null)
 										.addDesc(cp.et_desc.getText().toString())), null, es.lv.getCount() + 1));
-								VS.aa.notifyDataSetChanged();
+								VS.mAdapter.notifyDataSetChanged();
 								cp.dismiss();
 							} catch (IllegalArgumentException iae) {
 								defaultReacts.get(ContainerFile.class + ":save").react(iae, name, name);
@@ -691,14 +682,14 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 										.addDesc(cp.et_desc.getText().toString()).addPar(par);
 								Container ch = ((CheckBox) cp.view.findViewById(R.id.chapter_file))
 										.isChecked() ? SaveChapter.mkElement(d) : new Chapter(d);
-								System.out.println("in");
-								VS.aa.add(new HierarchyItemModel(ch, par, es.lv.getCount() + 1));
+								VS.mAdapter.add(new HierarchyItemModel(ch, par, es.lv.getCount() + 1));
 								par.putChild((Container) backLog.path.get(-2), ch);
 								CurrentData.newChapters.add(ch);
 								cp.dismiss();
 							} catch (IllegalArgumentException iae) {
 								if (iae.getMessage().contains("Name can't"))
-									defaultReacts.get(ContainerFile.class + ":name").react(iae.getMessage().contains("longer"));
+									defaultReacts.get(ContainerFile.class + ":name")
+											.react(iae.getMessage().contains("longer"));
 							}
 						});
 						return li.inflate(R.layout.new_chapter, null);
@@ -798,7 +789,7 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 	}
 
 	private void sort(int type, boolean rising) {
-		List<HierarchyItemModel> list = (List<HierarchyItemModel>) VS.ola.list;
+		List<HierarchyItemModel> list = (List<HierarchyItemModel>) VS.contentAdapter.list;
 		if (type != 4) Collections.sort(list, type == 1 ?
 				(a, b) -> (rising ? 1 : -1) * (a.bd.getName().compareToIgnoreCase(b.bd.getName()))
 				: type == 2 ? (a, b) -> a.bd.getRatio() == b.bd.getRatio() ? 0 :
@@ -811,7 +802,7 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 			list.clear();
 			Collections.addAll(list, hims);
 		}
-		es.lv.post(() -> VS.aa.notifyDataSetChanged());
+		es.lv.post(() -> VS.mAdapter.notifyDataSetChanged());
 	}
 
 	@Override
@@ -824,7 +815,8 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 						f = Controller.getFileFromUri(data.getData());
 						try {
 							defaultReacts.get(SimpleReader.class + ":success").react(
-									SimpleReader.simpleLoad(Formatter.loadFile(f), (Container) backLog.path.get(-1),
+									SimpleReader.simpleLoad(Formatter.loadFile(f),
+											(Container) backLog.path.get(-1),
 											(Container) backLog.path.get(-2), 0, -1, -1));
 							CurrentData.save();
 						} catch (Exception e) {
@@ -836,14 +828,16 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 					case FILE_WRITE:
 						f = Controller.getFileFromUri(data.getData());
 						try {
-							SimpleWriter.saveWords(f, (Container) backLog.path.get(-2), (Container) backLog.path.get(-1));
+							SimpleWriter.saveWords(f, (Container) backLog.path.get(-2),
+									(Container) backLog.path.get(-1));
 						} catch (Exception e) {
 							defaultReacts.get(ContainerFile.class + ":save").react(e,
 									f.getPath(), backLog.path.get(-1));
 						}
 						break;
 					case IMAGE_PICK:
-						defaultReacts.get("NotifyNewImage").react(Controller.getFileFromUri(data.getData()));
+						defaultReacts.get("NotifyNewImage")
+								.react(Controller.getFileFromUri(data.getData()));
 				}
 				super.onActivityResult(requestCode, resultCode, data);
 			}).start();
@@ -852,7 +846,7 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 
 	@Override
 	public void onResume() {
-		Controller.setCurrentControl(this, VS.menuRes, !VS.paster, true);
+		Controller.setCurrentControl(this, VS.menuRes, !VS.pasteMode, true);
 		super.onResume();
 	}
 
@@ -863,7 +857,7 @@ public class MainFragment extends Fragment implements Controller.ControlListener
 
 	public static class ViewState extends ExplorerStuff.ViewState {
 		private int menuRes;
-		private boolean paster;
+		private boolean pasteMode;
 		public MainFragment mfInstance;
 	}
 }

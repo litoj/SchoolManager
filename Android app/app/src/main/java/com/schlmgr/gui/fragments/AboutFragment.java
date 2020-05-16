@@ -18,38 +18,64 @@ import static com.schlmgr.gui.Controller.activity;
 
 public class AboutFragment extends Fragment implements ControlListener {
 
-	static TglVisibility help_create = new TglVisibility(R.id.help_create, R.id.help_create_layout);
-	static TglVisibility help_create_mch = new TglVisibility(R.id.help_create_mch, R.id.help_create_mch_how);
-	static TglVisibility help_create_ch = new TglVisibility(R.id.help_create_ch, R.id.help_create_ch_how);
-	static TglVisibility help_create_word = new TglVisibility(R.id.help_create_word, R.id.help_create_word_how);
-	static TglVisibility help_create_pic = new TglVisibility(R.id.help_create_pic, R.id.help_create_pic_how);
-	static TglVisibility help_create_ref = new TglVisibility(R.id.help_create_ref, R.id.help_create_ref_how);
+	private static final TglVisibility help_create =
+			new TglVisibility(R.id.help_create, R.id.help_create_layout);
+	private static final TglVisibility help_create_mch =
+			new TglVisibility(R.id.help_create_mch, R.id.help_create_mch_how);
+	private static final TglVisibility help_create_ch =
+			new TglVisibility(R.id.help_create_ch, R.id.help_create_ch_how);
+	private static final TglVisibility help_create_word =
+			new TglVisibility(R.id.help_create_word, R.id.help_create_word_how);
+	private static final TglVisibility help_create_pic =
+			new TglVisibility(R.id.help_create_pic, R.id.help_create_pic_how);
+	private static final TglVisibility help_create_ref =
+			new TglVisibility(R.id.help_create_ref, R.id.help_create_ref_how);
 
-	static TglVisibility help_select = new TglVisibility(R.id.help_select, R.id.help_select_layout);
-	static TglVisibility help_select_delete = new TglVisibility(R.id.help_select_delete, R.id.help_select_delete_how);
-	static TglVisibility help_select_ref = new TglVisibility(R.id.help_select_ref, R.id.help_select_ref_how);
-	static TglVisibility help_select_cut = new TglVisibility(R.id.help_select_cut, R.id.help_select_cut_how);
-	static TglVisibility help_select_edit = new TglVisibility(R.id.help_select_edit, R.id.help_select_edit_how);
+	private static final TglVisibility help_select =
+			new TglVisibility(R.id.help_select, R.id.help_select_layout);
+	private static final TglVisibility help_select_delete =
+			new TglVisibility(R.id.help_select_delete, R.id.help_select_delete_how);
+	private static final TglVisibility help_select_ref =
+			new TglVisibility(R.id.help_select_ref, R.id.help_select_ref_how);
+	private static final TglVisibility help_select_cut =
+			new TglVisibility(R.id.help_select_cut, R.id.help_select_cut_how);
+	private static final TglVisibility help_select_edit =
+			new TglVisibility(R.id.help_select_edit, R.id.help_select_edit_how);
 
-	static TglVisibility help_search = new TglVisibility(R.id.help_search, R.id.help_search_layout);
-	static TglVisibility help_search_types = new TglVisibility(R.id.help_search_types, R.id.help_search_types_how);
-	static TglVisibility help_search_regex = new TglVisibility(R.id.help_search_regex, R.id.help_search_regex_how);
+	private static final TglVisibility help_search =
+			new TglVisibility(R.id.help_search, R.id.help_search_layout);
+	private static final TglVisibility help_search_types =
+			new TglVisibility(R.id.help_search_types, R.id.help_search_types_how);
+	private static final TglVisibility help_search_regex =
+			new TglVisibility(R.id.help_search_regex, R.id.help_search_regex_how);
 
-	static TglVisibility help_subjdir = new TglVisibility(R.id.help_subjdir, R.id.help_subjdir_layout);
+	private static final TglVisibility help_subjdir =
+			new TglVisibility(R.id.help_subjdir, R.id.help_subjdir_layout);
 
-	static TglVisibility help_test = new TglVisibility(R.id.help_test, R.id.help_test_layout);
-	static TglVisibility help_test_select = new TglVisibility(R.id.help_test_select, R.id.help_test_select_how);
-	static TglVisibility help_test_run = new TglVisibility(R.id.help_test_run, R.id.help_test_run_how);
-	static TglVisibility help_test_results = new TglVisibility(R.id.help_test_results, R.id.help_test_results_how);
+	private static final TglVisibility help_test =
+			new TglVisibility(R.id.help_test, R.id.help_test_layout);
+	private static final TglVisibility help_test_select =
+			new TglVisibility(R.id.help_test_select, R.id.help_test_select_how);
+	private static final TglVisibility help_test_run =
+			new TglVisibility(R.id.help_test_run, R.id.help_test_run_how);
+	private static final TglVisibility help_test_results =
+			new TglVisibility(R.id.help_test_results, R.id.help_test_results_how);
 
-	static TglVisibility help_extra = new TglVisibility(R.id.help_extra, R.id.help_extra_layout);
-	static TglVisibility help_extra_naming = new TglVisibility(R.id.help_extra_naming, R.id.help_extra_naming_how);
-	static TglVisibility help_extra_words_import = new TglVisibility(R.id.help_extra_words_import, R.id.help_extra_words_import_how);
-	static TglVisibility help_extra_words_export = new TglVisibility(R.id.help_extra_words_export, R.id.help_extra_words_export_how);
-	static TglVisibility help_extra_import_mch = new TglVisibility(R.id.help_extra_import_mch, R.id.help_extra_import_mch_how);
+	private static final TglVisibility help_extra =
+			new TglVisibility(R.id.help_extra, R.id.help_extra_layout);
+	private static final TglVisibility help_extra_naming =
+			new TglVisibility(R.id.help_extra_naming, R.id.help_extra_naming_how);
+	private static final TglVisibility help_extra_words_import =
+			new TglVisibility(R.id.help_extra_words_import, R.id.help_extra_words_import_how);
+	private static final TglVisibility help_extra_words_export =
+			new TglVisibility(R.id.help_extra_words_export, R.id.help_extra_words_export_how);
+	private static final TglVisibility help_extra_import_mch =
+			new TglVisibility(R.id.help_extra_import_mch, R.id.help_extra_import_mch_how);
 
-	static TglVisibility versions_release = new TglVisibility(R.id.versions_release, R.id.versions_release_layout);
-	static TglVisibility versions_beta = new TglVisibility(R.id.versions_beta, R.id.versions_beta_layout);
+	private static final TglVisibility versions_release =
+			new TglVisibility(R.id.versions_release, R.id.versions_release_layout);
+	private static final TglVisibility versions_beta =
+			new TglVisibility(R.id.versions_beta, R.id.versions_beta_layout);
 
 	public View onCreateView(@NonNull LayoutInflater inflater,
 	                         ViewGroup container, Bundle savedInstanceState) {
@@ -106,18 +132,23 @@ public class AboutFragment extends Fragment implements ControlListener {
 
 	static class TglVisibility {
 		boolean visible;
-		View toggler;
+		View switcher;
 		View toToggle;
-		final int tglr, toTgl;
+		final int switcherID, toTgl;
 
-		TglVisibility(int tglr, int toTgl) {
-			this.tglr = tglr;
-			this.toTgl = toTgl;
+		TglVisibility(int switcherID, int toToggleID) {
+			this.switcherID = switcherID;
+			this.toTgl = toToggleID;
 		}
 
+		/**
+		 * Sets up the onClick action for showing and hiding {@link #toToggle}.
+		 *
+		 * @param root the current parent of the views.
+		 */
 		void setTgl(View root) {
 			toToggle = root.findViewById(toTgl);
-			(toggler = root.findViewById(tglr)).setOnClickListener(v ->
+			(switcher = root.findViewById(switcherID)).setOnClickListener(v ->
 					toToggle.setVisibility((visible = !visible) ? View.VISIBLE : View.GONE));
 			if ((toToggle.getVisibility() == View.VISIBLE) != visible)
 				toToggle.setVisibility(visible ? View.VISIBLE : View.GONE);

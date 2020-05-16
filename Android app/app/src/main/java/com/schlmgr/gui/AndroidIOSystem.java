@@ -12,8 +12,8 @@ import androidx.core.content.ContextCompat;
 
 import com.google.android.material.snackbar.Snackbar;
 import com.schlmgr.R;
-import com.schlmgr.gui.popup.TextPopup;
 import com.schlmgr.gui.list.HierarchyItemModel;
+import com.schlmgr.gui.popup.TextPopup;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,7 +49,8 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 	public static boolean canWrite() {
 		if (!canWrite && VERSION.SDK_INT >= 23 && PERMISSION_GRANTED !=
 				ContextCompat.checkSelfPermission(CONTEXT, permission.WRITE_EXTERNAL_STORAGE)) {
-			activity.requestPermissions(new String[]{permission.WRITE_EXTERNAL_STORAGE}, STORAGE_PERMISSION);
+			activity.requestPermissions
+					(new String[]{permission.WRITE_EXTERNAL_STORAGE}, STORAGE_PERMISSION);
 			try {
 				synchronized (ios) {
 					ios.wait();
@@ -75,7 +76,8 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 		if (!canWrite) {
 			if (VERSION.SDK_INT >= 23 && PERMISSION_GRANTED !=
 					ContextCompat.checkSelfPermission(CONTEXT, permission.WRITE_EXTERNAL_STORAGE)) {
-				activity.requestPermissions(new String[]{permission.WRITE_EXTERNAL_STORAGE}, STORAGE_PERMISSION);
+				activity.requestPermissions(
+						new String[]{permission.WRITE_EXTERNAL_STORAGE}, STORAGE_PERMISSION);
 				return false;
 			} else return canWrite = true;
 		} else return true;
@@ -95,7 +97,8 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 	 * @param view the view, that initially used the keyboard
 	 */
 	public static void hideKeyboardFrom(View view) {
-		InputMethodManager imm = (InputMethodManager) view.getContext().getSystemService(Activity.INPUT_METHOD_SERVICE);
+		InputMethodManager imm = (InputMethodManager)
+				view.getContext().getSystemService(Activity.INPUT_METHOD_SERVICE);
 		imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
 	}
 
@@ -192,7 +195,8 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 			} catch (Exception e) {
 			}
 			Snackbar.make(activity.findViewById(R.id.content_main), msg, Snackbar.LENGTH_LONG)
-					.setAction(activity.getString(R.string.action_full_text), v -> new TextPopup(msg, fullMsg)).setTextColor(0xFFEEEEEE).show();
+					.setAction(activity.getString(R.string.action_full_text),
+							v -> new TextPopup(msg, fullMsg)).setTextColor(0xFFEEEEEE).show();
 		}).start();
 	}
 
@@ -209,8 +213,8 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 	@Override
 	protected void deserializeTo(String filePath, Object toSave, boolean internal) {
 		try (ObjectOutputStream oos = new ObjectOutputStream(internal ?
-				CONTEXT.openFileOutput(filePath.substring(filePath.lastIndexOf('/') + 1), Context.MODE_PRIVATE) :
-				new java.io.FileOutputStream(filePath))) {
+				CONTEXT.openFileOutput(filePath.substring(filePath.lastIndexOf('/') + 1),
+						Context.MODE_PRIVATE) : new java.io.FileOutputStream(filePath))) {
 			oos.writeObject(toSave);
 		} catch (IOException ex) {
 			throw new IllegalArgumentException(ex);
@@ -220,7 +224,8 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 	@Override
 	protected Object serialize(String filePath, boolean internal) {
 		try (ObjectInputStream ois = new ObjectInputStream(internal ?
-				CONTEXT.openFileInput(filePath.substring(filePath.lastIndexOf('/') + 1)) : new java.io.FileInputStream(filePath))) {
+				CONTEXT.openFileInput(filePath.substring(filePath.lastIndexOf('/') + 1))
+				: new java.io.FileInputStream(filePath))) {
 			return ois.readObject();
 		} catch (IOException | ClassNotFoundException ex) {
 			throw new IllegalArgumentException(ex);

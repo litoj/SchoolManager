@@ -36,7 +36,10 @@ import static com.schlmgr.gui.fragments.MainFragment.VS;
 import static com.schlmgr.gui.fragments.MainFragment.es;
 import static com.schlmgr.gui.list.ImageItemModel.getScaledBitmap;
 
-public class ImageRecyclerAdapter extends NestedRecyclerAdapter<Image, ImageHolder> {
+/**
+ * Used for creating and editing images in {@link CreatorPopup}.
+ */
+public class ImageRecyclerAdapter extends AbstractRecyclerAdapter<Image, ImageHolder> {
 
 	public static class Image {
 
@@ -61,7 +64,7 @@ public class ImageRecyclerAdapter extends NestedRecyclerAdapter<Image, ImageHold
 		return new Image((Picture) src);
 	}
 
-	class ImageHolder extends NestedRecyclerAdapter.ViewHolder {
+	class ImageHolder extends AbstractRecyclerAdapter.ViewHolder {
 
 		ImageView image;
 
@@ -122,7 +125,7 @@ public class ImageRecyclerAdapter extends NestedRecyclerAdapter<Image, ImageHold
 				}
 			if (edited == null) {
 				Picture p = Picture.mkElement(new Data(name, mch).addDesc(desc).addPar(parent), images);
-				VS.aa.add(new HierarchyItemModel(p, parent, es.lv.getCount() + 1));
+				VS.mAdapter.add(new HierarchyItemModel(p, parent, es.lv.getCount() + 1));
 				parent.putChild((Container) backLog.path.get(-2), p);
 			} else {
 				for (Picture p : toRemove) ((Picture) edited.bd).removeChild(parent, p);

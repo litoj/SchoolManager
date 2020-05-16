@@ -37,7 +37,8 @@ import IOSystem.Formatter;
 import static com.schlmgr.gui.Controller.dp;
 import static com.schlmgr.gui.CurrentData.backLog;
 
-public class SelectDirActivity extends PopupCareActivity implements OnItemClickListener, OnItemLongClickListener {
+public class SelectDirActivity extends PopupCareActivity
+		implements OnItemClickListener, OnItemLongClickListener {
 
 	private static long backTime;
 	private HorizontalScrollView path_handler;
@@ -123,7 +124,8 @@ public class SelectDirActivity extends PopupCareActivity implements OnItemClickL
 			File[] dirPath = VS.path.toArray(new File[0]);
 			VS.path.clear();
 			for (int i = 0; i < dirPath.length; i++)
-				addPathButton(dirPath[i], i == 0 ? DirAdapter.storageName(dirPath[i]) : dirPath[i].getName());
+				addPathButton(dirPath[i], i == 0 ?
+						DirAdapter.storageName(dirPath[i]) : dirPath[i].getName());
 		}
 		makeFiles(f);
 		checkSelected();
@@ -198,7 +200,8 @@ public class SelectDirActivity extends PopupCareActivity implements OnItemClickL
 		if (!AndroidIOSystem.requestWrite()) return false;
 		LinkedList<File> files = new LinkedList<>();
 		if (parent == null)
-			list.setAdapter(VS.da = new DirAdapter(context, DirAdapter.convert(null), true, this::checkSelected));
+			list.setAdapter(VS.da = new DirAdapter(context,
+					DirAdapter.convert(null), true, this::checkSelected));
 		else if (parent.listFiles() != null) {
 			for (File f : parent.listFiles())
 				if (f.isDirectory()) {
@@ -207,7 +210,8 @@ public class SelectDirActivity extends PopupCareActivity implements OnItemClickL
 					for (; i >= 0 && files.get(i).getName().compareToIgnoreCase(name) > 0; i--) ;
 					files.add(i + 1, f);
 				}
-			list.setAdapter(VS.da = new DirAdapter(context, DirAdapter.convert(files), false, this::checkSelected));
+			list.setAdapter(VS.da = new DirAdapter(context,
+					DirAdapter.convert(files), false, this::checkSelected));
 		}
 		return true;
 	}

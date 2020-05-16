@@ -72,7 +72,8 @@ public class TestFragment extends Fragment implements ControlListener {
 				else i++;
 			}
 		});
-		(amount = root.findViewById(R.id.test_amount)).setText("" + Test.getAmount(), BufferType.EDITABLE);
+		(amount = root.findViewById(R.id.test_amount))
+				.setText("" + Test.getAmount(), BufferType.EDITABLE);
 		amount.setOnFocusChangeListener((v, hasFocus) -> {
 			if (!hasFocus) {
 				if (amount.getText().toString().isEmpty())
@@ -80,7 +81,8 @@ public class TestFragment extends Fragment implements ControlListener {
 				AndroidIOSystem.hideKeyboardFrom(v);
 			}
 		});
-		(time = root.findViewById(R.id.test_time)).setText("" + Test.getDefaultTime(), BufferType.EDITABLE);
+		(time = root.findViewById(R.id.test_time))
+				.setText("" + Test.getDefaultTime(), BufferType.EDITABLE);
 		time.setOnFocusChangeListener((v, hasFocus) -> {
 			if (!hasFocus) {
 				if (time.getText().toString().isEmpty())

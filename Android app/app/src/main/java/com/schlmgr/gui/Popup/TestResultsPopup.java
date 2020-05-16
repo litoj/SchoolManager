@@ -20,7 +20,6 @@ import java.util.List;
 
 import objects.Picture;
 import objects.templates.BasicData;
-import objects.templates.Container;
 import objects.templates.TwoSided;
 
 import static com.schlmgr.gui.Controller.activity;
@@ -41,7 +40,8 @@ public class TestResultsPopup extends AbstractPopup {
 	@Override
 	protected void addContent(ViewGroup view) {
 		view.findViewById(R.id.ok).setOnClickListener(v -> dismiss());
-		((TextView) view.findViewById(R.id.popup_test_success)).setText(activity.getString(R.string.success_rate) + ": " + success + "%");
+		((TextView) view.findViewById(R.id.popup_test_success))
+				.setText(activity.getString(R.string.success_rate) + ": " + success + "%");
 		LayoutInflater li = LayoutInflater.from(view.getContext());
 		((ListView) view.findViewById(R.id.popup_test_list)).setAdapter(
 				new ArrayAdapter<TestedItem>(view.getContext(), picTest ? R.layout.item_results_pic :
@@ -51,11 +51,13 @@ public class TestResultsPopup extends AbstractPopup {
 					public View getView(int pos, @Nullable View v, @NonNull ViewGroup par) {
 						TestedItem item = list.get(pos);
 						if (item.v == null) {
-							item.v = v = li.inflate(picTest ? R.layout.item_results_pic : R.layout.item_results_word, par, false);
+							item.v = v = li.inflate(picTest ? R.layout.item_results_pic :
+									R.layout.item_results_word, par, false);
 							if (picTest) {
-								BasicData[] pics = item.ts.getChildren(item.par);
+								BasicData[] pics = item.visibleChildren;
 								for (int i = 1; i < pics.length; i += 2) {
-									ImageItemModel iim = new ImageItemModel((Picture) pics[i - 1], (Picture) pics[i]);
+									ImageItemModel iim = new ImageItemModel(
+											(Picture) pics[i - 1], (Picture) pics[i]);
 									View vImg = li.inflate(R.layout.item_test_image, (LinearLayout) v, false);
 									((LinearLayout) v).addView(vImg, 0);
 									ImageView iv = vImg.findViewById(R.id.img_1);
@@ -67,7 +69,8 @@ public class TestResultsPopup extends AbstractPopup {
 									iv.setOnClickListener(view -> new FullPicture(iim.pic2));
 								}
 								if (pics.length % 2 == 1) {
-									ImageItemModel iim = new ImageItemModel((Picture) pics[pics.length - 1], null);
+									ImageItemModel iim = new ImageItemModel(
+											(Picture) pics[pics.length - 1], null);
 									View vImg = li.inflate(R.layout.item_test_image, (LinearLayout) v, false);
 									((LinearLayout) v).addView(vImg, 0);
 									ImageView iv = vImg.findViewById(R.id.img_1);
@@ -78,7 +81,7 @@ public class TestResultsPopup extends AbstractPopup {
 								}
 							} else {
 								StringBuilder trls = new StringBuilder();
-								for (BasicData trl : item.ts.getChildren(item.par))
+								for (BasicData trl : item.visibleChildren)
 									trls.append('\n').append(HierarchyItemModel.nameParser(trl.getName()));
 								((TextView) v.findViewById(R.id.test_hint)).setText(trls.substring(1));
 							}
@@ -96,13 +99,13 @@ public class TestResultsPopup extends AbstractPopup {
 		private View v;
 		private final boolean c;
 		private final TwoSided ts;
-		private final Container par;
 		private final String text;
+		private final BasicData[] visibleChildren;
 
-		public TestedItem(boolean correct, TwoSided item, Container parrent, String written) {
+		public TestedItem(boolean correct, TwoSided item, BasicData[] visibleChildren, String written) {
 			c = correct;
 			ts = item;
-			par = parrent;
+			this.visibleChildren = visibleChildren;
 			text = written;
 		}
 	}

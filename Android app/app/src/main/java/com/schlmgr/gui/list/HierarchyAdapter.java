@@ -24,10 +24,11 @@ import static com.schlmgr.gui.Controller.dp;
 import static com.schlmgr.gui.activity.MainActivity.ic_check_empty;
 import static com.schlmgr.gui.activity.MainActivity.ic_check_filled;
 
-public class HierarchyAdapter extends OpenListAdapter<HierarchyItemModel> {
+public class HierarchyAdapter extends AbstractContainerAdapter<HierarchyItemModel> {
 	private LayoutInflater li;
 
-	public HierarchyAdapter(@NonNull Context context, @NonNull List<HierarchyItemModel> objects, Runnable occ, boolean selectActivity) {
+	public HierarchyAdapter(@NonNull Context context, @NonNull List<HierarchyItemModel> objects,
+	                        Runnable occ, boolean selectActivity) {
 		super(context, R.layout.item_hierarchy, R.id.item_name, objects, occ, selectActivity);
 		li = LayoutInflater.from(context);
 	}
@@ -38,12 +39,14 @@ public class HierarchyAdapter extends OpenListAdapter<HierarchyItemModel> {
 		HierarchyItemModel item = list.get(index);
 		((TextView) view.findViewById(R.id.item_name)).setText(item.toShow);
 		TextView num = view.findViewById(R.id.h_item_number);
-		num.setBackgroundColor(item.bd instanceof Reference ? 0x600000FF : background(item.bd.getRatio()));
+		num.setBackgroundColor(item.bd instanceof Reference ?
+				0x600000FF : background(item.bd.getRatio()));
 		num.setText((index + 1) + ".");
 		if (item.bd instanceof Picture)
 			item.ic.setBounds((int) dp, 0, (int) (dp * 33), (int) (dp * 33));
 		else item.ic.setBounds(0, 0, (int) (dp * 30), (int) (dp * 30));
 		num.setCompoundDrawablesRelative(null, null, item.ic, null);
+
 		View iv = view.findViewById(R.id.h_item_info);
 		if (!selectActivity && !item.info.isEmpty()) {
 			iv.setVisibility(View.VISIBLE);
@@ -60,6 +63,7 @@ public class HierarchyAdapter extends OpenListAdapter<HierarchyItemModel> {
 				if (occ != null) occ.run();
 			});
 		} else view.findViewById(R.id.item_selected).setVisibility(View.GONE);
+
 		if (item.bd instanceof MainChapter &&
 				!((MainChapter) item.bd).getDir().getPath().contains(Formatter.getPath().getPath())) {
 			ImageView remove = view.findViewById(R.id.btn_remove);
@@ -75,6 +79,12 @@ public class HierarchyAdapter extends OpenListAdapter<HierarchyItemModel> {
 		return view;
 	}
 
+	/**
+	 * Chooses a color depending on the success rate. No color for no children. Blue for no rate.
+	 *
+	 * @param sf success rate, -1 for no rating, -2 for no children
+	 * @return the color for the parameter
+	 */
 	public static int background(int sf) {
 		if (sf == -2) return 0;
 		if (sf == -1) return 0x600000FF;
