@@ -44,4 +44,7 @@
     <item
         android:id="@+id/more_export_word"
         android:title="@string/more_export_word" />
+    <item
+        android:id="@+id/more_sf_revaluate"
+        android:title="@string/more_sf_revaluate" />
 </menu>

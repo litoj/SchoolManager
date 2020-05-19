@@ -12,6 +12,7 @@ import androidx.core.content.ContextCompat;
 
 import com.google.android.material.snackbar.Snackbar;
 import com.schlmgr.R;
+import com.schlmgr.gui.fragments.MainFragment;
 import com.schlmgr.gui.list.HierarchyItemModel;
 import com.schlmgr.gui.popup.TextPopup;
 
@@ -120,9 +121,16 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 			settings.put("HIMflipAll", false);
 			settings.put("HIMparse", true);
 		} else {
-			HierarchyItemModel.defFlip = (Boolean) settings.get("HIMflip");
-			HierarchyItemModel.flipAllOnClick = (Boolean) settings.get("HIMflipAll");
-			HierarchyItemModel.parse = (Boolean) settings.get("HIMparse");
+			Object value;
+			if ((value = settings.get("HIMflip")) != null)
+				HierarchyItemModel.defFlip = (Boolean) value;
+			else settings.put("HIMflip", true);
+			if ((value = settings.get("HIMflipAll")) != null)
+				HierarchyItemModel.flipAllOnClick = (Boolean) value;
+			else settings.put("HIMflipAll", false);
+			if ((value = settings.get("HIMparse")) != null)
+				HierarchyItemModel.parse = (Boolean) value;
+			else settings.put("HIMparse", true);
 		}
 	}
 

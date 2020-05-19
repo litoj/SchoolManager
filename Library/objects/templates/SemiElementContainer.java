@@ -20,6 +20,18 @@ public abstract class SemiElementContainer extends BasicElement implements Conta
 	protected Container parent;
 
 	@Override
+	public int[] refreshSF() {
+		int[] sf = {0, 0};
+		for (BasicData bd : getChildren()) {
+			int[] childSF =
+					bd instanceof Container ? ((Container) bd).refreshSF() : bd.getSF();
+			sf[0] += childSF[0];
+			sf[1] += childSF[1];
+		}
+		return (this.sf = sf).clone();
+	}
+
+	@Override
 	public boolean move(Container op, Container np, Container npp) {
 		return super.move(op, parent = np, npp);
 	}

@@ -478,7 +478,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="#5888"
-            android:drawableEnd="@drawable/ic_set_help"
+            android:drawableEnd="@drawable/ic_subjdir"
             android:paddingHorizontal="15dp"
             android:paddingVertical="7dp"
             android:text="@string/help_subjdir"
@@ -711,6 +711,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="#2888"
+                android:drawableEnd="@drawable/ic_import_help"
                 android:paddingHorizontal="15dp"
                 android:paddingVertical="2dp"
                 android:text="@string/help_extra_import_mch"
@@ -723,7 +724,6 @@
 
             <TextView
                 android:id="@+id/help_extra_import_mch_how"
-                android:drawableEnd="@drawable/ic_import"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="8dp"
@@ -765,6 +765,25 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="2.2"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="
+- added success rate revaluation option\n
+- fixed crash on 'Set subjects directory' option"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
 
             <TextView
                 android:layout_width="match_parent"

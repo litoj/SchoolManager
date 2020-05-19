@@ -29,8 +29,8 @@ import java.util.Map;
 public class Formatter {
 
 	/**
-	 * Default {@link Reactioner object} made for answering on various actions, keys should be
-	 * in format:
+	 * Default {@link Reactioner object} made for answering on various actions, keys
+	 * should be in format:
 	 * <p>
 	 * fullClassName + ':' + specification (if necessary);
 	 * <p>
@@ -48,7 +48,8 @@ public class Formatter {
 	}
 
 	/**
-	 * Reacts on any event from specified locations in the program given various parameters.
+	 * Reacts on any event from specified locations in the program given various
+	 * parameters.
 	 */
 	public interface Reactioner {
 		void react(Object... moreInfo);
@@ -66,7 +67,8 @@ public class Formatter {
 
 	/**
 	 * @param key tag of the setting
-	 * @return the value of the given key or {@code null} if settings doesn't contain that key
+	 * @return the value of the given key or {@code null} if settings doesn't contain that
+	 * key
 	 * @see Map#get(Object)
 	 */
 	public static Object getSetting(String key) {
@@ -134,7 +136,8 @@ public class Formatter {
 		try {
 			return ios.fileContent(new FileInputStream(source));
 		} catch (Exception e) {
-			Formatter.defaultReacts.get(ContainerFile.class + ":load").react(e, source, source.getPath());
+			Formatter.defaultReacts.get(ContainerFile.class + ":load")
+					.react(e, source, source.getPath());
 		}
 		return null;
 	}
@@ -154,7 +157,8 @@ public class Formatter {
 	}
 
 	/**
-	 * File operations depend on platform, this class defines all methods required to run the program
+	 * File operations depend on platform, this class defines all methods required to run
+	 * the program
 	 * and can be platform dependant.
 	 * <p>
 	 * Only the firstly created instance will be used during the run.
@@ -166,7 +170,8 @@ public class Formatter {
 	public static abstract class IOSystem {
 
 		/**
-		 * Settings file of the program, contains all {@link #settings hierarchy independant variables}.
+		 * Settings file of the program, contains all
+		 * {@link #settings hierarchy independant variables}.
 		 */
 		protected File setts;
 		/**
@@ -175,7 +180,8 @@ public class Formatter {
 		protected Map<String, Object> settings = new HashMap<>();
 
 		/**
-		 * Path to the directory that contains all {@link MainChapter hierarchies's} folders and data.
+		 * Path to the directory that contains all {@link MainChapter hierarchies's}
+		 * folders and data.
 		 */
 		protected File objDir;
 
@@ -192,19 +198,22 @@ public class Formatter {
 				try {
 					settings = (Map<String, Object>) serialize(setts.getName(), true);
 					try {
-						(objDir = new File(mkRealPath(settings.get("objdir").toString()))).mkdirs();
+						(objDir = new File(
+								mkRealPath(settings.get("objdir").toString()))).mkdirs();
 					} catch (Exception e) {
-						defaultReacts.get(Formatter.class + ":newSrcDir").react(e, settings.get("objdir"));
+						defaultReacts.get(Formatter.class + ":newSrcDir")
+								.react(e, settings.get("objdir"));
 						(objDir = new File("School objects")).mkdirs();
 					}
-					if (settings.get("defaultTestTime") != null)
-						Test.setDefaultTime((Integer) settings.get("defaultTestTime"));
+					Object value;
+					if ((value = settings.get("defaultTestTime")) != null)
+						Test.setDefaultTime((Integer) value);
 					else settings.put("defaultTestTime", 180);
-					if (settings.get("isClever") != null)
-						Test.setClever((Boolean) settings.get("isClever"));
+					if ((value = settings.get("isClever")) != null)
+						Test.setClever((Boolean) value);
 					else settings.put("isClever", true);
-					if (settings.get("testAmount") != null)
-						Test.setAmount((Integer) settings.get("testAmount"));
+					if ((value = settings.get("testAmount")) != null)
+						Test.setAmount((Integer) value);
 					else settings.put("testAmount", 10);
 					setDefaults(false);
 				} catch (Exception e) {
@@ -249,7 +258,8 @@ public class Formatter {
 			}
 		}
 
-		protected abstract void deserializeTo(String filePath, Object toSave, boolean internal);
+		protected abstract void deserializeTo(
+				String filePath, Object toSave, boolean internal);
 
 		protected abstract Object serialize(String filePath, boolean internal);
 
@@ -270,7 +280,7 @@ public class Formatter {
 		/**
 		 * Makes a real path.
 		 *
-		 * @param path § on index 0 changes to current disc name (made for USB disc portability)
+		 * @param path § on index 0 changes to current disc name (for USB disc portability)
 		 * @return the corrected path
 		 */
 		public abstract String mkRealPath(String path);
@@ -280,7 +290,8 @@ public class Formatter {
 
 	/**
 	 * Object containing all necessary data for creating a {@link MainChapter hierarchy}
-	 * {@link objects.templates.BasicData element}. Used for every hierarchy object creating.
+	 * {@link objects.templates.BasicData element}. Used for every hierarchy object
+	 * creating.
 	 */
 	public static class Data {
 
@@ -318,8 +329,9 @@ public class Formatter {
 
 		@Override
 		public String toString() {
-			return "name=\"" + name + "\", description=" + description + "\", success=" + sf[0]
-					+ ", fail=" + sf[1] + ", parent=" + par + ", extra=" + Arrays.toString(tagVals);
+			return "name=\"" + name + "\", description=" + description + "\", success="
+					+ sf[0] + ", fail=" + sf[1] + ", parent=" + par + ", extra="
+					+ Arrays.toString(tagVals);
 		}
 	}
 	

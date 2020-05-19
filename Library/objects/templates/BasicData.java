@@ -65,7 +65,8 @@ public interface BasicData extends IOSystem.WriteElement {
 	 * @param newParPar parent of the new parent
 	 * @return if the operation succeeded
 	 */
-	default boolean move(Container oldParent, Container oldParPar, Container newParent, Container newParPar) {
+	default boolean move(Container oldParent,
+			Container oldParPar, Container newParent, Container newParPar) {
 		if (oldParent.getIdentifier() != newParent.getIdentifier()) return false;
 		oldParent.removeChild(oldParPar, this);
 		if (!newParent.hasChild(newParPar, this)) newParent.putChild(newParPar, this);
@@ -77,9 +78,10 @@ public interface BasicData extends IOSystem.WriteElement {
 	 *
 	 * @param parent the parent of this object
 	 * @param name   the new name for this object
-	 * @return if the name has been set successfully
+	 * @return the object to have the specified name, or the old name, if renaming was
+	 * unsuccessfull
 	 */
-	boolean setName(Container parent, String name);
+	BasicData setName(Container parent, String name);
 
 	String getName();
 
@@ -91,6 +93,11 @@ public interface BasicData extends IOSystem.WriteElement {
 		return sf[1] == 0 && sf[0] == 0 ? -1 : (100 * sf[0] / (sf[0] + sf[1]));
 	}
 
+	/**
+	 * The success and fail values for this object.
+	 * 
+	 * @return copy of the success rate
+	 */
 	int[] getSF();
 
 	/**

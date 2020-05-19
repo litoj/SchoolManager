@@ -143,13 +143,7 @@ public class TranslateRecyclerAdapter extends AbstractRecyclerAdapter<Translate,
 			} else {
 				for (Word w : toRemove) ((Word) edited.bd).removeChild(parent, w);
 				edited.bd.putDesc(parent, cp.et_desc.getText().toString());
-				if (!edited.bd.getName().equals(name) && edited.bd.setName(parent, name)) {
-					for (Word w : Word.ELEMENTS.get(mch))
-						if (name.equals(w.getName())) {
-							edited.bd = w;
-							break;
-						}
-				}
+				edited.bd = edited.bd.setName(parent, name);
 			}
 			toRemove = null;
 		};

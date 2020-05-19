@@ -1,7 +1,7 @@
 package objects.templates;
 
 /**
- * This hierarchy object can contain any other hierarchy objects.
+ * This hierarchy object can contain other hierarchy objects.
  *
  * @author Josef Litoš
  */
@@ -17,6 +17,14 @@ public interface Container extends BasicData {
 
 	Container removeChild(BasicData e);
 
+	/**
+	 * Counts success and fail values of its children and sets the result as its own.
+	 * Reference objects values are not used (they always return {0, 0}).
+	 * 
+	 * @return copy of the success and fail values for this object
+	 */
+	int[] refreshSF();
+	
 	default boolean hasChild(BasicData e) {
 		for (BasicData bd : getChildren()) if (e.equals(bd)) return true;
 		return false;
@@ -49,7 +57,8 @@ public interface Container extends BasicData {
 	 * @return the same object as param {@code sb}
 	 */
 	default StringBuilder writeData0(StringBuilder sb, int tabs, Container cp) {
-		//tabs(sb, tabs++, "{ ").add(sb, this, cp, true, true, true, true, true); this has to be altered with what is needed to be written, than call this method
+		//tabs(sb, tabs++, "{ ").add(sb, this, cp, true, true, true, true, true);
+		//that must be altered with what is needed to be written, than call this method
 		boolean first = true;
 		for (BasicData bd : getChildren(cp))
 			if (!bd.isEmpty(this)) {

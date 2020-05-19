@@ -4,7 +4,7 @@ import IOSystem.Formatter;
 import IOSystem.Formatter.Data;
 import IOSystem.Formatter.Reactioner;
 import IOSystem.Formatter.Synchronizer;
-import IOSystem.ReadElement.Source;
+import IOSystem.ReadElement;
 import objects.templates.BasicData;
 import objects.templates.Container;
 import objects.templates.ContainerFile;
@@ -16,6 +16,7 @@ import java.util.Map;
 
 import static IOSystem.WriteElement.obj;
 import static IOSystem.WriteElement.str;
+import java.util.List;
 
 /**
  * Contains other hierarchy objects. Every instance of this class saves into its
@@ -29,7 +30,7 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	 * Contains all instances of this class created. All SaveChapters are sorted
 	 * by the {@link MainChapter hierarchy} they belong to. read-only data
 	 */
-	public static final Map<MainChapter, java.util.List<SaveChapter>> ELEMENTS = new HashMap<>();
+	public static final Map<MainChapter, List<SaveChapter>> ELEMENTS = new HashMap<>();
 	
 	private static final Synchronizer USED = new Synchronizer();
 	
@@ -70,7 +71,8 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 				d.identifier.putSetting("schRemoved", false);
 			}
 		} else {
-			int hash = d.tagVals == null || d.tagVals[0] == null ? 1 : (int) (long) d.tagVals[0];
+			int hash = d.tagVals == null || d.tagVals[0] == null
+					? 1 : (int) (long) d.tagVals[0];
 			for (SaveChapter sch : ELEMENTS.get(d.identifier)) {
 				if (d.name.equals(sch.toString()) && hash == sch.hash) {
 					sch.loaded = full;
@@ -94,12 +96,19 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 		if (!full) {
 			hash = d.tagVals[0] == null ? 1 : (int) (long) d.tagVals[0];
 		} else {
-			Map<String, Number> map = (Map<String, Number>) identifier.getSetting("schNameCount");
+			Map<String, Number> map =
+					(Map<String, Number>) identifier.getSetting("schNameCount");
 			Number i = map.get(name);
 			map.put(name, hash = i == null ? 1 : i.intValue() + 1);
 			identifier.putSetting("schNameCount", map);
 		}
 		ELEMENTS.get(d.identifier).add(this);
+	}
+	
+	@Override
+	public int[] refreshSF() {
+		load(false);
+		return super.refreshSF();
 	}
 
 	@Override
@@ -159,7 +168,8 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 			try {
 				if (saving) return;
 				saving = true;
-				Formatter.saveFile(writeData(new StringBuilder(), 0, null).toString(), getSaveFile());
+				Formatter.saveFile(
+						writeData(new StringBuilder(), 0, null).toString(), getSaveFile());
 				saving = false;
 			} catch (Exception e) {
 				if (rtr != null) rtr.react(e, getSaveFile(), this);
@@ -205,13 +215,15 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 		for (SaveChapter sch : ELEMENTS.get(mch)) {
 			int hash = 1;
 			File src = new File(dir, sch.name + ".json");
-			while (hash < sch.hash && !src.renameTo(new File(dir, sch.name + "[" + ++hash + "].json")))
+			while (hash < sch.hash && !src.renameTo(
+					new File(dir, sch.name + "[" + ++hash + "].json")))
 				if (hash == 1024) {
 					exceptions += "\nFile '" + src + "' can't be renamed!";
 					break;
 				}
 			if (hash < 1024 && (map.get(sch.name) == null
-					|| (sch.hash = hash) > map.get(sch.name).intValue())) map.put(sch.name, hash);
+					|| (sch.hash = hash) > map.get(sch.name).intValue()))
+				map.put(sch.name, hash);
 		}
 		USED.endAccess(mch);
 		mch.putSetting("schNameCount", map);
@@ -237,12 +249,14 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 
 	/**
 	 * @param name the new name for this object
-	 * @return {@code false} if the directory has to be {@link #clean(MainChapter) cleaned} first
+	 * @return {@code false} if the directory has to be
+	 * {@link #clean(MainChapter) cleaned} first
 	 */
 	@Override
-	public boolean setName(Container none, String name) {
+	public BasicData setName(Container none, String name) {
 		load();
-		Map<String, Number> map = (Map<String, Number>) identifier.getSetting("schNameCount");
+		Map<String, Number> map =
+				(Map<String, Number>) identifier.getSetting("schNameCount");
 		Number newCount = map.get(name);
 		int current = newCount == null ? 1 : newCount.intValue();
 		try {
@@ -251,16 +265,16 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 		if (getSaveFile().renameTo(new File(new File(identifier.getDir(), "Chapters"), name
 						+ (current == 1 ? ".json" : "[" + current + "].json")))) {
 			map.put(this.name = name, hash = current);
-			return true;
 		}
-		return false;
+		return this;
 	}
 
 	@Override
 	public boolean destroy(Container parent) {
 		if (getSaveFile().delete()) {
 			identifier.putSetting("schRemoved", true);
-			Map<String, Number> map = (Map<String, Number>) identifier.getSetting("schNameCount");
+			Map<String, Number> map =
+					(Map<String, Number>) identifier.getSetting("schNameCount");
 			int i = map.get(name) == null ? 0 : map.get(name).intValue() - 1;
 			USED.waitForAccess(identifier);
 			if (i < 1) map.remove(name);
@@ -288,16 +302,17 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 
 	/**
 	 * Implementation of
-	 * {@link IOSystem.ReadElement#readData(IOSystem.ReadElement.Source, objects.templates.Container) loading from String}.
+	 * {@link ReadElement#readData(ReadElement.Source, Container) loading from String}.
 	 */
-	public static BasicData readData(Source src, Container parent) {
+	public static BasicData readData(ReadElement.Source src, Container parent) {
 		if (parent == null) {
-			SaveChapter sch = mkElement(IOSystem.ReadElement.get(
+			SaveChapter sch = mkElement(ReadElement.get(
 					src, true, true, true, true, null, "hash"), true);
-			for (BasicData bd : IOSystem.ReadElement.loadChildren(src, sch))
+			for (BasicData bd : ReadElement.loadChildren(src, sch))
 				sch.putChild(null, bd);
 			return sch;
 		}
-		return mkElement(IOSystem.ReadElement.get(src, true, true, true, false, parent, "hash"), false);
+		return mkElement(
+				ReadElement.get(src, true, true, true, false, parent, "hash"), false);
 	}
 }

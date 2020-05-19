@@ -14,8 +14,8 @@ import java.util.List;
 import static IOSystem.Formatter.Data;
 
 /**
- * Creates hierarchy object structure out of {@link Word words} inside {@link SaveChapter} or
- * {@link Chapter} based on the amount of their content.
+ * Creates hierarchy object structure out of {@link Word words} inside {@link SaveChapter}
+ * or {@link Chapter} based on the amount of their content.
  * <p>
  * Used sytnax:
  * <ul>
@@ -37,10 +37,12 @@ public class SimpleReader {
 	 * @param source     where are the data to be read
 	 * @param startIndex the first read chapter (inclusive)
 	 * @param endIndex   the last chapter to be read (exclusive), put -1 for no limit
-	 * @param minWords   how many words wil be created before the end of loading, put -1 for no limit
+	 * @param minWords   how many words wil be created before the end of loading, put -1
+	 *                   for no limit
 	 * @return amount of created chapters, words, and translates
 	 */
-	static int[] loadWords(Container saveTo, Container parent, SimpleChapter source, int startIndex, int endIndex, int minWords) {
+	static int[] loadWords(Container saveTo, Container parent, SimpleChapter source,
+			int startIndex, int endIndex, int minWords) {
 		int[] ret = {0, 0, 0};
 		if (minWords == -1) minWords = Integer.MAX_VALUE;
 		MainChapter mch = saveTo.getIdentifier();
@@ -51,7 +53,8 @@ public class SimpleReader {
 			endIndex--;
 			while (startIndex++ < endIndex && ret[1] + source.lines.length < minWords) {
 				bd.name = source.chaps[startIndex].name;
-				Container ch = source.chaps[startIndex].sch ? SaveChapter.mkElement(bd) : new Chapter(bd);
+				Container ch = source.chaps[startIndex].sch
+						? SaveChapter.mkElement(bd) : new Chapter(bd);
 				saveTo.putChild(parent, ch);
 				int[] x = loadWords(ch, saveTo, source.chaps[startIndex], 0, -1, minWords);
 				ret[0]++;
@@ -76,19 +79,23 @@ public class SimpleReader {
 	 * Loads everything from the given file based on the given parameters.
 	 *
 	 * @param source     where to read the data from
-	 * @param parent     the object where all created chapters and their content will be stored
+	 * @param parent     the object where all created chapters and their content will be
+	 *                   stored
 	 * @param prevPar    parent of the given param {@code parent}
 	 * @param startIndex the first read chapter (inclusive)
 	 * @param endIndex   the last chapter to be read (exclusive), put -1 for no limit
 	 * @param wordCount  amount of words read before starting another
-	 *                   {@link SaveChapter} (after the last chapter in the boundary is loaded)
+	 *                   {@link SaveChapter} (after the last chapter in the boundary is
+	 *                   loaded)
 	 * @param startNum   increasing number used to name all the created chapters
 	 * @param psFix      prefix and suffix for the names of created chapters with the
 	 *                   current increasing {@code startNum} value
 	 * @param b          if the containers should save into separate files
 	 * @return the final amount of read chapters and of all created words
 	 */
-	public static int[] sortLoad(String source, Container parent, Container prevPar, int startIndex, int endIndex, int wordCount, int startNum, String[] psFix, boolean b) {
+	public static int[] sortLoad(String source, Container parent,
+			Container prevPar, int startIndex, int endIndex,
+			int wordCount, int startNum, String[] psFix, boolean b) {
 		MainChapter mch = parent.getIdentifier();
 		int[] res = {0, 0, 0}, i;
 		SimpleChapter sch = getContent(source);
@@ -112,26 +119,31 @@ public class SimpleReader {
 	 * Loads everything from the given file based on the given parameters.
 	 *
 	 * @param source     where to read the data from
-	 * @param parent     the object where all created chapters and their content will be stored
+	 * @param parent     the object where all created chapters and their content will be
+	 *                   stored
 	 * @param prevPar    parent of the given param {@code parent}
 	 * @param startIndex the first read chapter (inclusive)
 	 * @param endIndex   the last chapter to be read (exclusive), put -1 for no limit
 	 * @param wordCount  amount of words read before the end, put -1 for no limit
 	 * @return the final amount of read chapters and of all created words
 	 */
-	public static int[] simpleLoad(String source, Container parent, Container prevPar, int startIndex, int endIndex, int wordCount) {
-		return loadWords(parent, prevPar, getContent(source), startIndex, endIndex, wordCount);
+	public static int[] simpleLoad(String source, Container parent, Container prevPar,
+			int startIndex, int endIndex, int wordCount) {
+		return loadWords(parent, prevPar,
+				getContent(source), startIndex, endIndex, wordCount);
 	}
 
 	/**
-	 * Creates hierarchy of words and chapters. Used for converting simple text to programs database.
+	 * Creates hierarchy of words and chapters.
+	 * Used for converting simple text to programs database.
 	 *
 	 * @param source where to get the content from
 	 * @return the created simple hierarchy
 	 */
 	private static SimpleChapter getContent(String source) {
 		String[] lines = source.split("\n");
-		return new SimpleChapter(null, new Lines(0, Arrays.copyOf(lines, lines.length + 1)));
+		return new SimpleChapter(
+				null, new Lines(0, Arrays.copyOf(lines, lines.length + 1)));
 	}
 
 	private static class Lines {
@@ -174,7 +186,8 @@ public class SimpleReader {
 							schs.add(new SimpleChapter(lines.str[(lines.i = i + 1) - 2], lines));
 							i = lines.i;
 					}
-				} else if (lines.str[i + 1].length() != 1 || lines.str[i + 1].charAt(0) != '{') {
+				} else if (lines.str[i + 1].length() != 1
+						|| lines.str[i + 1].charAt(0) != '{') {
 					String[] names = new String[2];
 					String str = lines.str[i];
 					boolean first = true;

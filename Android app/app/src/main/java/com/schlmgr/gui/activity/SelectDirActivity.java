@@ -112,7 +112,7 @@ public class SelectDirActivity extends PopupCareActivity
 		if (VS == null) {
 			(icSetDir = getResources().getDrawable(R.drawable.ic_set))
 					.setBounds((int) dp, 0, (int) (dp * 35), (int) (dp * 35));
-			(icSetDir_disabled = getResources().getDrawable(R.drawable.ic_set_disabled))
+			(icSetDir_disabled = getResources().getDrawable(R.drawable.ic_subjdir_disabled))
 					.setBounds((int) dp, 0, (int) (dp * 35), (int) (dp * 35));
 			if (VERSION.SDK_INT < 21)
 				DrawableCompat.setTint(DrawableCompat.wrap(icSetDir_disabled), 0x55FFFFFF);
@@ -165,7 +165,7 @@ public class SelectDirActivity extends PopupCareActivity
 
 	public void checkSelected() {
 		if (importing) return;
-		boolean enabled = VS.da.selected == 1;
+		boolean enabled = VS.da == null || VS.da.selected == 1;
 		set_subjdir.setCompoundDrawables(null, enabled ? icSetDir : icSetDir_disabled, null, null);
 		set_subjdir.setTextColor(enabled ? 0xFFFFFFFF : 0x66FFFFFF);
 		set_subjdir.setClickable(enabled);

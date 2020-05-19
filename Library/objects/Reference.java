@@ -11,11 +11,14 @@ import java.util.List;
 import java.util.Map;
 
 import static IOSystem.Formatter.defaultReacts;
+import IOSystem.ReadElement;
 import static IOSystem.WriteElement.obj;
 import static IOSystem.WriteElement.str;
+import java.util.HashMap;
 
 /**
- * References to another {@link BasicData} instance other than {@link MainChapter} and its extensions.
+ * References to another {@link BasicData} instance other than {@link MainChapter}
+ * and its extensions.
  *
  * @author Josef Litoš
  */
@@ -25,7 +28,7 @@ public final class Reference implements BasicData {
 	 * Contains all instances of this class created. All References are sorted by
 	 * the {@link MainChapter hierarchy} they belong to. read-only data
 	 */
-	public static final Map<MainChapter, List<Reference>> ELEMENTS = new java.util.HashMap<>();
+	public static final Map<MainChapter, List<Reference>> ELEMENTS = new HashMap<>();
 	
 	private static final Formatter.Synchronizer USED = new Formatter.Synchronizer();
 	
@@ -58,20 +61,24 @@ public final class Reference implements BasicData {
 	/**
 	 * @param ref     the referenced element
 	 * @param path    path to the parent of this reference
-	 * @param refPath path starting from MainChapter (inclusive) to the referenced object (exclusive)
+	 * @param refPath path starting from MainChapter (inclusive) to the referenced object
+	 *                (exclusive)
 	 * @return new instance of this class
 	 */
-	public static Reference mkElement(BasicData ref, List<Container> path, Container[] refPath) {
+	public static Reference mkElement(BasicData ref,
+			List<Container> path, Container[] refPath) {
 		return mkElement(ref, path, (Object[]) refPath);
 	}
 
-	private static Reference mkElement(Object ref, List<Container> path, Object[] refPath) {
+	private static Reference mkElement(Object ref,
+			List<Container> path, Object[] refPath) {
 		if (ref instanceof MainChapter)
 			throw new IllegalArgumentException("Hierarchy can't be referenced!");
 		if (ref instanceof Container && !(ref instanceof TwoSided))
 			for (Container c : path)
 				if (c == ref)
-					throw new IllegalArgumentException("Can't reference " + ref + ",\nwith path: " + path);
+					throw new IllegalArgumentException(
+							"Can't reference " + ref + ",\nwith path: " + path);
 		if (ELEMENTS.get(path.get(0).getIdentifier()) == null)
 			ELEMENTS.put(path.get(0).getIdentifier(), new java.util.ArrayList<>(10));
 		USED.waitForAccess(path.get(0).getIdentifier());
@@ -125,28 +132,31 @@ public final class Reference implements BasicData {
 	private BasicData usePath(int index) {
 		if (index == pathStr.length)
 			return find(refStr, path[index - 1], index > 1 ? path[index - 2] : null, true);
-		BasicData found = find(pathStr[index], path[index - 1], index > 1 ? path[index - 2] : null, false);
+		BasicData found = find(pathStr[index], path[index - 1],
+				index > 1 ? path[index - 2] : null, false);
 		if ((path[index++] = (Container) found) == null) return null;
 		return usePath(index);
 	}
 
-	private static BasicData find(String name, Container par, Container parpar, boolean end) {
+	private static BasicData find(String name,
+			Container par, Container parpar, boolean end) {
 		for (BasicData bd : par.getChildren(parpar))
 			if (name.equals(bd.getName()))
 				if (end) return bd;
 				else if (bd instanceof Container && !(bd instanceof TwoSided)) return bd;
 		new Thread(() ->
-				defaultReacts.get(Reference.class + ":not_found").react(name, par, parpar)).start();
+				defaultReacts.get(Reference.class + ":not_found")
+						.react(name, par, parpar)).start();
 		return null;
 	}
 
 	@Override
-	public boolean move(Container oldParent, Container oldParPar, Container newParent, Container newParPar) {
+	public boolean move(Container oP, Container oPP, Container nP, Container nPP) {
 		throw new UnsupportedOperationException("Reference cannot be moved");
 	}
 
 	@Override
-	public boolean move(Container oldParent, Container newParent, Container newParPar) {
+	public boolean move(Container oP, Container nP, Container nPP) {
 		throw new UnsupportedOperationException("Reference cannot be moved");
 	}
 
@@ -161,8 +171,8 @@ public final class Reference implements BasicData {
 	}
 
 	@Override
-	public boolean setName(Container par, String name) {
-		return false;
+	public BasicData setName(Container par, String name) {
+		return this;
 	}
 
 	@Override
@@ -172,8 +182,7 @@ public final class Reference implements BasicData {
 
 	@Override
 	public int[] getSF() {
-		load();
-		return reference.getSF();
+		return new int[]{0, 0};
 	}
 
 	@Override
@@ -215,7 +224,8 @@ public final class Reference implements BasicData {
 
 	@Override
 	public StringBuilder writeData(StringBuilder sb, int tabs, Container cp) {
-		tabs(sb, tabs, '{').add(sb, this, cp, true, true, false, false, str("origin"), obj(mkPath()), false);
+		tabs(sb, tabs, '{').add(sb, this, cp, true, true, false, false,
+				str("origin"), obj(mkPath()), false);
 		return sb.append('}');
 	}
 
@@ -227,10 +237,10 @@ public final class Reference implements BasicData {
 
 	/**
 	 * Implementation of
-	 * {@link IOSystem.ReadElement#readData(IOSystem.ReadElement.Source, objects.templates.Container) loading from String}.
+	 * {@link ReadElement#readData(ReadElement.Source, Container) loading from String}.
 	 */
-	public static BasicData readData(IOSystem.ReadElement.Source src, Container parent) {
-		Data data = IOSystem.ReadElement.get(src, true, false, false, false, parent, "origin");
+	public static BasicData readData(ReadElement.Source src, Container parent) {
+		Data data = ReadElement.get(src, true, false, false, false, parent, "origin");
 		return mkElement(data.name, Arrays.asList(new Container[]{src.i, parent}),
 				((String) data.tagVals[0]).split("×"));
 	}

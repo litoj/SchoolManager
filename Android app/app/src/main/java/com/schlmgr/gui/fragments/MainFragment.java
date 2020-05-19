@@ -159,7 +159,7 @@ public class MainFragment extends Fragment
 								VS.contentAdapter.list.remove(i);
 							}
 						}
-						if (!backLog.path.isEmpty()) CurrentData.save();
+						if (!backLog.path.isEmpty()) CurrentData.save(backLog.path);
 						root.post(() -> {
 							VS.contentAdapter.notifyDataSetChanged();
 							VS.contentAdapter.selected = -1;
@@ -206,7 +206,7 @@ public class MainFragment extends Fragment
 										}
 										him.bd.putDesc(him.parent, cp.et_desc.getText().toString());
 										if (him.bd instanceof MainChapter) ((MainChapter) him.bd).save();
-										else CurrentData.save();
+										else CurrentData.save(backLog.path);
 										VS.contentAdapter.selected = -1;
 										setSelectOpts(false);
 										him.toShow = him.bd.toString();
@@ -232,7 +232,7 @@ public class MainFragment extends Fragment
 										try {
 											onClick.run();
 											if (content.toRemove != null) return;
-											CurrentData.save();
+											CurrentData.save(backLog.path);
 											VS.contentAdapter.selected = -1;
 											setSelectOpts(false);
 											him.flipped = !him.flipped;
@@ -261,7 +261,7 @@ public class MainFragment extends Fragment
 										try {
 											onClick.run();
 											if (content.toRemove != null) return;
-											CurrentData.save();
+											CurrentData.save(backLog.path);
 											VS.contentAdapter.selected = -1;
 											setSelectOpts(false);
 											him.toShow = him.bd.toString();
@@ -400,7 +400,7 @@ public class MainFragment extends Fragment
 						CurrentData.changed.add(cf);
 					}
 			}
-			CurrentData.save();
+			CurrentData.save(backLog.path);
 			VS.pasteMode = false;
 			pasteOpts.setVisibility(View.GONE);
 		});
@@ -709,7 +709,7 @@ public class MainFragment extends Fragment
 								try {
 									onClick.run();
 									if (content.toRemove != null) return;
-									CurrentData.save();
+									CurrentData.save(backLog.path);
 									cp.dismiss();
 								} catch (IllegalArgumentException iae) {
 									System.out.println("An Exception occurred:\n" + iae.getMessage()
@@ -734,7 +734,7 @@ public class MainFragment extends Fragment
 								try {
 									onClick.run();
 									if (content.toRemove != null) return;
-									CurrentData.save();
+									CurrentData.save(backLog.path);
 									cp.dismiss();
 								} catch (IllegalArgumentException iae) {
 									System.out.println("An Exception occurred:\n" + iae.getMessage()
@@ -783,6 +783,19 @@ public class MainFragment extends Fragment
 				case R.id.more_import_mch:
 					SelectDirActivity.importing = true;
 					startActivity(new Intent(getContext(), SelectDirActivity.class));
+					break;
+				case R.id.more_sf_revaluate:
+					List<Container> currentPath = (List<Container>) backLog.path.clone();
+					Container opened = (Container) backLog.path.get(-1);
+					int[] sf = opened.getSF();
+					int[] refreshSF = opened.refreshSF();
+					if (sf[0] != refreshSF[0] || sf[1] != refreshSF[1]) {
+						if (backLog.path.get(-1) == opened) {
+							es.lv.post(() -> VS.mAdapter.notifyDataSetChanged());
+							es.setInfo(opened, currentPath.get(currentPath.size() - 2));
+						}
+						CurrentData.save(currentPath);
+					}
 			}
 		}).start();
 		return true;
@@ -814,11 +827,12 @@ public class MainFragment extends Fragment
 					case FILE_READ:
 						f = Controller.getFileFromUri(data.getData());
 						try {
+							List<BasicData> currentPath = (List<BasicData>) backLog.path.clone();
 							defaultReacts.get(SimpleReader.class + ":success").react(
 									SimpleReader.simpleLoad(Formatter.loadFile(f),
 											(Container) backLog.path.get(-1),
 											(Container) backLog.path.get(-2), 0, -1, -1));
-							CurrentData.save();
+							CurrentData.save(currentPath);
 						} catch (Exception e) {
 							if (e instanceof IllegalArgumentException) return;
 							defaultReacts.get(ContainerFile.class + ":load").react(e,

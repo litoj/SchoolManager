@@ -187,17 +187,16 @@ public class CurrentData {
 
 	public static final List<Container> newChapters = new ArrayList<>();
 
-	public static void save() {
+	public static void save(List<? extends BasicData> blPath) {
 		new Thread(() -> {
-			BasicData[] bLpath = backLog.path.toArray(new BasicData[0]);
-			for (int i = bLpath.length - 1; i >= 0; i--)
-				if (bLpath[i] instanceof ContainerFile) {
-					((ContainerFile) bLpath[i]).save();
+			for (int i = blPath.size() - 1; i >= 0; i--)
+				if (blPath.get(i) instanceof ContainerFile) {
+					((ContainerFile) blPath.get(i)).save();
 					int saveAbove = i + 1;
 					for (Container c : newChapters.toArray(new Container[0])) {
 						int index = -1;
 						for (int j = i; j >= 0; j--) {
-							if (bLpath[j] == c) {
+							if (blPath.get(j) == c) {
 								index = j;
 								break;
 							}
@@ -208,8 +207,8 @@ public class CurrentData {
 						}
 					}
 					if (saveAbove != i + 1) {
-						while (!(bLpath[--saveAbove] instanceof ContainerFile)) ;
-						((ContainerFile) bLpath[saveAbove]).save();
+						while (!(blPath.get(--saveAbove) instanceof ContainerFile)) ;
+						((ContainerFile) blPath.get(saveAbove)).save();
 					}
 					return;
 				}

@@ -18,6 +18,7 @@ public class FullPicture extends AbstractPopup {
 
 	public FullPicture(Picture picture) {
 		super(R.layout.popup_pic, false);
+		Runtime.getRuntime().gc();
 		pic = ImageItemModel.getScaledBitmap(picture.getFile().getAbsolutePath(), size, true);
 		wide = pic.getWidth() > pic.getHeight();
 		create();

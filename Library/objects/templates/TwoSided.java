@@ -1,13 +1,15 @@
 package objects.templates;
 
+import IOSystem.Formatter.Data;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Default implementation of a hierarchy object and full implementation of a {@link Container} that
- * cares about its parent. Defines the system for objects used in a {@link testing.Test}.
- * They have their name and their other side, both in its own instance of the same class.
+ * Default implementation of a hierarchy object and full implementation of a
+ * {@link Container} that cares about its parent. Defines the system for objects used in
+ * a {@link testing.Test}. They have their name and their other side, both in its own
+ * instance of the same class.
  *
  * @param <T> object which has two versions, but only one is manipulable with
  * @author Josef Litoš
@@ -15,7 +17,8 @@ import java.util.Map;
 public abstract class TwoSided<T extends TwoSided> extends Element implements Container {
 
 	/**
-	 * {@code true} if and only if the object is the main one (all its methods can be used).
+	 * {@code true} if and only if the object is the main one
+	 * (all its methods can be used).
 	 */
 	public final boolean isMain;
 	/**
@@ -23,7 +26,7 @@ public abstract class TwoSided<T extends TwoSided> extends Element implements Co
 	 */
 	protected int parentCount;
 
-	protected TwoSided(IOSystem.Formatter.Data bd, boolean isMain, Map<objects.MainChapter, List<T>> NET) {
+	protected TwoSided(Data bd, boolean isMain, Map<objects.MainChapter, List<T>> NET) {
 		super(bd);
 		this.isMain = isMain;
 		NET.get(identifier).add((T) this);
@@ -75,6 +78,11 @@ public abstract class TwoSided<T extends TwoSided> extends Element implements Co
 			}
 		return null;
 	}
+
+	@Override
+	public int[] refreshSF() {
+		return sf.clone();
+	}
 	
 	@Override
 	public boolean move(Container op, Container np, Container npp) {
@@ -85,7 +93,8 @@ public abstract class TwoSided<T extends TwoSided> extends Element implements Co
 	
 	@Override
 	public boolean move(Container op, Container opp, Container np, Container npp) {
-		if (children.get(op) == null || !super.move(op, opp, np, npp) || !isMain) return false;
+		if (children.get(op) == null
+				|| !super.move(op, opp, np, npp) || !isMain) return false;
 		move(op, np);
 		return true;
 	}
@@ -139,7 +148,8 @@ public abstract class TwoSided<T extends TwoSided> extends Element implements Co
 			if (!bd.isEmpty(this)) {
 				if (first) first = false;
 				else sb.append(',');
-				tabs(sb, tabs, '{').add(sb, bd, cp, false, true, true, true, null, null, false).append('}');
+				tabs(sb, tabs, '{').add(sb, bd, cp,
+						false, true, false, true, null, null, false).append('}');
 			}
 		tabs(sb, tabs - 1, ']');
 		return sb.append('}');

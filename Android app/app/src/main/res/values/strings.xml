@@ -154,7 +154,7 @@
     <string name="help_extra_words_import">Words importing</string>
     <string name="help_extra_how">This application has some more functions that can sometimes help. Here is the list and explanation of them.</string>
     <string name="help_extra_naming_how">If you have similar names of certain words, and they have identical translations, combine them using these: /().\nSlash character signals two different options ending by a whitespace, an interpunction character or a bracket.\nExamples:\nI/They come = \'I come\' or \'They come\'\n(I go)/(He goes). = \'I go.\' or \'He goes\'.</string>
-    <string name="help_extra_words_import_how">You can import words from a file, it can be also structured in a simpler hierarchy.\nWords with same translate are separated by a backward slash \'\\\'.\nWrite the file for import in the following format:\nname of a chapter\n{\na word;its translate\nanother word;translate\nsubchapter\'s name\n{\n...\n}\nanother subchapter\n{\n...\n}\nword 1\\ word 2;their translate\n}</string>
+    <string name="help_extra_words_import_how">You can import words from a file, it can be also structured in a simpler hierarchy.\nWords with same translate are separated by a backward slash \'\\\'.\nWrite the file for import in the following format:\nname of a chapter\n{\na word;its translate\nanother word;translate\nsubchapter\'s name\n{\n...\n}\nanother subchapter\n{\n...\n}\nword 1\\word 2;their translate\n}</string>
     <string name="help_extra_words_export_how">Export words by opening a chapter which content you want to export and select \'Export words\' option in the more options menu.\nThan just select the file you want to add the current word content in.\nThe exported words can be imported again without loss.</string>
     <string name="help_extra_import_mch_how">If you want to use some external subject folders, this is the way to go.\nFor external subjects import select more options and than \'Import subject\'.\nYou can select multiple subject folders at a time.\nAfter selecting desired subject folders, click \'Import\'.\nRemove them from the list by tapping on the red button on the right side.</string>
     <string name="import_mch">Import subject"</string>
@@ -164,4 +164,5 @@
     <string name="select_dir_src">Source</string>
     <string name="help_extra_import_mch">Subjects import</string>
     <string name="fail_no_objects">No objects of this type were found</string>
+    <string name="more_sf_revaluate">Recount success rate of this chapter</string>
 </resources>

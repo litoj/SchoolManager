@@ -12,7 +12,7 @@
             android:title="Test" />
         <item
             android:id="@+id/menu_choose_dir"
-            android:icon="@drawable/ic_menu_choose_dir"
+            android:icon="@drawable/ic_subjdir"
             android:title="@string/menu_choose_dir" />
         <item
             android:id="@+id/menu_options"

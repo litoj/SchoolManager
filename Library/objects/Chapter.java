@@ -1,9 +1,12 @@
 package objects;
 
 import IOSystem.Formatter.Data;
+import IOSystem.ReadElement;
+import java.util.HashMap;
 import java.util.LinkedList;
 
 import java.util.List;
+import java.util.Map;
 
 import objects.templates.BasicData;
 import objects.templates.Container;
@@ -20,17 +23,7 @@ public class Chapter extends objects.templates.SemiElementContainer {
 	 * Contains all instances of this class created. All Chapters are sorted by
 	 * the {@link MainChapter hierarchy} they belong to. read-only data
 	 */
-	public static final java.util.Map<MainChapter, List<Chapter>> ELEMENTS = new java.util.HashMap<>();
-
-	/**
-	 * The head hierarchy object which this object belongs to.
-	 */
-	protected final MainChapter identifier;
-
-	@Override
-	public MainChapter getIdentifier() {
-		return identifier;
-	}
+	public static final Map<MainChapter, List<Chapter>> ELEMENTS = new HashMap<>();
 
 	/**
 	 * @param d must contain {@link #name name} and {@link #identifier identifier}
@@ -44,6 +37,16 @@ public class Chapter extends objects.templates.SemiElementContainer {
 		ELEMENTS.get(identifier).add(this);
 	}
 
+	/**
+	 * The head hierarchy object which this object belongs to.
+	 */
+	protected final MainChapter identifier;
+
+	@Override
+	public MainChapter getIdentifier() {
+		return identifier;
+	}
+	
 	@Override
 	public boolean destroy(Container parent) {
 		ELEMENTS.get(identifier).remove(this);
@@ -58,11 +61,11 @@ public class Chapter extends objects.templates.SemiElementContainer {
 
 	/**
 	 * Implementation of
-	 * {@link IOSystem.ReadElement#readData(IOSystem.ReadElement.Source, objects.templates.Container) loading from String}.
+	 * {@link ReadElement#readData(ReadElement.Source, Container) loading from String}.
 	 */
-	public static BasicData readData(IOSystem.ReadElement.Source src, Container parent) {
-		Chapter ch = new Chapter(IOSystem.ReadElement.get(src, true, true, true, true, parent));
-		for (BasicData bd : IOSystem.ReadElement.loadChildren(src, ch))
+	public static BasicData readData(ReadElement.Source src, Container parent) {
+		Chapter ch = new Chapter(ReadElement.get(src, true, true, true, true, parent));
+		for (BasicData bd : ReadElement.loadChildren(src, ch))
 			ch.putChild(parent, bd);
 		return ch;
 	}

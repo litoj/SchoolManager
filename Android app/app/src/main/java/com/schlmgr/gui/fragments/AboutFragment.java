@@ -105,6 +105,7 @@ public class AboutFragment extends Fragment implements ControlListener {
 		help_extra_words_import.setTgl(root);
 		help_extra_words_export.setTgl(root);
 		help_extra_import_mch.setTgl(root);
+		//TODO: Make a RecyclerViewAdapter for the versions information, this is a mess
 		versions_release.setTgl(root);
 		versions_beta.setTgl(root);
 

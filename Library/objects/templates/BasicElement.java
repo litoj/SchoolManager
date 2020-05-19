@@ -1,13 +1,14 @@
 package objects.templates;
 
 /**
- * Basic implementation of the simplest hierarchy object, where it is not necessary to know the parent.
+ * Basic implementation of the simplest hierarchy object, where it is not necessary to
+ * know the parent.
  *
  * @author Josef Litoš
  */
 public abstract class BasicElement implements BasicData {
 
-   public BasicElement(IOSystem.Formatter.Data d) {
+   protected BasicElement(IOSystem.Formatter.Data d) {
       BasicData.isValid(name = d.name);
       sf = d.sf == null ? new int[]{0, 0} : d.sf;
    }
@@ -18,9 +19,9 @@ public abstract class BasicElement implements BasicData {
    protected String name;
 
    @Override
-   public boolean setName(Container none, String name) {
+   public BasicData setName(Container none, String name) {
       this.name = name;
-      return true;
+      return this;
    }
 
    @Override
@@ -35,7 +36,7 @@ public abstract class BasicElement implements BasicData {
 
    @Override
    public int[] getSF() {
-      return sf;
+      return sf.clone();
    }
 
    @Override

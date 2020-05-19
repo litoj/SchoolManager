@@ -12,7 +12,8 @@ import java.util.List;
 import static IOSystem.Formatter.Data;
 
 /**
- * This class provides methods used for reading the data of any {@link BasicData element} from its file.
+ * This class provides methods used for reading the data of any {@link BasicData element}
+ * from its file.
  *
  * @author Josef Litoš
  */
@@ -45,14 +46,16 @@ public abstract class ReadElement {
 	 * Creates {@link MainChapter} object with information from the given file.
 	 *
 	 * @param toLoad the object to be loaded
-	 * @return created head-object of the hierarchy containing basic information about its content
+	 * @return created head-object of the hierarchy containing basic information about its
+	 * content
 	 */
 	public static MainChapter loadMch(MainChapter toLoad) {
 		return (MainChapter) loadSch(toLoad.getSaveFile(), toLoad, null);
 	}
 
 	/**
-	 * Loads all data into the respective {@link SaveChapter} using {@link #readData(Source, Container)
+	 * Loads all data into the respective {@link SaveChapter} using
+	 * {@link #readData(Source, Container)
 	 * method} which all objects have to implement in static form.
 	 *
 	 * @param toLoad File containing the data of the loaded object
@@ -70,7 +73,8 @@ public abstract class ReadElement {
 	}
 
 	/**
-	 * Calls the corresponding {@link #readData(Source, Container) readData} method implementation to
+	 * Calls the corresponding {@link #readData(Source, Container) readData} method
+	 * implementation to
 	 * create its instance. Middle–step between every loaded {@link BasicData element}.
 	 *
 	 * @param src {@link Source}
@@ -81,8 +85,9 @@ public abstract class ReadElement {
 		BasicData bd = null;
 		if (next(src).equals(Formatter.CLASS)) {
 			try {
-				bd = (BasicData) Class.forName(next(src).toString()).getDeclaredMethod("readData",
-						Source.class, Container.class).invoke(null, src, cp);
+				bd = (BasicData) Class.forName(next(src).toString())
+						.getDeclaredMethod("readData", Source.class, Container.class)
+						.invoke(null, src, cp);
 			} catch (IllegalAccessException | java.lang.reflect.InvocationTargetException
 					| NoSuchMethodException | SecurityException | ClassNotFoundException ex) {
 				throw new IllegalArgumentException(ex);
@@ -97,14 +102,16 @@ public abstract class ReadElement {
 	 *
 	 * @param src    contains the reading data
 	 * @param name   if should read {@link Formatter#NAME name} tag
-	 * @param sf     if should read {@link Formatter#SUCCESS success} and {@link Formatter#FAIL fail} tags
+	 * @param sf     if should read {@link Formatter#SUCCESS success} and
+	 *               {@link Formatter#FAIL fail} tags
 	 * @param desc   if should read {@link Formatter#DESC description} tag
 	 * @param child  if should read {@link Formatter#CHILDREN children} tag
 	 * @param parent parent of this object
 	 * @param tags   other tags you want to get value for
 	 * @return contains all found values for the given {@code tags}
 	 */
-	public static Data get(Source src, boolean name, boolean sf, boolean desc, boolean child, Container parent, String... tags) {
+	public static Data get(Source src, boolean name, boolean sf, boolean desc,
+			boolean child, Container parent, String... tags) {
 		String[] data = new String[2];
 		int[] sucfail = {0, 0};
 		Object[] info = new Object[tags.length];
@@ -116,7 +123,8 @@ public abstract class ReadElement {
 			} catch (IllegalArgumentException iae) {
 				if (iae.getMessage().contains("'}'")) {
 					src.index--;
-					return new Data(data[0], src.i).addSF(sucfail).addDesc(data[1]).addPar(parent).addExtra(info);
+					return new Data(data[0], src.i).addSF(sucfail).addDesc(data[1])
+							.addPar(parent).addExtra(info);
 				} else {
 					throw iae;
 				}
@@ -137,7 +145,8 @@ public abstract class ReadElement {
 					break;
 				case Formatter.CHILDREN:
 					dumpSpace(src, '[');
-					return new Data(data[0], src.i).addSF(sucfail).addDesc(data[1]).addPar(parent).addExtra(info);
+					return new Data(data[0], src.i).addSF(sucfail).addDesc(data[1])
+							.addPar(parent).addExtra(info);
 				default:
 					for (int j = tags.length - 1; j >= 0; j--) {
 						if (holder.equals(tags[j])) {
@@ -147,18 +156,22 @@ public abstract class ReadElement {
 					}
 					throw new IllegalArgumentException("Expected:\n" +
 							holdersExpected(name, sf, desc, child, tags) + "\nGot field '"
-							+ holder + "', before char: " + src.index + "\n..." + src.str.substring(
-							src.index > 100 ? src.index - 100 : 0, src.index) + "<-- this");
+							+ holder + "', before char: " + src.index + "\n..."
+							+ src.str.substring(src.index > 100 ? src.index - 100 : 0, src.index)
+							+ "<-- this");
 			}
 		}
-		return new Data(data[0], src.i).addSF(sucfail).addDesc(data[1]).addPar(parent).addExtra(info);
+		return new Data(data[0], src.i).addSF(sucfail).addDesc(data[1])
+				.addPar(parent).addExtra(info);
 	}
 
-	private static String holdersExpected(boolean name, boolean sf, boolean desc, boolean child, String... tags) {
+	private static String holdersExpected(boolean name, boolean sf, boolean desc,
+			boolean child, String... tags) {
 		StringBuilder sb = new StringBuilder();
 		if (name) sb.append('\'').append(Formatter.NAME).append("', ");
 		if (sf)
-			sb.append('\'').append(Formatter.SUCCESS).append("', ").append(Formatter.FAIL).append("', ");
+			sb.append('\'').append(Formatter.SUCCESS).append("', ")
+					.append(Formatter.FAIL).append("', ");
 		if (desc) sb.append('\'').append(Formatter.DESC).append("', ");
 		if (child) sb.append('\'').append(Formatter.CHILDREN).append("', ");
 		for (int i = tags.length - 1; i >= 0; i--) sb.append(tags[i]).append('\n');
@@ -172,14 +185,16 @@ public abstract class ReadElement {
 	 *
 	 * @param src    contains the reading data
 	 * @param name   if should read {@link Formatter#NAME name} tag
-	 * @param sf     if should read {@link Formatter#SUCCESS success} and {@link Formatter#FAIL fail} tags
+	 * @param sf     if should read {@link Formatter#SUCCESS success} and
+	 *               {@link Formatter#FAIL fail} tags
 	 * @param desc   if should read {@link Formatter#DESC description} tag
 	 * @param parent parent of the read children
 	 * @param tags   other tags you want to get value for
 	 * @return data of all children
 	 * @see #get(Source, boolean, boolean, boolean, boolean, Container, String...)
 	 */
-	public static List<Data> readChildren(Source src, boolean name, boolean sf, boolean desc, Container parent, String... tags) {
+	public static List<Data> readChildren(Source src, boolean name, boolean sf,
+			boolean desc, Container parent, String... tags) {
 		List<Data> data = new LinkedList<>();
 		try {
 			while (true) {
@@ -218,7 +233,8 @@ public abstract class ReadElement {
 	 * @param end    the char this method is supposed to find
 	 * @param ignore list of ignored chars
 	 * @return {@code true} if the last char matches the param {code end}
-	 * @throws IllegalArgumentException if the unknown char doesn't match the argument {@code end}.
+	 * @throws IllegalArgumentException if the unknown char doesn't match the argument
+	 * {@code end}.
 	 */
 	public static boolean dumpSpace(Source src, char end, char... ignore) {
 		char ch;
@@ -233,16 +249,17 @@ public abstract class ReadElement {
 				src.index--;
 				return false;
 			}
-			throw new IllegalArgumentException("Unknown field, char '" + ch + "', char num:" + src.index + ":\n..."
-					+ src.str.substring(src.index > 100 ? src.index - 100 : 0, src.index) + "<-- here!");
+			throw new IllegalArgumentException("Unknown field, char '" + ch + "', char num:"
+					+ src.index + ":\n..." + src.str.substring(src.index > 100
+							? src.index - 100 : 0, src.index) + "<-- here!");
 		}
 		return true;
 	}
 
 	/**
 	 * Reads the next value contained in "", ignoring chars defined by
-	 * {@code ignore} parameter using {@link #dumpSpace(IOSystem.ReadElement.Source, char, char...)}
-	 * method.
+	 * {@code ignore} parameter using
+	 * {@link #dumpSpace(IOSystem.ReadElement.Source, char, char...)} method.
 	 *
 	 * @param src    {@link Source}
 	 * @param ignore chars whose will be ignored
@@ -255,7 +272,8 @@ public abstract class ReadElement {
 		if (isString) {
 			while ((ch = src.str.charAt(src.index++)) != '"') {
 				if (ch == '\\')
-					ch = (ch = src.str.charAt(src.index++)) == 'n' ? '\n' : (ch == 't' ? '\t' : ch);
+					ch = (ch = src.str.charAt(src.index++)) == 'n'
+							? '\n' : (ch == 't' ? '\t' : ch);
 				sb.append(ch);
 			}
 			return sb.toString();
@@ -273,7 +291,6 @@ public abstract class ReadElement {
 						if (ch == '.') isString = true;
 					}
 					src.index--;
-					//isString ? Double.parseDouble(sb.toString()) : Long.parseLong(sb.toString()); v obou stavech isString vrací double
 					if (isString) return Double.parseDouble(sb.toString());
 					return Long.parseLong(sb.toString());
 			}

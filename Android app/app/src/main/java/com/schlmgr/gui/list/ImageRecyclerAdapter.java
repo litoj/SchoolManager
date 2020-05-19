@@ -130,13 +130,7 @@ public class ImageRecyclerAdapter extends AbstractRecyclerAdapter<Image, ImageHo
 			} else {
 				for (Picture p : toRemove) ((Picture) edited.bd).removeChild(parent, p);
 				edited.bd.putDesc(parent, cp.et_desc.getText().toString());
-				if (!edited.bd.getName().equals(name) && edited.bd.setName(parent, name)) {
-					for (Picture p : Picture.ELEMENTS.get(mch))
-						if (name.equals(p.getName())) {
-							edited.bd = p;
-							break;
-						}
-				}
+				edited.bd = edited.bd.setName(parent, name);
 			}
 			toRemove = null;
 		};

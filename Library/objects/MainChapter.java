@@ -87,9 +87,26 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 		}
 		ELEMENTS.add(this);
 	}
+	
+	@Override
+	public int[] refreshSF() {
+		if (children.isEmpty()) load(false);
+		int[] sf = {0, 0};
+		for (BasicData bd : getChildren()) {
+			int[] childSF =
+					bd instanceof Container ? ((Container) bd).refreshSF() : bd.getSF();
+			sf[0] += childSF[0];
+			sf[1] += childSF[1];
+		}
+		return (this.sf = sf).clone();
+	}
 
-	private boolean loading;
-
+	/**
+	 * Deletes the whole subject, this action can't be reversed.
+	 * 
+	 * @param parent no parent
+	 * @return if the main directory was successfully deleted
+	 */
 	@Override
 	public boolean destroy(Container parent) {
 		for (int i = children.size() - 1; i >= 0; i--) children.get(i).destroy(this);
@@ -104,7 +121,7 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 	}
 
 	@Override
-	public boolean setName(Container none, String name) {
+	public BasicData setName(Container none, String name) {
 		ContainerFile.isCorrect(name);
 		File newDir = new File(getPath(), name);
 		if(Reference.ELEMENTS.get(this)!= null)
@@ -114,9 +131,9 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 				dir = newDir;
 				this.name = name;
 				save();
-				return true;
+				return this;
 			}
-		return false;
+		return this;
 	}
 
 	/**
@@ -130,6 +147,7 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 		Word.ELEMENTS.remove(this);
 		Picture.ELEMENTS.remove(this);
 		Reference.ELEMENTS.remove(this);
+		Runtime.getRuntime().gc();
 	}
 
 	/**
@@ -139,12 +157,12 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 
 	@Override
 	public boolean move(Container op, Container np, Container npp) {
-		throw new UnsupportedOperationException("This hierarchy object cannot be moved, since it has no parent.");
+		throw new UnsupportedOperationException("MainChapter can't be moved - no parent.");
 	}
 	
 	@Override
 	public boolean move(Container op, Container opp, Container np, Container npp) {
-		throw new UnsupportedOperationException("This hierarchy object cannot be moved, since it has no parent.");
+		throw new UnsupportedOperationException("MainChapter can't be moved - no parent.");
 	}
 
 	@Override
@@ -206,7 +224,8 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 			try {
 				if (saving) return;
 				saving = true;
-				Formatter.saveFile(writeData(new StringBuilder(), 0, null).toString(), getSaveFile());
+				Formatter.saveFile(
+						writeData(new StringBuilder(), 0, null).toString(), getSaveFile());
 				saving = false;
 			} catch (Exception e) {
 				if (rtr != null) rtr.react(e, getSaveFile(), this);
@@ -216,7 +235,8 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 		else r.run();
 	}
 
-	private boolean loaded = false;
+	private volatile boolean loaded;
+	private boolean loading;
 
 	/**
 	 * In this implementation of {@link ContainerFile} this method loads all
@@ -289,7 +309,7 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 
 	/**
 	 * Implementation of
-	 * {@link IOSystem.ReadElement#readData(ReadElement.Source, Container) loading from String}.
+	 * {@link ReadElement#readData(ReadElement.Source, Container) loading from String}.
 	 */
 	public static BasicData readData(ReadElement.Source src, Container parent) {
 		Formatter.Data d = ReadElement.get(src, true, true, true, true, null);

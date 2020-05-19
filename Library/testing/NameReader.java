@@ -14,8 +14,8 @@ import objects.templates.BasicData;
 public class NameReader {
 
 	/**
-	 * Reads the {@link BasicData#getName() name} and gives back all name possibilities. Keep
-	 * in mind, names with more variants will in most cases make a space after
+	 * Reads the {@link BasicData#getName() name} and gives back all name possibilities.
+	 * Keep in mind, names with more variants will in most cases make a space after
 	 * ',' or '.' or '!' or '?'. To eliminate this, write '\\' before these
 	 * chars in these cases. Doesn't work for cases like {@code "\\.)more"}
 	 * <p>
@@ -93,7 +93,8 @@ public class NameReader {
 		if (slash) {
 			if (start < (src.index = index)) slashStrs.add(substr(src.str, start, index));
 			return compile(ret, slashStrs.toArray(new String[slashStrs.size()]));
-		} else if (bracket) ret = compile(ret, slashStrs.toArray(new String[slashStrs.size()]));
+		} else if (bracket) ret =
+				compile(ret, slashStrs.toArray(new String[slashStrs.size()]));
 		return compile(ret, substr(src.str, start, src.index = index));
 	}
 
@@ -103,7 +104,8 @@ public class NameReader {
 			int ch = src2[i].isEmpty() ? -1 : src2[i].charAt(0);
 			for (int j = src1.length - 1; j != -1; j--)
 				ret[j + i * src1.length] = src1[j].isEmpty() ? src2[i] : (src1[j]
-						+ (ch != ',' && ch != '.' && ch != '?' && ch != '!' && ch != '\'' && ch != -1 ? ' ' + src2[i] : src2[i]));
+						+ (ch != ',' && ch != '.' && ch != '?' && ch != '!'
+						&& ch != '\'' && ch != -1 ? ' ' + src2[i] : src2[i]));
 		}
 		return ret;
 	}
