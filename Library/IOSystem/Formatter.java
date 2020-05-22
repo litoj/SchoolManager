@@ -1,10 +1,5 @@
 package IOSystem;
 
-import objects.MainChapter;
-import objects.templates.Container;
-import objects.templates.ContainerFile;
-import testing.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,11 +8,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
+import objects.MainChapter;
+import objects.templates.Container;
+import objects.templates.ContainerFile;
+import testing.Test;
 
 /**
  * This class is used to operate with text files. The format of all files containing
@@ -141,7 +140,7 @@ public class Formatter {
 		}
 		return null;
 	}
-	
+
 	public static void saveFile(String toSave, File filePath) {
 		ios.saveFile(toSave, filePath);
 	}
@@ -150,7 +149,7 @@ public class Formatter {
 	 * @param e Exception to be rendered
 	 * @return complete road of the Exception and its causes
 	 */
-	public static String getStackTrace(Exception e) {
+	public static String getStackTrace(Throwable e) {
 		OutputStream os = new ByteArrayOutputStream();
 		e.printStackTrace(new PrintStream(os));
 		return os.toString();
@@ -187,6 +186,7 @@ public class Formatter {
 
 		/**
 		 * Loads all stored variables and defines its extension as the {@link Formatter#ios}.
+		 *
 		 * @param settsFile {@link #setts}
 		 */
 		protected IOSystem(File settsFile) {
@@ -234,6 +234,7 @@ public class Formatter {
 
 		/**
 		 * Loads and sets all outside-library used values stored in {@link #settings}.
+		 *
 		 * @param first if the program returns to its first-launch state (reset)
 		 */
 		protected void setDefaults(boolean first) {
@@ -247,8 +248,9 @@ public class Formatter {
 
 		/**
 		 * Default way to save files.
+		 *
 		 * @param toSave content to be written
-		 * @param file the file that is being written
+		 * @param file   the file that is being written
 		 */
 		protected void saveFile(String toSave, File file) {
 			try (FileWriter fw = new FileWriter(file)) {
@@ -267,13 +269,14 @@ public class Formatter {
 		 * @return default {@link #objDir objects storage}
 		 */
 		public abstract String getDefaultObjectsDir();
-		
+
 		/**
 		 * Any necessary actions needed when the {@link #objDir objects storage} is changed.
+		 *
 		 * @param path the new objects storage
 		 * @return the path that will be saved to the {@link #setts settings}
 		 */
-		protected String changeDir(String path){
+		protected String changeDir(String path) {
 			return path;
 		}
 
@@ -299,30 +302,30 @@ public class Formatter {
 		public MainChapter identifier;
 		public int[] sf;
 		public String description = "";
-		public Object[] tagVals;
+		public Map<String, Object> tagVals;
 		public Container par;
-		
+
 		public Data(String name, MainChapter identifier) {
 			this.name = name;
 			this.identifier = identifier;
 		}
-		
+
 		public Data addSF(int[] successAndFail) {
 			sf = successAndFail;
 			return this;
 		}
-		
+
 		public Data addDesc(String description) {
 			this.description = description == null ? "" : description;
 			return this;
 		}
-		
+
 		public Data addPar(Container parent) {
 			par = parent;
 			return this;
 		}
-		
-		public Data addExtra(Object... tagValues) {
+
+		public Data addExtra(Map<String, Object> tagValues) {
 			tagVals = tagValues;
 			return this;
 		}
@@ -331,26 +334,26 @@ public class Formatter {
 		public String toString() {
 			return "name=\"" + name + "\", description=" + description + "\", success="
 					+ sf[0] + ", fail=" + sf[1] + ", parent=" + par + ", extra="
-					+ Arrays.toString(tagVals);
+					+ tagVals.toString();
 		}
 	}
-	
+
 	/**
 	 * Used to avoid data loss, corruption and possible concurrent modification exceptions.
 	 */
 	public static class Synchronizer {
-		
+
 		private final Map<MainChapter, Integer> hashes = new HashMap<>();
-		
+
 		/**
-		 * All keys' of {@link #ELEMENTS} hashCodes, which values are currently being used.
+		 * All keys' of {@link MainChapter#ELEMENTS} hashCodes, which values are currently being used.
 		 */
 		private final List<Integer> USED = new LinkedList<>();
 
 		public void waitForAccess(MainChapter lock) {
 			Integer hashCode = hashes.get(lock);
 			if (hashCode == null) hashes.put(lock, hashCode = lock.hashCode());
-			else if (USED.contains(hashCode)) try {
+			if (USED.contains(hashCode)) try {
 				synchronized (hashCode) {
 					while (USED.contains(hashCode)) hashCode.wait();
 				}

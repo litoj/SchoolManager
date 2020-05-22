@@ -1,6 +1,5 @@
 package IOSystem;
 
-import objects.SaveChapter;
 import objects.templates.BasicData;
 import objects.templates.Container;
 
@@ -13,88 +12,166 @@ import objects.templates.Container;
 public interface WriteElement {
 
 	/**
-	 * Adds multiple tags to the given {@code sb}.
-	 *
-	 * @param sb     object containing the data those will be written to the corresponding
-	 *               {@link SaveChapter} file
-	 * @param e      the currently written {@link BasicData}
-	 * @param parent parent of param {@code e}
-	 * @param clasS  if {@link Formatter#CLASS class} tag and the corresponding data
-	 *               should be added
-	 * @param name   if {@link Formatter#NAME name} tag and the corresponding data
-	 *               should be added
-	 * @param sf     if {@link Formatter#SUCCESS success} and {@link Formatter#FAIL fail}
-	 *               tags and the corresponding data should be added
-	 * @param desc   if {@link Formatter#DESC description} tag and the corresponding data
-	 *               should be added
-	 * @param tags   tags to be added
-	 * @param vals   values of the given param {@code tags}
-	 * @param child  if {@link Formatter#CHILDREN children} tag and the corresponding data
-	 *               should be added
-	 * @return the written form of this object
+	 * This class handles and provides methods for creating a text representation of an object,
+	 * enough so it can be recreated from that text afterwards without any loss.
+	 * Multi-threaded access is not supported.
 	 */
-	default StringBuilder add(StringBuilder sb, BasicData e,
-			Container parent, boolean clasS, boolean name, boolean sf,
-			boolean desc, String[] tags, Object[] vals, boolean child) {
-		boolean append;
-		if (append = clasS) sb.append('"').append(Formatter.CLASS).append("\": \"")
-				.append(e.getClass().getName()).append('"');
-		if (name) {
-			if (append) sb.append(", ");
-			else append = true;
+	class ContentWriter {
+		public int tabs = -1;
+		public boolean first;
+		public final StringBuilder sb = new StringBuilder();
+		private BasicData e;
+		private Container par;
+
+		/**
+		 * Initiates the writing of a new object.
+		 *
+		 * @param item the object that will be currently written
+		 * @param par  parent of this object
+		 * @return this object
+		 */
+		public ContentWriter startWritingItem(BasicData item, Container par) {
+			e = item;
+			this.par = par;
+			first = true;
+			return tabs(++tabs, '{');
+		}
+
+		/**
+		 * Closes the currently written object. No more data of that object can be added afterwards.
+		 *
+		 * @return this object
+		 */
+		public ContentWriter endWritingItem() {
+			tabs--;
+			sb.append('}');
+			return this;
+		}
+
+		/**
+		 * Add the specified amount of '\t' chars on a new line, ending with given character.
+		 *
+		 * @param tabs    the amount of '\t' chars to be added
+		 * @param toWrite the char to be added to the end
+		 * @return this object
+		 */
+		public ContentWriter tabs(int tabs, char toWrite) {
+			sb.append('\n');
+			for (int i = tabs; i > 0; i--) sb.append('\t');
+			sb.append(toWrite);
+			return this;
+		}
+
+		/**
+		 * Writes the class of the current object.
+		 *
+		 * @return this object
+		 */
+		public ContentWriter addClass() {
+			if (first) first = false;
+			else sb.append(", ");
+			sb.append('"').append(Formatter.CLASS).append("\": \"")
+					.append(e.getClass().getName()).append('"');
+			return this;
+		}
+
+		/**
+		 * Writes the name of the current object.
+		 *
+		 * @return this object
+		 */
+		public ContentWriter addName() {
+			if (first) first = false;
+			else sb.append(", ");
 			sb.append('"').append(Formatter.NAME).append("\": \"")
-					.append(mkSafe(e)).append('"');
+					.append(mkSafe(e.getName())).append('"');
+			return this;
 		}
-		if (sf && (e.getSF()[0] > 0 || e.getSF()[1] > 0)) {
-			if (append) sb.append(", ");
-			else append = true;
-			if (e.getSF()[0] > 0) sb.append('"').append(Formatter.SUCCESS)
-					.append("\": ").append(e.getSF()[0]);
-			if (e.getSF()[1] > 0) {
-				if (e.getSF()[0] > 0) sb.append(", ");
-				sb.append('"').append(Formatter.FAIL).append("\": ").append(e.getSF()[1]);
-			}
-		}
-		if (desc && e.getDesc(parent) != null && !e.getDesc(parent).equals("")) {
-			if (append) sb.append(", ");
-			else append = true;
-			sb.append('"').append(Formatter.DESC).append("\": \"")
-					.append(mkSafe(e.getDesc(parent))).append('"');
-		}
-		if (tags != null && tags.length != 0) {
-			for (int i = 0; i < tags.length; i++) {
-				if (vals[i] != null && !"".equals(vals[i])) {
-					if (append) sb.append(", ");
-					else append = true;
-					sb.append('"').append(tags[i]).append("\": ");
-					if (vals[i] instanceof Boolean || vals[i] instanceof Number)
-						sb.append(vals[i]);
-					else sb.append('"').append(mkSafe(vals[i])).append('"');
+
+		/**
+		 * Writes the success and fail values of the current object (if not 0).
+		 *
+		 * @return this object
+		 */
+		public ContentWriter addSF() {
+			if (e.getSF()[0] > 0 || e.getSF()[1] > 0) {
+				if (first) first = false;
+				else sb.append(", ");
+				if (e.getSF()[0] > 0) sb.append('"').append(Formatter.SUCCESS)
+						.append("\": ").append(e.getSF()[0]);
+				if (e.getSF()[1] > 0) {
+					if (e.getSF()[0] > 0) sb.append(", ");
+					sb.append('"').append(Formatter.FAIL).append("\": ").append(e.getSF()[1]);
 				}
 			}
+			return this;
 		}
-		if (child) sb.append(", \"").append(Formatter.CHILDREN).append("\": [");
-		return sb;
-	}
 
-	/**
-	 * Simple way of making arrays.
-	 *
-	 * @param str the content of the returned String array
-	 * @return the param {@code str}
-	 */
-	static String[] str(String... str) {
-		return str;
-	}
+		/**
+		 * Writes the description of the current object. The description depends on the
+		 * parent specified in the initialization of the object.
+		 *
+		 * @return this object
+		 */
+		public ContentWriter addDesc() {
+			if (e.getDesc(par) != null && !e.getDesc(par).equals("")) {
+				if (first) first = false;
+				else sb.append(", ");
+				sb.append('"').append(Formatter.DESC).append("\": \"")
+						.append(mkSafe(e.getDesc(par))).append('"');
+			}
+			return this;
+		}
 
-	/**
-	 * Simple way of making arrays.
-	 *
-	 * @param obj the content of the returned Object array
-	 * @return the param {@code obj}
-	 */
-	static Object[] obj(Object... obj) {
-		return obj;
+		/**
+		 * Writes all the given data, where {@code toWrite[i][0]} is the parameter name
+		 * and {code toWrite[i][1]} is the corresponding value.
+		 *
+		 * @param toWrite all other information necessary information about the current object.
+		 * @return this object
+		 */
+		public ContentWriter addExtra(Object[]... toWrite) {
+			for (Object[] data : toWrite) {
+				if (data[1] != null && !data[1].toString().isEmpty()) {
+					if (first) first = false;
+					else sb.append(", ");
+					sb.append('"').append(data[0]).append("\": ");
+					if (data[1] instanceof Number || data[1] instanceof Boolean)
+						sb.append(data[1]);
+					else sb.append('"').append(mkSafe(data[1])).append('"');
+				}
+			}
+			return this;
+		}
+
+		/**
+		 * Writes the children of the current object. This method can be used only
+		 * if the current object is a {@link Container}. This method is usually called
+		 * the last of writing the object's data.
+		 *
+		 * @return this object
+		 */
+		public ContentWriter addChildren() {
+			Container e = (Container) this.e;
+			if (first) first = false;
+			else sb.append(", ");
+			sb.append('"').append(Formatter.CHILDREN).append("\": [");
+			boolean first = true;
+			for (BasicData bd : e.getChildren(par)) {
+				if (bd.isEmpty(e)) continue;
+				if (first) first = false;
+				else sb.append(',');
+				startWritingItem(bd, e);
+				bd.writeData(this);
+				endWritingItem();
+			}
+			return tabs(tabs, ']');
+		}
+
+		@Override
+		public String toString() {
+			return sb.substring(1);
+		}
 	}
 
 	/**
@@ -110,31 +187,11 @@ public interface WriteElement {
 	}
 
 	/**
-	 * Adds requested amount of tabs to a new line in the text.
+	 * Writes only the absolute necessary information about this object.
 	 *
-	 * @param sb      source where to add the text
-	 * @param tabs    amount of tabs to be added
-	 * @param toWrite is added after the tabs, if there is nothing to be added,
-	 *                just decrease the amount of tabs and put here '\t'
-	 * @return this object, the method has been called in.
+	 * @param cw object containing the data those will be written to the
+	 *           corresponding file, the maintainer of the writing process
+	 * @return the same object as parameter {@code cw}
 	 */
-	default WriteElement tabs(StringBuilder sb, int tabs, char toWrite) {
-		sb.append('\n');
-		for (int i = tabs; i > 0; i--) sb.append('\t');
-		sb.append(toWrite);
-		return this;
-	}
-
-	/**
-	 * This method is for Formatter class to writeData Element's children. For
-	 * different implementations of Element class can occur different ways of
-	 * writing.
-	 *
-	 * @param sb            object containing the data those will be written to the
-	 *                      corresponding {@link SaveChapter} file
-	 * @param tabs          current amount of spaces on every new line
-	 * @param currentParent parent of the object providing this method
-	 * @return the same object as parameter {@code sb} or null, if nothing has been added
-	 */
-	StringBuilder writeData(StringBuilder sb, int tabs, Container currentParent);
+	ContentWriter writeData(ContentWriter cw);
 }

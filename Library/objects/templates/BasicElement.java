@@ -8,44 +8,44 @@ package objects.templates;
  */
 public abstract class BasicElement implements BasicData {
 
-   protected BasicElement(IOSystem.Formatter.Data d) {
-      BasicData.isValid(name = d.name);
-      sf = d.sf == null ? new int[]{0, 0} : d.sf;
-   }
+	protected BasicElement(IOSystem.Formatter.Data d) {
+		BasicData.isValid(name = d.name);
+		sf = d.sf == null ? new int[]{0, 0} : d.sf;
+	}
 
-   /**
-    * Name of this object.
-    */
-   protected String name;
+	/**
+	 * Name of this object.
+	 */
+	protected String name;
 
-   @Override
-   public BasicData setName(Container none, String name) {
-      this.name = name;
-      return this;
-   }
+	@Override
+	public BasicData setName(Container none, String name) {
+		this.name = name;
+		return this;
+	}
 
-   @Override
-   public String getName() {
-      return name;
-   }
+	@Override
+	public String getName() {
+		return name;
+	}
 
-   /**
-    * Success and Fail for this object.
-    */
-   protected int[] sf;
+	/**
+	 * Success and Fail for this object.
+	 */
+	protected int[] sf;
 
-   @Override
-   public int[] getSF() {
-      return sf.clone();
-   }
+	@Override
+	public int[] getSF() {
+		return sf.clone();
+	}
 
-   @Override
-   public void addSF(boolean scs) {
-      sf[scs ? 0 : 1]++;
-   }
+	@Override
+	public void addSF(boolean scs) {
+		sf[scs ? 0 : 1]++;
+	}
 
-   @Override
-   public String toString() {
-      return getName();
-   }
+	@Override
+	public String toString() {
+		return getName();
+	}
 }

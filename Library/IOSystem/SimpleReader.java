@@ -1,15 +1,15 @@
 package IOSystem;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+
 import objects.Chapter;
 import objects.MainChapter;
 import objects.SaveChapter;
 import objects.Word;
 import objects.templates.Container;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
 
 import static IOSystem.Formatter.Data;
 
@@ -27,7 +27,7 @@ import static IOSystem.Formatter.Data;
  * <li>word:
  * <p>	name\another name\more synonyms;translate\a synonym\...
  * </ul>
- * 
+ *
  * @author Josef Litoš
  */
 public class SimpleReader {
@@ -42,7 +42,7 @@ public class SimpleReader {
 	 * @return amount of created chapters, words, and translates
 	 */
 	static int[] loadWords(Container saveTo, Container parent, SimpleChapter source,
-			int startIndex, int endIndex, int minWords) {
+	                       int startIndex, int endIndex, int minWords) {
 		int[] ret = {0, 0, 0};
 		if (minWords == -1) minWords = Integer.MAX_VALUE;
 		MainChapter mch = saveTo.getIdentifier();
@@ -94,8 +94,8 @@ public class SimpleReader {
 	 * @return the final amount of read chapters and of all created words
 	 */
 	public static int[] sortLoad(String source, Container parent,
-			Container prevPar, int startIndex, int endIndex,
-			int wordCount, int startNum, String[] psFix, boolean b) {
+	                             Container prevPar, int startIndex, int endIndex,
+	                             int wordCount, int startNum, String[] psFix, boolean b) {
 		MainChapter mch = parent.getIdentifier();
 		int[] res = {0, 0, 0}, i;
 		SimpleChapter sch = getContent(source);
@@ -128,7 +128,7 @@ public class SimpleReader {
 	 * @return the final amount of read chapters and of all created words
 	 */
 	public static int[] simpleLoad(String source, Container parent, Container prevPar,
-			int startIndex, int endIndex, int wordCount) {
+	                               int startIndex, int endIndex, int wordCount) {
 		return loadWords(parent, prevPar,
 				getContent(source), startIndex, endIndex, wordCount);
 	}

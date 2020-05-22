@@ -30,14 +30,15 @@ import com.schlmgr.gui.CurrentData.EasyList;
 import com.schlmgr.gui.ExplorerStuff;
 import com.schlmgr.gui.activity.SelectDirActivity;
 import com.schlmgr.gui.list.AbstractContainerAdapter;
+import com.schlmgr.gui.list.AbstractPopupRecyclerAdapter;
 import com.schlmgr.gui.list.HierarchyAdapter;
 import com.schlmgr.gui.list.HierarchyItemModel;
 import com.schlmgr.gui.list.ImageAdapter;
 import com.schlmgr.gui.list.ImageItemModel;
-import com.schlmgr.gui.list.ImageRecyclerAdapter;
+import com.schlmgr.gui.list.ImagePopupRecyclerAdapter;
 import com.schlmgr.gui.list.SearchAdapter;
 import com.schlmgr.gui.list.SearchItemModel;
-import com.schlmgr.gui.list.TranslateRecyclerAdapter;
+import com.schlmgr.gui.list.TranslatePopupRecyclerAdapter;
 import com.schlmgr.gui.popup.ContinuePopup;
 import com.schlmgr.gui.popup.CreatorPopup;
 import com.schlmgr.gui.popup.CreatorPopup.Includer;
@@ -213,64 +214,37 @@ public class MainFragment extends Fragment
 										VS.mAdapter.notifyDataSetChanged();
 										cp.dismiss();
 									} catch (IllegalArgumentException iae) {
+										if (!iae.getMessage().contains("Name can't")) throw iae;
 										defaultReacts.get(ContainerFile.class + ":name")
 												.react(iae.getMessage().contains("longer"));
 									}
 								});
 								return null;
 							}));
-						} else if (him.bd instanceof Word) {
+						} else if (him.bd instanceof TwoSided) {
+							boolean pic = him.bd instanceof Picture;
 							activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.edit), new Includer() {
-								TranslateRecyclerAdapter content;
+								AbstractPopupRecyclerAdapter content;
 
 								@Override
 								public View onInclude(LayoutInflater li, CreatorPopup cp) {
 									LinearLayout ll = (LinearLayout) li.inflate(R.layout.new_twosided, null);
-									if (content == null) content = new TranslateRecyclerAdapter(him, cp);
+									if (content == null) content = pic ? new ImagePopupRecyclerAdapter(him, cp)
+											: new TranslatePopupRecyclerAdapter(him, cp);
 									Runnable onClick = content.onClick(ll);
 									cp.ok.setOnClickListener(v -> {
-										try {
-											onClick.run();
-											if (content.toRemove != null) return;
-											CurrentData.save(backLog.path);
-											VS.contentAdapter.selected = -1;
-											setSelectOpts(false);
+										onClick.run();
+										if (content.toRemove != null) return;
+										CurrentData.save(backLog.path);
+										VS.contentAdapter.selected = -1;
+										setSelectOpts(false);
+										if (pic) him.toShow = him.bd.toString();
+										else {
 											him.flipped = !him.flipped;
 											him.flip();
-											VS.mAdapter.notifyDataSetChanged();
-											cp.dismiss();
-										} catch (IllegalArgumentException iae) {
-											System.out.println("An Unexpected Exception occurred:\n"
-													+ iae.getMessage() + "\n" + Formatter.getStackTrace(iae));
 										}
-									});
-									return ll;
-								}
-							}));
-						} else if (him.bd instanceof Picture) {
-							if (!AndroidIOSystem.requestWrite()) return;
-							activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.edit), new Includer() {
-								ImageRecyclerAdapter content;
-
-								@Override
-								public View onInclude(LayoutInflater li, CreatorPopup cp) {
-									LinearLayout ll = (LinearLayout) li.inflate(R.layout.new_twosided, null);
-									if (content == null) content = new ImageRecyclerAdapter(him, cp);
-									Runnable onClick = content.onClick(ll);
-									cp.ok.setOnClickListener(v -> {
-										try {
-											onClick.run();
-											if (content.toRemove != null) return;
-											CurrentData.save(backLog.path);
-											VS.contentAdapter.selected = -1;
-											setSelectOpts(false);
-											him.toShow = him.bd.toString();
-											VS.mAdapter.notifyDataSetChanged();
-											cp.dismiss();
-										} catch (IllegalArgumentException iae) {
-											System.out.println("An Unexpected Exception occurred:\n"
-													+ iae.getMessage() + "\n" + Formatter.getStackTrace(iae));
-										}
+										VS.mAdapter.notifyDataSetChanged();
+										cp.dismiss();
 									});
 									return ll;
 								}
@@ -289,7 +263,7 @@ public class MainFragment extends Fragment
 					}
 				if (VS.contentAdapter.selected > 1) tglEnabled(edit, false);
 			}
-		}).start();
+		}, "select options setter").start();
 
 		es = new ExplorerStuff(false, this::setContent, () -> {
 			VS.contentAdapter.selected = -1;
@@ -592,7 +566,7 @@ public class MainFragment extends Fragment
 			} catch (Exception e) {
 			}
 			finishLoad();
-		}).start();
+		}, "MCh finishLoad").start();
 		Controller.setMenuRes(VS.menuRes = R.menu.more_main);
 		es.searchControl.update(true);
 		es.lv.setAdapter(VS.mAdapter = VS.contentAdapter = new HierarchyAdapter(getContext(),
@@ -646,6 +620,7 @@ public class MainFragment extends Fragment
 	@Override
 	public boolean onMenuItemClick(MenuItem item) {
 		new Thread(() -> {
+			boolean word = false;
 			switch (item.getItemId()) {
 				case R.id.more_new_mch:
 					activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.new_mch), (x, cp) -> {
@@ -655,18 +630,15 @@ public class MainFragment extends Fragment
 								if (name.isEmpty()) return;
 								ContainerFile.isCorrect(name);
 							} catch (IllegalArgumentException iae) {
+								if (!iae.getMessage().contains("Name can't")) throw iae;
 								defaultReacts.get(ContainerFile.class + ":name")
 										.react(iae.getMessage().contains("longer"));
 								return;
 							}
-							try {
-								VS.mAdapter.add(new HierarchyItemModel(new MainChapter(new Data(name, null)
-										.addDesc(cp.et_desc.getText().toString())), null, es.lv.getCount() + 1));
-								VS.mAdapter.notifyDataSetChanged();
-								cp.dismiss();
-							} catch (IllegalArgumentException iae) {
-								defaultReacts.get(ContainerFile.class + ":save").react(iae, name, name);
-							}
+							VS.mAdapter.add(new HierarchyItemModel(new MainChapter(new Data(name, null)
+									.addDesc(cp.et_desc.getText().toString())), null, es.lv.getCount() + 1));
+							VS.mAdapter.notifyDataSetChanged();
+							cp.dismiss();
 						});
 						return null;
 					}));
@@ -687,59 +659,35 @@ public class MainFragment extends Fragment
 								CurrentData.newChapters.add(ch);
 								cp.dismiss();
 							} catch (IllegalArgumentException iae) {
-								if (iae.getMessage().contains("Name can't"))
-									defaultReacts.get(ContainerFile.class + ":name")
-											.react(iae.getMessage().contains("longer"));
+								if (!iae.getMessage().contains("Name can't")) throw iae;
+								defaultReacts.get(ContainerFile.class + ":name")
+										.react(iae.getMessage().contains("longer"));
 							}
 						});
 						return li.inflate(R.layout.new_chapter, null);
 					}));
 					break;
 				case R.id.more_new_word:
-					activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.new_word), new Includer() {
-
-						TranslateRecyclerAdapter content;
-
-						@Override
-						public View onInclude(LayoutInflater li, CreatorPopup cp) {
-							LinearLayout ll = (LinearLayout) li.inflate(R.layout.new_twosided, null);
-							if (content == null) content = new TranslateRecyclerAdapter(null, cp);
-							Runnable onClick = content.onClick(ll);
-							cp.ok.setOnClickListener(v -> {
-								try {
-									onClick.run();
-									if (content.toRemove != null) return;
-									CurrentData.save(backLog.path);
-									cp.dismiss();
-								} catch (IllegalArgumentException iae) {
-									System.out.println("An Exception occurred:\n" + iae.getMessage()
-											+ "\n" + Formatter.getStackTrace(iae));
-								}
-							});
-							return ll;
-						}
-					}));
-					break;
+					word = true;
 				case R.id.more_new_picture:
-					if (!AndroidIOSystem.requestWrite()) return;
-					activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.new_picture), new Includer() {
-						ImageRecyclerAdapter content;
+					if (!word && !AndroidIOSystem.requestWrite()) return;
+					boolean pic = !word;
+					activity.runOnUiThread(() -> new CreatorPopup(getString(
+							pic ? R.string.new_picture : R.string.new_word), new Includer() {
+
+						AbstractPopupRecyclerAdapter content;
 
 						@Override
 						public View onInclude(LayoutInflater li, CreatorPopup cp) {
 							LinearLayout ll = (LinearLayout) li.inflate(R.layout.new_twosided, null);
-							if (content == null) content = new ImageRecyclerAdapter(null, cp);
+							if (content == null) content = pic ? new ImagePopupRecyclerAdapter(null, cp)
+									: new TranslatePopupRecyclerAdapter(null, cp);
 							Runnable onClick = content.onClick(ll);
 							cp.ok.setOnClickListener(v -> {
-								try {
-									onClick.run();
-									if (content.toRemove != null) return;
-									CurrentData.save(backLog.path);
-									cp.dismiss();
-								} catch (IllegalArgumentException iae) {
-									System.out.println("An Exception occurred:\n" + iae.getMessage()
-											+ "\n" + Formatter.getStackTrace(iae));
-								}
+								onClick.run();
+								if (content.toRemove != null) return;
+								CurrentData.save(backLog.path);
+								cp.dismiss();
 							});
 							return ll;
 						}
@@ -790,14 +738,14 @@ public class MainFragment extends Fragment
 					int[] sf = opened.getSF();
 					int[] refreshSF = opened.refreshSF();
 					if (sf[0] != refreshSF[0] || sf[1] != refreshSF[1]) {
-						if (backLog.path.get(-1) == opened) {
-							es.lv.post(() -> VS.mAdapter.notifyDataSetChanged());
+						if (backLog.path.get(-1) == opened) es.lv.post(() -> {
+							VS.mAdapter.notifyDataSetChanged();
 							es.setInfo(opened, currentPath.get(currentPath.size() - 2));
-						}
+						});
 						CurrentData.save(currentPath);
 					}
 			}
-		}).start();
+		}, "MFrag onMenuItemClick").start();
 		return true;
 	}
 
@@ -854,7 +802,7 @@ public class MainFragment extends Fragment
 								.react(Controller.getFileFromUri(data.getData()));
 				}
 				super.onActivityResult(requestCode, resultCode, data);
-			}).start();
+			}, "MFrag onActivityResult").start();
 		}
 	}
 

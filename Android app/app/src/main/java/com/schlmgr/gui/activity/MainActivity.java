@@ -22,6 +22,7 @@ import com.schlmgr.gui.fragments.MainFragment;
 import com.schlmgr.gui.list.DirAdapter;
 import com.schlmgr.gui.popup.AbstractPopup;
 import com.schlmgr.gui.popup.FullPicture;
+import com.schlmgr.gui.popup.TextPopup;
 
 import java.io.File;
 
@@ -30,6 +31,9 @@ import objects.templates.ContainerFile;
 
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static com.schlmgr.gui.AndroidIOSystem.defDir;
+import static com.schlmgr.gui.AndroidIOSystem.getFirstCause;
+import static com.schlmgr.gui.AndroidIOSystem.showMsg;
+import static com.schlmgr.gui.Controller.activity;
 import static com.schlmgr.gui.fragments.MainFragment.STORAGE_PERMISSION;
 
 public class MainActivity extends PopupCareActivity {
@@ -67,7 +71,8 @@ public class MainActivity extends PopupCareActivity {
 				.setDrawerLayout(findViewById(R.id.drawer_layout)).build();
 		navController = Navigation.findNavController(this, R.id.content_main);
 		NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
-		NavigationUI.setupWithNavController((NavigationView) findViewById(R.id.nav_menu), navController);
+		NavigationUI.setupWithNavController(
+				(NavigationView) findViewById(R.id.nav_menu), navController);
 		if (background == null) {
 			DisplayMetrics dm = new DisplayMetrics();
 			getWindowManager().getDefaultDisplay().getMetrics(dm);
@@ -83,12 +88,12 @@ public class MainActivity extends PopupCareActivity {
 					(defDir.contains("emulated") ? "emulated" : "")));
 			new AndroidIOSystem().testWrite();
 			(background = new Thread(() -> {
-				if (!Formatter.getPath().getAbsolutePath().contains(defDir + "/Android/data/com.schlmgr")
-						&& !AndroidIOSystem.canWrite()) {
+				if (!Formatter.getPath().getAbsolutePath().contains(defDir
+						+ "/Android/data/com.schlmgr") && !AndroidIOSystem.canWrite()) {
 					runOnUiThread(() -> {
 						Toast.makeText(this, getString(R.string.fail_permission_write)
-								+ AndroidIOSystem.visibleFilePath(Formatter.getPath().getAbsolutePath()) + '\n' +
-								getString(R.string.fail_formatter), Toast.LENGTH_LONG).show();
+								+ AndroidIOSystem.visibleFilePath(Formatter.getPath().getAbsolutePath())
+								+ '\n' + getString(R.string.fail_formatter), Toast.LENGTH_LONG).show();
 						Formatter.resetDir();
 						CurrentData.createMchs();
 						MainFragment.VS.mfInstance.setContent(null, null, 0);
@@ -107,7 +112,7 @@ public class MainActivity extends PopupCareActivity {
 					}
 				} catch (Exception e) {
 				}
-			})).start();
+			}, "MA background")).start();
 		}
 	}
 
@@ -132,7 +137,8 @@ public class MainActivity extends PopupCareActivity {
 	}
 
 	@Override
-	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+	                                       @NonNull int[] grantResults) {
 		if (requestCode == STORAGE_PERMISSION) {
 			if (grantResults[0] != PERMISSION_GRANTED) {
 				AndroidIOSystem.setCanWrite(false);

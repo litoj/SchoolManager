@@ -1,18 +1,18 @@
 package testing;
 
-import IOSystem.Formatter;
-import objects.MainChapter;
-import objects.templates.BasicData;
-import objects.templates.Container;
-import objects.templates.TwoSided;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+
+import IOSystem.Formatter;
+import objects.MainChapter;
 import objects.Reference;
+import objects.templates.BasicData;
+import objects.templates.Container;
+import objects.templates.TwoSided;
 
 /**
  * Creates and manages a test for any {@link TwoSided} object. Resets all values
@@ -33,11 +33,11 @@ public class Test<T extends TwoSided> {
 	}
 
 	/**
-	 * Converts all the content of the given paths to SourcePaths. Searching throught the
+	 * Converts all the content of the given paths to SourcePaths. Searching through the
 	 * hierarchy until a TwoSided object is reached.
-	 * 
+	 *
 	 * @param src the list of paths to be rendered, mustn't contain different TwoSided
-	 *	           objects than the one of the test's type.
+	 *            objects than the one of the test's type.
 	 * @return the converted content of the given paths
 	 */
 	public List<SrcPath> convertAll(List<List<Container>> src) {
@@ -56,8 +56,8 @@ public class Test<T extends TwoSided> {
 	/**
 	 * All paths that do not contact with each other. Their possible Reference objects
 	 * have been processed.
-	 * 
-	 * @param src where to put the content
+	 *
+	 * @param src  where to put the content
 	 * @param path the path to the object to be processed, mustn't contain Reference
 	 */
 	private void resolveReferences(ArrayList<List<Container>> src, List<Container> path) {
@@ -103,7 +103,7 @@ public class Test<T extends TwoSided> {
 	}
 
 	private class Getter {
-		
+
 		final List<SrcPath> list = new LinkedList<>();
 		volatile int threads = 7;
 	}
@@ -126,7 +126,7 @@ public class Test<T extends TwoSided> {
 					Thread t = new Thread(() -> {
 						convertContent(copy, getter);
 						getter.threads++;
-					});
+					}, "Test converter");
 					threads.add(t);
 					t.start();
 				}
@@ -303,7 +303,7 @@ public class Test<T extends TwoSided> {
 				}
 			} catch (InterruptedException ex) {
 			}
-		})).start();
+		}), "Test timer").start();
 	}
 
 	/**

@@ -46,15 +46,15 @@ public class HierarchyItemModel {
 	public static boolean flipAllOnClick;
 
 	public static void setParse(boolean on) {
-		Formatter.putSetting("HIMparse", parse = on);
+		Formatter.putSetting("parseNames", parse = on);
 	}
 
 	public static void setDefFlip(boolean on) {
-		Formatter.putSetting("HIMflip", defFlip = on);
+		Formatter.putSetting("flipWord", defFlip = on);
 	}
 
 	public static void setFlipAllOnClick(boolean on) {
-		Formatter.putSetting("HIMflipAll", flipAllOnClick = on);
+		Formatter.putSetting("flipAllOnClick", flipAllOnClick = on);
 	}
 
 	public boolean flipped;

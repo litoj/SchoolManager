@@ -4,15 +4,21 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.schlmgr.BuildConfig;
 import com.schlmgr.R;
 import com.schlmgr.gui.Controller;
 import com.schlmgr.gui.Controller.ControlListener;
+import com.schlmgr.gui.list.AbstractNestedRecyclerAdapter;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import static com.schlmgr.gui.Controller.activity;
 
@@ -73,9 +79,9 @@ public class AboutFragment extends Fragment implements ControlListener {
 			new TglVisibility(R.id.help_extra_import_mch, R.id.help_extra_import_mch_how);
 
 	private static final TglVisibility versions_release =
-			new TglVisibility(R.id.versions_release, R.id.versions_release_layout);
+			new TglVisibility(R.id.versions_release, R.id.versions_release_list);
 	private static final TglVisibility versions_beta =
-			new TglVisibility(R.id.versions_beta, R.id.versions_beta_layout);
+			new TglVisibility(R.id.versions_beta, R.id.versions_beta_list);
 
 	public View onCreateView(@NonNull LayoutInflater inflater,
 	                         ViewGroup container, Bundle savedInstanceState) {
@@ -95,19 +101,6 @@ public class AboutFragment extends Fragment implements ControlListener {
 		help_search.setTgl(root);
 		help_search_types.setTgl(root);
 		help_search_regex.setTgl(root);
-		help_subjdir.setTgl(root);
-		help_test.setTgl(root);
-		help_test_select.setTgl(root);
-		help_test_run.setTgl(root);
-		help_test_results.setTgl(root);
-		help_extra.setTgl(root);
-		help_extra_naming.setTgl(root);
-		help_extra_words_import.setTgl(root);
-		help_extra_words_export.setTgl(root);
-		help_extra_import_mch.setTgl(root);
-		//TODO: Make a RecyclerViewAdapter for the versions information, this is a mess
-		versions_release.setTgl(root);
-		versions_beta.setTgl(root);
 
 		((TextView) root.findViewById(R.id.help_search_regex_0_1)).setText("Char Class\n" +
 				"[abc]\n[^abc]\n[a-zA-Z]\n[a-d[m-p]]\n[a-z&&[def]]\n[a-z&&[^bc]]\n[a-z&&[^m-p]]");
@@ -128,6 +121,97 @@ public class AboutFragment extends Fragment implements ControlListener {
 						"Any non-digit ([^0-9])\nAny whitespace character ([\\t\\n\\x0B\\f\\r])\n" +
 						"Any non-whitespace character ([^\\s])\nAny word character ([a-zA-Z_0-9])\n" +
 						"Any non-word character ([^\\w])\nA word boundary\nA non word boundary");
+
+		help_subjdir.setTgl(root);
+		help_test.setTgl(root);
+		help_test_select.setTgl(root);
+		help_test_run.setTgl(root);
+		help_test_results.setTgl(root);
+		help_extra.setTgl(root);
+		help_extra_naming.setTgl(root);
+		help_extra_words_import.setTgl(root);
+		help_extra_words_export.setTgl(root);
+		help_extra_import_mch.setTgl(root);
+		//TODO: Make a RecyclerViewAdapter for the versions information, this is a mess
+		versions_release.setTgl(root);
+		versions_beta.setTgl(root);
+		new Thread(() -> {
+			RecyclerView rvRelease = (RecyclerView) versions_release.toToggle;
+			String[][] releases = {
+					{"2.7", "- changed version view\n- separated into nested lists"},
+					{"2.6", "- complete hierarchy saving and loading mechanism remake\n" +
+							"- improved hierarchy I/O navigation and simplified use\n" +
+							"- new I/O improves compatibility and ignores potential json format" +
+							" mistakes\n- I/O now resistant to human imperfection"},
+					{"2.3", "- improved two-sided displaying\n- added old version compatibility" +
+							" maintainer\n- added fullscreen image in picture editor\n" +
+							"- made exception handler functional"},
+					{"2.2", "- added success rate revaluation option\n- added uncaught exception" +
+							" handler\n- fixed crash on 'Set subjects directory' option"},
+					{"2.1", "- fixed settings not saving\n- fixed test results not staying on screen\n" +
+							"- improved code structure, some javadoc added"},
+					{"2.0", "- improved pictures loading speed\n- added nested scroll for image editing" +
+							" + creating\n- fixed twosided partially renaming (deleting its children)"},
+					{"1.5", "- improved dir selector behavior\n- fixed transition between explorer and" +
+							" dir selector\n- fixed gui bad icon display\n- fixed word deletion" +
+							" null-pointer\n- fixed SaveChapter hash errors"},
+					{"1.2", "- redesigned inefficient and unsafe database operations\n" +
+							"- fixed test end possible crash"},
+					{"1.1", "- fixed chapters with file not saving\n" +
+							"- fixed renaming file-chapter - app crash"},
+					{"1.0", "- customized 'About' tab- added help- formatted this tab"}
+			};
+			rvRelease.setAdapter(new VersionAdapter(rvRelease, (ScrollView) root, releases));
+			RecyclerView rvBeta = (RecyclerView) versions_beta.toToggle;
+			String[][] betas = {
+					{"Beta 8.6", "- added test result with correct answers window\n" +
+							"- fixed directory chooser crashes when between storage\n" +
+							"- fixed test with reference bug\n- fixed test item duplication"},
+					{"Beta 8.4", "- changed reference button function while in search list\n" +
+							"- fixed items not selectable when using select button in search list\n" +
+							"- fixed test with reference bug\n- fixed test item duplication"},
+					{"Beta 8.2", "- changed creating interface\n- fixed back-button presses\n" +
+							"- fixed library testing and reference issues"},
+					{"Beta 8.0", "- added test source picker\n- implemented testing\n" +
+							"- changed testing interface"},
+					{"Beta 7.5", "- implemented menu after selecting\n- added delete function\n" +
+							"- added reference function\n- added cut function\n- added edit function"},
+					{"Beta 7.0", "- new picture function implemented\n- new word function adapted for" +
+							" multiple translates\n- fixed popup stays on screen"},
+					{"Beta 6.6", "- rapidly improved startup time\n- restructured code to use more" +
+							" inheritance\n- improved library's platform independency\n" +
+							"- added choose dir options\n- added external storage workflow\n" +
+							"- fixed permission issues\n- fix: app crash after removed dir"},
+					{"Beta 6.3", "- added settings functions\n- corrected design\n" +
+							"- added interface options"},
+					{"Beta 6.2", "- added showing parsed names (set as default behaviour)\n" +
+							"- added more sorting methods\n- fix: search not parsing searched text"},
+					{"Beta 6.1", "- fix: translate description not saving\n" +
+							"- fix: word creation not creating last word"},
+					{"Beta 6.0", "- added 'New Subject/Chapter/Word' option\n" +
+							"- fix: not auto-saving after change"},
+					{"Beta 5.3", "- added 'Change source folder' option\n" +
+							"- fix: autosaving not working (data loss)"},
+					{"Beta 5.1", "- remake: Searching interface and GUI, Search field auto-hide\n- added"
+							+ " search syntax variants\n- fix: Reference change search path (app crash)"},
+					{"Beta 5.0", "- added Search field, IOException handlers\n" +
+							"- fix: database data loss, fix: not saving added objects"},
+					{"Beta 4.1", "- added App Icon, remake: Sorting interface"},
+					{"Beta 4.0", "- added Sorting options (alphabet + success rate)\n" +
+							"- fix: Reference bugs"},
+					{"Beta 3.1", "- added Word hierarchy import, Word description screen"},
+					{"Beta 3.0", "- added 'more' menu, Word hierarchy export"},
+					{"Beta 2.1", "- improved Exception handling, added copy button\n" +
+							"- remake: app menu design"},
+					{"Beta 2.0", "- added Image displaying, Exception informer\n- fix: Reference bugs"},
+					{"Beta 1.2", "- added Reference support, AutoSave changes\n" +
+							"- fix: large description"},
+					{"Beta 1.1", "- added icons and success color indication,\n" +
+							"- added Word translation toggle, multiple description support"},
+					{"Beta 1.0", "Able to show content of compiled hierarchies"}
+			};
+			rvBeta.setAdapter(new VersionAdapter(rvBeta, (ScrollView) root, betas));
+		}).start();
 		return root;
 	}
 
@@ -135,11 +219,11 @@ public class AboutFragment extends Fragment implements ControlListener {
 		boolean visible;
 		View switcher;
 		View toToggle;
-		final int switcherID, toTgl;
+		final int switcherID, toTglID;
 
 		TglVisibility(int switcherID, int toToggleID) {
 			this.switcherID = switcherID;
-			this.toTgl = toToggleID;
+			this.toTglID = toToggleID;
 		}
 
 		/**
@@ -148,7 +232,7 @@ public class AboutFragment extends Fragment implements ControlListener {
 		 * @param root the current parent of the views.
 		 */
 		void setTgl(View root) {
-			toToggle = root.findViewById(toTgl);
+			toToggle = root.findViewById(toTglID);
 			(switcher = root.findViewById(switcherID)).setOnClickListener(v ->
 					toToggle.setVisibility((visible = !visible) ? View.VISIBLE : View.GONE));
 			if ((toToggle.getVisibility() == View.VISIBLE) != visible)
@@ -165,5 +249,40 @@ public class AboutFragment extends Fragment implements ControlListener {
 	@Override
 	public void run() {
 		Controller.defaultBack.run();
+	}
+
+	private static class VersionAdapter
+			extends AbstractNestedRecyclerAdapter<String[], VersionAdapter.VersionHolder> {
+
+		protected VersionAdapter(RecyclerView rv, ScrollView firstScroll, String[]... items) {
+			super(new ArrayList<>(Arrays.asList(items)), rv, firstScroll);
+		}
+
+		@NonNull
+		@Override
+		public VersionHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+			return new VersionHolder(LayoutInflater.from(
+					parent.getContext()).inflate(R.layout.item_version, parent, false));
+		}
+
+		private class VersionHolder extends AbstractNestedRecyclerAdapter.ViewHolder {
+
+			final TextView name;
+			final TextView description;
+
+			VersionHolder(@NonNull View itemView) {
+				super(itemView);
+				name = itemView.findViewById(R.id.version_name);
+				description = itemView.findViewById(R.id.version_description);
+			}
+
+			@Override
+			protected void setData(int pos) {
+				String[] item = list.get(pos);
+				name.setText(item[0]);
+				description.setText(item[1]);
+			}
+		}
+
 	}
 }

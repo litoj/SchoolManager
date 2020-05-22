@@ -4,6 +4,7 @@ import android.Manifest.permission;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Build.VERSION;
+import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
@@ -11,8 +12,8 @@ import android.widget.Toast;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.material.snackbar.Snackbar;
+import com.schlmgr.BuildConfig;
 import com.schlmgr.R;
-import com.schlmgr.gui.fragments.MainFragment;
 import com.schlmgr.gui.list.HierarchyItemModel;
 import com.schlmgr.gui.popup.TextPopup;
 
@@ -33,10 +34,12 @@ import objects.templates.ContainerFile;
 
 import static IOSystem.Formatter.defaultReacts;
 import static IOSystem.Formatter.getStackTrace;
+import static IOSystem.Formatter.putSetting;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static android.widget.Toast.makeText;
 import static com.schlmgr.gui.Controller.CONTEXT;
 import static com.schlmgr.gui.Controller.activity;
+import static com.schlmgr.gui.Controller.currentActivity;
 import static com.schlmgr.gui.Controller.translate;
 import static com.schlmgr.gui.fragments.MainFragment.STORAGE_PERMISSION;
 
@@ -93,7 +96,8 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 
 	/**
 	 * This method hides the keyboard from the screen when called.
-	 * Code used from https://medium.com/@rmirabelle/close-hide-the-soft-keyboard-in-android-db1da22b09d2
+	 * Code used from
+	 * https://medium.com/@rmirabelle/close-hide-the-soft-keyboard-in-android-db1da22b09d2
 	 *
 	 * @param view the view, that initially used the keyboard
 	 */
@@ -116,21 +120,44 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 	@Override
 	protected void setDefaults(boolean first) {
 		if (first) {
-			settings.put("testTypePicture", false);
-			settings.put("HIMflip", true);
-			settings.put("HIMflipAll", false);
-			settings.put("HIMparse", true);
+			settings.put("defaultTestTypePicture", false);
+			settings.put("flipWord", true);
+			settings.put("flipAllOnClick", false);
+			settings.put("parseNames", true);
+			settings.put("version", BuildConfig.VERSION_CODE);
 		} else {
+			boolean save = false;
 			Object value;
-			if ((value = settings.get("HIMflip")) != null)
+			if ((value = settings.get("version")) == null //old version handler for compatibility
+					|| BuildConfig.VERSION_CODE > (Integer) value) {
+				int lastVersion;
+				if (value == null) {
+					settings.put("defaultTestTypePicture", settings.remove("testTypePicture"));
+					settings.put("flipWord", settings.remove("HIMflip"));
+					settings.put("flipAllOnClick", settings.remove("HIMflipAll"));
+					settings.put("parseNames", settings.remove("HIMparse"));
+					lastVersion = 22;
+				} else lastVersion = (Integer) value;
+//				if (lastVersion < 27) {
+//					//the newer version changes fixing
+//				}
+				settings.put("version", BuildConfig.VERSION_CODE);
+				save = true;
+			}
+
+			if ((value = settings.get("flipWord")) != null)
 				HierarchyItemModel.defFlip = (Boolean) value;
-			else settings.put("HIMflip", true);
-			if ((value = settings.get("HIMflipAll")) != null)
+			else settings.put("flipWord", save = true);
+			if ((value = settings.get("flipAllOnClick")) != null)
 				HierarchyItemModel.flipAllOnClick = (Boolean) value;
-			else settings.put("HIMflipAll", false);
-			if ((value = settings.get("HIMparse")) != null)
+			else settings.put("flipAllOnClick", !(save = true));
+			if ((value = settings.get("parseNames")) != null)
 				HierarchyItemModel.parse = (Boolean) value;
-			else settings.put("HIMparse", true);
+			else settings.put("parseNames", save = true);
+			if (settings.get("defaultTestTypePicture") == null)
+				settings.put("defaultTestTypePicture", !(save = true));
+
+			if (save) deserializeTo(setts.getAbsolutePath(), settings, true);
 		}
 	}
 
@@ -140,6 +167,13 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 	 */
 	@Override
 	protected void mkDefaultReacts() {
+		Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+			String fullMsg = t.toString() + '\n' + getStackTrace(e);
+			putSetting("uncaughtException", new Object[]{e, fullMsg});
+			makeText(CONTEXT, activity.getString(R.string.exception_warning),
+					Toast.LENGTH_LONG).show();
+			if (BuildConfig.DEBUG) Log.e("Unexpected failure", fullMsg);
+		});
 		defaultReacts.put(Formatter.class + ":newSrcDir", (o) -> {
 			Exception e = (Exception) o[0];
 			String msg = activity.getString(R.string.fail_find) + '\n' + o[1].toString() + '\n' +
@@ -202,10 +236,10 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 				while (Controller.isActive(null)) Thread.sleep(200);
 			} catch (Exception e) {
 			}
-			Snackbar.make(activity.findViewById(R.id.content_main), msg, Snackbar.LENGTH_LONG)
-					.setAction(activity.getString(R.string.action_full_text),
-							v -> new TextPopup(msg, fullMsg)).setTextColor(0xFFEEEEEE).show();
-		}).start();
+			Snackbar.make(currentActivity.getWindow().getDecorView().getRootView(),
+					msg, Snackbar.LENGTH_LONG).setAction(activity.getString(R.string.action_full_text),
+					v -> new TextPopup(msg, fullMsg)).setTextColor(0xFFEEEEEE).show();
+		}, "Showing msg").start();
 	}
 
 	@Override

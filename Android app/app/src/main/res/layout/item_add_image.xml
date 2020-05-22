@@ -26,6 +26,7 @@
         <ImageButton
             android:id="@+id/btn_remove"
             android:layout_width="30dp"
+            android:layout_gravity="center"
             android:layout_height="wrap_content"
             android:background="#0000"
             android:src="@drawable/ic_cancel_round" />

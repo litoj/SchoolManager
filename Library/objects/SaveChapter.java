@@ -1,5 +1,10 @@
 package objects;
 
+import java.io.File;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import IOSystem.Formatter;
 import IOSystem.Formatter.Data;
 import IOSystem.Formatter.Reactioner;
@@ -9,14 +14,6 @@ import objects.templates.BasicData;
 import objects.templates.Container;
 import objects.templates.ContainerFile;
 import objects.templates.SemiElementContainer;
-
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-
-import static IOSystem.WriteElement.obj;
-import static IOSystem.WriteElement.str;
-import java.util.List;
 
 /**
  * Contains other hierarchy objects. Every instance of this class saves into its
@@ -31,9 +28,9 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	 * by the {@link MainChapter hierarchy} they belong to. read-only data
 	 */
 	public static final Map<MainChapter, List<SaveChapter>> ELEMENTS = new HashMap<>();
-	
+
 	private static final Synchronizer USED = new Synchronizer();
-	
+
 	private boolean loaded;
 
 	@Override
@@ -71,8 +68,8 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 				d.identifier.putSetting("schRemoved", false);
 			}
 		} else {
-			int hash = d.tagVals == null || d.tagVals[0] == null
-					? 1 : (int) (long) d.tagVals[0];
+			int hash = d.tagVals == null || d.tagVals.get("hash") == null
+					? 1 : (int) d.tagVals.get("hash");
 			for (SaveChapter sch : ELEMENTS.get(d.identifier)) {
 				if (d.name.equals(sch.toString()) && hash == sch.hash) {
 					sch.loaded = full;
@@ -94,7 +91,7 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 		loaded = full;
 		//hash-creator
 		if (!full) {
-			hash = d.tagVals[0] == null ? 1 : (int) (long) d.tagVals[0];
+			hash = d.tagVals.get("hash") == null ? 1 : (int) d.tagVals.get("hash");
 		} else {
 			Map<String, Number> map =
 					(Map<String, Number>) identifier.getSetting("schNameCount");
@@ -104,7 +101,7 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 		}
 		ELEMENTS.get(d.identifier).add(this);
 	}
-	
+
 	@Override
 	public int[] refreshSF() {
 		load(false);
@@ -168,14 +165,14 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 			try {
 				if (saving) return;
 				saving = true;
-				Formatter.saveFile(
-						writeData(new StringBuilder(), 0, null).toString(), getSaveFile());
+				Formatter.saveFile(writeData(new ContentWriter().startWritingItem(
+						this, parent)).endWritingItem().toString(), getSaveFile());
 				saving = false;
 			} catch (Exception e) {
 				if (rtr != null) rtr.react(e, getSaveFile(), this);
 			}
 		};
-		if (thread) new Thread(r).start();
+		if (thread) new Thread(r, "SCh save").start();
 		else r.run();
 	}
 
@@ -188,13 +185,13 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 				try {
 					if (loading) return;
 					loading = true;
-					IOSystem.ReadElement.loadSch(getSaveFile(), getIdentifier(), null);
+					IOSystem.ReadElement.loadFile(getSaveFile(), identifier, null);
 					loading = false;
 				} catch (Exception e) {
 					if (rtr != null) rtr.react(e, getSaveFile(), this);
 				}
 			};
-			if (thread) new Thread(r).start();
+			if (thread) new Thread(r, "SCh load").start();
 			else r.run();
 		}
 	}
@@ -261,9 +258,10 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 		int current = newCount == null ? 1 : newCount.intValue();
 		try {
 			while (loading) Thread.sleep(20);
-		} catch (InterruptedException ie) {}
+		} catch (InterruptedException ie) {
+		}
 		if (getSaveFile().renameTo(new File(new File(identifier.getDir(), "Chapters"), name
-						+ (current == 1 ? ".json" : "[" + current + "].json")))) {
+				+ (current == 1 ? ".json" : "[" + current + "].json")))) {
 			map.put(this.name = name, hash = current);
 		}
 		return this;
@@ -287,32 +285,24 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	}
 
 	@Override
-	public StringBuilder writeData(StringBuilder sb, int tabs, Container cp) {
-		if (tabs == 0) {
-			sb.append('{');
-			add(sb, this, cp, true, true, true, true,
-					hash == 1 ? null : str("hash"), hash == 1 ? null : obj(hash), true);
-			return writeData0(sb, 1, cp);
-		}
+	public ContentWriter writeData(ContentWriter cw) {
+		cw.addClass().addName().addSF().addDesc();
+		if (hash > 1) cw.addExtra(new Object[]{"hash", hash});
+		if (cw.tabs <= 0) cw.addChildren();
 		if (loaded) save();
-		tabs(sb, tabs++, '{').add(sb, this, cp, true, true, true, true,
-				hash == 1 ? null : str("hash"), hash == 1 ? null : obj(hash), false);
-		return sb.append('}');
+		return cw;
 	}
 
 	/**
 	 * Implementation of
-	 * {@link ReadElement#readData(ReadElement.Source, Container) loading from String}.
+	 * {@link ReadElement#readData(ReadElement.Content, Container) loading from String}.
 	 */
-	public static BasicData readData(ReadElement.Source src, Container parent) {
+	public static BasicData readData(ReadElement.Content src, Container parent) {
 		if (parent == null) {
-			SaveChapter sch = mkElement(ReadElement.get(
-					src, true, true, true, true, null, "hash"), true);
-			for (BasicData bd : ReadElement.loadChildren(src, sch))
-				sch.putChild(null, bd);
+			SaveChapter sch = mkElement(src.getData(null));
+			for (BasicData bd : src.getChildren(sch)) sch.putChild(null, bd);
 			return sch;
 		}
-		return mkElement(
-				ReadElement.get(src, true, true, true, false, parent, "hash"), false);
+		return mkElement(src.getData(parent), false);
 	}
 }

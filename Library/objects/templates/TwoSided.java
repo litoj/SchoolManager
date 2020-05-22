@@ -1,9 +1,10 @@
 package objects.templates;
 
-import IOSystem.Formatter.Data;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
+import IOSystem.Formatter.Data;
 
 /**
  * Default implementation of a hierarchy object and full implementation of a
@@ -83,14 +84,14 @@ public abstract class TwoSided<T extends TwoSided> extends Element implements Co
 	public int[] refreshSF() {
 		return sf.clone();
 	}
-	
+
 	@Override
 	public boolean move(Container op, Container np, Container npp) {
 		if (children.get(op) == null || !super.move(op, np, npp) || !isMain) return false;
 		move(op, np);
 		return true;
 	}
-	
+
 	@Override
 	public boolean move(Container op, Container opp, Container np, Container npp) {
 		if (children.get(op) == null
@@ -98,10 +99,10 @@ public abstract class TwoSided<T extends TwoSided> extends Element implements Co
 		move(op, np);
 		return true;
 	}
-	
+
 	/**
 	 * Takes care of moving this object from one parent to another.
-	 * 
+	 *
 	 * @param op old parent of this object
 	 * @param np new parent to associate with
 	 */
@@ -111,12 +112,12 @@ public abstract class TwoSided<T extends TwoSided> extends Element implements Co
 			List<T> newContent = children.get(np);
 			List<T> toAdd = new LinkedList<>();
 			for (T old : list)
-				cycle :
-				{
-					for (T t : newContent) if (t == old) break cycle;
-					toAdd.add(old);
-					if (isMain) old.move(op, np);
-				}
+				cycle:
+						{
+							for (T t : newContent) if (t == old) break cycle;
+							toAdd.add(old);
+							if (isMain) old.move(op, np);
+						}
 			newContent.addAll(toAdd);
 		} else children.put(np, list);
 	}
@@ -141,17 +142,8 @@ public abstract class TwoSided<T extends TwoSided> extends Element implements Co
 	}
 
 	@Override
-	public StringBuilder writeData(StringBuilder sb, int tabs, Container cp) {
-		tabs(sb, tabs++, '{').add(sb, this, cp, true, true, true, true, null, null, true);
-		boolean first = true;
-		for (BasicData bd : getChildren(cp))
-			if (!bd.isEmpty(this)) {
-				if (first) first = false;
-				else sb.append(',');
-				tabs(sb, tabs, '{').add(sb, bd, cp,
-						false, true, false, true, null, null, false).append('}');
-			}
-		tabs(sb, tabs - 1, ']');
-		return sb.append('}');
+	public ContentWriter writeData(ContentWriter cw) {
+		return isMain ? cw.addClass().addName().addSF().addDesc().addChildren()
+				: cw.addName().addDesc();
 	}
 }

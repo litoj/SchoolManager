@@ -1,17 +1,17 @@
 package objects;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
 import IOSystem.Formatter;
 import IOSystem.Formatter.Data;
 import IOSystem.ReadElement;
 import objects.templates.BasicData;
 import objects.templates.Container;
 import objects.templates.TwoSided;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Contains name and translates for its name. The translates are sorted under
@@ -34,14 +34,14 @@ public class Word extends TwoSided<Word> {
 	 * to. read-only data
 	 */
 	public static final Map<MainChapter, List<Word>> ELEMENTS = new HashMap<>();
-	
+
 	private static final Formatter.Synchronizer USED = new Formatter.Synchronizer();
 
 	/**
 	 * The only allowed way to create Word objects. Automatically controls its
 	 * existence and returns the proper Word.
 	 *
-	 * @param d         all the necessary data to create new {@link Word} object
+	 * @param d          all the necessary data to create new {@link Word} object
 	 * @param translates translates for this object under one {@link Chapter} must contain
 	 *                   their {@link Data#name name} each, the list can lose its content
 	 * @return new {@link #Word(Data, Word) Word object} if the word doesn't exist yet,
@@ -74,9 +74,9 @@ public class Word extends TwoSided<Word> {
 
 	/**
 	 * Creates a word translate, the other part of Word class. Connects with give Word.
-	 * 
-	 * @param d		data necessary for creating a translate, must contain parent
-	 * @param main	the word to connect to
+	 *
+	 * @param d    data necessary for creating a translate, must contain parent
+	 * @param main the word to connect to
 	 * @return the created translate
 	 */
 	public static Word mkTranslate(Data d, Word main) {
@@ -105,7 +105,7 @@ public class Word extends TwoSided<Word> {
 		USED.endAccess(main.identifier);
 		return w;
 	}
-	
+
 	/**
 	 * Creates all children of this object. Checks for potential doubling of
 	 * translates.
@@ -119,10 +119,11 @@ public class Word extends TwoSided<Word> {
 				condition:
 				if (translates.get(i).name.equals(t.name)) {
 					if (t.children.get(parent) != null) {
-						for (BasicData w : t.children.get(parent)) if (w == this) {
-							translates.remove(i);
-							break condition;
-						}
+						for (BasicData w : t.children.get(parent))
+							if (w == this) {
+								translates.remove(i);
+								break condition;
+							}
 					} else {
 						t.parentCount++;
 						t.children.put(parent, new LinkedList<>());
@@ -180,8 +181,7 @@ public class Word extends TwoSided<Word> {
 		if (children.keySet().size() == 1) {
 			ret = this;
 			this.name = name;
-		}
-		else setName0(isMain ? ch.removeChild(this) : null, ch,
+		} else setName0(isMain ? ch.removeChild(this) : null, ch,
 				ret = new Word(this, ch, name));
 		USED.endAccess(identifier);
 		return ret;
@@ -196,15 +196,15 @@ public class Word extends TwoSided<Word> {
 	private void setName0(Container parpar, Container ch, Word w) {
 		parentCount--;
 		if (w.children.get(ch) == null) {
-			if(isMain) ch.putChild(parpar, w);
+			if (isMain) ch.putChild(parpar, w);
 			w.children.put(ch, children.get(ch));
 			w.parentCount++;
 		} else {
 			List<Word> toAdd = new LinkedList<>();
-			for(Word word : children.get(ch)){
+			for (Word word : children.get(ch)) {
 				test:
 				{
-					for(Word child : w.children.get(ch)) if(child == word) break test;
+					for (Word child : w.children.get(ch)) if (child == word) break test;
 					toAdd.add(word);
 				}
 			}
@@ -239,11 +239,9 @@ public class Word extends TwoSided<Word> {
 
 	/**
 	 * Implementation of
-	 * {@link ReadElement#readData(ReadElement.Source, Container) loading from String}.
+	 * {@link ReadElement#readData(ReadElement.Content, Container) loading from String}.
 	 */
-	public static BasicData readData(ReadElement.Source src, Container parent) {
-		Data data = ReadElement.get(src, true, true, true, true, parent);
-		List<Data> children = ReadElement.readChildren(src, true, false, true, parent);
-		return mkElement(data, children);
+	public static BasicData readData(ReadElement.Content src, Container parent) {
+		return mkElement(src.getData(parent), src.getChildrenData(parent));
 	}
 }

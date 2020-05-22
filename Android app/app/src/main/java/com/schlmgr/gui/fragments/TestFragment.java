@@ -61,7 +61,7 @@ public class TestFragment extends Fragment implements ControlListener {
 			iv.setLayoutParams(new LayoutParams((int) (40 * dp), (int) (40 * dp)));
 			return iv;
 		});
-		type.setImageResource((picTest = (Boolean) Formatter.getSetting("testTypePicture"))
+		type.setImageResource((picTest = (Boolean) Formatter.getSetting("defaultTestTypePicture"))
 				? R.drawable.ic_image : R.drawable.ic_word);
 		type.setOnClickListener(v -> {
 			type.setImageResource((picTest = !picTest)

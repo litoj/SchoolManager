@@ -1,13 +1,16 @@
 package IOSystem;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
 import objects.MainChapter;
 import objects.SaveChapter;
 import objects.templates.BasicData;
 import objects.templates.Container;
-
-import java.io.File;
-import java.util.LinkedList;
-import java.util.List;
 
 import static IOSystem.Formatter.Data;
 
@@ -20,56 +23,235 @@ import static IOSystem.Formatter.Data;
 public abstract class ReadElement {
 
 	/**
-	 * Used for any text reading to keep track of the current position of reading.
+	 * This class holds all data for an object to be created from its content.
+	 * Also provides various methods for obtaining the stored data.
 	 */
-	public static class Source {
+	public static class Content {
 
 		/**
-		 * Source to be read, from position {@link #index index}.
+		 * All parameters associated with this object.
 		 */
-		public final String str;
+		private final HashMap<String, Object> params;
+		public MainChapter identifier;
+
 		/**
-		 * Where the given {@link #str source} should be read from.
+		 * Creates a new holder for storing the data of an object that is currently being read.
+		 *
+		 * @param parameters the initial map with parameters for this object (usually empty)
+		 * @param main       the head object of the hierarchy, which this data belongs to
+		 *                   (or {@code null}, if the hierarchy is being loaded)
 		 */
-		public int index;
+		private Content(HashMap<String, Object> parameters, MainChapter main) {
+			params = parameters;
+			identifier = main;
+		}
 
-		public MainChapter i;
+		/**
+		 * Creates the corresponding type of item specified
+		 * by {@link Formatter#CLASS class} parameter.
+		 *
+		 * @param par the parent of the object to be created
+		 * @return the created object
+		 * @throws IllegalStateException if the class parameter is missing
+		 */
+		public BasicData getItem(Container par) {
+			if (params.get(Formatter.CLASS) == null)
+				throw new IllegalStateException("Class parameter missing");
+			try {
+				return (BasicData) Class.forName(params.remove(Formatter.CLASS).toString())
+						.getDeclaredMethod("readData", Content.class, Container.class)
+						.invoke(null, this, par);
+			} catch (IllegalAccessException | java.lang.reflect.InvocationTargetException
+					| NoSuchMethodException | SecurityException | ClassNotFoundException ex) {
+				throw new IllegalArgumentException(ex);
+			}
+		}
 
-		public Source(String s, int index, MainChapter identifier) {
-			this.str = s;
-			this.index = index;
-			i = identifier;
+		/**
+		 * Converts all the stored data (except for its children) to a {@link Data} object used
+		 * for transferring the data about any hierarchy element to be created.
+		 *
+		 * @param parent parent of the object
+		 * @return the converted content without {@link Formatter#CHILDREN children} parameter
+		 */
+		public Data getData(Container parent) {
+			Data d = new Data(params.remove(Formatter.NAME).toString(), identifier != null
+					? identifier : parent == null ? null : parent.getIdentifier()).addPar(parent);
+			int sf[] = {0, 0};
+			Map<String, Object> extra = new HashMap<>();
+			for (String key : ((Map<String, Object>) params.clone()).keySet()) {
+				switch (key) {
+					case Formatter.SUCCESS:
+						sf[0] = (Integer) params.remove(key);
+						break;
+					case Formatter.FAIL:
+						sf[1] = (Integer) params.remove(key);
+						break;
+					case Formatter.DESC:
+						d.addDesc(params.remove(key).toString());
+						break;
+					default:
+						if (key.equals(Formatter.CHILDREN)) continue;
+						extra.put(key, params.get(key));
+				}
+			}
+			return d.addSF(sf).addExtra(extra);
+		}
+
+		/**
+		 * Creates all children stored in this object.
+		 *
+		 * @param childrenPar the item created from this object, and the parent of its children
+		 * @return the children of this object
+		 */
+		public List<BasicData> getChildren(Container childrenPar) {
+			List<BasicData> children = new ArrayList<>();
+			for (Content c : ((List<Content>) params.remove(Formatter.CHILDREN)))
+				children.add(c.getItem(childrenPar));
+			return children;
+		}
+
+		public List<Data> getChildrenData(Container childrenPar) {
+			List<Data> children = new ArrayList<>();
+			for (Content c : ((List<Content>) params.remove(Formatter.CHILDREN)))
+				children.add(c.getData(childrenPar));
+			return children;
+		}
+
+		@Override
+		public String toString() {
+			return params.toString();
 		}
 	}
 
 	/**
-	 * Creates {@link MainChapter} object with information from the given file.
-	 *
-	 * @param toLoad the object to be loaded
-	 * @return created head-object of the hierarchy containing basic information about its
-	 * content
+	 * Used for any text reading to keep track of the current position of reading.
 	 */
-	public static MainChapter loadMch(MainChapter toLoad) {
-		return (MainChapter) loadSch(toLoad.getSaveFile(), toLoad, null);
+	public static final class ContentReader {
+		/**
+		 * Source to be read, from position {@link #index index}.
+		 */
+		private final String str;
+		/**
+		 * Where the given {@link #str source} should be read from.
+		 */
+		private int index = -1;
+
+		/**
+		 * The main object of the loaded object tree.
+		 */
+		public final Content mContent;
+		/**
+		 * The hierarchy which all the data belongs to.
+		 */
+		public MainChapter identifier;
+
+		/**
+		 * Resolves the given String into the object tree.
+		 *
+		 * @param s    the source with all objects data
+		 * @param main the hierarchy this content belongs to or
+		 *             {@code null} if the hierarchy is being created
+		 */
+		public ContentReader(String s, MainChapter main) {
+			this.str = s;
+			identifier = main;
+			mContent = loadContent();
+		}
+
+		/**
+		 * Loads the content of the following object in the {@link #str source}.
+		 *
+		 * @return object with all data belonging to it
+		 */
+		private Content loadContent() {
+			Content created = new Content(new HashMap<>(), identifier);
+			while (str.charAt(++index) != '{') ;
+			while (loadValue(created)) ;
+			return created;
+		}
+
+		/**
+		 * Adds the next read value to the given object.
+		 *
+		 * @param content the object to add the value to
+		 * @return {@code false} if the end of the current object notation has been reached,
+		 * {@code true} if a value was successfully added
+		 */
+		private boolean loadValue(Content content) {
+			StringBuilder builder = new StringBuilder();
+			char ch;
+			while ((ch = str.charAt(++index)) != '"') if (ch == '}') return false;
+			while ((ch = str.charAt(++index)) != '"') builder.append(ch);
+			String key = builder.toString();
+			while ((ch = str.charAt(++index)) != '"' && !Character.isLetterOrDigit(ch)) {
+				if (ch == '{') { //found an object
+					index--;
+					content.params.put(key, loadContent());
+					return true;
+				} else if (ch == '[') { //found an array
+					List<Content> items = new LinkedList<>();
+					while ((ch = str.charAt(++index)) != ']') if (ch == '{') {
+						index--;
+						items.add(loadContent());
+					}
+					content.params.put(key, items);
+					return true;
+				}
+			}
+			boolean string = ch == '"';
+			builder = new StringBuilder();
+			if (string) while ((ch = str.charAt(++index)) != '"') {
+				if (ch == '\\') switch (ch = str.charAt(++index)) {
+					case 'n':
+						ch = '\n';
+						break;
+					case 't':
+						ch = '\t';
+						break;
+				}
+				builder.append(ch);
+			}
+			else {
+				do {
+					builder.append(ch);
+				} while (Character.isLetterOrDigit(ch = str.charAt(++index)) || ch == '.');
+				ch = str.charAt(--index);
+			}
+			try {
+				if (string) content.params.put(key, builder.toString());
+				else if (!Character.isDigit(builder.charAt(0)))
+					content.params.put(key, Boolean.valueOf(builder.toString()));
+				else if (ch == 'L')
+					content.params.put(key, Long.valueOf(builder.toString()));
+				else if (ch == 'f')
+					content.params.put(key, Float.valueOf(builder.toString()));
+				else if (builder.indexOf(".") > -1 || builder.indexOf("E") > -1
+						&& builder.charAt(0) != '0')
+					content.params.put(key, Double.valueOf(builder.toString()));
+				else content.params.put(key, Integer.valueOf(builder.toString()));
+			} catch (IllegalArgumentException iae) {
+				throw new IllegalArgumentException("On field '" + key + "', before char: "
+						+ index + "\n..." + str.substring(index > 100 ? index - 100 : 0, index)
+						+ "<-- this", iae);
+			}
+			return true;
+		}
 	}
 
 	/**
 	 * Loads all data into the respective {@link SaveChapter} using
-	 * {@link #readData(Source, Container)
+	 * {@link #readData(Content, Container)
 	 * method} which all objects have to implement in static form.
 	 *
-	 * @param toLoad File containing the data of the loaded object
-	 * @param parent the parent of the loaded object
+	 * @param toLoad     File containing the data of the loaded object
+	 * @param identifier the head object of the parent hierarchy
+	 * @param parent     the parent of the loaded object
 	 * @return the main object loaded from the given file
 	 */
-	public static Container loadSch(File toLoad, Container parent) {
-		return loadSch(toLoad, parent == null ? null : parent.getIdentifier(), parent);
-	}
-
-	public static Container loadSch(File toLoad, MainChapter identifier, Container parent) {
-		Source src = new Source(Formatter.loadFile(toLoad), 0, identifier);
-		dumpSpace(src, '{');
-		return (Container) read(src, parent);
+	public static Container loadFile(File toLoad, MainChapter identifier, Container parent) {
+		return (Container) new ContentReader(Formatter.loadFile(toLoad), identifier)
+				.mContent.getItem(parent);
 	}
 
 	/**
@@ -81,228 +263,13 @@ public abstract class ReadElement {
 	 * @param cp  parent of the read object
 	 * @return the loaded object
 	 */
-	public static BasicData read(Source src, Container cp) {
-		BasicData bd = null;
-		if (next(src).equals(Formatter.CLASS)) {
-			try {
-				bd = (BasicData) Class.forName(next(src).toString())
-						.getDeclaredMethod("readData", Source.class, Container.class)
-						.invoke(null, src, cp);
-			} catch (IllegalAccessException | java.lang.reflect.InvocationTargetException
-					| NoSuchMethodException | SecurityException | ClassNotFoundException ex) {
-				throw new IllegalArgumentException(ex);
-			}
-		}
-		dumpSpace(src, '}');
-		return bd;
-	}
-
-	/**
-	 * Gets values for the basic tags and the given tags.
-	 *
-	 * @param src    contains the reading data
-	 * @param name   if should read {@link Formatter#NAME name} tag
-	 * @param sf     if should read {@link Formatter#SUCCESS success} and
-	 *               {@link Formatter#FAIL fail} tags
-	 * @param desc   if should read {@link Formatter#DESC description} tag
-	 * @param child  if should read {@link Formatter#CHILDREN children} tag
-	 * @param parent parent of this object
-	 * @param tags   other tags you want to get value for
-	 * @return contains all found values for the given {@code tags}
-	 */
-	public static Data get(Source src, boolean name, boolean sf, boolean desc,
-			boolean child, Container parent, String... tags) {
-		String[] data = new String[2];
-		int[] sucfail = {0, 0};
-		Object[] info = new Object[tags.length];
-		String holder;
-		int bolRes = (name ? 1 : 0) + (sf ? 2 : 0) + (desc ? 1 : 0) + (child ? 1 : 0);
-		for (int i = tags.length + bolRes; i > 0; i--) {
-			try {
-				holder = next(src, ',').toString();
-			} catch (IllegalArgumentException iae) {
-				if (iae.getMessage().contains("'}'")) {
-					src.index--;
-					return new Data(data[0], src.i).addSF(sucfail).addDesc(data[1])
-							.addPar(parent).addExtra(info);
-				} else {
-					throw iae;
-				}
-			}
-			sorter:
-			switch (holder) {
-				case Formatter.NAME:
-					data[0] = next(src).toString();
-					break;
-				case Formatter.SUCCESS:
-					sucfail[0] = (int) (long) next(src);
-					break;
-				case Formatter.FAIL:
-					sucfail[1] = (int) (long) next(src);
-					break;
-				case Formatter.DESC:
-					data[1] = next(src).toString();
-					break;
-				case Formatter.CHILDREN:
-					dumpSpace(src, '[');
-					return new Data(data[0], src.i).addSF(sucfail).addDesc(data[1])
-							.addPar(parent).addExtra(info);
-				default:
-					for (int j = tags.length - 1; j >= 0; j--) {
-						if (holder.equals(tags[j])) {
-							info[j] = next(src);
-							break sorter;
-						}
-					}
-					throw new IllegalArgumentException("Expected:\n" +
-							holdersExpected(name, sf, desc, child, tags) + "\nGot field '"
-							+ holder + "', before char: " + src.index + "\n..."
-							+ src.str.substring(src.index > 100 ? src.index - 100 : 0, src.index)
-							+ "<-- this");
-			}
-		}
-		return new Data(data[0], src.i).addSF(sucfail).addDesc(data[1])
-				.addPar(parent).addExtra(info);
-	}
-
-	private static String holdersExpected(boolean name, boolean sf, boolean desc,
-			boolean child, String... tags) {
-		StringBuilder sb = new StringBuilder();
-		if (name) sb.append('\'').append(Formatter.NAME).append("', ");
-		if (sf)
-			sb.append('\'').append(Formatter.SUCCESS).append("', ")
-					.append(Formatter.FAIL).append("', ");
-		if (desc) sb.append('\'').append(Formatter.DESC).append("', ");
-		if (child) sb.append('\'').append(Formatter.CHILDREN).append("', ");
-		for (int i = tags.length - 1; i >= 0; i--) sb.append(tags[i]).append('\n');
-		return sb.toString();
-	}
-
-	/**
-	 * Gets values for the basic tags and the given tags for all of the calling
-	 * object's children. every position in the {@code List} contains all the
-	 * specified data for each child.
-	 *
-	 * @param src    contains the reading data
-	 * @param name   if should read {@link Formatter#NAME name} tag
-	 * @param sf     if should read {@link Formatter#SUCCESS success} and
-	 *               {@link Formatter#FAIL fail} tags
-	 * @param desc   if should read {@link Formatter#DESC description} tag
-	 * @param parent parent of the read children
-	 * @param tags   other tags you want to get value for
-	 * @return data of all children
-	 * @see #get(Source, boolean, boolean, boolean, boolean, Container, String...)
-	 */
-	public static List<Data> readChildren(Source src, boolean name, boolean sf,
-			boolean desc, Container parent, String... tags) {
-		List<Data> data = new LinkedList<>();
-		try {
-			while (true) {
-				dumpSpace(src, '{', ',');
-				data.add(get(src, name, sf, desc, false, parent));
-				dumpSpace(src, '}');
-			}
-		} catch (IllegalArgumentException iae) {
-			if (!iae.getMessage().contains("']'")) throw iae;
-		}
-		return data;
-	}
-
-	/**
-	 * Loads all the children from the calling object.
-	 *
-	 * @param src contains the reading data
-	 * @param cp  parent of the loaded children
-	 * @return the loaded children
-	 */
-	public static List<BasicData> loadChildren(Source src, Container cp) {
-		List<BasicData> bds = new LinkedList<>();
-		try {
-			while (dumpSpace(src, '{', ',')) bds.add(read(src, cp));
-		} catch (IllegalArgumentException iae) {
-			if (!iae.getMessage().contains("']'")) throw iae;
-		}
-		return bds;
-	}
-
-	/**
-	 * Dumps all chars from the argument {@code s}, until it reaches a char that
-	 * is not defined in the argument {@code ignore} and is not ' ' or ':'.
-	 *
-	 * @param src    contains the reading data
-	 * @param end    the char this method is supposed to find
-	 * @param ignore list of ignored chars
-	 * @return {@code true} if the last char matches the param {code end}
-	 * @throws IllegalArgumentException if the unknown char doesn't match the argument
-	 * {@code end}.
-	 */
-	public static boolean dumpSpace(Source src, char end, char... ignore) {
-		char ch;
-		boolean ctn;
-		do {
-			ch = src.str.charAt(src.index++);
-			if (ctn = (ch == ' ' || ch == '\n' || ch == '\t' || ch == ':')) continue;
-			for (char c : ignore) if (ctn = (c == ch)) break;
-		} while (ctn);
-		if (ch != end) {
-			if (ch == 't' || ch == 'f' || Character.isDigit(ch)) {
-				src.index--;
-				return false;
-			}
-			throw new IllegalArgumentException("Unknown field, char '" + ch + "', char num:"
-					+ src.index + ":\n..." + src.str.substring(src.index > 100
-							? src.index - 100 : 0, src.index) + "<-- here!");
-		}
-		return true;
-	}
-
-	/**
-	 * Reads the next value contained in "", ignoring chars defined by
-	 * {@code ignore} parameter using
-	 * {@link #dumpSpace(IOSystem.ReadElement.Source, char, char...)} method.
-	 *
-	 * @param src    {@link Source}
-	 * @param ignore chars whose will be ignored
-	 * @return the found {@link String}
-	 */
-	public static Object next(Source src, char... ignore) {
-		StringBuilder sb = new StringBuilder();
-		boolean isString = dumpSpace(src, '"', ignore);
-		char ch;
-		if (isString) {
-			while ((ch = src.str.charAt(src.index++)) != '"') {
-				if (ch == '\\')
-					ch = (ch = src.str.charAt(src.index++)) == 'n'
-							? '\n' : (ch == 't' ? '\t' : ch);
-				sb.append(ch);
-			}
-			return sb.toString();
-		} else {
-			byte i = 4;
-			switch (src.str.charAt(src.index)) {
-				case 'f':
-					i++;
-				case 't':
-					while (i-- > 0) sb.append(src.str.charAt(src.index++));
-					return Boolean.valueOf(sb.toString());
-				default:
-					while (Character.isDigit(ch = src.str.charAt(src.index++)) || ch == '.') {
-						sb.append(ch);
-						if (ch == '.') isString = true;
-					}
-					src.index--;
-					if (isString) return Double.parseDouble(sb.toString());
-					return Long.parseLong(sb.toString());
-			}
-		}
-	}
 
 	/**
 	 * Creates an {@link objects.templates.BasicData} from the loaded data.
 	 *
-	 * @param src {@link Source}
+	 * @param src {@link Content}
 	 * @param cp  parent of the object to be created
 	 * @return the loaded object
 	 */
-	public abstract BasicData readData(Source src, Container cp);
+	public abstract BasicData readData(Content src, Container cp);
 }

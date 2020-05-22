@@ -165,4 +165,6 @@
     <string name="help_extra_import_mch">Subjects import</string>
     <string name="fail_no_objects">No objects of this type were found</string>
     <string name="more_sf_revaluate">Recount success rate of this chapter</string>
+    <string name="exception_handler">"An unexpected failure occurred in the last session.\nPlease copy the information about this error and send it to the creator.\nCause: "</string>
+    <string name="exception_warning">An error happened, please restart the app</string>
 </resources>

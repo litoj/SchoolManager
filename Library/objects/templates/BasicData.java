@@ -55,7 +55,7 @@ public interface BasicData extends IOSystem.WriteElement {
 		if (!newParent.hasChild(newParPar, this)) newParent.putChild(newParPar, this);
 		return true;
 	}
-	
+
 	/**
 	 * Moves this object from the specified parent to a different parent.
 	 *
@@ -66,7 +66,7 @@ public interface BasicData extends IOSystem.WriteElement {
 	 * @return if the operation succeeded
 	 */
 	default boolean move(Container oldParent,
-			Container oldParPar, Container newParent, Container newParPar) {
+	                     Container oldParPar, Container newParent, Container newParPar) {
 		if (oldParent.getIdentifier() != newParent.getIdentifier()) return false;
 		oldParent.removeChild(oldParPar, this);
 		if (!newParent.hasChild(newParPar, this)) newParent.putChild(newParPar, this);
@@ -95,7 +95,7 @@ public interface BasicData extends IOSystem.WriteElement {
 
 	/**
 	 * The success and fail values for this object.
-	 * 
+	 *
 	 * @return copy of the success rate
 	 */
 	int[] getSF();

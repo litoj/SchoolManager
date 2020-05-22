@@ -10,13 +10,11 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 
 import com.schlmgr.R;
-import com.schlmgr.gui.list.TranslateRecyclerAdapter.Translate;
-import com.schlmgr.gui.list.TranslateRecyclerAdapter.TranslateHolder;
+import com.schlmgr.gui.list.TranslatePopupRecyclerAdapter.Translate;
+import com.schlmgr.gui.list.TranslatePopupRecyclerAdapter.TranslateHolder;
 import com.schlmgr.gui.popup.CreatorPopup;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.List;
 
 import IOSystem.Formatter.Data;
 import IOSystem.SimpleReader;
@@ -32,7 +30,8 @@ import static com.schlmgr.gui.fragments.MainFragment.es;
 /**
  * Used for creating and editing translates in {@link CreatorPopup}.
  */
-public class TranslateRecyclerAdapter extends AbstractRecyclerAdapter<Translate, TranslateHolder> {
+public class TranslatePopupRecyclerAdapter
+		extends AbstractPopupRecyclerAdapter<Translate, TranslateHolder, Word> {
 	public static class Translate {
 		public final Word twosided;
 		public TextView tvName, tvDesc;
@@ -56,44 +55,44 @@ public class TranslateRecyclerAdapter extends AbstractRecyclerAdapter<Translate,
 		return new Translate((Word) src, src.getDesc(parent));
 	}
 
-	class TranslateHolder extends AbstractRecyclerAdapter.ViewHolder {
+	class TranslateHolder extends AbstractPopupRecyclerAdapter.ViewHolder {
 
 		TextView desc;
-		Translate currentItem;
+		Translate item;
 
 		public TranslateHolder(@NonNull View itemView) {
 			super(itemView);
 			desc = view.findViewById(R.id.item_desc);
 			if (VERSION.SDK_INT < 21) {
-				name.setOnTouchListener(TranslateRecyclerAdapter.this);
-				desc.setOnTouchListener(TranslateRecyclerAdapter.this);
+				name.setOnTouchListener(TranslatePopupRecyclerAdapter.this);
+				desc.setOnTouchListener(TranslatePopupRecyclerAdapter.this);
 			}
 		}
 
 		@Override
 		public void setData(int pos) {
-			if (currentItem != null) {
-				currentItem.name = name.getText().toString();
-				currentItem.desc = desc.getText().toString();
-				currentItem.tvName = null;
-				currentItem.tvDesc = null;
+			if (item != null) {
+				item.name = name.getText().toString();
+				item.desc = desc.getText().toString();
+				item.tvName = null;
+				item.tvDesc = null;
 			}
-			currentItem = list.get(pos);
-			name.setText(currentItem.tvName == null ? currentItem.name : currentItem.tvName.getText());
-			desc.setText(currentItem.tvDesc == null ? currentItem.desc : currentItem.tvDesc.getText());
-			currentItem.tvName = name;
-			currentItem.tvDesc = desc;
+			item = list.get(pos);
+			name.setText(item.tvName == null ? item.name : item.tvName.getText());
+			desc.setText(item.tvDesc == null ? item.desc : item.tvDesc.getText());
+			item.tvName = name;
+			item.tvDesc = desc;
 			remove.setOnClickListener(v -> {
-				if (currentItem.twosided != null) toRemove.add(currentItem.twosided);
-				removeItem(list.indexOf(currentItem));
+				int index = list.indexOf(item);
+				if (index < 0 || index >= list.size()) return;
+				if (item.twosided != null) toRemove.add(item.twosided);
+				removeItem(index);
 			});
 		}
 	}
 
-	public List<Word> toRemove = new ArrayList<>();
-
-	public TranslateRecyclerAdapter(HierarchyItemModel edited, CreatorPopup cp) {
-		super(edited, cp);
+	public TranslatePopupRecyclerAdapter(HierarchyItemModel edited, CreatorPopup cp) {
+		super(edited, cp, 5);
 	}
 
 	@NonNull

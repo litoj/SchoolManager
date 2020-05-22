@@ -1,13 +1,12 @@
 package objects;
 
-import IOSystem.Formatter.Data;
-import IOSystem.ReadElement;
 import java.util.HashMap;
 import java.util.LinkedList;
-
 import java.util.List;
 import java.util.Map;
 
+import IOSystem.Formatter.Data;
+import IOSystem.ReadElement;
 import objects.templates.BasicData;
 import objects.templates.Container;
 
@@ -27,7 +26,7 @@ public class Chapter extends objects.templates.SemiElementContainer {
 
 	/**
 	 * @param d must contain {@link #name name} and {@link #identifier identifier}
-	 *				and mainly the parent of this object
+	 *          and mainly the parent of this object
 	 */
 	public Chapter(Data d) {
 		super(d);
@@ -46,7 +45,7 @@ public class Chapter extends objects.templates.SemiElementContainer {
 	public MainChapter getIdentifier() {
 		return identifier;
 	}
-	
+
 	@Override
 	public boolean destroy(Container parent) {
 		ELEMENTS.get(identifier).remove(this);
@@ -54,19 +53,17 @@ public class Chapter extends objects.templates.SemiElementContainer {
 	}
 
 	@Override
-	public StringBuilder writeData(StringBuilder sb, int tabs, Container cp) {
-		tabs(sb, tabs++, '{').add(sb, this, cp, true, true, true, true, null, null, true);
-		return writeData0(sb, tabs, cp);
+	public ContentWriter writeData(ContentWriter cw) {
+		return cw.addClass().addName().addSF().addDesc().addChildren();
 	}
 
 	/**
 	 * Implementation of
-	 * {@link ReadElement#readData(ReadElement.Source, Container) loading from String}.
+	 * {@link ReadElement#readData(ReadElement.Content, Container) loading from String}.
 	 */
-	public static BasicData readData(ReadElement.Source src, Container parent) {
-		Chapter ch = new Chapter(ReadElement.get(src, true, true, true, true, parent));
-		for (BasicData bd : ReadElement.loadChildren(src, ch))
-			ch.putChild(parent, bd);
+	public static BasicData readData(ReadElement.Content src, Container parent) {
+		Chapter ch = new Chapter(src.getData(parent));
+		for (BasicData bd : src.getChildren(ch)) ch.putChild(parent, bd);
 		return ch;
 	}
 }

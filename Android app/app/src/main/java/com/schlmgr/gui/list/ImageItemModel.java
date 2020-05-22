@@ -16,8 +16,8 @@ public class ImageItemModel {
 	public final Picture pic1;
 	private Bitmap bm2;
 	public final Picture pic2;
-	private volatile ImageView iv1;
-	private volatile ImageView iv2;
+	public volatile ImageView iv1;
+	public volatile ImageView iv2;
 
 	private static LinkedList<ImageItemModel> queue = new LinkedList<>();
 
@@ -38,7 +38,7 @@ public class ImageItemModel {
 			queue.remove(ImageItemModel.this);
 			if (!queue.isEmpty()) queue.getFirst().createBMs.run();
 		};
-		if (queue.isEmpty()) new Thread(createBMs).start();
+		if (queue.isEmpty()) new Thread(createBMs, "Bitmap creator").start();
 		queue.add(this);
 	}
 

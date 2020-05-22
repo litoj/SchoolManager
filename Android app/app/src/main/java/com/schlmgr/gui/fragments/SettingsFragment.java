@@ -66,8 +66,9 @@ public class SettingsFragment extends Fragment implements ControlListener {
 		clever.setOnClickListener(v -> Test.setClever(clever.isChecked()));
 
 		CompoundButton testPic = root.findViewById(R.id.setts_test_type);
-		testPic.setChecked((Boolean) Formatter.getSetting("testTypePicture"));
-		testPic.setOnClickListener(v -> Formatter.putSetting("testTypePicture", testPic.isChecked()));
+		testPic.setChecked((Boolean) Formatter.getSetting("defaultTestTypePicture"));
+		testPic.setOnClickListener(v ->
+				Formatter.putSetting("defaultTestTypePicture", testPic.isChecked()));
 		return root;
 	}
 

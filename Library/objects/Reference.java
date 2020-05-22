@@ -1,20 +1,18 @@
 package objects;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import IOSystem.Formatter;
 import IOSystem.Formatter.Data;
+import IOSystem.ReadElement;
 import objects.templates.BasicData;
 import objects.templates.Container;
 import objects.templates.TwoSided;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
 import static IOSystem.Formatter.defaultReacts;
-import IOSystem.ReadElement;
-import static IOSystem.WriteElement.obj;
-import static IOSystem.WriteElement.str;
-import java.util.HashMap;
 
 /**
  * References to another {@link BasicData} instance other than {@link MainChapter}
@@ -29,9 +27,9 @@ public final class Reference implements BasicData {
 	 * the {@link MainChapter hierarchy} they belong to. read-only data
 	 */
 	public static final Map<MainChapter, List<Reference>> ELEMENTS = new HashMap<>();
-	
+
 	private static final Formatter.Synchronizer USED = new Formatter.Synchronizer();
-	
+
 	/**
 	 * Full path to the {@link #reference referenced object}.
 	 */
@@ -66,12 +64,12 @@ public final class Reference implements BasicData {
 	 * @return new instance of this class
 	 */
 	public static Reference mkElement(BasicData ref,
-			List<Container> path, Container[] refPath) {
+	                                  List<Container> path, Container[] refPath) {
 		return mkElement(ref, path, (Object[]) refPath);
 	}
 
 	private static Reference mkElement(Object ref,
-			List<Container> path, Object[] refPath) {
+	                                   List<Container> path, Object[] refPath) {
 		if (ref instanceof MainChapter)
 			throw new IllegalArgumentException("Hierarchy can't be referenced!");
 		if (ref instanceof Container && !(ref instanceof TwoSided))
@@ -139,14 +137,14 @@ public final class Reference implements BasicData {
 	}
 
 	private static BasicData find(String name,
-			Container par, Container parpar, boolean end) {
+	                              Container par, Container parpar, boolean end) {
 		for (BasicData bd : par.getChildren(parpar))
 			if (name.equals(bd.getName()))
 				if (end) return bd;
 				else if (bd instanceof Container && !(bd instanceof TwoSided)) return bd;
 		new Thread(() ->
 				defaultReacts.get(Reference.class + ":not_found")
-						.react(name, par, parpar)).start();
+						.react(name, par, parpar), "Ref finder").start();
 		return null;
 	}
 
@@ -223,10 +221,8 @@ public final class Reference implements BasicData {
 	}
 
 	@Override
-	public StringBuilder writeData(StringBuilder sb, int tabs, Container cp) {
-		tabs(sb, tabs, '{').add(sb, this, cp, true, true, false, false,
-				str("origin"), obj(mkPath()), false);
-		return sb.append('}');
+	public ContentWriter writeData(ContentWriter cw) {
+		return cw.addClass().addName().addExtra(new Object[]{"origin", mkPath()});
 	}
 
 	private String mkPath() {
@@ -237,11 +233,12 @@ public final class Reference implements BasicData {
 
 	/**
 	 * Implementation of
-	 * {@link ReadElement#readData(ReadElement.Source, Container) loading from String}.
+	 * {@link ReadElement#readData(ReadElement.Content, Container) loading from String}.
 	 */
-	public static BasicData readData(ReadElement.Source src, Container parent) {
-		Data data = ReadElement.get(src, true, false, false, false, parent, "origin");
-		return mkElement(data.name, Arrays.asList(new Container[]{src.i, parent}),
-				((String) data.tagVals[0]).split("×"));
+	public static BasicData readData(ReadElement.Content src, Container parent) {
+		Data data = src.getData(parent);
+		return mkElement(data.name, Arrays.asList(
+				new Container[]{parent.getIdentifier(), parent}),
+				((String) data.tagVals.get("origin")).split("×"));
 	}
 }

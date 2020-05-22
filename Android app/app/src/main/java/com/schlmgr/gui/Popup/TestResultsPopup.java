@@ -3,36 +3,34 @@ package com.schlmgr.gui.popup;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.schlmgr.R;
 import com.schlmgr.gui.list.HierarchyItemModel;
-import com.schlmgr.gui.list.ImageItemModel;
+import com.schlmgr.gui.list.TestItemModel;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import objects.Picture;
-import objects.templates.BasicData;
 import objects.templates.TwoSided;
 
 import static com.schlmgr.gui.Controller.activity;
 
 public class TestResultsPopup extends AbstractPopup {
-	private final List<TestedItem> list;
+	private final List<TestItemModel> list;
 	private final boolean picTest;
 	private final float success;
 
-	public TestResultsPopup(List<TestedItem> items, float success) {
+	public TestResultsPopup(ArrayList<TestItemModel> items, float success) {
 		super(R.layout.popup_test_results, true);
-		list = items;
-		picTest = items.get(0).ts instanceof Picture;
+		list = (List<TestItemModel>) items.clone();
+		picTest = items.get(0).sp.t instanceof Picture;
 		this.success = success;
 		create();
 	}
@@ -42,71 +40,96 @@ public class TestResultsPopup extends AbstractPopup {
 		view.findViewById(R.id.ok).setOnClickListener(v -> dismiss());
 		((TextView) view.findViewById(R.id.popup_test_success))
 				.setText(activity.getString(R.string.success_rate) + ": " + success + "%");
-		LayoutInflater li = LayoutInflater.from(view.getContext());
-		((ListView) view.findViewById(R.id.popup_test_list)).setAdapter(
-				new ArrayAdapter<TestedItem>(view.getContext(), picTest ? R.layout.item_results_pic :
-						R.layout.item_results_word, R.id.test_name, list) {
-
-					@Override
-					public View getView(int pos, @Nullable View v, @NonNull ViewGroup par) {
-						TestedItem item = list.get(pos);
-						if (item.v == null) {
-							item.v = v = li.inflate(picTest ? R.layout.item_results_pic :
-									R.layout.item_results_word, par, false);
-							if (picTest) {
-								BasicData[] pics = item.visibleChildren;
-								for (int i = 1; i < pics.length; i += 2) {
-									ImageItemModel iim = new ImageItemModel(
-											(Picture) pics[i - 1], (Picture) pics[i]);
-									View vImg = li.inflate(R.layout.item_test_image, (LinearLayout) v, false);
-									((LinearLayout) v).addView(vImg, 0);
-									ImageView iv = vImg.findViewById(R.id.img_1);
-									iv.setOnClickListener(view -> new FullPicture(iim.pic1));
-									iim.setBm(true, iv);
-									iv.setContentDescription(iim.pic1.toString());
-									iim.setBm(false, iv = vImg.findViewById(R.id.img_2));
-									iv.setContentDescription(iim.pic2.toString());
-									iv.setOnClickListener(view -> new FullPicture(iim.pic2));
-								}
-								if (pics.length % 2 == 1) {
-									ImageItemModel iim = new ImageItemModel(
-											(Picture) pics[pics.length - 1], null);
-									View vImg = li.inflate(R.layout.item_test_image, (LinearLayout) v, false);
-									((LinearLayout) v).addView(vImg, 0);
-									ImageView iv = vImg.findViewById(R.id.img_1);
-									iv.setOnClickListener(view -> new FullPicture(iim.pic1));
-									iim.setBm(true, iv);
-									iv.setContentDescription(iim.pic1.toString());
-									vImg.findViewById(R.id.img_2).setVisibility(View.GONE);
-								}
-							} else {
-								StringBuilder trls = new StringBuilder();
-								for (BasicData trl : item.visibleChildren)
-									trls.append('\n').append(HierarchyItemModel.nameParser(trl.getName()));
-								((TextView) v.findViewById(R.id.test_hint)).setText(trls.substring(1));
-							}
-							((TextView) v.findViewById(R.id.test_name)).setText(item.ts.toString());
-							TextView written = v.findViewById(R.id.test_name_written);
-							if (!item.text.isEmpty()) written.setText(item.text);
-							if (!item.c) written.setTextColor(0x88FF0000);
-						}
-						return item.v;
-					}
-				});
+		RecyclerView rv = view.findViewById(R.id.popup_test_list);
+		rv.setAdapter(new Adapter());
+		rv.setLayoutManager(new LinearLayoutManager(rv.getContext()));
 	}
 
-	public static class TestedItem {
-		private View v;
-		private final boolean c;
-		private final TwoSided ts;
-		private final String text;
-		private final BasicData[] visibleChildren;
+	private abstract class ResultHolder extends RecyclerView.ViewHolder {
 
-		public TestedItem(boolean correct, TwoSided item, BasicData[] visibleChildren, String written) {
-			c = correct;
-			ts = item;
-			this.visibleChildren = visibleChildren;
-			text = written;
+		final View view;
+		final TextView name;
+		final TextView written;
+
+		protected ResultHolder(@NonNull View itemView) {
+			super(itemView);
+			view = itemView;
+			name = view.findViewById(R.id.test_name);
+			written = view.findViewById(R.id.test_name_written);
+		}
+
+		protected void setData(TestItemModel item) {
+			name.setText(item.sp.t.getName());
+			if (!item.answer.isEmpty()) {
+				written.setText(item.answer);
+				written.setTextColor(item.correct ? 0x8800FF00 : 0x88FF0000);
+			} else written.setText(null);
+		}
+	}
+
+	private class ImageHolder extends ResultHolder {
+		final ImageView img1;
+		final ImageView img2;
+
+		private ImageHolder(@NonNull View itemView) {
+			super(itemView);
+			img1 = view.findViewById(R.id.img_1);
+			img2 = view.findViewById(R.id.img_2);
+		}
+
+		@Override
+		protected void setData(TestItemModel item) {
+			super.setData(item);
+			item.iim.iv1 = img1;
+			item.iim.setBm(true, img1);
+			img1.setContentDescription(item.iim.pic1.toString());
+			img1.setOnClickListener(view -> new FullPicture(item.iim.pic1));
+			if (item.iim.pic2 != null) {
+				item.iim.iv2 = img2;
+				item.iim.setBm(false, img2);
+				img2.setContentDescription(item.iim.pic2.toString());
+				img2.setOnClickListener(view -> new FullPicture(item.iim.pic2));
+			} else img2.setVisibility(View.GONE);
+		}
+	}
+
+	private class TranslateHolder extends ResultHolder {
+		final TextView hint;
+
+		private TranslateHolder(@NonNull View itemView) {
+			super(itemView);
+			hint = view.findViewById(R.id.test_hint);
+		}
+
+		@Override
+		protected void setData(TestItemModel item) {
+			super.setData(item);
+			StringBuilder trls = new StringBuilder();
+			for (TwoSided trl : item.children)
+				trls.append('\n').append(HierarchyItemModel.nameParser(trl.getName()));
+			hint.setText(trls.substring(1));
+		}
+	}
+
+	private class Adapter extends RecyclerView.Adapter<ResultHolder> {
+
+		@NonNull
+		@Override
+		public ResultHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+			return picTest ? new ImageHolder(LayoutInflater.from(parent.getContext())
+					.inflate(R.layout.item_results_pic, parent, false))
+					: new TranslateHolder(LayoutInflater.from(parent.getContext())
+					.inflate(R.layout.item_results_word, parent, false));
+		}
+
+		@Override
+		public void onBindViewHolder(@NonNull ResultHolder holder, int position) {
+			holder.setData(list.get(position));
+		}
+
+		@Override
+		public int getItemCount() {
+			return list.size();
 		}
 	}
 }

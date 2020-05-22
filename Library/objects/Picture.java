@@ -1,13 +1,5 @@
 package objects;
 
-import IOSystem.Formatter;
-import IOSystem.Formatter.Data;
-import IOSystem.ReadElement;
-import objects.templates.BasicData;
-import objects.templates.Container;
-import objects.templates.ContainerFile;
-import objects.templates.TwoSided;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -17,6 +9,14 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
+import IOSystem.Formatter;
+import IOSystem.Formatter.Data;
+import IOSystem.ReadElement;
+import objects.templates.BasicData;
+import objects.templates.Container;
+import objects.templates.ContainerFile;
+import objects.templates.TwoSided;
 
 import static testing.NameReader.readName;
 
@@ -41,7 +41,7 @@ public class Picture extends TwoSided<Picture> {
 	 * read-only data
 	 */
 	public static final Map<MainChapter, List<Picture>> ELEMENTS = new HashMap<>();
-	
+
 	private static final Formatter.Synchronizer USED = new Formatter.Synchronizer();
 
 	/**
@@ -50,7 +50,7 @@ public class Picture extends TwoSided<Picture> {
 	 *
 	 * @param bd     all the necessary data to create new {@link Picture} object
 	 * @param images each must contain its image file path as its {@link Data#name name},
-	 *			        the list can lose its content
+	 *               the list can lose its content
 	 * @return new
 	 * {@linkplain #Picture(IOSystem.Formatter.Data, java.util.List, boolean) Picture object}
 	 * if the name doesn't exist yet, otherwise returns the picture object
@@ -106,14 +106,14 @@ public class Picture extends TwoSided<Picture> {
 		USED.endAccess(d.identifier);
 		return ret;
 	}
-	
+
 	/**
 	 * Creates an image part of Picture class. Connects to the given Picture.
-	 * 
-	 * @param d		data necessary for creating the image, {@link Data#name name} is the
-	 *					source-file name, must contain parent object
-	 * @param main	the picture object this image will be connected to
-	 * @return		the created image part of Picture class
+	 *
+	 * @param d    data necessary for creating the image, {@link Data#name name} is the
+	 *             source-file name, must contain parent object
+	 * @param main the picture object this image will be connected to
+	 * @return the created image part of Picture class
 	 */
 	public static Picture mkImage(Data d, Picture main) {
 		int serialINum = -1;
@@ -121,10 +121,10 @@ public class Picture extends TwoSided<Picture> {
 		String front = readName(main)[0] + ' ';
 		File source = new File(d.name);
 		d.sf = main.sf.clone();
-		while (new File(par, front + ++serialINum + ".jpg").exists());
+		while (new File(par, front + ++serialINum + ".jpg").exists()) ;
 		d.name = front + serialINum;
-		Picture img = new Picture(main, source,d, true);
-		main.putChild(d.par,img);
+		Picture img = new Picture(main, source, d, true);
+		main.putChild(d.par, img);
 		return img;
 	}
 
@@ -157,13 +157,14 @@ public class Picture extends TwoSided<Picture> {
 	 */
 	private Picture(Picture pic, File save, Data bd, boolean isNew) {
 		super(bd, false, IMAGES);
-		if (bd.tagVals != null && bd.tagVals.length == 1) imageRender = bd.tagVals[0];
+		if (bd.tagVals != null && bd.tagVals.get("imageRender") != null)
+			imageRender = bd.tagVals.get("imageRender");
 		children.put(bd.par, new ArrayList<>(Arrays.asList(new Picture[]{pic})));
 		parentCount = 1;
 		if (isNew) {
 			File dest = new File(new File(identifier.getDir(), "Pictures"), name + ".jpg");
 			if (!dest.exists()) try (FileOutputStream bos = new FileOutputStream(dest);
-					FileInputStream bis = new FileInputStream(save)) {
+			                         FileInputStream bis = new FileInputStream(save)) {
 				byte[] buffer = new byte[8192];
 				int amount;
 				while ((amount = bis.read(buffer)) != -1) bos.write(buffer, 0, amount);
@@ -205,7 +206,7 @@ public class Picture extends TwoSided<Picture> {
 				if (serialINum < srnum) {
 					File pic = new File(dir, img.getName() + ".jpg");
 					while (serialINum < srnum
-							&& !pic.renameTo(new File(dir, front + ++serialINum + ".jpg")));
+							&& !pic.renameTo(new File(dir, front + ++serialINum + ".jpg"))) ;
 					((Picture) img).name = p.name + ' ' + serialINum;
 				}
 			}
@@ -227,19 +228,20 @@ public class Picture extends TwoSided<Picture> {
 
 	/**
 	 * Gets the file containing the picture which this object represents.
+	 *
 	 * @return the picture file this object refers to, {@code null} if this {@link #isMain}
 	 */
-	public File getFile(){
+	public File getFile() {
 		return isMain ? null : new File(
 				new File(identifier.getDir(), "Pictures"), getName() + ".jpg");
 	}
-	
+
 	/**
 	 * This variable is for storing object which is used to display the image itself.
 	 * Therefore after the first value is given, no need to read its file again.
 	 */
 	public Object imageRender;
-	
+
 	@Override
 	public BasicData setName(Container ch, String name) {
 		ContainerFile.isCorrect(name);
@@ -268,8 +270,8 @@ public class Picture extends TwoSided<Picture> {
 			for (Picture img : children.get(ch)) {
 				File pic = new File(path, img.getName() + ".jpg");
 				while (!pic.renameTo(new File(path, name + ' ' + ++serialINum + ".jpg")))
-					if (serialINum > 256) serialINum = -1;				
-				if (serialINum > -1)	img.name = name + ' ' + serialINum;
+					if (serialINum > 256) serialINum = -1;
+				if (serialINum > -1) img.name = name + ' ' + serialINum;
 			}
 		} else {
 			parentCount--;
@@ -299,8 +301,8 @@ public class Picture extends TwoSided<Picture> {
 		for (Picture img : children.remove(ch)) {
 			File pic = new File(path, img.getName() + ".jpg");
 			while (!pic.renameTo(new File(path, p.name + ' ' + ++serialINum + ".jpg")))
-				if (serialINum > 256) serialINum = -1;				
-			if (serialINum > -1)	img.name = p.name + ' ' + serialINum;
+				if (serialINum > 256) serialINum = -1;
+			if (serialINum > -1) img.name = p.name + ' ' + serialINum;
 			img.children.get(ch).remove(this);
 			img.children.get(ch).add(p);
 		}
@@ -355,11 +357,9 @@ public class Picture extends TwoSided<Picture> {
 
 	/**
 	 * Implementation of
-	 * {@link ReadElement#readData(ReadElement.Source, Container) loading from String}.
+	 * {@link ReadElement#readData(ReadElement.Content, Container) loading from String}.
 	 */
-	public static BasicData readData(ReadElement.Source src, Container parent) {
-		Data data = ReadElement.get(src, true, true, true, true, parent);
-		List<Data> children = ReadElement.readChildren(src, true, false, true, parent);
-		return mkElement(data, children, false);
+	public static BasicData readData(ReadElement.Content src, Container parent) {
+		return mkElement(src.getData(parent), src.getChildrenData(parent), false);
 	}
 }

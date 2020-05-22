@@ -20,11 +20,11 @@ public interface Container extends BasicData {
 	/**
 	 * Counts success and fail values of its children and sets the result as its own.
 	 * Reference objects values are not used (they always return {0, 0}).
-	 * 
+	 *
 	 * @return copy of the success and fail values for this object
 	 */
 	int[] refreshSF();
-	
+
 	default boolean hasChild(BasicData e) {
 		for (BasicData bd : getChildren()) if (e.equals(bd)) return true;
 		return false;
@@ -46,28 +46,5 @@ public interface Container extends BasicData {
 	default boolean isEmpty(Container c) {
 		for (BasicData bd : getChildren(c)) if (!bd.isEmpty(this)) return false;
 		return true;
-	}
-
-	/**
-	 * Writes children of this object.
-	 *
-	 * @param sb   the source, where to add the text;
-	 * @param tabs amount of tabs on the start of every line
-	 * @param cp   parent of this object
-	 * @return the same object as param {@code sb}
-	 */
-	default StringBuilder writeData0(StringBuilder sb, int tabs, Container cp) {
-		//tabs(sb, tabs++, "{ ").add(sb, this, cp, true, true, true, true, true);
-		//that must be altered with what is needed to be written, than call this method
-		boolean first = true;
-		for (BasicData bd : getChildren(cp))
-			if (!bd.isEmpty(this)) {
-				if (first)
-					first = false;
-				else sb.append(',');
-				bd.writeData(sb, tabs, this);
-			}
-		tabs(sb, tabs - 1, ']');
-		return sb.append('}');
 	}
 }

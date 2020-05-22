@@ -2,6 +2,7 @@ package com.schlmgr.gui.list;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.os.Build.VERSION;
 import android.provider.MediaStore.Images.Media;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,14 +14,15 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 
 import com.schlmgr.R;
-import com.schlmgr.gui.list.ImageRecyclerAdapter.Image;
-import com.schlmgr.gui.list.ImageRecyclerAdapter.ImageHolder;
+import com.schlmgr.gui.list.ImagePopupRecyclerAdapter.Image;
+import com.schlmgr.gui.list.ImagePopupRecyclerAdapter.ImageHolder;
 import com.schlmgr.gui.popup.CreatorPopup;
+import com.schlmgr.gui.popup.FullPicture;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
+import java.util.Map;
 
 import IOSystem.Formatter.Data;
 import objects.MainChapter;
@@ -39,7 +41,8 @@ import static com.schlmgr.gui.list.ImageItemModel.getScaledBitmap;
 /**
  * Used for creating and editing images in {@link CreatorPopup}.
  */
-public class ImageRecyclerAdapter extends AbstractRecyclerAdapter<Image, ImageHolder> {
+public class ImagePopupRecyclerAdapter
+		extends AbstractPopupRecyclerAdapter<Image, ImageHolder, Picture> {
 
 	public static class Image {
 
@@ -64,31 +67,34 @@ public class ImageRecyclerAdapter extends AbstractRecyclerAdapter<Image, ImageHo
 		return new Image((Picture) src);
 	}
 
-	class ImageHolder extends AbstractRecyclerAdapter.ViewHolder {
+	class ImageHolder extends AbstractPopupRecyclerAdapter.ViewHolder {
 
 		ImageView image;
+		Image item;
 
 		public ImageHolder(@NonNull View itemView) {
 			super(itemView);
 			image = view.findViewById(R.id.item_img);
+			view.setOnClickListener(v -> new FullPicture(item.f));
+			if (VERSION.SDK_INT < 21) view.setOnTouchListener(ImagePopupRecyclerAdapter.this);
 		}
 
 		@Override
 		public void setData(int pos) {
-			Image item = list.get(pos);
+			item = list.get(pos);
 			name.setText(item.f.getName());
 			image.setImageBitmap(item.bm);
 			remove.setOnClickListener(v -> {
+				int index = list.indexOf(item);
+				if (index < 0 || index >= list.size()) return;
 				if (item.twosided != null) toRemove.add(item.twosided);
-				removeItem(list.indexOf(item));
+				removeItem(index);
 			});
 		}
 	}
 
-	public List<Picture> toRemove = new ArrayList<>();
-
-	public ImageRecyclerAdapter(HierarchyItemModel edited, CreatorPopup cp) {
-		super(edited, cp);
+	public ImagePopupRecyclerAdapter(HierarchyItemModel edited, CreatorPopup cp) {
+		super(edited, cp, 2);
 		defaultReacts.put("NotifyNewImage", (o) -> {
 			File file = ((File) o[0]);
 			if (!file.exists()) return;
@@ -118,10 +124,12 @@ public class ImageRecyclerAdapter extends AbstractRecyclerAdapter<Image, ImageHo
 			LinkedList<Data> images = new LinkedList<>();
 			for (Image i : list)
 				if (i.twosided == null) {
+					Map<String, Object> map = new HashMap<>();
+					map.put("imageRender", i.bm);
 					if (edited != null)
-						Picture.mkImage(new Data(i.f.getPath(), mch).addPar(parent).addExtra(i.bm),
+						Picture.mkImage(new Data(i.f.getPath(), mch).addPar(parent).addExtra(map),
 								(Picture) edited.bd);
-					else images.add(new Data(i.f.getAbsolutePath(), mch).addPar(parent).addExtra(i.bm));
+					else images.add(new Data(i.f.getAbsolutePath(), mch).addPar(parent).addExtra(map));
 				}
 			if (edited == null) {
 				Picture p = Picture.mkElement(new Data(name, mch).addDesc(desc).addPar(parent), images);

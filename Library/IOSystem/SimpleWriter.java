@@ -1,21 +1,21 @@
 package IOSystem;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+
 import objects.Word;
 import objects.templates.BasicData;
 import objects.templates.Container;
 import objects.templates.ContainerFile;
 import objects.templates.TwoSided;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
-
 /**
  * This class is used for exporting only {@link Word word objects} with their chapters,
  * they are stored in. The output syntax is the same as the one used by
  * {@link SimpleReader}.
- * 
+ *
  * @author Josef Litoš
  */
 public class SimpleWriter {

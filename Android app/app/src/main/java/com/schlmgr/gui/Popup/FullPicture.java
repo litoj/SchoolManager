@@ -8,6 +8,8 @@ import android.widget.ImageView;
 import com.schlmgr.R;
 import com.schlmgr.gui.list.ImageItemModel;
 
+import java.io.File;
+
 import objects.Picture;
 
 public class FullPicture extends AbstractPopup {
@@ -17,9 +19,13 @@ public class FullPicture extends AbstractPopup {
 	private final boolean wide;
 
 	public FullPicture(Picture picture) {
+		this(picture.getFile());
+	}
+
+	public FullPicture(File img) {
 		super(R.layout.popup_pic, false);
 		Runtime.getRuntime().gc();
-		pic = ImageItemModel.getScaledBitmap(picture.getFile().getAbsolutePath(), size, true);
+		pic = ImageItemModel.getScaledBitmap(img.getAbsolutePath(), size, true);
 		wide = pic.getWidth() > pic.getHeight();
 		create();
 	}

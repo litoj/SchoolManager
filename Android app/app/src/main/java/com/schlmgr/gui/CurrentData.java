@@ -2,6 +2,7 @@ package com.schlmgr.gui;
 
 import com.google.android.material.snackbar.Snackbar;
 import com.schlmgr.R;
+import com.schlmgr.gui.popup.TextPopup;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -16,6 +17,9 @@ import objects.MainChapter;
 import objects.templates.BasicData;
 import objects.templates.Container;
 import objects.templates.ContainerFile;
+
+import static com.schlmgr.gui.AndroidIOSystem.getFirstCause;
+import static com.schlmgr.gui.Controller.activity;
 
 public class CurrentData {
 
@@ -105,6 +109,17 @@ public class CurrentData {
 	private static final LinkedList<MainChapter> toLoad = new LinkedList<>();
 
 	public static void finishLoad() {
+		Object uE = Formatter.getSetting("uncaughtException");
+		if (uE != null) {
+			new TextPopup(activity.getString(R.string.exception_handler)
+					+ getFirstCause((Throwable) ((Object[]) uE)[0]), (String) ((Object[]) uE)[1]) {
+				@Override
+				public void dismiss(boolean forever) {
+					super.dismiss(forever);
+					if (forever) Formatter.removeSetting("uncaughtException");
+				}
+			};
+		}
 		synchronized (toLoad) {
 			boolean thread = false;
 			for (MainChapter mch : toLoad) {
@@ -212,6 +227,6 @@ public class CurrentData {
 					}
 					return;
 				}
-		}).start();
+		}, "CurrentData saver").start();
 	}
 }

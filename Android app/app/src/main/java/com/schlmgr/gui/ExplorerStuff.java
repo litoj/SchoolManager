@@ -241,7 +241,7 @@ public class ExplorerStuff {
 				new Thread(() -> {
 					search(path.get(-1).getChildren(path.get(-2)), path, false);
 					threads--;
-				}).start();
+				}, "Search engine").start();
 			}
 
 			/**
@@ -286,7 +286,7 @@ public class ExplorerStuff {
 								new Thread(() -> {
 									search(c.getChildren(path2.get(-1)), list, true);
 									threads--;
-								}).start();
+								}, "Searcher").start();
 							} else {
 								search(((Container) bd).getChildren(path2.get(-1)), list, threaded);
 							}

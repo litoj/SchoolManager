@@ -1,16 +1,16 @@
 package objects;
 
+import java.io.File;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
 import IOSystem.Formatter;
 import IOSystem.Formatter.Reactioner;
 import IOSystem.ReadElement;
 import objects.templates.BasicData;
 import objects.templates.Container;
 import objects.templates.ContainerFile;
-
-import java.io.File;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 
 import static IOSystem.Formatter.deserializeTo;
 import static IOSystem.Formatter.getPath;
@@ -87,7 +87,7 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 		}
 		ELEMENTS.add(this);
 	}
-	
+
 	@Override
 	public int[] refreshSF() {
 		if (children.isEmpty()) load(false);
@@ -103,7 +103,7 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 
 	/**
 	 * Deletes the whole subject, this action can't be reversed.
-	 * 
+	 *
 	 * @param parent no parent
 	 * @return if the main directory was successfully deleted
 	 */
@@ -124,7 +124,7 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 	public BasicData setName(Container none, String name) {
 		ContainerFile.isCorrect(name);
 		File newDir = new File(getPath(), name);
-		if(Reference.ELEMENTS.get(this)!= null)
+		if (Reference.ELEMENTS.get(this) != null)
 			for (Reference ref : Reference.ELEMENTS.get(this)) ref.pathStr[0] = name;
 		for (byte i = 0; i < 5; i++)
 			if (dir.renameTo(newDir)) {
@@ -159,7 +159,7 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 	public boolean move(Container op, Container np, Container npp) {
 		throw new UnsupportedOperationException("MainChapter can't be moved - no parent.");
 	}
-	
+
 	@Override
 	public boolean move(Container op, Container opp, Container np, Container npp) {
 		throw new UnsupportedOperationException("MainChapter can't be moved - no parent.");
@@ -217,21 +217,21 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 	}
 
 	private volatile boolean saving;
-	
+
 	@Override
 	public void save(Reactioner rtr, boolean thread) {
 		Runnable r = () -> {
 			try {
 				if (saving) return;
 				saving = true;
-				Formatter.saveFile(
-						writeData(new StringBuilder(), 0, null).toString(), getSaveFile());
+				Formatter.saveFile(writeData(new ContentWriter().startWritingItem(this, null))
+						.endWritingItem().toString(), getSaveFile());
 				saving = false;
 			} catch (Exception e) {
 				if (rtr != null) rtr.react(e, getSaveFile(), this);
 			}
 		};
-		if (thread) new Thread(r).start();
+		if (thread) new Thread(r, "MCh save").start();
 		else r.run();
 	}
 
@@ -245,7 +245,7 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 	@Override
 	public void load(Reactioner rtr, boolean thread) {
 		if (loaded) return;
-		if (thread) new Thread(() -> load0(rtr, true)).start();
+		if (thread) new Thread(() -> load0(rtr, true), "MCh load").start();
 		else load0(rtr, false);
 	}
 
@@ -266,7 +266,7 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 				loading = true;
 			}
 			try {
-				ReadElement.loadMch(this);
+				ReadElement.loadFile(getSaveFile(), this, this);
 				if (children.isEmpty()) loaded = true;
 				synchronized (this) {
 					loading = false;
@@ -300,28 +300,27 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 	}
 
 	@Override
-	public StringBuilder writeData(StringBuilder sb, int tabs, Container cp) {
+	public ContentWriter writeData(ContentWriter cw) {
 		deserializeTo(new File(dir, "setts.dat"), settings);
-		sb.append('{');
-		add(sb, this, null, true, true, true, true, null, null, true);
-		return writeData0(sb, 1, cp);
+		return cw.addClass().addName().addSF().addDesc().addChildren();
 	}
 
 	/**
 	 * Implementation of
-	 * {@link ReadElement#readData(ReadElement.Source, Container) loading from String}.
+	 * {@link ReadElement#readData(ReadElement.Content, Container) loading from String}.
 	 */
-	public static BasicData readData(ReadElement.Source src, Container parent) {
-		Formatter.Data d = ReadElement.get(src, true, true, true, true, null);
-		MainChapter mch = src.i;
+	public static BasicData readData(ReadElement.Content src, Container parent) {
+		Formatter.Data d = src.getData(parent);
+		MainChapter mch = (MainChapter) parent;
 		if (mch == null) {
 			for (MainChapter m : ELEMENTS) if (m.name.equals(d.name)) return m;
-			src.i = mch = new MainChapter(d);
+			mch = new MainChapter(d);
 		} else {
 			mch.description = d.description;
 			mch.sf = d.sf;
 		}
-		for (BasicData bd : ReadElement.loadChildren(src, mch)) mch.children.add(bd);
+		src.identifier = mch;
+		for (BasicData bd : src.getChildren(mch)) mch.children.add(bd);
 		return mch;
 	}
 }

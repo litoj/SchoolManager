@@ -1,8 +1,8 @@
 package objects.templates;
 
-import IOSystem.Formatter.Reactioner;
-
 import java.io.File;
+
+import IOSystem.Formatter.Reactioner;
 
 import static IOSystem.Formatter.defaultReacts;
 
@@ -50,7 +50,7 @@ public interface ContainerFile extends Container {
 	/**
 	 * Saves this object into its {@link #getSaveFile() own file}.
 	 *
-	 * @param rtr what to do, if the operation doesn't succeed, {@code null} for no action
+	 * @param rtr    what to do, if the operation doesn't succeed, {@code null} for no action
 	 * @param thread if the action should be run in a separated thread
 	 */
 	void save(Reactioner rtr, boolean thread);
@@ -76,7 +76,7 @@ public interface ContainerFile extends Container {
 	/**
 	 * Loads this object from its {@link #getSaveFile() own file}.
 	 *
-	 * @param rtr what to do, if the operation doesn't succeed, {@code null} for no action
+	 * @param rtr    what to do, if the operation doesn't succeed, {@code null} for no action
 	 * @param thread if the action should be run in a separated thread
 	 */
 	void load(Reactioner rtr, boolean thread);

@@ -1,9 +1,8 @@
 package testing;
 
-import IOSystem.ReadElement;
-
 import java.util.LinkedList;
 
+import objects.MainChapter;
 import objects.templates.BasicData;
 
 /**
@@ -12,6 +11,29 @@ import objects.templates.BasicData;
  * @author Josef Litoš
  */
 public class NameReader {
+
+	/**
+	 * Used for any text reading to keep track of the current position of reading.
+	 */
+	public static class Source {
+
+		/**
+		 * Source to be read, from position {@link #index index}.
+		 */
+		public final String str;
+		/**
+		 * Where the given {@link #str source} should be read from.
+		 */
+		public int index;
+
+		public MainChapter i;
+
+		public Source(String s, int index, MainChapter identifier) {
+			this.str = s;
+			this.index = index;
+			i = identifier;
+		}
+	}
 
 	/**
 	 * Reads the {@link BasicData#getName() name} and gives back all name possibilities.
@@ -32,10 +54,10 @@ public class NameReader {
 	 * @return all variants of the {@link BasicData#getName() name}
 	 */
 	public static String[] readName(Object o) {
-		return getParts(new ReadElement.Source(o.toString(), 0, null), true);
+		return getParts(new Source(o.toString(), 0, null), true);
 	}
 
-	private static String[] getParts(ReadElement.Source src, boolean first) {
+	private static String[] getParts(Source src, boolean first) {
 		if (first && !src.str.contains("/")) return new String[]{src.str};
 		boolean slash = false, bracket = false, itpcn = false;
 		int start = src.index, index = start;

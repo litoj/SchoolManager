@@ -165,4 +165,6 @@
     <string name="help_extra_import_mch">Import předmětů</string>
     <string name="fail_no_objects">Žádné objekty tohoto typu nebyly nalezeny</string>
     <string name="more_sf_revaluate">Přepočítat úspěšnost této kapitoly</string>
+    <string name="exception_handler">"Při posledním chodu nastala neočekávaná chyba.\nProsím zkopírujte informace o chybě a zašlete je tvůrci.\nDůvod: "</string>
+    <string name="exception_warning">Nastala chyba, prosím restartujte aplikaci</string>
 </resources>

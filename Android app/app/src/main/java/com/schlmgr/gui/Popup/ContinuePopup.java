@@ -13,7 +13,7 @@ public class ContinuePopup extends AbstractPopup {
 	public ContinuePopup(String msg, Runnable onClick) {
 		super(R.layout.popup_continue, true);
 		this.msg = msg;
-		onContinue = new Thread(onClick);
+		onContinue = new Thread(onClick, "onContinuePopup: \"" + msg + '"');
 		create();
 	}
 

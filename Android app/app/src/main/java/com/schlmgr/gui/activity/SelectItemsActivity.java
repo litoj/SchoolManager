@@ -109,7 +109,7 @@ public class SelectItemsActivity extends PopupCareActivity
 					}
 				}
 				runOnUiThread(() -> TestFragment.adapter.notifyDataSetChanged());
-			})).start();
+			}, "TFrag test item control")).start();
 			super.onBackPressed();
 		});
 		boolean none;

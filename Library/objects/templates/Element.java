@@ -1,9 +1,9 @@
 package objects.templates;
 
-import objects.MainChapter;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import objects.MainChapter;
 
 /**
  * Default implementation of the basics for the hierarchy objects. Cares about its parent.
