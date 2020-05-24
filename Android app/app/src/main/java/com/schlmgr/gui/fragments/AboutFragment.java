@@ -138,7 +138,8 @@ public class AboutFragment extends Fragment implements ControlListener {
 		new Thread(() -> {
 			RecyclerView rvRelease = (RecyclerView) versions_release.toToggle;
 			String[][] releases = {
-					{"2.7", "- changed version view\n- separated into nested lists"},
+					{"2.7", "- changed version view\n- separated into nested lists\n" +
+							"- improved clever test item selecting algorithm"},
 					{"2.6", "- complete hierarchy saving and loading mechanism remake\n" +
 							"- improved hierarchy I/O navigation and simplified use\n" +
 							"- new I/O improves compatibility and ignores potential json format" +

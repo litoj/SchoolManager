@@ -353,20 +353,20 @@ public class Formatter {
 		public void waitForAccess(MainChapter lock) {
 			Integer hashCode = hashes.get(lock);
 			if (hashCode == null) hashes.put(lock, hashCode = lock.hashCode());
-			if (USED.contains(hashCode)) try {
-				synchronized (hashCode) {
+			synchronized (hashCode) {
+				if (USED.contains(hashCode)) try {
 					while (USED.contains(hashCode)) hashCode.wait();
+				} catch (InterruptedException ie) {
+					throw new IllegalThreadStateException("Interrupting is not allowed!");
 				}
-			} catch (InterruptedException ie) {
-				throw new IllegalThreadStateException("Interrupting is not allowed!");
+				USED.add(hashCode);
 			}
-			USED.add(hashCode);
 		}
 
 		public void endAccess(MainChapter unlock) {
 			Integer hashCode = hashes.get(unlock);
-			USED.remove(hashCode);
 			synchronized (hashCode) {
+				USED.remove(hashCode);
 				hashCode.notify();
 			}
 		}

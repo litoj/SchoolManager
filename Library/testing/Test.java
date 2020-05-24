@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Random;
 
 import IOSystem.Formatter;
-import objects.MainChapter;
 import objects.Reference;
 import objects.templates.BasicData;
 import objects.templates.Container;
@@ -188,7 +187,6 @@ public class Test<T extends TwoSided> {
 	}
 
 	private List<SrcPath> source;
-	private MainChapter mch;
 	private boolean[] answered;
 	private int time;
 	private Timer doOnSec;
@@ -210,21 +208,20 @@ public class Test<T extends TwoSided> {
 			throw new IllegalArgumentException("Duration of a test must be >= 1 s!");
 		else if (source.size() < 2)
 			throw new IllegalArgumentException("The source' size must be > 1!");
-		mch = source.get(0).t.getIdentifier();
 		this.source = isClever() ? cleverTest(source, amount) : rndTest(source, amount);
 		time = timeSec;
 		this.doOnSec = doOnSec;
 		answered = new boolean[this.source.size()];
 	}
 
-	public class SrcPath {
+	public static class SrcPath {
 
 		public final List<Container> srcPath;
-		public final T t;
+		public final TwoSided t;
 
 		public SrcPath(List<Container> srcPath) {
 			this.srcPath = srcPath;
-			t = (T) srcPath.get(srcPath.size() - 1);
+			t = (TwoSided) srcPath.get(srcPath.size() - 1);
 		}
 
 		int sfc() {
@@ -254,34 +251,25 @@ public class Test<T extends TwoSided> {
 	}
 
 	private List<SrcPath> cleverTest(List<SrcPath> source, int amount) {
-		int i = -1;
-		LinkedList<Object[]> tested = new LinkedList<>();
-		List<Object> part = new LinkedList<>();
-		Object[] toSort = source.toArray();
+		int i = -100;
+		LinkedList<List<SrcPath>> tested = new LinkedList<>();
+		List<SrcPath> part = new LinkedList<>();
+		SrcPath[] toSort = source.toArray(new SrcPath[0]);
 		Arrays.sort(toSort, (a, b)
-				-> Integer.compare(((SrcPath) a).sfc(), ((SrcPath) b).sfc()));
-		for (Object path : toSort) {
-			if (((SrcPath) path).sfc() == i) part.add(path);
+				-> Integer.compare(a.sfc(), b.sfc() - (a.rat() - b.rat()) / 10));
+		for (SrcPath path : toSort) {
+			if (path.rat() - 10 < i) part.add(path);
 			else {
-				tested.add(part.toArray());
-				i = ((SrcPath) path).sfc();
+				i = path.rat();
 				part = new LinkedList<>();
 				part.add(path);
+				tested.add(part);
 			}
 		}
-		tested.add(part.toArray());
-		tested.remove(0);
 		source = new ArrayList<>();
-		for (Object[] x : tested) {
-			if (source.size() + x.length < amount) {
-				for (Object o : Arrays.asList(x)) source.add((SrcPath) o);
-			} else {
-				Arrays.sort(x, (a, b)
-						-> Integer.compare(((SrcPath) a).rat(), ((SrcPath) b).rat()));
-				for (Object o : Arrays.asList(Arrays.copyOf(x, amount - source.size())))
-					source.add((SrcPath) o);
-				break;
-			}
+		for (List<SrcPath> pack : tested) {
+			for (SrcPath o : pack) source.add(o);
+			if (source.size() + pack.size() >= amount) break;
 		}
 		return rndTest(source, amount);
 	}
@@ -359,8 +347,8 @@ public class Test<T extends TwoSided> {
 	 * @param index index of the tested object which translates you want to get
 	 * @return children of the asked object
 	 */
-	public T[] getTested(int index) {
-		return index >= source.size() ? null : (T[]) source.get(index).t.getChildren();
+	public TwoSided[] getTested(int index) {
+		return index >= source.size() ? null : source.get(index).t.getChildren();
 	}
 
 	public List<SrcPath> getTestSrc() {
