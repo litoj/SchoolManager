@@ -124,6 +124,8 @@ public class Controller {
 		return type.getName();
 	}
 
+//	private static int temp = 0;
+
 	/**
 	 * Code to create a File from the given URI created by an Intent, has to be a file, not a folder.
 	 * Original source code available at:
@@ -132,6 +134,17 @@ public class Controller {
 	 * @author Allan Jiang
 	 */
 	public static File getFileFromUri(Uri uri) {
+//		File ret = new File(CONTEXT.getCacheDir(),
+//				uri.getPath().substring(uri.getPath().lastIndexOf('/'))+temp++);
+//		try(OutputStream os = new FileOutputStream(ret);
+//		    InputStream is = activity.getContentResolver().openInputStream(uri)) {
+//				byte[] buffer = new byte[1024];
+//				int amount;
+//				while ((amount = is.read(buffer)) != -1) os.write(buffer, 0, amount);
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//		return ret;
 		Looper.prepare();
 		Cursor c = new CursorLoader(activity.getApplicationContext(), uri,
 				new String[]{Media.DATA}, null, null, null).loadInBackground();

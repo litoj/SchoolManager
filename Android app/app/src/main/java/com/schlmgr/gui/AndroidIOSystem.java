@@ -3,6 +3,7 @@ package com.schlmgr.gui;
 import android.Manifest.permission;
 import android.app.Activity;
 import android.content.Context;
+import android.net.Uri;
 import android.os.Build.VERSION;
 import android.util.Log;
 import android.view.View;
@@ -138,9 +139,11 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 					settings.put("parseNames", settings.remove("HIMparse"));
 					lastVersion = 22;
 				} else lastVersion = (Integer) value;
-//				if (lastVersion < 27) {
-//					//the newer version changes fixing
-//				}
+				if (lastVersion < 30) {
+					defaultReacts.put("removeSchNames", moreInfo -> {
+						for (MainChapter mch : MainChapter.ELEMENTS) mch.removeSetting("schNameCount");
+					});
+				}
 				settings.put("version", BuildConfig.VERSION_CODE);
 				save = true;
 			}
@@ -156,7 +159,6 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 			else settings.put("parseNames", save = true);
 			if (settings.get("defaultTestTypePicture") == null)
 				settings.put("defaultTestTypePicture", !(save = true));
-
 			if (save) deserializeTo(setts.getAbsolutePath(), settings, true);
 		}
 	}
@@ -168,10 +170,14 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 	@Override
 	protected void mkDefaultReacts() {
 		Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
-			String fullMsg = t.toString() + '\n' + getStackTrace(e);
-			putSetting("uncaughtException", new Object[]{e, fullMsg});
-			makeText(CONTEXT, activity.getString(R.string.exception_warning),
-					Toast.LENGTH_LONG).show();
+			defaultReacts.get("uncaught").react(t, e);
+			System.exit(0);
+		});
+		defaultReacts.put("uncaught", (o) -> {
+			String fullMsg = o[0].toString() + '\n' + getStackTrace((Throwable) o[1]);
+			putSetting("uncaughtException", new Object[]{o[1], fullMsg});
+			activity.runOnUiThread(() -> makeText(CONTEXT,
+					activity.getString(R.string.exception_warning), Toast.LENGTH_LONG).show());
 			if (BuildConfig.DEBUG) Log.e("Unexpected failure", fullMsg);
 		});
 		defaultReacts.put(Formatter.class + ":newSrcDir", (o) -> {
@@ -283,5 +289,9 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 			while ((amount = isr.read(buffer)) != -1) sb.append(buffer, 0, amount);
 		}
 		return sb.toString();
+	}
+
+	public String fileContent(Uri source) throws Exception {
+		return fileContent(activity.getContentResolver().openInputStream(source));
 	}
 }

@@ -165,7 +165,7 @@ public class Picture extends TwoSided<Picture> {
 			File dest = new File(new File(identifier.getDir(), "Pictures"), name + ".jpg");
 			if (!dest.exists()) try (FileOutputStream bos = new FileOutputStream(dest);
 			                         FileInputStream bis = new FileInputStream(save)) {
-				byte[] buffer = new byte[8192];
+				byte[] buffer = new byte[32768];
 				int amount;
 				while ((amount = bis.read(buffer)) != -1) bos.write(buffer, 0, amount);
 			} catch (java.io.IOException ex) {

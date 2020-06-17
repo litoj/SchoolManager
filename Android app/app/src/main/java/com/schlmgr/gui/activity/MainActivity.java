@@ -22,7 +22,6 @@ import com.schlmgr.gui.fragments.MainFragment;
 import com.schlmgr.gui.list.DirAdapter;
 import com.schlmgr.gui.popup.AbstractPopup;
 import com.schlmgr.gui.popup.FullPicture;
-import com.schlmgr.gui.popup.TextPopup;
 
 import java.io.File;
 
@@ -31,9 +30,7 @@ import objects.templates.ContainerFile;
 
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static com.schlmgr.gui.AndroidIOSystem.defDir;
-import static com.schlmgr.gui.AndroidIOSystem.getFirstCause;
-import static com.schlmgr.gui.AndroidIOSystem.showMsg;
-import static com.schlmgr.gui.Controller.activity;
+import static com.schlmgr.gui.Controller.CONTEXT;
 import static com.schlmgr.gui.fragments.MainFragment.STORAGE_PERMISSION;
 
 public class MainActivity extends PopupCareActivity {
@@ -51,13 +48,13 @@ public class MainActivity extends PopupCareActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		Controller.currentActivity = Controller.activity = this;
-		Controller.CONTEXT = getApplicationContext();
+		CONTEXT = getApplicationContext();
 		Controller.defaultBack = super::onBackPressed;
 		setContentView(R.layout.nav_menu);
 		setSupportActionBar(findViewById(R.id.bar));
 		(c.moreButton = findViewById(R.id.bar_more)).setOnClickListener(v -> {
 			if (c.menuRes == 0) return;
-			PopupMenu pm = new PopupMenu(Controller.CONTEXT, v);
+			PopupMenu pm = new PopupMenu(CONTEXT, v);
 			pm.inflate(c.menuRes);
 			pm.setOnMenuItemClickListener(c.currentControl);
 			pm.show();
@@ -133,6 +130,7 @@ public class MainActivity extends PopupCareActivity {
 		runOnUiThread(() -> AbstractPopup.clean());
 		for (ContainerFile cf : CurrentData.changed) cf.save(false);
 		CurrentData.changed.clear();
+		for (File f : CONTEXT.getCacheDir().listFiles()) if (!f.delete()) f.deleteOnExit();
 		super.onDestroy();
 	}
 

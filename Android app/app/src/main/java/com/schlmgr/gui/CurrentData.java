@@ -109,17 +109,23 @@ public class CurrentData {
 	private static final LinkedList<MainChapter> toLoad = new LinkedList<>();
 
 	public static void finishLoad() {
-		Object uE = Formatter.getSetting("uncaughtException");
-		if (uE != null) {
-			new TextPopup(activity.getString(R.string.exception_handler)
-					+ getFirstCause((Throwable) ((Object[]) uE)[0]), (String) ((Object[]) uE)[1]) {
-				@Override
-				public void dismiss(boolean forever) {
-					super.dismiss(forever);
-					if (forever) Formatter.removeSetting("uncaughtException");
-				}
-			};
-		}
+		new Thread(() -> {
+			try {
+				Thread.sleep(500);
+			} catch (Exception e) {
+			}
+			Object uE = Formatter.getSetting("uncaughtException");
+			if (uE != null) {
+				new TextPopup(activity.getString(R.string.exception_handler)
+						+ getFirstCause((Throwable) ((Object[]) uE)[0]), (String) ((Object[]) uE)[1]) {
+					@Override
+					public void dismiss(boolean forever) {
+						super.dismiss(forever);
+						if (forever) Formatter.removeSetting("uncaughtException");
+					}
+				};
+			}
+		}, "uncaughtShower").start();
 		synchronized (toLoad) {
 			boolean thread = false;
 			for (MainChapter mch : toLoad) {

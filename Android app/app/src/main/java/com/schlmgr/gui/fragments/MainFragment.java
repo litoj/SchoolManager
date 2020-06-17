@@ -43,7 +43,8 @@ import com.schlmgr.gui.popup.ContinuePopup;
 import com.schlmgr.gui.popup.CreatorPopup;
 import com.schlmgr.gui.popup.CreatorPopup.Includer;
 
-import java.io.File;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -51,6 +52,7 @@ import java.util.List;
 
 import IOSystem.Formatter;
 import IOSystem.Formatter.Data;
+import IOSystem.ReadElement.ContentReader;
 import IOSystem.SimpleReader;
 import IOSystem.SimpleWriter;
 import objects.Chapter;
@@ -62,9 +64,11 @@ import objects.Word;
 import objects.templates.BasicData;
 import objects.templates.Container;
 import objects.templates.ContainerFile;
+import objects.templates.SemiElementContainer;
 import objects.templates.TwoSided;
 
 import static IOSystem.Formatter.defaultReacts;
+import static IOSystem.Formatter.getIOSystem;
 import static com.schlmgr.gui.Controller.activity;
 import static com.schlmgr.gui.Controller.dp;
 import static com.schlmgr.gui.CurrentData.backLog;
@@ -156,6 +160,7 @@ public class MainFragment extends Fragment
 									him.parent.removeChild((Container) (him instanceof SearchItemModel ?
 											((SearchItemModel) him).path.get(-2)
 											: backLog.path.get(-2)), him.bd);
+									him.bd.destroy(him.parent);
 								}
 								VS.contentAdapter.list.remove(i);
 							}
@@ -192,12 +197,17 @@ public class MainFragment extends Fragment
 				for (HierarchyItemModel him : VS.contentAdapter.list) {
 					if (him.isSelected()) {
 						if (him.bd instanceof Container && !(him.bd instanceof TwoSided)) {
-							activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.edit), (x, cp) -> {
+							boolean isMch = him.bd instanceof MainChapter;
+							boolean isSch = him.bd instanceof SaveChapter;
+							activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.edit), (li, cp) -> {
 								if (cp.et_name.getText().toString().isEmpty()) {
 									cp.et_name.setText(him.bd.getName());
 									cp.et_desc.setText(him.bd.getDesc(him.parent));
 								}
-								cp.ok.setOnClickListener(v -> {
+								View v = isMch ? null : li.inflate(R.layout.new_chapter, null);
+								((CheckBox) v.findViewById(R.id.chapter_file))
+										.setChecked(isSch);
+								cp.ok.setOnClickListener(x -> {
 									String name = cp.et_name.getText().toString();
 									if (name.isEmpty()) return;
 									try {
@@ -205,9 +215,15 @@ public class MainFragment extends Fragment
 											if (him.bd instanceof ContainerFile) ContainerFile.isCorrect(name);
 											him.bd.setName(him.parent, name);
 										}
-										him.bd.putDesc(him.parent, cp.et_desc.getText().toString());
-										if (him.bd instanceof MainChapter) ((MainChapter) him.bd).save();
-										else CurrentData.save(backLog.path);
+										him.bd.putDesc(him.parent,
+												cp.et_desc.getText().toString().replace("\\t", "\t"));
+										if (!isMch) {
+											boolean sch = ((CheckBox) cp.view.findViewById(R.id.chapter_file))
+													.isChecked();
+											if (sch != isSch)
+												him.bd = ((SemiElementContainer) him.bd).convert();
+											CurrentData.save(backLog.path);
+										} else ((MainChapter) him.bd).save();
 										VS.contentAdapter.selected = -1;
 										setSelectOpts(false);
 										him.toShow = him.bd.toString();
@@ -219,7 +235,7 @@ public class MainFragment extends Fragment
 												.react(iae.getMessage().contains("longer"));
 									}
 								});
-								return null;
+								return v;
 							}));
 						} else if (him.bd instanceof TwoSided) {
 							boolean pic = him.bd instanceof Picture;
@@ -229,8 +245,9 @@ public class MainFragment extends Fragment
 								@Override
 								public View onInclude(LayoutInflater li, CreatorPopup cp) {
 									LinearLayout ll = (LinearLayout) li.inflate(R.layout.new_twosided, null);
-									if (content == null) content = pic ? new ImagePopupRecyclerAdapter(him, cp)
-											: new TranslatePopupRecyclerAdapter(him, cp);
+									if (content == null)
+										content = pic ? new ImagePopupRecyclerAdapter(him, cp)
+												: new TranslatePopupRecyclerAdapter(him, cp);
 									Runnable onClick = content.onClick(ll);
 									cp.ok.setOnClickListener(v -> {
 										onClick.run();
@@ -566,6 +583,8 @@ public class MainFragment extends Fragment
 			} catch (Exception e) {
 			}
 			finishLoad();
+			if (defaultReacts.get("removeSchNames") != null)
+				defaultReacts.get("removeSchNames").react();
 		}, "MCh finishLoad").start();
 		Controller.setMenuRes(VS.menuRes = R.menu.more_main);
 		es.searchControl.update(true);
@@ -596,7 +615,8 @@ public class MainFragment extends Fragment
 			}
 			tglEnabled(paste, true);
 		}
-		Controller.setMenuRes(VS.menuRes = R.menu.more_container);
+		Controller.setMenuRes(VS.menuRes = bd instanceof MainChapter
+				? R.menu.more_mch : R.menu.more_container);
 		if (!VS.pasteMode) Controller.toggleSelectBtn(true);
 		es.searchControl.update(false);
 		es.lv.setAdapter(VS.mAdapter = VS.contentAdapter = new HierarchyAdapter(getContext(),
@@ -636,7 +656,8 @@ public class MainFragment extends Fragment
 								return;
 							}
 							VS.mAdapter.add(new HierarchyItemModel(new MainChapter(new Data(name, null)
-									.addDesc(cp.et_desc.getText().toString())), null, es.lv.getCount() + 1));
+									.addDesc(cp.et_desc.getText().toString().replace("\\t", "\t"))),
+									null, es.lv.getCount() + 1));
 							VS.mAdapter.notifyDataSetChanged();
 							cp.dismiss();
 						});
@@ -651,7 +672,8 @@ public class MainFragment extends Fragment
 							Container par = (Container) backLog.path.get(-1);
 							try {
 								Data d = new Data(name, (MainChapter) backLog.path.get(0))
-										.addDesc(cp.et_desc.getText().toString()).addPar(par);
+										.addDesc(cp.et_desc.getText().toString().replace("\\t", "\t"))
+										.addPar(par);
 								Container ch = ((CheckBox) cp.view.findViewById(R.id.chapter_file))
 										.isChecked() ? SaveChapter.mkElement(d) : new Chapter(d);
 								VS.mAdapter.add(new HierarchyItemModel(ch, par, es.lv.getCount() + 1));
@@ -714,19 +736,26 @@ public class MainFragment extends Fragment
 				case R.id.sort_default:
 					sort(4, true);
 					break;
-				case R.id.more_import_word:
+				case R.id.more_import_sch:
 					Intent i = new Intent(Intent.ACTION_GET_CONTENT);
 					i.setType("*/*");
 					i.addCategory(Intent.CATEGORY_OPENABLE);
 					startActivityForResult(Intent.createChooser(i,
-							activity.getString(R.string.action_chooser_file)), FILE_READ);
+							activity.getString(R.string.action_chooser_file)), SCH_READ);
+					break;
+				case R.id.more_import_word:
+					i = new Intent(Intent.ACTION_GET_CONTENT);
+					i.setType("*/*");
+					i.addCategory(Intent.CATEGORY_OPENABLE);
+					startActivityForResult(Intent.createChooser(i,
+							activity.getString(R.string.action_chooser_file)), WORD_READ);
 					break;
 				case R.id.more_export_word:
 					i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
 					i.setType("*/*");
 					i.addCategory(Intent.CATEGORY_OPENABLE);
 					startActivityForResult(Intent.createChooser(i,
-							activity.getString(R.string.action_chooser_file)), FILE_WRITE);
+							activity.getString(R.string.action_chooser_file)), WORD_WRITE);
 					break;
 				case R.id.more_import_mch:
 					SelectDirActivity.importing = true;
@@ -743,6 +772,15 @@ public class MainFragment extends Fragment
 							es.setInfo(opened, currentPath.get(currentPath.size() - 2));
 						});
 						CurrentData.save(currentPath);
+					}
+					break;
+				case R.id.more_clean:
+					MainChapter mch = (MainChapter) backLog.path.get(0);
+					try {
+						Picture.clean(mch);
+						SaveChapter.clean(mch);
+						mch.save();
+					} catch (IllegalArgumentException iae) {
 					}
 			}
 		}, "MFrag onMenuItemClick").start();
@@ -770,36 +808,52 @@ public class MainFragment extends Fragment
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (resultCode == Activity.RESULT_OK) {
 			new Thread(() -> {
-				File f;
 				switch (requestCode) {
-					case FILE_READ:
-						f = Controller.getFileFromUri(data.getData());
+					case WORD_READ:
 						try {
 							List<BasicData> currentPath = (List<BasicData>) backLog.path.clone();
 							defaultReacts.get(SimpleReader.class + ":success").react(
-									SimpleReader.simpleLoad(Formatter.loadFile(f),
+									SimpleReader.simpleLoad(((AndroidIOSystem) getIOSystem())
+													.fileContent(data.getData()),
 											(Container) backLog.path.get(-1),
 											(Container) backLog.path.get(-2), 0, -1, -1));
 							CurrentData.save(currentPath);
 						} catch (Exception e) {
 							if (e instanceof IllegalArgumentException) return;
 							defaultReacts.get(ContainerFile.class + ":load").react(e,
-									f.getPath(), backLog.path.get(-1));
+									Controller.getFileFromUri(data.getData()), backLog.path.get(-1));
 						}
 						break;
-					case FILE_WRITE:
-						f = Controller.getFileFromUri(data.getData());
-						try {
-							SimpleWriter.saveWords(f, (Container) backLog.path.get(-2),
-									(Container) backLog.path.get(-1));
+					case WORD_WRITE:
+						try (OutputStreamWriter osw = new OutputStreamWriter(
+								activity.getContentResolver().openOutputStream(data.getData()),
+								StandardCharsets.UTF_8)) {
+							osw.append(SimpleWriter.writeChapter(new StringBuilder(),
+									(Container) backLog.path.get(-2), (Container) backLog.path.get(-1)));
+							Formatter.defaultReacts.get(SimpleWriter.class + ":success")
+									.react(backLog.path.get(-1).getName());
 						} catch (Exception e) {
-							defaultReacts.get(ContainerFile.class + ":save").react(e,
-									f.getPath(), backLog.path.get(-1));
+							Formatter.defaultReacts.get(ContainerFile.class + ":save").react(e,
+									Controller.getFileFromUri(data.getData()),
+									backLog.path.get(-1));
 						}
 						break;
 					case IMAGE_PICK:
 						defaultReacts.get("NotifyNewImage")
 								.react(Controller.getFileFromUri(data.getData()));
+						break;
+					case SCH_READ:
+						try {
+							List<BasicData> currentPath = (List<BasicData>) backLog.path.clone();
+							((Container) backLog.path.get(-1)).putChild((Container) backLog.path.get(-2),
+									new ContentReader(((AndroidIOSystem) getIOSystem())
+											.fileContent(data.getData()), (MainChapter) backLog.path.get(0))
+											.mContent.getItem((Container) backLog.path.get(-1)));
+							CurrentData.save(currentPath);
+						} catch (Exception e) {
+							defaultReacts.get("uncaught").react(Thread.currentThread(), e);
+						}
+						break;
 				}
 				super.onActivityResult(requestCode, resultCode, data);
 			}, "MFrag onActivityResult").start();
@@ -809,13 +863,16 @@ public class MainFragment extends Fragment
 	@Override
 	public void onResume() {
 		Controller.setCurrentControl(this, VS.menuRes, !VS.pasteMode, true);
+		if (!backLog.path.isEmpty())
+			Controller.activity.getSupportActionBar().setTitle(backLog.path.get(-1).toString());
 		super.onResume();
 	}
 
-	public static final int FILE_WRITE = 1;
-	public static final int FILE_READ = 2;
+	public static final int WORD_WRITE = 1;
+	public static final int WORD_READ = 2;
 	public static final int STORAGE_PERMISSION = 3;
 	public static final int IMAGE_PICK = 4;
+	public static final int SCH_READ = 5;
 
 	public static class ViewState extends ExplorerStuff.ViewState {
 		private int menuRes;

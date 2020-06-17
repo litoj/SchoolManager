@@ -132,12 +132,14 @@ public class AboutFragment extends Fragment implements ControlListener {
 		help_extra_words_import.setTgl(root);
 		help_extra_words_export.setTgl(root);
 		help_extra_import_mch.setTgl(root);
-		//TODO: Make a RecyclerViewAdapter for the versions information, this is a mess
 		versions_release.setTgl(root);
 		versions_beta.setTgl(root);
 		new Thread(() -> {
 			RecyclerView rvRelease = (RecyclerView) versions_release.toToggle;
 			String[][] releases = {
+					{"3.0", "- added SaveChapter import\n- added subject cleanup\n" +
+							"- added 'file-chapter to chapter' and vice versa conversion option\n" +
+							"- added TAB character by writing \\t in any description"},
 					{"2.7", "- changed version view\n- separated into nested lists\n" +
 							"- improved clever test item selecting algorithm"},
 					{"2.6", "- complete hierarchy saving and loading mechanism remake\n" +

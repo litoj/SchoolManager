@@ -18,7 +18,7 @@ public class PopupCareActivity extends AppCompatActivity {
 	protected void onPostResume() {
 		super.onPostResume();
 		if (!c.popupRepaint.isEmpty() && !exists)
-			for (Runnable r : c.popupRepaint) new Thread(r, "Popup invocation").start();
+			for (Runnable r : c.popupRepaint) r.run();
 		exists = true;
 	}
 

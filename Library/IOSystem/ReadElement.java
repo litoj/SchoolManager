@@ -31,7 +31,7 @@ public abstract class ReadElement {
 		/**
 		 * All parameters associated with this object.
 		 */
-		private final HashMap<String, Object> params;
+		public final HashMap<String, Object> params;
 		public MainChapter identifier;
 
 		/**
@@ -68,8 +68,8 @@ public abstract class ReadElement {
 		}
 
 		/**
-		 * Converts all the stored data (except for its children) to a {@link Data} object used
-		 * for transferring the data about any hierarchy element to be created.
+		 * Converts all the stored data (except for its children) to a {@link Data} object
+		 * used for transferring the data about any hierarchy element to be created.
 		 *
 		 * @param parent parent of the object
 		 * @return the converted content without {@link Formatter#CHILDREN children} parameter
@@ -101,7 +101,8 @@ public abstract class ReadElement {
 		/**
 		 * Creates all children stored in this object.
 		 *
-		 * @param childrenPar the item created from this object, and the parent of its children
+		 * @param childrenPar the item created from this object,
+		 *	                   and the parent of its children
 		 * @return the children of this object
 		 */
 		public List<BasicData> getChildren(Container childrenPar) {
@@ -125,7 +126,7 @@ public abstract class ReadElement {
 	}
 
 	/**
-	 * Used for any text reading to keep track of the current position of reading.
+	 * Used for any text reading to keep track of the current position of the reader.
 	 */
 	public static final class ContentReader {
 		/**

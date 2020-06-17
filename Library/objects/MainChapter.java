@@ -184,6 +184,23 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 	}
 
 	@Override
+	public boolean putChild(Container c, BasicData e, int index) {
+		if (!loaded && children.isEmpty()) load(false);
+		children.add(index, e);
+		return true;
+	}
+	
+	@Override
+	public boolean replaceChild(Container c, BasicData old, BasicData repl) {
+		if (!loaded && children.isEmpty()) load(false);
+		int index = children.indexOf(old);
+		if (index > -1) {
+			children.set(index, repl);
+			return true;
+		} else return false;
+	}
+
+	@Override
 	public boolean removeChild(Container c, BasicData e) {
 		return children.remove(e);
 	}

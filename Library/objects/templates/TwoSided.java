@@ -62,6 +62,28 @@ public abstract class TwoSided<T extends TwoSided> extends Element implements Co
 	}
 
 	@Override
+	public boolean putChild(Container c, BasicData e, int index) {
+		if (!(e instanceof TwoSided)) return false;
+		if (children.get(c) == null) {
+			parentCount++;
+			children.put(c, new LinkedList<>());
+		} else if (children.get(c).contains((T) e)) return false;
+		children.get(c).add(index, (T) e);
+		return true;
+	}
+	
+	@Override
+	public boolean replaceChild(Container c, BasicData old, BasicData repl) {
+		if (!(repl instanceof TwoSided)) return false;
+		if (children.get(c) == null) return false;
+		int index = children.get(c).indexOf(old);
+		if (index > -1) {
+			children.get(c).set(index, (T) repl);
+			return true;
+		} else return false;
+	}
+
+	@Override
 	public boolean removeChild(Container parent, BasicData child) {
 		child.destroy(parent);
 		remove1(parent, (T) child);

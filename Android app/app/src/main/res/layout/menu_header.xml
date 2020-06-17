@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/nav_head_layout"
     android:layout_width="match_parent"
     android:layout_height="55dp"
     android:background="@drawable/side_nav_bar"
-    android:orientation="vertical"
     android:theme="@style/AppThemeDark">
 
     <TextView
@@ -17,4 +16,4 @@
         android:text="Menu"
         android:textSize="30sp" />
 
-</LinearLayout>
+</FrameLayout>

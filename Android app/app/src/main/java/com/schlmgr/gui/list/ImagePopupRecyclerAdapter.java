@@ -119,7 +119,7 @@ public class ImagePopupRecyclerAdapter
 		return () -> {
 			String name = cp.et_name.getText().toString();
 			if (name.isEmpty() || list.isEmpty()) return;
-			String desc = cp.et_desc.getText().toString();
+			String desc = cp.et_desc.getText().toString().replace("\\t", "\t");
 			MainChapter mch = (MainChapter) backLog.path.get(0);
 			LinkedList<Data> images = new LinkedList<>();
 			for (Image i : list)
@@ -137,7 +137,7 @@ public class ImagePopupRecyclerAdapter
 				parent.putChild((Container) backLog.path.get(-2), p);
 			} else {
 				for (Picture p : toRemove) ((Picture) edited.bd).removeChild(parent, p);
-				edited.bd.putDesc(parent, cp.et_desc.getText().toString());
+				edited.bd.putDesc(parent, desc);
 				edited.bd = edited.bd.setName(parent, name);
 			}
 			toRemove = null;

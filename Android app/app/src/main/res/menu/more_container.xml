@@ -39,6 +39,9 @@
         </menu>
     </item>
     <item
+        android:id="@+id/more_import_sch"
+        android:title="@string/more_import_sch" />
+    <item
         android:id="@+id/more_import_word"
         android:title="@string/more_import_word" />
     <item

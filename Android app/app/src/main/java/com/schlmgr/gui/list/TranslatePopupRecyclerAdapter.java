@@ -115,12 +115,13 @@ public class TranslatePopupRecyclerAdapter
 			for (Translate item : list) {
 				String[] trls = SimpleReader.nameResolver(item.tvName == null
 						? item.name : item.tvName.getText().toString());
+				if (trls[0].length() == 0) return;
 				String[] trlDescs = SimpleReader.nameResolver(item.tvDesc == null
 						? item.desc : item.tvDesc.getText().toString());
 				if (edited == null) {
 					for (int i = 0; i < trls.length; i++)
-						translates.add(new Data(trls[i], mch)
-								.addDesc(i < trlDescs.length ? trlDescs[i] : null).addPar(parent));
+						translates.add(new Data(trls[i], mch).addDesc(i < trlDescs.length
+								? trlDescs[i].replace("\\t", "\t") : null).addPar(parent));
 				} else if (item.twosided != null && trls.length == 1) {
 					item.twosided.putDesc(parent, trlDescs[0]);
 					item.twosided.setName(parent, trls[0]);
@@ -134,14 +135,14 @@ public class TranslatePopupRecyclerAdapter
 				Data d = new Data(null, mch).addPar(parent);
 				for (int i = 0; i < names.length; i++) {
 					d.name = names[i];
-					d.description = i < descs.length ? descs[i] : null;
+					d.description = i < descs.length ? descs[i].replace("\\t", "\t") : null;
 					Word w = Word.mkElement(d, translates);
 					VS.mAdapter.add(new HierarchyItemModel(w, parent, es.lv.getCount() + 1));
 					parent.putChild((Container) backLog.path.get(-2), w);
 				}
 			} else {
 				for (Word w : toRemove) ((Word) edited.bd).removeChild(parent, w);
-				edited.bd.putDesc(parent, cp.et_desc.getText().toString());
+				edited.bd.putDesc(parent, cp.et_desc.getText().toString().replace("\\t", "\t"));
 				edited.bd = edited.bd.setName(parent, name);
 			}
 			toRemove = null;

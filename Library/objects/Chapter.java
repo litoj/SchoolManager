@@ -7,6 +7,7 @@ import java.util.Map;
 
 import IOSystem.Formatter.Data;
 import IOSystem.ReadElement;
+import java.util.Arrays;
 import objects.templates.BasicData;
 import objects.templates.Container;
 
@@ -35,6 +36,33 @@ public class Chapter extends objects.templates.SemiElementContainer {
 		if (ELEMENTS.get(identifier) == null) ELEMENTS.put(identifier, new LinkedList<>());
 		ELEMENTS.get(identifier).add(this);
 	}
+	
+	/**
+	 * Converts this object to a Chapter object, its file is deleted.
+	 * 
+	 * @return the converted object
+	 */
+	@Override
+	public SaveChapter convert() {
+		SaveChapter ch = SaveChapter.mkElement(new Data(name, identifier).addSF(sf)
+				.addDesc(description).addPar(parent));
+		int moved = 0;
+		BasicData[] children = getChildren();
+		for (; moved < children.length; moved++) {
+			if (!children[moved].move(this, parent, ch, parent)) break;
+		}
+		if (moved < children.length) {
+			for (; moved >= 0; moved--) {
+				children[moved].move(ch, parent, this, parent);
+			}
+			this.children.clear();
+			this.children.addAll(Arrays.asList(children));
+			return null;
+		}
+		parent.replaceChild(null, this, ch);
+		ELEMENTS.get(identifier).remove(this);
+		return ch;
+	}
 
 	/**
 	 * The head hierarchy object which this object belongs to.
@@ -48,8 +76,9 @@ public class Chapter extends objects.templates.SemiElementContainer {
 
 	@Override
 	public boolean destroy(Container parent) {
+		if (parent != this.parent && parent != null) return false;
 		ELEMENTS.get(identifier).remove(this);
-		return super.destroy(parent);
+		return super.destroy(this.parent);
 	}
 
 	@Override

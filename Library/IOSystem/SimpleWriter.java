@@ -39,7 +39,7 @@ public class SimpleWriter {
 		}
 	}
 
-	private static StringBuilder writeChapter(
+	public static StringBuilder writeChapter(
 			StringBuilder sb, Container par, Container src) {
 		sb.append('\n').append(src.getName()).append("\n{");
 		for (BasicData bd : src.getChildren(par)) {

@@ -19,6 +19,13 @@ public abstract class SemiElementContainer extends BasicElement implements Conta
 	 */
 	protected Container parent;
 
+	/**
+	 * Converts this object into a different Container object. Depends on implementation.
+	 * 
+	 * @return the converted object
+	 */
+	public abstract Container convert();
+	
 	@Override
 	public int[] refreshSF() {
 		int[] sf = {0, 0};
@@ -54,6 +61,23 @@ public abstract class SemiElementContainer extends BasicElement implements Conta
 	@Override
 	public boolean putChild(Container c, BasicData e) {
 		return (parent == c || c == null) && children.add(e);
+	}
+
+	@Override
+	public boolean putChild(Container c, BasicData e, int index) {
+		if (parent == c || c == null) {
+			children.add(index, e);
+			return true;
+		} else return false;
+	}
+	
+	@Override
+	public boolean replaceChild(Container c, BasicData old, BasicData repl) {
+		int index = children.indexOf(old);
+		if ((parent == c || c == null) && index > -1) {
+			children.set(index, repl);
+			return true;
+		} else return false;
 	}
 
 	@Override

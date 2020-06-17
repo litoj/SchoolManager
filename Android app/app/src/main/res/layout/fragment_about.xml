@@ -660,6 +660,30 @@
                 android:textSize="15sp" />
 
             <TextView
+                android:id="@+id/help_extra_sch_import"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#2888"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="2dp"
+                android:text="@string/help_extra_sch_import"
+                android:textSize="17sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.6dp"
+                android:background="#F000" />
+
+            <TextView
+                android:id="@+id/help_extra_sch_import_how"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/help_extra_sch_import_how"
+                android:textAlignment="textStart"
+                android:textSize="15sp" />
+
+            <TextView
                 android:id="@+id/help_extra_words_import"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

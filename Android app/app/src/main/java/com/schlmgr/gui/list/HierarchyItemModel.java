@@ -22,6 +22,7 @@ import testing.NameReader;
 public class HierarchyItemModel {
 
 	public static List<HierarchyItemModel> convert(BasicData[] content, Container parent) {
+		if (content == null || content.length == 0) return new ArrayList<>(0);
 		return convert(new ArrayList<>(Arrays.asList(content)), parent);
 	}
 

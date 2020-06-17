@@ -9,7 +9,10 @@ import IOSystem.Formatter;
 import IOSystem.Formatter.Data;
 import IOSystem.Formatter.Reactioner;
 import IOSystem.Formatter.Synchronizer;
+import static IOSystem.Formatter.defaultReacts;
 import IOSystem.ReadElement;
+import java.util.Arrays;
+import java.util.Comparator;
 import objects.templates.BasicData;
 import objects.templates.Container;
 import objects.templates.ContainerFile;
@@ -55,32 +58,63 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	 * @return the created object
 	 */
 	public static final SaveChapter mkElement(Data d) {
-		return mkElement(d, true);
+		return mkElement(d, 2);
 	}
 
-	protected static final SaveChapter mkElement(Data d, boolean full) {
+	protected static final SaveChapter mkElement(Data d, int full) {
 		USED.waitForAccess(d.identifier);
 		SaveChapter ret;
 		if (ELEMENTS.get(d.identifier) == null) {
 			ELEMENTS.put(d.identifier, new java.util.LinkedList<>());
-			if (d.identifier.getSetting("schNameCount") == null) {
-				d.identifier.putSetting("schNameCount", new HashMap<String, Integer>());
+			if (d.identifier.getSetting("schRemoved") == null) {
 				d.identifier.putSetting("schRemoved", false);
 			}
 		} else {
 			int hash = d.tagVals == null || d.tagVals.get("hash") == null
 					? 1 : (int) d.tagVals.get("hash");
-			for (SaveChapter sch : ELEMENTS.get(d.identifier)) {
+			if (full == 2) {
+				for (SaveChapter sch : ELEMENTS.get(d.identifier))
+					if (d.name.equals(sch.name) && sch.hash >= hash) hash = sch.hash + 1;
+				if (d.tagVals == null ) d.tagVals = new HashMap<>();
+				d.tagVals.put("hash", hash);
+			} else for (SaveChapter sch : ELEMENTS.get(d.identifier)) {
 				if (d.name.equals(sch.toString()) && hash == sch.hash) {
-					sch.loaded = full;
+					sch.loaded = full == 1;
 					USED.endAccess(d.identifier);
 					return sch;
 				}
 			}
 		}
-		ret = new SaveChapter(d, full);
+		ret = new SaveChapter(d, full != 0);
 		USED.endAccess(d.identifier);
 		return ret;
+	}
+	
+	/**
+	 * Converts this object to a Chapter object, its file is deleted.
+	 * 
+	 * @return the converted object
+	 */
+	@Override
+	public Chapter convert() {
+		Chapter ch = new Chapter(new Data(name, identifier).addSF(sf)
+				.addDesc(description).addPar(parent));
+		int moved = 0;
+		BasicData[] children = getChildren();
+		for (; moved < children.length; moved++) {
+			if (!children[moved].move(this, parent, ch, parent)) break;
+		}
+		if (moved < children.length) {
+			for (; moved >= 0; moved--) {
+				children[moved].move(ch, parent, this, parent);
+			}
+			this.children.clear();
+			this.children.addAll(Arrays.asList(children));
+			return null;
+		}
+		parent.replaceChild(null, this, ch);
+		destroy(null);
+		return ch;
 	}
 
 	protected SaveChapter(Data d, boolean full) {
@@ -90,14 +124,12 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 		parent = d.par;
 		loaded = full;
 		//hash-creator
-		if (!full) {
-			hash = d.tagVals.get("hash") == null ? 1 : (int) d.tagVals.get("hash");
-		} else {
-			Map<String, Number> map =
-					(Map<String, Number>) identifier.getSetting("schNameCount");
-			Number i = map.get(name);
-			map.put(name, hash = i == null ? 1 : i.intValue() + 1);
-			identifier.putSetting("schNameCount", map);
+		hash = d.tagVals == null || d.tagVals.get("hash") == null
+				? 1 : (int) d.tagVals.get("hash");
+		if (full) {
+			File dir = new File(identifier.getDir(), "Chapters");
+			File src = getSaveFile();
+			while (src.exists()) src = new File(dir, name + "[" + ++hash + "].json");
 		}
 		ELEMENTS.get(d.identifier).add(this);
 	}
@@ -130,13 +162,17 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	@Override
 	public Container removeChild(BasicData e) {
 		if (!loaded) load(false);
-		return super.removeChild(e);
+		Container ret = super.removeChild(e);
+		if (children.isEmpty()) getSaveFile().delete();
+		return ret;
 	}
 
 	@Override
 	public boolean removeChild(Container c, BasicData e) {
 		if (!loaded) load(false);
-		return super.removeChild(c, e);
+		boolean ret = super.removeChild(c, e);
+		if (children.isEmpty()) getSaveFile().delete();
+		return ret;
 	}
 
 	@Override
@@ -205,27 +241,25 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	public static void clean(MainChapter mch) {
 		if (!isCleanable(mch)) return;
 		mch.load(false);
-		String exceptions = "";
 		File dir = new File(mch.getDir(), "Chapters");
-		Map<String, Number> map = new HashMap<>();
 		USED.waitForAccess(mch);
+		boolean allok = true;
 		for (SaveChapter sch : ELEMENTS.get(mch)) {
+			if (sch.hash == 1) continue;
 			int hash = 1;
 			File src = new File(dir, sch.name + ".json");
-			while (hash < sch.hash && !src.renameTo(
-					new File(dir, sch.name + "[" + ++hash + "].json")))
-				if (hash == 1024) {
-					exceptions += "\nFile '" + src + "' can't be renamed!";
-					break;
-				}
-			if (hash < 1024 && (map.get(sch.name) == null
-					|| (sch.hash = hash) > map.get(sch.name).intValue()))
-				map.put(sch.name, hash);
+			while (src.exists() && hash < sch.hash)
+				src = new File(dir, sch.name + "[" + ++hash + "].json");
+			File origin = sch.getSaveFile();
+			if (hash < sch.hash && origin.exists() && !origin.renameTo(
+				new File(dir, sch.name + (hash == 1 ? ".json" : "[" + hash + "].json")))) {
+				allok = false;
+				defaultReacts.get(ContainerFile.class + ":save").react(
+						new IllegalArgumentException("File can't be renamed"), src, sch);
+			} else sch.hash = hash;
 		}
 		USED.endAccess(mch);
-		mch.putSetting("schNameCount", map);
-		if (!exceptions.isEmpty()) throw new IllegalArgumentException(exceptions);
-		mch.putSetting("schRemoved", false);
+		if (allok) mch.putSetting("schRemoved", false);
 	}
 
 	/**
@@ -252,32 +286,30 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	@Override
 	public BasicData setName(Container none, String name) {
 		load();
-		Map<String, Number> map =
-				(Map<String, Number>) identifier.getSetting("schNameCount");
-		Number newCount = map.get(name);
-		int current = newCount == null ? 1 : newCount.intValue();
+		int current = 1;
+		File dir = new File(identifier.getDir(), "Chapters");
+		File src = new File(dir, name + ".json");
+		while (src.exists()) src = new File(dir, name + "[" + ++current + "].json");
 		try {
 			while (loading) Thread.sleep(20);
 		} catch (InterruptedException ie) {
 		}
-		if (getSaveFile().renameTo(new File(new File(identifier.getDir(), "Chapters"), name
-				+ (current == 1 ? ".json" : "[" + current + "].json")))) {
-			map.put(this.name = name, hash = current);
+		if (getSaveFile().renameTo(new File(new File(identifier.getDir(), "Chapters"),
+				name + (current == 1 ? ".json" : "[" + current + "].json")))) {
+			this.name = name;
+			hash = current;
 		}
 		return this;
 	}
 
 	@Override
-	public boolean destroy(Container parent) {
-		if (getSaveFile().delete()) {
+	public boolean destroy(Container par) {
+		if (par == parent || par == null) {
+			getSaveFile().delete();
 			identifier.putSetting("schRemoved", true);
-			Map<String, Number> map =
-					(Map<String, Number>) identifier.getSetting("schNameCount");
-			int i = map.get(name) == null ? 0 : map.get(name).intValue() - 1;
 			USED.waitForAccess(identifier);
-			if (i < 1) map.remove(name);
-			else map.put(name, i);
 			parent.removeChild(this);
+			ELEMENTS.get(identifier).remove(this);
 			USED.endAccess(identifier);
 			return true;
 		}
@@ -298,11 +330,10 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	 * {@link ReadElement#readData(ReadElement.Content, Container) loading from String}.
 	 */
 	public static BasicData readData(ReadElement.Content src, Container parent) {
-		if (parent == null) {
-			SaveChapter sch = mkElement(src.getData(null));
-			for (BasicData bd : src.getChildren(sch)) sch.putChild(null, bd);
+		if (src.params.containsKey(Formatter.CHILDREN)) {
+			SaveChapter sch = mkElement(src.getData(parent), parent != null ? 2 : 1);
+			for (BasicData bd : src.getChildren(sch)) sch.children.add(bd);
 			return sch;
-		}
-		return mkElement(src.getData(parent), false);
+		} else return mkElement(src.getData(parent), 0);
 	}
 }

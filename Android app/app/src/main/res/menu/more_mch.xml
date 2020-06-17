@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:title="@string/more_new">
+        <menu>
+            <item
+                android:id="@+id/more_new_container"
+                android:title="@string/hierarchy_ch" />
+            <item
+                android:id="@+id/more_new_word"
+                android:title="@string/hierarchy_word" />
+            <item
+                android:id="@+id/more_new_picture"
+                android:title="@string/hierarchy_picture" />
+        </menu>
+    </item>
+    <item android:title="@string/sort">
+        <menu>
+            <item
+                android:id="@+id/sort_alpha_AZ"
+                android:title="@string/sort_alpha_AZ" />
+            <item
+                android:id="@+id/sort_alpha_ZA"
+                android:title="@string/sort_alpha_ZA" />
+            <item
+                android:id="@+id/sort_sf_01"
+                android:title="@string/sort_sf_01" />
+            <item
+                android:id="@+id/sort_sf_10"
+                android:title="@string/sort_sf_10" />
+            <item
+                android:id="@+id/sort_length_01"
+                android:title="@string/sort_length_01" />
+            <item
+                android:id="@+id/sort_length_10"
+                android:title="@string/sort_length_10" />
+            <item
+                android:id="@+id/sort_default"
+                android:title="@string/sort_default" />
+        </menu>
+    </item>
+    <item
+        android:id="@+id/more_import_sch"
+        android:title="@string/more_import_sch" />
+    <item
+        android:id="@+id/more_import_word"
+        android:title="@string/more_import_word" />
+    <item
+        android:id="@+id/more_export_word"
+        android:title="@string/more_export_word" />
+    <item
+        android:id="@+id/more_sf_revaluate"
+        android:title="@string/more_sf_reval_mch" />
+    <item
+        android:id="@+id/more_clean"
+        android:title="@string/more_clean" />
+</menu>

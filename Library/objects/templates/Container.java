@@ -13,6 +13,10 @@ public interface Container extends BasicData {
 
 	boolean putChild(Container parent, BasicData e);
 
+	boolean putChild(Container parent, BasicData e, int index);
+	
+	boolean replaceChild(Container parent, BasicData old, BasicData replacement);
+
 	boolean removeChild(Container parent, BasicData e);
 
 	Container removeChild(BasicData e);
