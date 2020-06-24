@@ -55,7 +55,6 @@ public class SelectDirActivity extends PopupCareActivity
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		Controller.currentActivity = this;
 		setContentView(R.layout.activity_select_dir);
 		((TextView) findViewById(R.id.bar)).setText(importing ? R.string.select_dir_import : R.string.select_dir_src);
 		findViewById(R.id.bar_more).setOnClickListener(v -> {

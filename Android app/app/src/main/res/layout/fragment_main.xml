@@ -1,150 +1,98 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@color/colorPrimaryBg">
+
+    <include
+        layout="@layout/explorer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
     <LinearLayout
+        android:id="@+id/objects_select"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="60dp"
+        android:background="#8000"
+        android:orientation="horizontal"
+        android:visibility="gone">
 
-        <HorizontalScrollView
-            android:id="@+id/objects_path_handler"
-            android:layout_width="match_parent"
-            android:layout_height="25dp"
-            android:background="@color/colorPrimaryHeader">
+        <TextView
+            android:id="@+id/select_delete"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:drawableTop="@drawable/ic_delete_disabled"
+            android:enabled="false"
+            android:text="@string/delete"
+            android:textAlignment="center"
+            android:textColor="#6FFF" />
 
-            <LinearLayout
-                android:id="@+id/objects_path"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:layout_gravity="center_vertical"
-                android:orientation="horizontal" />
-        </HorizontalScrollView>
+        <TextView
+            android:id="@+id/select_reference"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:drawableTop="@drawable/ic_reference_disabled"
+            android:enabled="false"
+            android:text="@string/select_ref"
+            android:textAlignment="center"
+            android:textColor="#6FFF" />
 
-        <ScrollView
-            android:id="@+id/objects_info_handler"
-            android:layout_width="match_parent"
-            android:layout_height="0px">
+        <TextView
+            android:id="@+id/select_cut"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:drawableTop="@drawable/ic_cut_disabled"
+            android:enabled="false"
+            android:text="@string/cut"
+            android:textAlignment="center"
+            android:textColor="#6FFF" />
 
-            <TextView
-                android:id="@+id/objects_info"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:enabled="true"
-                android:focusable="true"
-                android:paddingStart="3dp"
-                android:paddingEnd="3dp" />
-        </ScrollView>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="0.6dp"
-            android:background="#888" />
-
-        <SearchView
-            android:id="@+id/objects_search"
-            android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:layout_margin="10dp"
-            android:background="@drawable/outline_black"
-            android:queryHint="@string/search" />
-
-        <ListView
-            android:id="@+id/objects_list"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <LinearLayout
-            android:id="@+id/objects_select"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:background="#8000"
-            android:orientation="horizontal"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/select_delete"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:enabled="false"
-                android:drawableTop="@drawable/ic_delete_disabled"
-                android:text="@string/delete"
-                android:textAlignment="center"
-                android:textColor="#6FFF" />
-
-            <TextView
-                android:id="@+id/select_reference"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:enabled="false"
-                android:drawableTop="@drawable/ic_reference_disabled"
-                android:text="@string/select_ref"
-                android:textAlignment="center"
-                android:textColor="#6FFF" />
-
-            <TextView
-                android:id="@+id/select_cut"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:enabled="false"
-                android:drawableTop="@drawable/ic_cut_disabled"
-                android:text="@string/cut"
-                android:textAlignment="center"
-                android:textColor="#6FFF" />
-
-            <TextView
-                android:id="@+id/select_rename"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:enabled="false"
-                android:drawableTop="@drawable/ic_edit_disabled"
-                android:paddingTop="5dp"
-                android:text="@string/edit"
-                android:textAlignment="center"
-                android:textColor="#6FFF" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/objects_paster"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:background="#8000"
-            android:orientation="horizontal"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/objects_cancel"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:drawableTop="@drawable/ic_cancel"
-                android:gravity="center"
-                android:text="@string/objects_cancel"
-                android:textColor="#FFF" />
-
-            <TextView
-                android:id="@+id/objects_paste"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:enabled="false"
-                android:drawableTop="@drawable/ic_paste_disabled"
-                android:gravity="center"
-                android:paddingTop="5dp"
-                android:text="@string/paste"
-                android:textColor="#6FFF" />
-        </LinearLayout>
+        <TextView
+            android:id="@+id/select_rename"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:drawableTop="@drawable/ic_edit_disabled"
+            android:enabled="false"
+            android:paddingTop="5dp"
+            android:text="@string/edit"
+            android:textAlignment="center"
+            android:textColor="#6FFF" />
     </LinearLayout>
 
-    <FrameLayout
-        android:id="@+id/touch_outside"
+    <LinearLayout
+        android:id="@+id/objects_paster"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-</RelativeLayout>
+        android:layout_height="60dp"
+        android:background="#8000"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/objects_cancel"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:drawableTop="@drawable/ic_cancel"
+            android:gravity="center"
+            android:text="@string/objects_cancel"
+            android:textColor="#FFF" />
+
+        <TextView
+            android:id="@+id/objects_paste"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:drawableTop="@drawable/ic_paste_disabled"
+            android:enabled="false"
+            android:gravity="center"
+            android:paddingTop="5dp"
+            android:text="@string/paste"
+            android:textColor="#6FFF" />
+    </LinearLayout>
+</LinearLayout>

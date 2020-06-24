@@ -38,7 +38,7 @@ public abstract class AbstractPopup {
 
 	final int resId;
 	private boolean backBtnDismiss = true;
-	public PopupWindow pw;
+	private PopupWindow pw;
 	private final Runnable creator = () -> create();
 	private final boolean onlyMain;
 
@@ -55,7 +55,7 @@ public abstract class AbstractPopup {
 	public void dismiss(boolean forever) {
 		backBtnDismiss = false;
 		pw.dismiss();
-		showed.remove(pw);
+		showed.remove(this);
 		isActive = false;
 		if (forever) Controller.removePopupRepaint(creator);
 	}

@@ -10,47 +10,34 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.schlmgr.gui.list.AbstractNestAdapter.ViewHolder;
+
 import java.util.List;
 
-public abstract class AbstractNestedRecyclerAdapter<I,
-		H extends AbstractNestedRecyclerAdapter.ViewHolder>
-		extends RecyclerView.Adapter<H> implements OnTouchListener {
-	public final List<I> list;
-	public final RecyclerView container;
-	public final ScrollView sv;
+public abstract class AbstractNestAdapter<I, H extends ViewHolder>
+		extends OpenListAdapter<I, H> implements OnTouchListener {
+	RecyclerView container;
+	ScrollView sv;
 
-	public void addItem(I item) {
-		list.add(0, item);
-		container.post(() -> notifyDataSetChanged());
+	protected AbstractNestAdapter(List<I> items) {
+		super(items);
 	}
 
-	public void removeItem(int pos) {
-		list.remove(pos);
-		container.post(() -> {
-			notifyItemRemoved(pos);
-			notifyItemRangeChanged(pos, list.size());
-		});
+	protected void update(RecyclerView parent, ScrollView layout) {
+		container = parent;
+		sv = layout;
+		if (VERSION.SDK_INT < 21) parent.setOnTouchListener(this);
+		parent.setAdapter(this);
+		parent.setLayoutManager(new LinearLayoutManager(parent.getContext()));
 	}
 
 	public static abstract class ViewHolder extends RecyclerView.ViewHolder {
 
-		public final View view;
-
 		public ViewHolder(@NonNull View itemView) {
 			super(itemView);
-			view = itemView;
 		}
 
 		protected abstract void setData(int pos);
-	}
-
-	protected AbstractNestedRecyclerAdapter(List<I> items, RecyclerView rv, ScrollView firstScroll) {
-		list = items;
-		container = rv;
-		sv = firstScroll;
-		if (VERSION.SDK_INT < 21) rv.setOnTouchListener(this);
-		rv.setAdapter(this);
-		rv.setLayoutManager(new LinearLayoutManager(rv.getContext()));
 	}
 
 	float y;
@@ -94,10 +81,5 @@ public abstract class AbstractNestedRecyclerAdapter<I,
 	@Override
 	public void onBindViewHolder(@NonNull H holder, int position) {
 		holder.setData(position);
-	}
-
-	@Override
-	public int getItemCount() {
-		return list.size();
 	}
 }

@@ -2,9 +2,6 @@ package com.schlmgr.gui.list;
 
 import android.graphics.drawable.Drawable;
 
-import com.schlmgr.R;
-import com.schlmgr.gui.Controller;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -85,7 +82,7 @@ public class HierarchyItemModel {
 		}
 	}
 
-	private String translates() {
+	protected String translates() {
 		StringBuilder desc = new StringBuilder();
 		StringBuilder trls = new StringBuilder();
 		for (BasicData trl : ((Word) bd).getChildren(parent)) {
@@ -122,22 +119,28 @@ public class HierarchyItemModel {
 		flipped = false;
 		if (bd instanceof Container) {
 			if (bd instanceof TwoSided) {
-				if (bd instanceof Picture)
-					ic = Controller.activity.getResources().getDrawable(R.drawable.ic_image);
-				else if (bd instanceof Word) {
-					ic = Controller.activity.getResources().getDrawable(R.drawable.ic_word);
+				if (bd instanceof Picture) {
+					ic = icPic;
+					info = bd.getDesc(parent);
+				} else if (bd instanceof Word) {
+					ic = icWord;
 					flipped = !defFlip;
 					if (flip) flip();
 					else info = bd.getDesc(parent);
 				}
 			} else {
-				if (bd instanceof MainChapter)
-					ic = Controller.activity.getResources().getDrawable(R.drawable.ic_subject);
-				else ic = Controller.activity.getResources().getDrawable(R.drawable.ic_chapter);
+				if (bd instanceof MainChapter) ic = icMCh;
+				else ic = icChap;
+				info = bd.getDesc(parent);
 			}
-		} else if (bd instanceof Reference)
-			ic = Controller.activity.getResources().getDrawable(R.drawable.ic_ref);
+		} else if (bd instanceof Reference) ic = icRef;
 	}
+
+	public static Drawable icPic;
+	public static Drawable icWord;
+	public static Drawable icChap;
+	public static Drawable icMCh;
+	public static Drawable icRef;
 
 	public HierarchyItemModel(BasicData item, Container parent, int position) {
 		this(item, parent, position, true);

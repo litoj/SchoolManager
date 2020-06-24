@@ -6,6 +6,7 @@
         <item name="colorPrimary">@color/colorPrimaryBg</item>
         <item name="colorPrimaryDark">@color/colorPrimaryFg</item>
         <item name="android:textColor">@color/colorPrimaryFg</item>
+        <item name="background">@color/colorPrimaryBg</item>
         <item name="colorAccent">@color/colorPrimaryHeader</item>
     </style>
 

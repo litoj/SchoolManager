@@ -45,14 +45,14 @@ public class TestActivity extends PopupCareActivity {
 	private static TestActivity taInstance;
 
 	@Override
-	protected void onCreate(Bundle savedInstanceState) {
+	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		Controller.currentActivity = taInstance = this;
+		taInstance = this;
 		if (test == null) {
 			test = picTest ? new Test<>(Picture.class) : new Test<>(Word.class);
 			ArrayList<List<Container>> list = new ArrayList<>(TestFragment.list.size());
 			for (SearchItemModel sim : TestFragment.list) {
-				List<Container> path = new ArrayList<>((List<Container>) sim.path);
+				List<Container> path = new ArrayList<>(sim.path);
 				path.add((Container) sim.bd);
 				list.add(path);
 			}

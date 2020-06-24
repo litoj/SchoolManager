@@ -57,6 +57,9 @@ public class NameReader {
 		return getParts(new Source(o.toString(), 0, null), true);
 	}
 
+	public static void main(String[] args) {
+		for(String str : readName("b/(a) c"))System.out.println(str);
+	}
 	private static String[] getParts(Source src, boolean first) {
 		if (first && !src.str.contains("/")) return new String[]{src.str};
 		boolean slash = false, bracket = false, itpcn = false;
@@ -95,6 +98,7 @@ public class NameReader {
 						}
 					}
 					start = index + 1;
+					bracket = false;
 					break;
 				case '(':
 					src.index = index + 1;
@@ -121,6 +125,7 @@ public class NameReader {
 	}
 
 	private static String[] compile(String[] src1, String... src2) {
+		if (src1.length == 0 || src2.length == 0) return src1.length == 0 ? src2 : src1;
 		String[] ret = new String[src1.length * src2.length];
 		for (int i = src2.length - 1; i != -1; i--) {
 			int ch = src2[i].isEmpty() ? -1 : src2[i].charAt(0);

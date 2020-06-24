@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="colorPrimaryFg">#DD000000</color>
-    <color name="colorPrimaryBg">#CACACA</color>
+    <color name="colorPrimaryBg">#FFFFFF</color>
     <color name="colorPrimaryHeader">#00A500</color>
     <color name="colorSecondaryFg">#EFEFEF</color>
     <color name="colorSecondaryBg">#1B1B1B</color>

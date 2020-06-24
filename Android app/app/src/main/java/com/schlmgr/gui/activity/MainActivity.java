@@ -20,6 +20,7 @@ import com.schlmgr.gui.Controller;
 import com.schlmgr.gui.CurrentData;
 import com.schlmgr.gui.fragments.MainFragment;
 import com.schlmgr.gui.list.DirAdapter;
+import com.schlmgr.gui.list.HierarchyItemModel;
 import com.schlmgr.gui.popup.AbstractPopup;
 import com.schlmgr.gui.popup.FullPicture;
 
@@ -31,6 +32,7 @@ import objects.templates.ContainerFile;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static com.schlmgr.gui.AndroidIOSystem.defDir;
 import static com.schlmgr.gui.Controller.CONTEXT;
+import static com.schlmgr.gui.Controller.dp;
 import static com.schlmgr.gui.fragments.MainFragment.STORAGE_PERMISSION;
 
 public class MainActivity extends PopupCareActivity {
@@ -45,9 +47,9 @@ public class MainActivity extends PopupCareActivity {
 	public static Drawable ic_check_filled;
 
 	@Override
-	protected void onCreate(Bundle savedInstanceState) {
+	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		Controller.currentActivity = Controller.activity = this;
+		Controller.activity = this;
 		CONTEXT = getApplicationContext();
 		Controller.defaultBack = super::onBackPressed;
 		setContentView(R.layout.nav_menu);
@@ -74,12 +76,27 @@ public class MainActivity extends PopupCareActivity {
 			DisplayMetrics dm = new DisplayMetrics();
 			getWindowManager().getDefaultDisplay().getMetrics(dm);
 			FullPicture.size = dm.heightPixels > dm.widthPixels ? dm.heightPixels : dm.widthPixels;
+			dp = getResources().getDimension(R.dimen.dp);
+			(HierarchyItemModel.icPic =
+					Controller.activity.getResources().getDrawable(R.drawable.ic_pic))
+					.setBounds((int) dp, 0, (int) (dp * 33), (int) (dp * 33));
+			(HierarchyItemModel.icWord =
+					Controller.activity.getResources().getDrawable(R.drawable.ic_word))
+					.setBounds(0, 0, (int) (dp * 30), (int) (dp * 30));
+			(HierarchyItemModel.icChap =
+					Controller.activity.getResources().getDrawable(R.drawable.ic_chapter))
+					.setBounds(0, 0, (int) (dp * 30), (int) (dp * 30));
+			(HierarchyItemModel.icMCh =
+					Controller.activity.getResources().getDrawable(R.drawable.ic_subject))
+					.setBounds(0, 0, (int) (dp * 30), (int) (dp * 30));
+			(HierarchyItemModel.icRef =
+					Controller.activity.getResources().getDrawable(R.drawable.ic_ref))
+					.setBounds(0, 0, (int) (dp * 30), (int) (dp * 30));
 			DirAdapter.internal = getString(R.string.storage_internal);
 			DirAdapter.external = getString(R.string.storage_external);
 			DirAdapter.usbotg = getString(R.string.storage_usbotg);
 			ic_check_empty = getResources().getDrawable(R.drawable.ic_check_box_empty);
 			ic_check_filled = getResources().getDrawable(R.drawable.ic_check_box_filled);
-			Controller.dp = getResources().getDimension(R.dimen.dp);
 			defDir = Environment.getExternalStorageDirectory().getAbsolutePath();
 			AndroidIOSystem.storageDir = defDir.substring(0, defDir.lastIndexOf(File.separatorChar +
 					(defDir.contains("emulated") ? "emulated" : "")));

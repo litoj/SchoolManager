@@ -12,12 +12,9 @@ import objects.Picture;
 import static com.schlmgr.gui.Controller.dp;
 
 public class ImageItemModel {
-	private Bitmap bm1;
-	public final Picture pic1;
-	private Bitmap bm2;
-	public final Picture pic2;
-	public volatile ImageView iv1;
-	public volatile ImageView iv2;
+	public Bitmap bm1, bm2;
+	public final Picture pic1, pic2;
+	public volatile ImageView iv1, iv2;
 
 	private static LinkedList<ImageItemModel> queue = new LinkedList<>();
 

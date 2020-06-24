@@ -4,34 +4,36 @@ import android.content.Context;
 import android.graphics.Rect;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.AbsListView;
-import android.widget.AbsListView.OnScrollListener;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
-import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.SearchView;
 import android.widget.SearchView.OnQueryTextListener;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.appbar.AppBarLayout;
 import com.schlmgr.R;
 import com.schlmgr.gui.CurrentData.BackLog;
 import com.schlmgr.gui.CurrentData.EasyList;
 import com.schlmgr.gui.activity.SelectItemsActivity;
-import com.schlmgr.gui.list.AbstractContainerAdapter;
 import com.schlmgr.gui.list.HierarchyItemModel;
+import com.schlmgr.gui.list.OpenListAdapter;
 import com.schlmgr.gui.list.SearchAdapter;
+import com.schlmgr.gui.list.SearchAdapter.OnItemActionListener;
 import com.schlmgr.gui.list.SearchItemModel;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import objects.Picture;
 import objects.Reference;
 import objects.Word;
 import objects.templates.BasicData;
@@ -51,27 +53,34 @@ public class ExplorerStuff {
 
 	public final Content content;
 	public final Runnable onSearchSubmit;
-	private final boolean selectMode;
+	private final OnItemActionListener itemListener;
 
 	private final HorizontalScrollView hsv;
 	public final LinearLayout path;
 	private final ScrollView infoScroll;
 	private final TextView info;
 	public final SearchView searchView;
-	public final ListView lv;
+	public final RecyclerView rv;
 	private boolean opened;
 	private int height_def;
-	public final SVController searchControl;
 	public final Context context;
 	private final Runnable onCheckChange;
 	private final BackLog backLog;
 	private final ViewState VS;
+	public final AppBarLayout searchHide;
+	private final BackUpdater bu;
 
-	public ExplorerStuff(boolean selectActivity, Content onItemClick, Runnable oss, Runnable onCheck,
-	                     ViewState vs, BackLog bl, Context c, HorizontalScrollView hsv, ListView lv,
-	                     LinearLayout path, ScrollView infoScroll, TextView info,
-	                     SearchView searchView, View touchOutside) {
-		selectMode = selectActivity;
+	public interface BackUpdater {
+		void changedPath(int skip);
+	}
+
+	public ExplorerStuff(OnItemActionListener l, Content onItemClick, Runnable oss, Runnable onCheck,
+	                     ViewState vs, BackLog bl, Context c, HorizontalScrollView hsv,
+	                     RecyclerView rv, LinearLayout path, ScrollView infoScroll, TextView info,
+	                     SearchView searchView, View touchOutside, AppBarLayout searchCollapser,
+	                     BackUpdater bu) {
+		this.itemListener = l;
+		this.bu = bu;
 		content = onItemClick;
 		backLog = bl;
 		VS = vs;
@@ -79,14 +88,14 @@ public class ExplorerStuff {
 		onSearchSubmit = oss;
 		onCheckChange = onCheck;
 		this.hsv = hsv;
-		this.lv = lv;
+		this.rv = rv;
 		this.path = path;
 		this.infoScroll = infoScroll;
 		this.info = info;
 		(this.searchView = searchView).setOnFocusChangeListener((v, hasFocus) -> {
 			if (!hasFocus) AndroidIOSystem.hideKeyboardFrom(v);
 		});
-		lv.setOnScrollListener(searchControl = new SVController());
+		searchHide = searchCollapser;
 		touchOutside.setOnTouchListener((v, event) -> {
 			if (event.getAction() == MotionEvent.ACTION_DOWN
 					&& searchView.getVisibility() == View.VISIBLE) {
@@ -109,42 +118,19 @@ public class ExplorerStuff {
 			return false;
 		});
 		hsv.setHorizontalScrollBarEnabled(false);
-		searchView.setOnQueryTextListener(new Searcher());
+		searchView.setOnQueryTextListener(new SearchControl());
 		info.setOnClickListener((v) -> infoScroll.setLayoutParams(
 				new LayoutParams(MATCH_PARENT, realHeight(opened = !opened))));
 	}
 
-	public class SVController implements OnScrollListener {
-
-		public boolean visible;
-		public int fvi;
-
-		public void update(boolean gone) {
-			visible = VS.sv_visible = !gone;
-			searchView.setVisibility(gone ? View.GONE : View.VISIBLE);
-			fvi = 0;
+	public void updateSearch(boolean gone) {
+		if (!gone) {
+			searchHide.setExpanded(true, false);
 		}
-
-		@Override
-		public void onScrollStateChanged(AbsListView view, int scrollState) {
-		}
-
-		@Override
-		public void onScroll(AbsListView view, int firstVisible, int visICount, int size) {
-			if (VS.sv_visible && Math.abs(fvi - firstVisible) > 2) {
-				if (visible && firstVisible > fvi) {
-					searchView.setVisibility(View.GONE);
-					visible = false;
-				} else if (!visible && firstVisible < fvi) {
-					searchView.setVisibility(View.VISIBLE);
-					visible = true;
-				}
-				fvi = firstVisible;
-			}
-		}
+		searchView.setVisibility((VS.sv_visible = !gone) ? View.VISIBLE : View.GONE);
 	}
 
-	public class Searcher implements OnQueryTextListener {
+	public class SearchControl implements OnQueryTextListener {
 
 		@Override
 		public boolean onQueryTextSubmit(String query) {
@@ -154,7 +140,7 @@ public class ExplorerStuff {
 			if (onSearchSubmit != null) onSearchSubmit.run();
 			EasyList<Container> c = new EasyList<>();
 			for (BasicData bd : backLog.path) c.add((Container) bd);
-			new Searcher.Finder(c, query);
+			new SearchEngine(c, query);
 			return true;
 		}
 
@@ -166,10 +152,9 @@ public class ExplorerStuff {
 		/**
 		 * Searches for all occurrences matching the compare sequence.
 		 */
-		class Finder {
+		class SearchEngine {
 
 			String comp;
-			Pattern p;
 			volatile int threads = 1;
 			Correct correct;
 			long start;
@@ -181,68 +166,162 @@ public class ExplorerStuff {
 			 * @param path    path to the element who's content will be searched
 			 * @param compare the sequence with optional prefix to be used as comparator
 			 */
-			Finder(EasyList<Container> path, String compare) {
-				if (compare.charAt(0) == '\\') {
-					switch (compare.charAt(1)) {
-						case 'r':
+			SearchEngine(EasyList<Container> path, String compare) {
+				Correct oldCor = null;
+				SFManipulation sfm = null;
+				StringFinder strCor = (name) -> {
+					name = name.toLowerCase();
+					if (name.contains(comp)) return true;
+					for (String parsed : NameReader.readName(comp))
+						if (name.contains(parsed)) return true;
+					return false;
+				};
+				int start = 0;
+				boolean desc = false;
+				resolver:
+				if (compare.charAt(start) == '\\') {
+					switch (compare.charAt(++start)) { //select the type of searched object
+						case 'W': //if object is the main Word
+							oldCor = (bd, par) -> bd instanceof Word && ((Word) bd).isMain;
+							break;
+						case 'T': //if object is the other Word part - translate
+							oldCor = (bd, par) -> bd instanceof Word && !((Word) bd).isMain;
+							break;
+						case 'P': //if object is Picture
+							oldCor = (bd, par) -> bd instanceof Picture && ((Picture) bd).isMain;
+							break;
+						case 'C': //if object is any type of chapter
+							oldCor = (bd, par) -> bd instanceof Container && !(bd instanceof TwoSided);
+							break;
+						default: //no type selection prefix found
+							start--;
+					}
+					if (start + 1 >= compare.length()) {
+						comp = "";
+						break resolver;
+					}
+					switch (compare.charAt(++start)) { //select the source of comparing
+						case 'D': //the tested value is the object's description
+							desc = true;
+							break;
+						//for selection by success rate
+						case 'S': //the tested value is amount of successes
+							sfm = (bd) -> bd.getSF()[0];
+							break;
+						case 'F': //the tested value is amount of fails
+							sfm = (bd) -> bd.getSF()[1];
+							break;
+						case 'N': //the tested value is the number of times, the object was tested
+							sfm = (bd) -> bd.getSFCount();
+							break;
+						case 'R': //the tested value is the success rate ratio (S/F*100)
+							sfm = (bd) -> bd.getRatio();
+							break;
+						default: //the tested value is the name of the object
+							start--;
+					}
+					if (start + 1 >= compare.length()) {
+						comp = "";
+						break resolver;
+					}
+					int count1, count;
+					try {
+						count1 = Integer.parseInt(compare.substring(start + 2));
+					} catch (NumberFormatException nfe) {
+						count1 = -10;
+					}
+					count = count1;
+					Correct copyOC = oldCor;
+					SFManipulation copySFM = sfm;
+					comp = compare.substring(start + 2);
+					switch (compare.charAt(start + 1)) { //the main select operation prefix selector
+						//number operations
+						case '>': //if the object's value is higher (than the remaining text)
+							oldCor = copyOC == null ? (bd, par) -> copySFM.value(bd) > count :
+									(bd, par) -> copyOC.verify(bd, par) && copySFM.value(bd) > count;
+							break;
+						case '<': //if the object's value is lower
+							oldCor = copyOC == null ? (bd, par) -> copySFM.value(bd) < count :
+									(bd, par) -> copyOC.verify(bd, par) && copySFM.value(bd) < count;
+							break;
+						case '=': //if the object's value is equal
+							oldCor = copyOC == null ? (bd, par) -> copySFM.value(bd) == count :
+									(bd, par) -> copyOC.verify(bd, par) && copySFM.value(bd) == count;
+							break;
+						//text operations
+						case 'r': //if the object's name (or description) matches given regex
+							Pattern p;
 							try {
-								p = Pattern.compile(compare.substring(2));
+								p = Pattern.compile(comp);
 							} catch (Exception e) {
 								String msg = activity.getString(R.string.pattern_err) + '\n' + e.getMessage();
 								AndroidIOSystem.showMsg(msg, msg);
 								return;
 							}
-							correct = (name) -> p.matcher(name).matches();
+							strCor = (name) -> p.matcher(name).matches();
 							break;
-						case 's':
-							correct = (name) -> {
+						case 's': //if the object's value starts with the given text
+							strCor = (name) -> {
 								if (name.startsWith(comp)) return true;
 								for (String parsed : NameReader.readName(comp))
 									if (name.startsWith(parsed)) return true;
 								return false;
 							};
-							comp = compare.substring(2);
 							break;
-						case 'e':
-							comp = compare.substring(2);
-							correct = (name) -> {
+						case 'e': //if the object's value ends with the given text
+							strCor = (name) -> {
 								if (name.endsWith(comp)) return true;
 								for (String parsed : NameReader.readName(comp))
 									if (name.endsWith(parsed)) return true;
 								return false;
 							};
 							break;
-						case '\\':
-							compare = compare.substring(2);
-						default:
-							comp = compare;
-							correct = (name) -> {
+						case 'c': //if the object's value contains the given text
+							strCor = (name) -> {
 								if (name.contains(comp)) return true;
 								for (String parsed : NameReader.readName(comp))
 									if (name.contains(parsed)) return true;
 								return false;
 							};
+							break;
+						case '\\': //the object's value must contain the written text, ignores case
+							comp = comp.toLowerCase();
+						default:
+							comp = compare.toLowerCase().substring(start + 1);
 					}
-				} else {
-					correct = (name) -> {
-						if (name.toLowerCase().contains(comp)) return true;
-						for (String parsed : NameReader.readName(comp))
-							if (name.toLowerCase().contains(parsed)) return true;
-						return false;
-					};
-					comp = compare.toLowerCase();
-				}
-				lv.setAdapter(VS.mAdapter = VS.contentAdapter = new SearchAdapter(
-						context, new ArrayList<>(), onCheckChange, selectMode));
-				searchControl.update(false);
+				} else comp = compare.toLowerCase();
+				//constructs the final search comparator
+				Correct copyOC = oldCor;
+				StringFinder copySC = strCor;
+				correct = sfm != null ? oldCor : desc ?
+						(bd, par) -> {
+							if (copyOC != null && !copyOC.verify(bd, par)) return false;
+							String d = bd.getDesc(par);
+							return !d.isEmpty() && copySC.verify(d);
+						} :
+						(bd, par) -> {
+							if (copyOC != null && !copyOC.verify(bd, par)) return false;
+							if (copySC.verify(bd.getName())) return true;
+							for (String name : NameReader.readName(bd))
+								if (copySC.verify(name)) return true;
+							return false;
+						};
+
+				backLog.add(false, null, null);
+				rv.setAdapter(backLog.adapter = VS.contentAdapter = new SearchAdapter<SearchItemModel>(
+						rv, itemListener, new ArrayList<>(), onCheckChange));
+				updateSearch(false);
 				info.setText(activity.getString(R.string.data_child_count) + 0);
 				infoScroll.setLayoutParams(new LayoutParams(MATCH_PARENT, (int) (18 * dp)));
-				start = System.currentTimeMillis();
+				this.start = System.currentTimeMillis();
+				visited = new ArrayList<>();
 				new Thread(() -> {
 					search(path.get(-1).getChildren(path.get(-2)), path, false);
 					threads--;
 				}, "Search engine").start();
 			}
+
+			private List<Reference> visited;
 
 			/**
 			 * Searches the given content for matching elements.
@@ -254,12 +333,14 @@ public class ExplorerStuff {
 				boolean ref = false;
 				for (BasicData bd : src) {
 					if (bd instanceof Reference) try {
+						if (visited.contains(bd)) continue;
+						else visited.add((Reference) bd);
 						bd.getThis();
 					} catch (Exception e) {
 						continue;
 					}
 					boolean found;
-					if (VS.mAdapter instanceof SearchAdapter) found = correct(bd, path);
+					if (backLog.adapter instanceof SearchAdapter) found = correct(bd, path);
 					else return;
 					if (bd instanceof Reference) {
 						ref = true;
@@ -299,15 +380,13 @@ public class ExplorerStuff {
 			 * Validates the given element by the selected {@link #correct comparing} method.
 			 */
 			boolean correct(BasicData bd, EasyList<Container> path) {
-				boolean yes = false;
-				if (correct.verify(bd.toString())) yes = true;
-				else for (String name : NameReader.readName(bd)) if (correct.verify(name)) yes = true;
+				boolean yes = correct.verify(bd, path.get(-1));
 				if (yes && set.add(bd)) {
 					EasyList<Container> copy = new EasyList<>();
 					copy.addAll(path);
-					lv.post(() -> {
-						VS.mAdapter.add(new SearchItemModel(bd, copy,
-								((AbstractContainerAdapter) VS.mAdapter).list.size() + 1));
+					rv.post(() -> {
+						backLog.adapter.addItem(new SearchItemModel(bd, copy,
+								VS.contentAdapter.list.size() + 1));
 						info.setText(activity.getString(R.string.data_child_count) + set.size() + ";\t" +
 								activity.getString(R.string.time) + (System.currentTimeMillis() - start) + "ms");
 					});
@@ -317,12 +396,20 @@ public class ExplorerStuff {
 		}
 	}
 
-	interface Correct {
-		boolean verify(String name);
+	private interface Correct {
+		boolean verify(BasicData bd, Container par);
+	}
+
+	private interface SFManipulation {
+		int value(BasicData bd);
+	}
+
+	private interface StringFinder {
+		boolean verify(String str);
 	}
 
 	/**
-	 * When the {@link #lv ListView's} content changes.
+	 * When the {@link #rv ListView's} content changes.
 	 *
 	 * @param allChanged if the currently displayed path to the element has to be fully altered.
 	 */
@@ -360,13 +447,14 @@ public class ExplorerStuff {
 				if (e == bd) break;
 			}
 			int diff = backLog.path.size() - path.size();
-			if (noChange = diff <= backLog.onePath.get(-1)) for (; diff > 0; diff--) {
-				backLog.remove();
-				VS.breadCrumbs--;
-				this.path.removeViews(VS.breadCrumbs * 2, 2);
-			}
-			else backLog.add(true, null, path);
-			content.setContent((Container) bd, (Container) backLog.path.get(-2), backLog.path.size());
+			EasyList<OpenListAdapter> adapters = backLog.copyPrevAdapters();
+			for (int i = 1; i < diff && diff <= adapters.size(); i++)
+				if (((SearchAdapter) adapters.get(-i)).search) diff++;
+			if (diff >= adapters.size()) diff *= 5;
+			if (noChange = diff <= backLog.onePath.get(-1)) {
+				bu.changedPath(diff);
+			} else backLog.add(true, null, path);
+			content.setContent(bd, (Container) backLog.path.get(-2), backLog.path.size());
 			if (noChange) setInfo(backLog.path.get(-1), (Container) backLog.path.get(-2));
 			else onChange(true);
 		});
@@ -379,21 +467,24 @@ public class ExplorerStuff {
 		path.addView(btn);
 	}
 
+	public void updateBackPath(int skip) {
+		for (; skip > 0; skip--) backLog.remove();
+		(VS.contentAdapter = (SearchAdapter) backLog.adapter).update(rv);
+		onChange(true);
+	}
+
 	/**
 	 * Setts the {@link #infoScroll}
-	 *
-	 * @param bd
-	 * @param parent
 	 */
 	public void setInfo(BasicData bd, Container parent) {
 		String txt;
 		if (!backLog.path.isEmpty()) {
 			String desc = bd.getDesc(parent);
-			info.setText(txt = (activity.getString(R.string.data_child_count) + lv.getAdapter().getCount()
+			info.setText(txt = (activity.getString(R.string.data_child_count) + backLog.adapter.list.size()
 					+ ", " + activity.getString(R.string.success_rate) + ": " + bd.getRatio()
 					+ (desc.isEmpty() ? '%' : "%\n" + desc)));
 		} else
-			info.setText(txt = (activity.getString(R.string.data_child_count) + lv.getAdapter().getCount()));
+			info.setText(txt = (activity.getString(R.string.data_child_count) + backLog.adapter.list.size()));
 		hsv.post(() -> hsv.fullScroll(View.FOCUS_RIGHT));
 		info.setClickable((height_def = height(txt)) >= 3);
 		infoScroll.setLayoutParams(new LayoutParams(MATCH_PARENT, realHeight(opened)));
@@ -421,11 +512,10 @@ public class ExplorerStuff {
 	}
 
 	public static class ViewState {
-		public ArrayAdapter mAdapter;
 		/**
-		 * This adapter is the {@link #mAdapter} if not an {@link com.schlmgr.gui.list.ImageAdapter}.
+		 * This adapter is the {@link BackLog#adapter} if not an {@link com.schlmgr.gui.list.ImageAdapter}.
 		 */
-		public AbstractContainerAdapter<? extends HierarchyItemModel> contentAdapter;
+		public SearchAdapter<? extends HierarchyItemModel> contentAdapter;
 		public int breadCrumbs = 0;
 		public boolean sv_focused;
 		public boolean sv_visible;

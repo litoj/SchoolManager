@@ -24,8 +24,6 @@ import objects.templates.Container;
 import objects.templates.TwoSided;
 
 import static com.schlmgr.gui.CurrentData.backLog;
-import static com.schlmgr.gui.fragments.MainFragment.VS;
-import static com.schlmgr.gui.fragments.MainFragment.es;
 
 /**
  * Used for creating and editing translates in {@link CreatorPopup}.
@@ -62,7 +60,7 @@ public class TranslatePopupRecyclerAdapter
 
 		public TranslateHolder(@NonNull View itemView) {
 			super(itemView);
-			desc = view.findViewById(R.id.item_desc);
+			desc = itemView.findViewById(R.id.item_desc);
 			if (VERSION.SDK_INT < 21) {
 				name.setOnTouchListener(TranslatePopupRecyclerAdapter.this);
 				desc.setOnTouchListener(TranslatePopupRecyclerAdapter.this);
@@ -137,7 +135,8 @@ public class TranslatePopupRecyclerAdapter
 					d.name = names[i];
 					d.description = i < descs.length ? descs[i].replace("\\t", "\t") : null;
 					Word w = Word.mkElement(d, translates);
-					VS.mAdapter.add(new HierarchyItemModel(w, parent, es.lv.getCount() + 1));
+					backLog.adapter.addItem(
+							new HierarchyItemModel(w, parent, backLog.adapter.list.size() + 1));
 					parent.putChild((Container) backLog.path.get(-2), w);
 				}
 			} else {

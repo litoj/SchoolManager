@@ -62,7 +62,7 @@ public class TestResultsPopup extends AbstractPopup {
 			name.setText(item.sp.t.getName());
 			if (!item.answer.isEmpty()) {
 				written.setText(item.answer);
-				written.setTextColor(item.correct ? 0x8800FF00 : 0x88FF0000);
+				written.setTextColor(item.correct ? 0xFF00AA00 : 0xFFAA0000);
 			} else written.setText(null);
 		}
 	}

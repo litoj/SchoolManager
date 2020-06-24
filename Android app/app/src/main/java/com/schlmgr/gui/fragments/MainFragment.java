@@ -10,9 +10,6 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
-import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -29,7 +26,6 @@ import com.schlmgr.gui.CurrentData;
 import com.schlmgr.gui.CurrentData.EasyList;
 import com.schlmgr.gui.ExplorerStuff;
 import com.schlmgr.gui.activity.SelectDirActivity;
-import com.schlmgr.gui.list.AbstractContainerAdapter;
 import com.schlmgr.gui.list.AbstractPopupRecyclerAdapter;
 import com.schlmgr.gui.list.HierarchyAdapter;
 import com.schlmgr.gui.list.HierarchyItemModel;
@@ -37,6 +33,7 @@ import com.schlmgr.gui.list.ImageAdapter;
 import com.schlmgr.gui.list.ImageItemModel;
 import com.schlmgr.gui.list.ImagePopupRecyclerAdapter;
 import com.schlmgr.gui.list.SearchAdapter;
+import com.schlmgr.gui.list.SearchAdapter.OnItemActionListener;
 import com.schlmgr.gui.list.SearchItemModel;
 import com.schlmgr.gui.list.TranslatePopupRecyclerAdapter;
 import com.schlmgr.gui.popup.ContinuePopup;
@@ -46,6 +43,7 @@ import com.schlmgr.gui.popup.CreatorPopup.Includer;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -76,7 +74,7 @@ import static com.schlmgr.gui.CurrentData.finishLoad;
 import static com.schlmgr.gui.list.HierarchyItemModel.convert;
 
 public class MainFragment extends Fragment
-		implements Controller.ControlListener, OnItemClickListener, OnItemLongClickListener {
+		implements Controller.ControlListener, OnItemActionListener {
 
 	private static LinearLayout selectOpts;
 	private static TextView edit;
@@ -150,7 +148,7 @@ public class MainFragment extends Fragment
 
 		new Thread(() -> {
 			delete.setOnClickListener(v -> {
-				if (((AbstractContainerAdapter) VS.mAdapter).selected > 0)
+				if (((SearchAdapter) backLog.adapter).selected > 0)
 					new ContinuePopup(getString(R.string.continue_delete), () -> {
 						for (int i = VS.contentAdapter.list.size() - 1; i >= 0; i--) {
 							HierarchyItemModel him = VS.contentAdapter.list.get(i);
@@ -174,23 +172,29 @@ public class MainFragment extends Fragment
 					});
 			});
 			reference.setOnClickListener(v -> {
+				int search = 0;
+				EasyList<? extends BasicData> list = null;
 				for (HierarchyItemModel him : VS.contentAdapter.list)
 					if (him.isSelected()) {
-						EasyList<? extends BasicData> list;
-						if (VS.contentAdapter instanceof SearchAdapter)
+						if (search == 0 && VS.contentAdapter.search) {
 							list = ((SearchItemModel) him).path;
-						else if (him.bd instanceof Reference)
+							search++;
+						} else if (him.bd instanceof Reference) {
 							list = EasyList.convert(((Reference) him.bd).getRefPath());
-						else break;
-						backLog.add(true, null, (EasyList<BasicData>) list);
-						setContainerContent(((EasyList<Container>) list).get(-1),
-								((EasyList<Container>) list).get(-2));
-						es.onChange(true);
-						VS.contentAdapter.selected = -1;
-						setSelectOpts(false);
-						return;
+							break;
+						} else {
+							search += 10;
+							break;
+						}
 					}
-				move(true);
+				if (search < 2) {
+					backLog.add(true, null, (EasyList<BasicData>) list);
+					setContent(((EasyList<Container>) list).get(-1),
+							((EasyList<Container>) list).get(-2), 10);
+					es.onChange(true);
+					VS.contentAdapter.selected = -1;
+					setSelectOpts(false);
+				} else move(true);
 			});
 			cut.setOnClickListener(v -> move(false));
 			edit.setOnClickListener(none -> {
@@ -227,7 +231,7 @@ public class MainFragment extends Fragment
 										VS.contentAdapter.selected = -1;
 										setSelectOpts(false);
 										him.toShow = him.bd.toString();
-										VS.mAdapter.notifyDataSetChanged();
+										backLog.adapter.notifyDataSetChanged();
 										cp.dismiss();
 									} catch (IllegalArgumentException iae) {
 										if (!iae.getMessage().contains("Name can't")) throw iae;
@@ -260,7 +264,7 @@ public class MainFragment extends Fragment
 											him.flipped = !him.flipped;
 											him.flip();
 										}
-										VS.mAdapter.notifyDataSetChanged();
+										backLog.adapter.notifyDataSetChanged();
 										cp.dismiss();
 									});
 									return ll;
@@ -271,9 +275,9 @@ public class MainFragment extends Fragment
 					}
 				}
 			});
-			if (VS.mAdapter instanceof AbstractContainerAdapter && VS.contentAdapter.selected > -1) {
+			if (backLog.adapter instanceof SearchAdapter && VS.contentAdapter.selected > -1) {
 				selectOpts.setVisibility(View.VISIBLE);
-				for (HierarchyItemModel him : ((AbstractContainerAdapter<? extends HierarchyItemModel>) VS.mAdapter).list)
+				for (HierarchyItemModel him : (List<? extends HierarchyItemModel>) backLog.adapter.list)
 					if (him.isSelected() && him.bd instanceof Reference) {
 						tglEnabled(edit, false);
 						return;
@@ -282,24 +286,23 @@ public class MainFragment extends Fragment
 			}
 		}, "select options setter").start();
 
-		es = new ExplorerStuff(false, this::setContent, () -> {
+		es = new ExplorerStuff(this, this::setContent, () -> {
 			VS.contentAdapter.selected = -1;
 			setSelectOpts(false);
 		}, this::setVisibleOpts, VS, backLog, getContext(),
-				root.findViewById(R.id.objects_path_handler),
-				root.findViewById(R.id.objects_list), root.findViewById(R.id.objects_path),
-				root.findViewById(R.id.objects_info_handler), root.findViewById(R.id.objects_info),
-				root.findViewById(R.id.objects_search), root.findViewById(R.id.touch_outside));
-		es.lv.setOnItemClickListener(this);
-		es.lv.setOnItemLongClickListener(this);
+				root.findViewById(R.id.explorer_path_handler), root.findViewById(R.id.explorer_list),
+				root.findViewById(R.id.explorer_path), root.findViewById(R.id.explorer_info_handler),
+				root.findViewById(R.id.explorer_info), root.findViewById(R.id.explorer_search),
+				root.findViewById(R.id.touch_outside), root.findViewById(R.id.search_collapser),
+				this::updateBackContent);
 		Formatter.defaultReacts.put("MChLoaded", (o) -> {
-			if (backLog.path.isEmpty()) root.post(() -> VS.mAdapter.notifyDataSetChanged());
+			if (backLog.path.isEmpty()) root.post(() -> backLog.adapter.notifyDataSetChanged());
 		});
-		if (VS.mAdapter == null) {
+		if (backLog.adapter == null) {
 			setContent(backLog.path.get(-1), (Container) backLog.path.get(-2), backLog.path.size());
 			es.setInfo(backLog.path.get(-1), (Container) backLog.path.get(-2));
 		} else {
-			es.lv.setAdapter(VS.mAdapter);
+			es.rv.setAdapter(backLog.adapter);
 			if (!VS.sv_visible) es.searchView.setVisibility(View.GONE);
 			es.onChange(true);
 		}
@@ -321,7 +324,7 @@ public class MainFragment extends Fragment
 		Controller.toggleSelectBtn(false);
 		pasteOpts.setVisibility(View.VISIBLE);
 		tglEnabled(paste, false);
-		boolean search = VS.mAdapter instanceof SearchAdapter;
+		boolean search = VS.contentAdapter.search;
 		toMove = new ArrayList<>();
 		for (HierarchyItemModel him : VS.contentAdapter.list)
 			if (him.isSelected()) toMove.add(him);
@@ -336,7 +339,7 @@ public class MainFragment extends Fragment
 			}
 			Container npp = (Container) backLog.path.get(-2);
 			Container np = (Container) backLog.path.get(-1);
-			boolean searchNow = VS.mAdapter instanceof SearchAdapter;
+			boolean searchNow = VS.contentAdapter.search;
 			for (BasicData bd : np.getChildren(npp)) toMove.remove(bd);
 			if (ref) {
 				List<Container> cp = new ArrayList<>(backLog.path.size());
@@ -345,14 +348,14 @@ public class MainFragment extends Fragment
 					Reference r;
 					try {
 						r = Reference.mkElement(him.bd, cp,
-								(search ? (List<Container>) ((SearchItemModel) him).path : original)
+								(search ? ((SearchItemModel) him).path : original)
 										.toArray(new Container[0]));
 					} catch (IllegalArgumentException iae) {
 						continue;
 					}
 					np.putChild(npp, r);
 					if (!searchNow)
-						VS.mAdapter.add(new HierarchyItemModel(r, np, VS.mAdapter.getCount()));
+						backLog.adapter.addItem(new HierarchyItemModel(r, np, backLog.adapter.list.size()));
 				}
 			} else {
 				List<ContainerFile> toSave = new LinkedList<>();
@@ -369,9 +372,9 @@ public class MainFragment extends Fragment
 					}
 					if (!searchNow) {
 						if (search)
-							VS.mAdapter.add(new HierarchyItemModel(him.bd, np, VS.mAdapter.getCount()));
+							backLog.adapter.addItem(new HierarchyItemModel(him.bd, np, backLog.adapter.list.size()));
 						else {
-							VS.mAdapter.add(him);
+							backLog.adapter.addItem(him);
 							him.parent = np;
 						}
 					}
@@ -410,6 +413,7 @@ public class MainFragment extends Fragment
 		if (VS.contentAdapter.selected == -1 && !change) {
 			VS.contentAdapter.ref = 0;
 			for (HierarchyItemModel him : VS.contentAdapter.list) him.setSelected(false);
+			VS.contentAdapter.notifyDataSetChanged();
 		}
 	}
 
@@ -417,11 +421,12 @@ public class MainFragment extends Fragment
 	 * Controls the usability of the {@link #selectOpts} buttons.
 	 */
 	private void setVisibleOpts() {
+		if (VS.contentAdapter == null) return;
 		boolean notObj = backLog.path.size() > 0;
 		int selected = VS.contentAdapter.selected;
 		tglEnabled(delete, selected > 0);
-		tglEnabled(reference, selected > 0 && notObj && VS.contentAdapter.ref < 2 &&
-				(!(VS.contentAdapter instanceof SearchAdapter) || selected < 2));
+		tglEnabled(reference, selected > 0 && notObj && (VS.contentAdapter.ref < 2 && selected < 2
+				|| VS.contentAdapter.ref < 1));
 		tglEnabled(cut, selected > 0 && notObj && VS.contentAdapter.ref < 1);
 		tglEnabled(edit, selected == 1 && VS.contentAdapter.ref < 1);
 	}
@@ -449,28 +454,15 @@ public class MainFragment extends Fragment
 	public void run() {
 		VS.sv_focused = false;
 		es.searchView.clearFocus();
-		if (Controller.isActive(this) && VS.mAdapter instanceof AbstractContainerAdapter
+		if (Controller.isActive(this) && VS.contentAdapter != null
 				&& VS.contentAdapter.selected > -1) {
 			VS.contentAdapter.selected = -1;
 			setSelectOpts(false);
 		} else if (Controller.isActive(this) && !backLog.path.isEmpty()) {
-			if (VS.pasteMode && backLog.path.size() == 1) {
+			if (VS.pasteMode && backLog.path.size() == 1 && !VS.contentAdapter.search) {
 				pasteOpts.setVisibility(View.GONE);
 				VS.pasteMode = false;
-				return;
-			}
-			if (VS.mAdapter instanceof SearchAdapter) {
-				setContent(backLog.path.get(-1), (Container) backLog.path.get(-2), backLog.path.size());
-				return;
-			}
-			boolean change = !backLog.remove();
-			setContent(backLog.path.get(-1), (Container) backLog.path.get(-2), backLog.path.size());
-			if (change) es.onChange(true);
-			else {
-				VS.breadCrumbs--;
-				es.path.removeViews(VS.breadCrumbs * 2, 2);
-				es.setInfo(backLog.path.get(-1), (Container) backLog.path.get(-2));
-			}
+			} else updateBackContent(1);
 		} else {
 			if (!Controller.isActive(this)) {
 				Controller.defaultBack.run();
@@ -484,116 +476,63 @@ public class MainFragment extends Fragment
 					Controller.activity.getSupportActionBar().setTitle(backLog.path.get(-1).toString());
 				Controller.setMenuRes(VS.menuRes);
 				if (!VS.sv_visible) es.searchView.setVisibility(View.GONE);
-				else es.searchControl.update(false);
+				else es.updateSearch(false);
 			}
 		}
-	}
-
-	@Override
-	public void onClick(View v) {
-		if (VS.mAdapter instanceof AbstractContainerAdapter) {
-			if (VS.contentAdapter.selected > -1) {
-				if (VS.contentAdapter.selected < VS.contentAdapter.list.size()) {
-					VS.contentAdapter.selected = VS.contentAdapter.list.size();
-					for (HierarchyItemModel him : VS.contentAdapter.list)
-						if (!him.isSelected()) {
-							if (him.bd instanceof Reference) VS.contentAdapter.ref++;
-							him.setSelected(true);
-						}
-					setSelectOpts(true);
-				} else {
-					VS.contentAdapter.selected = -1;
-					setSelectOpts(false);
-				}
-			} else {
-				VS.contentAdapter.selected = 0;
-				setSelectOpts(false);
-			}
-			VS.contentAdapter.notifyDataSetChanged();
-		}
-	}
-
-	@Override
-	public void onItemClick(AdapterView<?> par, View v, int pos, long id) {
-		if (VS.mAdapter instanceof ImageAdapter) return;
-		HierarchyItemModel him = (HierarchyItemModel) par.getItemAtPosition(pos);
-		BasicData bd = him.bd;
-		if (bd instanceof Word) {
-			if (HierarchyItemModel.flipAllOnClick) {
-				boolean flip = !him.flipped;
-				for (HierarchyItemModel item : VS.contentAdapter.list)
-					if (item.flipped != flip) item.flip();
-			} else him.flip();
-			VS.contentAdapter.notifyDataSetChanged();
-			return;
-		} else {
-			boolean ref;
-			if (ref = bd instanceof Reference) {
-				try {
-					him.setNew(bd.getThis(), ((Reference) bd).getRefPathAt(-1));
-					if (bd.getThis() instanceof Word) {
-						VS.contentAdapter.notifyDataSetChanged();
-						return;
-					} else {
-						backLog.add(true, null, EasyList.convert(((Reference) bd).getRefPath()));
-						backLog.path.add(bd = bd.getThis());
-					}
-				} catch (Exception e) {
-					return;
-				}
-			} else if (ref = VS.contentAdapter instanceof SearchAdapter) {
-				backLog.add(true, null, (EasyList<BasicData>) ((SearchItemModel) him).path);
-				backLog.path.add(him.bd);
-			} else backLog.add(false, bd, null);
-			VS.contentAdapter.selected = -1;
-			setSelectOpts(true);
-			setContent(bd, him.parent, backLog.path.size());
-			es.onChange(ref);
-		}
-	}
-
-	@Override
-	public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-		if (VS.mAdapter instanceof AbstractContainerAdapter && !VS.pasteMode) {
-			boolean selected = !VS.contentAdapter.list.get(position).isSelected();
-			if (VS.contentAdapter.selected == -1) VS.contentAdapter.selected = 0;
-			if (VS.contentAdapter.list.get(position).bd instanceof Reference)
-				VS.contentAdapter.ref += selected ? 1 : -1;
-			VS.contentAdapter.selected += selected ? 1 : -1;
-			setSelectOpts(false);
-			VS.contentAdapter.list.get(position).setSelected(selected);
-			VS.contentAdapter.notifyDataSetChanged();
-		} else return false;
-		return true;
 	}
 
 	public void setContent(BasicData bd, Container parent, int size) {
-		if (size == 0) setObjectsContent();
-		else if (size == 1) setContainerContent((Container) bd, null);
-		else if (bd instanceof Container)
-			if (bd instanceof TwoSided) {
-				if (bd instanceof Picture && !VS.pasteMode) setPictureContent(bd, parent);
-			} else setContainerContent((Container) bd, parent);
+		boolean container = false;
+		if (size == 0) {
+			new Thread(() -> {
+				try {
+					Thread.sleep(20);
+				} catch (Exception e) {
+				}
+				finishLoad();
+				if (defaultReacts.get("removeSchNames") != null)
+					defaultReacts.get("removeSchNames").react();
+			}, "MCh finishLoad").start();
+			es.rv.setAdapter(backLog.adapter = VS.contentAdapter = new HierarchyAdapter(es.rv,
+					this, convert(new ArrayList<>(MainChapter.ELEMENTS), null),
+					this::setVisibleOpts));
+			prepareObjectsContent();
+		} else if (bd instanceof Container)
+			if (!(container = !(bd instanceof TwoSided)) && bd instanceof Picture && !VS.pasteMode) {
+				Controller.setMenuRes(VS.menuRes = 0);
+				Controller.toggleSelectBtn(false);
+				es.updateSearch(true);
+				ArrayList<ImageItemModel> list = new ArrayList<>();
+				BasicData[] pics = ((Picture) bd).getChildren(parent);
+				for (int i = 1; i < pics.length; i += 2)
+					list.add(new ImageItemModel((Picture) pics[i - 1], (Picture) pics[i]));
+				if (pics.length % 2 == 1)
+					list.add(new ImageItemModel((Picture) pics[pics.length - 1], null));
+				es.rv.setAdapter(backLog.adapter = new ImageAdapter(es.rv, list));
+				VS.contentAdapter = null;
+				Controller.activity.getSupportActionBar().setTitle(bd.toString());
+			}
+		if (container) {
+			es.rv.setAdapter(backLog.adapter = VS.contentAdapter = new HierarchyAdapter(es.rv,
+					this, convert(((Container) bd).getChildren(parent), (Container) bd),
+					this::setVisibleOpts));
+			prepareContainerContent((Container) bd);
+		}
 	}
 
-	private void setObjectsContent() {
-		new Thread(() -> {
-			try {
-				Thread.sleep(20);
-			} catch (Exception e) {
-			}
-			finishLoad();
-			if (defaultReacts.get("removeSchNames") != null)
-				defaultReacts.get("removeSchNames").react();
-		}, "MCh finishLoad").start();
+	public void updateBackContent(int skip) {
+		es.updateBackPath(skip);
+		if (backLog.path.isEmpty()) prepareObjectsContent();
+		else prepareContainerContent((Container) backLog.path.get(-1));
+	}
+
+	private void prepareObjectsContent() {
 		Controller.setMenuRes(VS.menuRes = R.menu.more_main);
-		es.searchControl.update(true);
-		es.lv.setAdapter(VS.mAdapter = VS.contentAdapter = new HierarchyAdapter(getContext(),
-				convert(new ArrayList<>(MainChapter.ELEMENTS), null), this::setVisibleOpts, false));
+		es.updateSearch(true);
 		Controller.activity.getSupportActionBar().setTitle(getString(R.string.menu_objects));
 	}
 
-	private void setContainerContent(Container bd, Container parent) {
+	private void prepareContainerContent(Container bd) {
 		if (VS.pasteMode) test:{
 			BasicData holder = original.get(original.size() - 1);
 			int i = 0;
@@ -618,23 +557,88 @@ public class MainFragment extends Fragment
 		Controller.setMenuRes(VS.menuRes = bd instanceof MainChapter
 				? R.menu.more_mch : R.menu.more_container);
 		if (!VS.pasteMode) Controller.toggleSelectBtn(true);
-		es.searchControl.update(false);
-		es.lv.setAdapter(VS.mAdapter = VS.contentAdapter = new HierarchyAdapter(getContext(),
-				convert(bd.getChildren(parent), bd), this::setVisibleOpts, false));
+		es.updateSearch(false);
 		Controller.activity.getSupportActionBar().setTitle(bd.toString());
 	}
 
-	private void setPictureContent(BasicData bd, Container parent) {
-		Controller.setMenuRes(VS.menuRes = 0);
-		Controller.toggleSelectBtn(false);
-		es.searchControl.update(true);
-		ArrayList<ImageItemModel> list = new ArrayList<>();
-		BasicData[] pics = ((Picture) bd).getChildren(parent);
-		for (int i = 1; i < pics.length; i += 2)
-			list.add(new ImageItemModel((Picture) pics[i - 1], (Picture) pics[i]));
-		if (pics.length % 2 == 1) list.add(new ImageItemModel((Picture) pics[pics.length - 1], null));
-		es.lv.setAdapter(VS.mAdapter = new ImageAdapter(getContext(), list, parent));
-		Controller.activity.getSupportActionBar().setTitle(bd.toString());
+	@Override
+	public void onClick(View v) { //control of the 'select' button
+		if (backLog.adapter instanceof SearchAdapter) {
+			if (VS.contentAdapter.selected > -1) {
+				if (VS.contentAdapter.selected < VS.contentAdapter.list.size()) {
+					VS.contentAdapter.selected = VS.contentAdapter.list.size();
+					for (HierarchyItemModel him : VS.contentAdapter.list)
+						if (!him.isSelected()) {
+							if (him.bd instanceof Reference) VS.contentAdapter.ref++;
+							him.setSelected(true);
+						}
+					setSelectOpts(true);
+				} else {
+					VS.contentAdapter.selected = -1;
+					setSelectOpts(false);
+				}
+			} else {
+				VS.contentAdapter.selected = 0;
+				setSelectOpts(false);
+			}
+			VS.contentAdapter.notifyDataSetChanged();
+		}
+	}
+
+	@Override
+	public void onItemClick(HierarchyItemModel item) {
+		BasicData bd = item.bd;
+		if (bd instanceof Word) {
+			if (HierarchyItemModel.flipAllOnClick) {
+				boolean flip = !item.flipped;
+				for (HierarchyItemModel item1 : VS.contentAdapter.list)
+					if (item1.flipped != flip) item1.flip();
+			} else item.flip();
+			VS.contentAdapter.notifyDataSetChanged();
+			return;
+		} else {
+			boolean ref;
+			if (ref = bd instanceof Reference) {
+				try {
+					if (item instanceof SearchItemModel) ((SearchItemModel) item).setNew(
+							bd.getThis(), Arrays.asList(((Reference) bd).getRefPath()));
+					else item.setNew(bd.getThis(), ((Reference) bd).getRefPathAt(-1));
+					if (bd.getThis() instanceof Word) {
+						VS.contentAdapter.notifyDataSetChanged();
+						return;
+					} else {
+						backLog.add(true, null, EasyList.convert(((Reference) bd).getRefPath()));
+						backLog.path.add(bd = bd.getThis());
+					}
+				} catch (Exception e) {
+					return;
+				}
+			} else if (ref = VS.contentAdapter.search) {
+				EasyList<BasicData> list = new EasyList<>();
+				list.addAll(((SearchItemModel) item).path);
+				list.add(item.bd);
+				backLog.add(true, null, list);
+			} else backLog.add(false, bd, null);
+			VS.contentAdapter.selected = -1;
+			setSelectOpts(true);
+			setContent(bd, item.parent, backLog.path.size());
+			es.onChange(ref);
+		}
+	}
+
+	@Override
+	public boolean onItemLongClick(HierarchyItemModel item) {
+		if (!VS.pasteMode) {
+			boolean selected = !item.isSelected();
+			if (VS.contentAdapter.selected == -1) VS.contentAdapter.selected = 0;
+			if (item.bd instanceof Reference)
+				VS.contentAdapter.ref += selected ? 1 : -1;
+			VS.contentAdapter.selected += selected ? 1 : -1;
+			setSelectOpts(false);
+			item.setSelected(selected);
+			VS.contentAdapter.notifyDataSetChanged();
+		} else return false;
+		return true;
 	}
 
 	@Override
@@ -646,8 +650,8 @@ public class MainFragment extends Fragment
 					activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.new_mch), (x, cp) -> {
 						cp.ok.setOnClickListener(v -> {
 							String name = cp.et_name.getText().toString();
+							if (name.isEmpty()) return;
 							try {
-								if (name.isEmpty()) return;
 								ContainerFile.isCorrect(name);
 							} catch (IllegalArgumentException iae) {
 								if (!iae.getMessage().contains("Name can't")) throw iae;
@@ -655,10 +659,10 @@ public class MainFragment extends Fragment
 										.react(iae.getMessage().contains("longer"));
 								return;
 							}
-							VS.mAdapter.add(new HierarchyItemModel(new MainChapter(new Data(name, null)
-									.addDesc(cp.et_desc.getText().toString().replace("\\t", "\t"))),
-									null, es.lv.getCount() + 1));
-							VS.mAdapter.notifyDataSetChanged();
+							backLog.adapter.addItem(new HierarchyItemModel(new MainChapter(
+									new Data(name, null).addDesc(cp.et_desc.getText().toString()
+											.replace("\\t", "\t"))), null, backLog.adapter.list.size() + 1));
+							backLog.adapter.notifyDataSetChanged();
 							cp.dismiss();
 						});
 						return null;
@@ -676,8 +680,10 @@ public class MainFragment extends Fragment
 										.addPar(par);
 								Container ch = ((CheckBox) cp.view.findViewById(R.id.chapter_file))
 										.isChecked() ? SaveChapter.mkElement(d) : new Chapter(d);
-								VS.mAdapter.add(new HierarchyItemModel(ch, par, es.lv.getCount() + 1));
+								backLog.adapter.addItem(
+										new HierarchyItemModel(ch, par, backLog.adapter.list.size() + 1));
 								par.putChild((Container) backLog.path.get(-2), ch);
+								backLog.adapter.notifyDataSetChanged();
 								CurrentData.newChapters.add(ch);
 								cp.dismiss();
 							} catch (IllegalArgumentException iae) {
@@ -708,6 +714,7 @@ public class MainFragment extends Fragment
 							cp.ok.setOnClickListener(v -> {
 								onClick.run();
 								if (content.toRemove != null) return;
+								backLog.adapter.notifyDataSetChanged();
 								CurrentData.save(backLog.path);
 								cp.dismiss();
 							});
@@ -767,8 +774,8 @@ public class MainFragment extends Fragment
 					int[] sf = opened.getSF();
 					int[] refreshSF = opened.refreshSF();
 					if (sf[0] != refreshSF[0] || sf[1] != refreshSF[1]) {
-						if (backLog.path.get(-1) == opened) es.lv.post(() -> {
-							VS.mAdapter.notifyDataSetChanged();
+						if (backLog.path.get(-1) == opened) es.rv.post(() -> {
+							backLog.adapter.notifyDataSetChanged();
 							es.setInfo(opened, currentPath.get(currentPath.size() - 2));
 						});
 						CurrentData.save(currentPath);
@@ -801,7 +808,7 @@ public class MainFragment extends Fragment
 			list.clear();
 			Collections.addAll(list, hims);
 		}
-		es.lv.post(() -> VS.mAdapter.notifyDataSetChanged());
+		es.rv.post(() -> backLog.adapter.notifyDataSetChanged());
 	}
 
 	@Override
@@ -866,6 +873,7 @@ public class MainFragment extends Fragment
 		if (!backLog.path.isEmpty())
 			Controller.activity.getSupportActionBar().setTitle(backLog.path.get(-1).toString());
 		super.onResume();
+		backLog.adapter.update(es.rv);
 	}
 
 	public static final int WORD_WRITE = 1;

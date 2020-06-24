@@ -1,46 +1,54 @@
 package com.schlmgr.gui.list;
 
-import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.schlmgr.R;
 import com.schlmgr.gui.popup.FullPicture;
 
 import java.util.List;
 
-import objects.templates.Container;
+public class ImageAdapter extends OpenListAdapter<ImageItemModel, ImageAdapter.ImageItemHolder> {
 
-public class ImageAdapter extends ArrayAdapter<ImageItemModel> {
-	private final LayoutInflater li;
-	public final List<ImageItemModel> list;
-	private final Container parent;
-
-	public ImageAdapter(@NonNull Context context, @NonNull List<ImageItemModel> objects, Container parent) {
-		super(context, R.layout.item_image, R.id.item_img_ics, objects);
-		li = LayoutInflater.from(context);
-		list = objects;
-		this.parent = parent;
+	public ImageAdapter(RecyclerView rv, @NonNull List<ImageItemModel> objects) {
+		super(objects);
+		update(rv);
 	}
 
-	public View getView(int pos, View view, ViewGroup parent) {
-		if (view == null) view = li.inflate(R.layout.item_image, parent, false);
-		ImageItemModel iim = list.get(pos);
-		ImageView iv = view.findViewById(R.id.item_img_1);
-		iv.setOnClickListener(v -> new FullPicture(iim.pic1));
-		iim.setBm(true, iv);
-		iv.setContentDescription(iim.pic1.toString());
-		if (iim.pic2 != null) {
-			iim.setBm(false, iv = view.findViewById(R.id.item_img_2));
-			iv.setContentDescription(iim.pic2.toString());
-			iv.setOnClickListener(v -> new FullPicture(iim.pic2));
-		} else view.findViewById(R.id.item_img_2).setVisibility(View.GONE);
-		return view;
+	@NonNull
+	@Override
+	public ImageItemHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+		return new ImageItemHolder(LayoutInflater.from(
+				parent.getContext()).inflate(R.layout.item_image, parent, false));
+	}
+
+	public static class ImageItemHolder extends RecyclerView.ViewHolder {
+
+		private final ImageView iv1, iv2;
+		private ImageItemModel item;
+
+		public ImageItemHolder(@NonNull View itemView) {
+			super(itemView);
+			iv1 = itemView.findViewById(R.id.item_img_1);
+			iv1.setOnClickListener((v) -> new FullPicture(item.pic1));
+			iv2 = itemView.findViewById(R.id.item_img_2);
+			iv2.setOnClickListener((v) -> new FullPicture(item.pic2));
+		}
+	}
+
+	@Override
+	public void onBindViewHolder(@NonNull ImageItemHolder holder, int pos) {
+		holder.item = list.get(pos);
+		(holder.item.iv1 = holder.iv1).setImageBitmap(holder.item.bm1);
+		if (holder.item.pic2 != null) {
+			holder.iv2.setVisibility(View.VISIBLE);
+			(holder.item.iv2 = holder.iv2).setImageBitmap(holder.item.bm2);
+		} else holder.iv2.setVisibility(View.GONE);
 	}
 }
 

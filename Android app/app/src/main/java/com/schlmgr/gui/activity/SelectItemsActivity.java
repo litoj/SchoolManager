@@ -4,9 +4,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Build.VERSION;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
-import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -21,7 +18,7 @@ import com.schlmgr.gui.ExplorerStuff.ViewState;
 import com.schlmgr.gui.fragments.TestFragment;
 import com.schlmgr.gui.list.HierarchyAdapter;
 import com.schlmgr.gui.list.HierarchyItemModel;
-import com.schlmgr.gui.list.SearchAdapter;
+import com.schlmgr.gui.list.SearchAdapter.OnItemActionListener;
 import com.schlmgr.gui.list.SearchItemModel;
 
 import java.util.ArrayList;
@@ -35,13 +32,12 @@ import objects.templates.BasicData;
 import objects.templates.Container;
 import objects.templates.TwoSided;
 
-import static com.schlmgr.gui.Controller.currentActivity;
 import static com.schlmgr.gui.Controller.dp;
 import static com.schlmgr.gui.fragments.TestFragment.list;
 import static com.schlmgr.gui.list.HierarchyItemModel.convert;
 
 public class SelectItemsActivity extends PopupCareActivity
-		implements OnItemClickListener, OnItemLongClickListener {
+		implements OnItemActionListener {
 
 	private static long backTime;
 	public static BackLog backLog;
@@ -54,9 +50,8 @@ public class SelectItemsActivity extends PopupCareActivity
 	private static Drawable icSelect_disabled;
 
 	@Override
-	protected void onCreate(Bundle savedInstanceState) {
+	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		currentActivity = this;
 		setContentView(R.layout.activity_select_item);
 		findViewById(R.id.objects_cancel).setOnClickListener(v -> super.onBackPressed());
 		findViewById(R.id.select_all).setOnClickListener(v -> {
@@ -117,19 +112,18 @@ public class SelectItemsActivity extends PopupCareActivity
 			(backLog = new BackLog()).clear();
 			VS = new ViewState();
 		}
-		es = new ExplorerStuff(true, this::setContent, this::checkSelectUsability,
-				this::checkSelectUsability, VS, backLog,
-				Controller.CONTEXT = getApplicationContext(), findViewById(R.id.objects_path_handler),
-				findViewById(R.id.objects_list), findViewById(R.id.objects_path),
-				findViewById(R.id.objects_info_handler), findViewById(R.id.objects_info),
-				findViewById(R.id.objects_search), findViewById(R.id.touch_outside));
-		es.lv.setOnItemClickListener(this);
-		es.lv.setOnItemLongClickListener(this);
+		es = new ExplorerStuff(this, this::setContent, this::checkSelectUsability,
+				this::checkSelectUsability, VS, backLog, Controller.CONTEXT = getApplicationContext(),
+				findViewById(R.id.explorer_path_handler), findViewById(R.id.explorer_list),
+				findViewById(R.id.explorer_path), findViewById(R.id.explorer_info_handler),
+				findViewById(R.id.explorer_info), findViewById(R.id.explorer_search),
+				findViewById(R.id.touch_outside), findViewById(R.id.search_collapser),
+				this::updateBackPath);
 		if (none) {
 			setContent(backLog.path.get(-1), (Container) backLog.path.get(-2), backLog.path.size());
 			es.setInfo(backLog.path.get(-1), (Container) backLog.path.get(-2));
 		} else {
-			es.lv.setAdapter(VS.contentAdapter);
+			VS.contentAdapter.update(es.rv);
 			VS.contentAdapter.occ = this::checkSelectUsability;
 			if (!VS.sv_visible) es.searchView.setVisibility(View.GONE);
 			es.onChange(true);
@@ -144,6 +138,22 @@ public class SelectItemsActivity extends PopupCareActivity
 		}
 		checkSelectUsability();
 	}
+
+	public void setContent(BasicData bd, Container parent, int size) {
+		es.updateSearch(size == 0);
+		es.rv.setAdapter(backLog.adapter = VS.contentAdapter = new HierarchyAdapter(es.rv,
+				this, size == 0 ? convert(new ArrayList<>(MainChapter.ELEMENTS), null) :
+				convert(((Container) bd).getChildren(parent), (Container) bd),
+				this::checkSelectUsability));
+		checkSelectUsability();
+	}
+
+	public void updateBackPath(int skip) {
+		es.updateBackPath(skip);
+		es.updateSearch(backLog.path.isEmpty());
+		checkSelectUsability();
+	}
+
 
 	/**
 	 * Checks if the {@link #select} button is enabled. Changes the state if necessary.
@@ -161,21 +171,8 @@ public class SelectItemsActivity extends PopupCareActivity
 		if (clear()) return;
 		VS.sv_focused = false;
 		es.searchView.clearFocus();
-		if (!backLog.path.isEmpty() && list.isEmpty() || backLog.path.size() > 1) {
-			if (VS.contentAdapter instanceof SearchAdapter) {
-				setContent(backLog.path.get(-1), (Container) backLog.path.get(-2), backLog.path.size());
-				return;
-			}
-			boolean change = !backLog.remove();
-			setContent(backLog.path.get(-1), (Container) backLog.path.get(-2), backLog.path.size());
-			if (change) es.onChange(true);
-			else {
-				VS.breadCrumbs--;
-				es.path.removeViews(VS.breadCrumbs * 2, 2);
-				es.setInfo(backLog.path.get(-1), (Container) backLog.path.get(-2));
-			}
-			checkSelectUsability();
-		} else {
+		if (!backLog.path.isEmpty() && list.isEmpty() || backLog.path.size() > 1) updateBackPath(1);
+		else {
 			if (System.currentTimeMillis() - backTime > 3000) {
 				backTime = System.currentTimeMillis();
 				Toast.makeText(getApplicationContext(), R.string.press_exit, Toast.LENGTH_SHORT).show();
@@ -184,23 +181,22 @@ public class SelectItemsActivity extends PopupCareActivity
 	}
 
 	@Override
-	public void onItemClick(AdapterView<?> par, View v, int pos, long id) {
-		HierarchyItemModel him = VS.contentAdapter.list.get(pos);
-		BasicData bd = him.bd;
+	public void onItemClick(HierarchyItemModel item) {
+		BasicData bd = item.bd;
 		if (bd instanceof Picture) return;
 		if (bd instanceof Word) {
 			if (HierarchyItemModel.flipAllOnClick) {
-				boolean flip = !him.flipped;
-				for (HierarchyItemModel item : VS.contentAdapter.list)
-					if (item.flipped != flip) item.flip();
-			} else him.flip();
+				boolean flip = !item.flipped;
+				for (HierarchyItemModel item1 : VS.contentAdapter.list)
+					if (item1.flipped != flip) item1.flip();
+			} else item.flip();
 			VS.contentAdapter.notifyDataSetChanged();
 			return;
 		} else {
 			boolean ref;
 			if (ref = bd instanceof Reference) {
 				try {
-					him.setNew(bd.getThis(), ((Reference) bd).getRefPathAt(-1));
+					item.setNew(bd.getThis(), ((Reference) bd).getRefPathAt(-1));
 					if (bd.getThis() instanceof Word) {
 						VS.contentAdapter.notifyDataSetChanged();
 						return;
@@ -212,37 +208,34 @@ public class SelectItemsActivity extends PopupCareActivity
 				} catch (Exception e) {
 					return;
 				}
-			} else if (!(ref = VS.contentAdapter instanceof SearchAdapter)) backLog.add(false, bd, null);
+			} else if (!(ref = VS.contentAdapter.search))
+				backLog.add(false, bd, null);
 			else {
-				backLog.add(true, null, (EasyList<BasicData>) ((SearchItemModel) him).path);
-				backLog.path.add(him.bd);
+				EasyList<BasicData> list = new EasyList<>();
+				list.addAll(((SearchItemModel) item).path);
+				list.add(item.bd);
+				backLog.add(true, null, list);
 			}
-			setContent(bd, him.parent, backLog.path.size());
+			setContent(bd, item.parent, backLog.path.size());
 			es.onChange(ref);
 		}
 	}
 
 	@Override
-	public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-		if (VS.contentAdapter instanceof SearchAdapter) {
-			SearchItemModel sim = (SearchItemModel) parent.getItemAtPosition(position);
-			backLog.add(true, null, (EasyList<BasicData>) sim.path);
-			EasyList<Container> c = (EasyList<Container>) sim.path;
-			setContent(c.get(-1), c.get(-2), 1);
+	public boolean onItemLongClick(HierarchyItemModel item) {
+		if (VS.contentAdapter.search) {
+			SearchItemModel sim = (SearchItemModel) item;
+			EasyList<BasicData> list = new EasyList<>();
+			list.addAll(sim.path);
+			list.add(item.bd);
+			backLog.add(true, null, list);
+			setContent(sim.path.get(-1), sim.path.get(-2), 1);
 			es.onChange(true);
 		} else if (VS.contentAdapter instanceof HierarchyAdapter) {
-			boolean selected = !VS.contentAdapter.list.get(position).isSelected();
-			VS.contentAdapter.list.get(position).setSelected(selected);
+			boolean selected = !item.isSelected();
+			item.setSelected(selected);
 			VS.contentAdapter.notifyDataSetChanged();
 		} else return false;
 		return true;
-	}
-
-	public void setContent(BasicData bd, Container parent, int size) {
-		es.searchControl.update(size == 0);
-		es.lv.setAdapter(VS.mAdapter = VS.contentAdapter = new HierarchyAdapter(es.context, size == 0 ?
-				convert(new ArrayList<>(MainChapter.ELEMENTS), null) : convert(((Container) bd)
-				.getChildren(parent), (Container) bd), this::checkSelectUsability, true));
-		checkSelectUsability();
 	}
 }

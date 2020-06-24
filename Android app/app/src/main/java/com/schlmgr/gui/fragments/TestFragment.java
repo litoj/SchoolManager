@@ -62,10 +62,10 @@ public class TestFragment extends Fragment implements ControlListener {
 			return iv;
 		});
 		type.setImageResource((picTest = (Boolean) Formatter.getSetting("defaultTestTypePicture"))
-				? R.drawable.ic_image : R.drawable.ic_word);
+				? R.drawable.ic_pic : R.drawable.ic_word);
 		type.setOnClickListener(v -> {
 			type.setImageResource((picTest = !picTest)
-					? R.drawable.ic_image : R.drawable.ic_word);
+					? R.drawable.ic_pic : R.drawable.ic_word);
 			int i = 0;
 			for (SearchItemModel sim : list.toArray(new SearchItemModel[0])) {
 				if (sim.bd instanceof TwoSided && sim.bd instanceof Picture != picTest) list.remove(i);

@@ -120,7 +120,7 @@ public class DirAdapter extends ArrayAdapter<DirItemModel> {
 		if (view == null) view = li.inflate(R.layout.item_dir, parent, false);
 		DirItemModel item = list.get(index);
 		((TextView) view.findViewById(R.id.item_name)).setText(item.name);
-		if (item.v == null) (item.v = view.findViewById(R.id.item_selected)).setOnClickListener(v -> {
+		if (item.v == null) (item.v = view.findViewById(R.id.item_check)).setOnClickListener(v -> {
 			item.setSelected(!item.selected);
 			selected += item.selected ? 1 : -1;
 			occ.run();

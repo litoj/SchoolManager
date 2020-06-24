@@ -1,7 +1,10 @@
 package com.schlmgr.gui.activity;
 
+import android.os.Bundle;
+
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.schlmgr.gui.Controller;
 import com.schlmgr.gui.popup.AbstractPopup;
 
 import static com.schlmgr.gui.activity.MainActivity.c;
@@ -15,10 +18,16 @@ public class PopupCareActivity extends AppCompatActivity {
 	private boolean exists;
 
 	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		Controller.currentActivity = this;
+	}
+
+	@Override
 	protected void onPostResume() {
 		super.onPostResume();
 		if (!c.popupRepaint.isEmpty() && !exists)
-			for (Runnable r : c.popupRepaint) r.run();
+			for (Runnable r : c.popupRepaint) new Thread(r, "popupRepaint").start();
 		exists = true;
 	}
 
@@ -32,7 +41,7 @@ public class PopupCareActivity extends AppCompatActivity {
 	@Override
 	public void onDestroy() {
 		if (AbstractPopup.isActive && !AbstractPopup.isShowing) AbstractPopup.clear();
-		runOnUiThread(() -> AbstractPopup.clean());
+		else runOnUiThread(() -> AbstractPopup.clean());
 		super.onDestroy();
 	}
 

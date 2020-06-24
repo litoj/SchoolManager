@@ -35,7 +35,6 @@ import static com.schlmgr.gui.Controller.dp;
 import static com.schlmgr.gui.CurrentData.backLog;
 import static com.schlmgr.gui.fragments.MainFragment.IMAGE_PICK;
 import static com.schlmgr.gui.fragments.MainFragment.VS;
-import static com.schlmgr.gui.fragments.MainFragment.es;
 import static com.schlmgr.gui.list.ImageItemModel.getScaledBitmap;
 
 /**
@@ -74,9 +73,9 @@ public class ImagePopupRecyclerAdapter
 
 		public ImageHolder(@NonNull View itemView) {
 			super(itemView);
-			image = view.findViewById(R.id.item_img);
-			view.setOnClickListener(v -> new FullPicture(item.f));
-			if (VERSION.SDK_INT < 21) view.setOnTouchListener(ImagePopupRecyclerAdapter.this);
+			image = itemView.findViewById(R.id.item_img);
+			itemView.setOnClickListener(v -> new FullPicture(item.f));
+			if (VERSION.SDK_INT < 21) itemView.setOnTouchListener(ImagePopupRecyclerAdapter.this);
 		}
 
 		@Override
@@ -133,7 +132,7 @@ public class ImagePopupRecyclerAdapter
 				}
 			if (edited == null) {
 				Picture p = Picture.mkElement(new Data(name, mch).addDesc(desc).addPar(parent), images);
-				VS.mAdapter.add(new HierarchyItemModel(p, parent, es.lv.getCount() + 1));
+				backLog.adapter.addItem(new HierarchyItemModel(p, parent, backLog.adapter.list.size() + 1));
 				parent.putChild((Container) backLog.path.get(-2), p);
 			} else {
 				for (Picture p : toRemove) ((Picture) edited.bd).removeChild(parent, p);

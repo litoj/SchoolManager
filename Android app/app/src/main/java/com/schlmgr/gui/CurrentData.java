@@ -1,7 +1,13 @@
 package com.schlmgr.gui;
 
+import androidx.recyclerview.widget.LinearLayoutManager;
+
 import com.google.android.material.snackbar.Snackbar;
 import com.schlmgr.R;
+import com.schlmgr.gui.list.HierarchyAdapter;
+import com.schlmgr.gui.list.ImageAdapter;
+import com.schlmgr.gui.list.OpenListAdapter;
+import com.schlmgr.gui.list.SearchAdapter;
 import com.schlmgr.gui.popup.TextPopup;
 
 import java.io.File;
@@ -14,6 +20,7 @@ import java.util.Set;
 import IOSystem.Formatter;
 import IOSystem.Formatter.Data;
 import objects.MainChapter;
+import objects.Picture;
 import objects.templates.BasicData;
 import objects.templates.Container;
 import objects.templates.ContainerFile;
@@ -32,13 +39,25 @@ public class CurrentData {
 		 */
 		public EasyList<BasicData> path = new EasyList<>();
 		/**
+		 * This value is set after {@link #add(Boolean, BasicData, EasyList) adding} an updated path.
+		 */
+		public OpenListAdapter adapter;
+		/**
 		 * The previous paths to the displayed elements.
 		 */
 		private final EasyList<EasyList<BasicData>> prevPaths = new EasyList<>();
 		/**
+		 * All old states of the main RecyclerView.
+		 */
+		private final EasyList<OpenListAdapter> prevAdapters = new EasyList<>();
+		/**
 		 * The amounts of callbacks, before the current paths get replaced with an older ones.
 		 */
-		public final EasyList<Byte> onePath = new EasyList<>();
+		public final EasyList<Integer> onePath = new EasyList<>();
+
+		public EasyList<OpenListAdapter> copyPrevAdapters() {
+			return (EasyList<OpenListAdapter>) prevAdapters.clone();
+		}
 
 		public void add(Boolean newPath, BasicData bd, EasyList<BasicData> currPath) {
 			if (newPath == null) if (newPath = currPath.size() == path.size())
@@ -51,18 +70,27 @@ public class CurrentData {
 			if (newPath) {
 				prevPaths.add(path);
 				path = currPath;
-				onePath.add((byte) 0);
+				onePath.add(currPath.get(-1) instanceof Picture ? -1 : 0);
 			} else {
-				path.add(bd);
-				onePath.add((byte) (onePath.remove(-1) + 1));
+				if (bd != null) path.add(bd);
+				onePath.add((onePath.remove(-1) + 1));
 			}
+			if (!(adapter instanceof ImageAdapter)) {
+				prevAdapters.add(adapter);
+				((SearchAdapter) adapter).firstItemPos =
+						((LinearLayoutManager) ((SearchAdapter) adapter)
+								.container.getLayoutManager()).findFirstVisibleItemPosition();
+			}
+			adapter = null;
 		}
 
 		public void clear() {
 			path.clear();
+			adapter = null;
 			prevPaths.clear();
+			prevAdapters.clear();
 			onePath.clear();
-			onePath.add((byte) 0);
+			onePath.add(0);
 		}
 
 		/**
@@ -71,15 +99,20 @@ public class CurrentData {
 		public boolean remove() {
 			boolean ret;
 			if (ret = onePath.get(-1) > 0) {
-				path.remove(-1);
-				onePath.add((byte) (onePath.remove(-1) - 1));
+				if (adapter instanceof SearchAdapter == adapter instanceof HierarchyAdapter)
+					path.remove(-1);
+				onePath.add(onePath.remove(-1) - 1);
 			} else {
 				onePath.remove(-1);
 				if (onePath.isEmpty()) {
-					onePath.add((byte) 0);
+					onePath.add(0);
 					path = new EasyList<>();
-				} else path = prevPaths.remove(-1);
+				} else {
+					path = prevPaths.remove(-1);
+					if (path.get(-1) instanceof Picture) return remove();
+				}
 			}
+			adapter = prevAdapters.isEmpty() ? null : prevAdapters.remove(-1);
 			return ret;
 		}
 	}
@@ -173,7 +206,7 @@ public class CurrentData {
 		private static void checkLoaded() {
 			if (importedMchs == null) {
 				importedMchs = new HashSet<>();
-				backLog.onePath.add((byte) 0);
+				backLog.onePath.add(0);
 				String imds = (String) Formatter.getSetting("importedMchDirs");
 				if (imds != null) for (String s : imds.split(";"))
 					try {
