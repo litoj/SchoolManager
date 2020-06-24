@@ -14,7 +14,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.schlmgr.R;
-import com.schlmgr.gui.Controller;
 import com.schlmgr.gui.fragments.TestFragment;
 import com.schlmgr.gui.list.HierarchyItemModel;
 import com.schlmgr.gui.list.SearchItemModel;

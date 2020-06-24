@@ -29,6 +29,7 @@ public class PopupCareActivity extends AppCompatActivity {
 		if (!c.popupRepaint.isEmpty() && !exists)
 			for (Runnable r : c.popupRepaint) new Thread(r, "popupRepaint").start();
 		exists = true;
+		Controller.currentActivity = this;
 	}
 
 	protected boolean clear() {

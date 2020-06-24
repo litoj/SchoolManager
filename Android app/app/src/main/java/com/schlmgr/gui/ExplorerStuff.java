@@ -167,7 +167,7 @@ public class ExplorerStuff {
 			 * @param compare the sequence with optional prefix to be used as comparator
 			 */
 			SearchEngine(EasyList<Container> path, String compare) {
-				Correct oldCor = null;
+				Correct cor1 = (bd, par) -> true, cor2 = null;
 				SFManipulation sfm = null;
 				StringFinder strCor = (name) -> {
 					name = name.toLowerCase();
@@ -179,19 +179,19 @@ public class ExplorerStuff {
 				int start = 0;
 				boolean desc = false;
 				resolver:
-				if (compare.charAt(start) == '\\') {
+				if (compare.charAt(start) == '\\' && compare.length() > 1) {
 					switch (compare.charAt(++start)) { //select the type of searched object
 						case 'W': //if object is the main Word
-							oldCor = (bd, par) -> bd instanceof Word && ((Word) bd).isMain;
+							cor1 = (bd, par) -> bd instanceof Word && ((Word) bd).isMain;
 							break;
 						case 'T': //if object is the other Word part - translate
-							oldCor = (bd, par) -> bd instanceof Word && !((Word) bd).isMain;
+							cor1 = (bd, par) -> bd instanceof Word && !((Word) bd).isMain;
 							break;
 						case 'P': //if object is Picture
-							oldCor = (bd, par) -> bd instanceof Picture && ((Picture) bd).isMain;
+							cor1 = (bd, par) -> bd instanceof Picture && ((Picture) bd).isMain;
 							break;
 						case 'C': //if object is any type of chapter
-							oldCor = (bd, par) -> bd instanceof Container && !(bd instanceof TwoSided);
+							cor1 = (bd, par) -> bd instanceof Container && !(bd instanceof TwoSided);
 							break;
 						default: //no type selection prefix found
 							start--;
@@ -231,21 +231,21 @@ public class ExplorerStuff {
 						count1 = -10;
 					}
 					count = count1;
-					Correct copyOC = oldCor;
+					Correct copyOC = cor1;
 					SFManipulation copySFM = sfm;
 					comp = compare.substring(start + 2);
 					switch (compare.charAt(start + 1)) { //the main select operation prefix selector
 						//number operations
 						case '>': //if the object's value is higher (than the remaining text)
-							oldCor = copyOC == null ? (bd, par) -> copySFM.value(bd) > count :
+							cor2 = copyOC == null ? (bd, par) -> copySFM.value(bd) > count :
 									(bd, par) -> copyOC.verify(bd, par) && copySFM.value(bd) > count;
 							break;
 						case '<': //if the object's value is lower
-							oldCor = copyOC == null ? (bd, par) -> copySFM.value(bd) < count :
+							cor2 = copyOC == null ? (bd, par) -> copySFM.value(bd) < count :
 									(bd, par) -> copyOC.verify(bd, par) && copySFM.value(bd) < count;
 							break;
 						case '=': //if the object's value is equal
-							oldCor = copyOC == null ? (bd, par) -> copySFM.value(bd) == count :
+							cor2 = copyOC == null ? (bd, par) -> copySFM.value(bd) == count :
 									(bd, par) -> copyOC.verify(bd, par) && copySFM.value(bd) == count;
 							break;
 						//text operations
@@ -286,21 +286,23 @@ public class ExplorerStuff {
 							break;
 						case '\\': //the object's value must contain the written text, ignores case
 							comp = comp.toLowerCase();
+							break;
 						default:
 							comp = compare.toLowerCase().substring(start + 1);
 					}
 				} else comp = compare.toLowerCase();
 				//constructs the final search comparator
-				Correct copyOC = oldCor;
+				Correct copyC1 = cor1, copyC2 = cor2;
 				StringFinder copySC = strCor;
-				correct = sfm != null ? oldCor : desc ?
+				correct = sfm != null && cor2 != null ?
+						(bd, par) -> copyC1.verify(bd, par) && copyC2.verify(bd, par) : desc ?
 						(bd, par) -> {
-							if (copyOC != null && !copyOC.verify(bd, par)) return false;
+							if (copyC1 != null && !copyC1.verify(bd, par)) return false;
 							String d = bd.getDesc(par);
 							return !d.isEmpty() && copySC.verify(d);
 						} :
 						(bd, par) -> {
-							if (copyOC != null && !copyOC.verify(bd, par)) return false;
+							if (copyC1 != null && !copyC1.verify(bd, par)) return false;
 							if (copySC.verify(bd.getName())) return true;
 							for (String name : NameReader.readName(bd))
 								if (copySC.verify(name)) return true;

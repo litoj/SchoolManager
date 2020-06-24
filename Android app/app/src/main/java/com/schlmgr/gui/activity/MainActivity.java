@@ -77,20 +77,15 @@ public class MainActivity extends PopupCareActivity {
 			getWindowManager().getDefaultDisplay().getMetrics(dm);
 			FullPicture.size = dm.heightPixels > dm.widthPixels ? dm.heightPixels : dm.widthPixels;
 			dp = getResources().getDimension(R.dimen.dp);
-			(HierarchyItemModel.icPic =
-					Controller.activity.getResources().getDrawable(R.drawable.ic_pic))
+			(HierarchyItemModel.icPic = getResources().getDrawable(R.drawable.ic_pic))
 					.setBounds((int) dp, 0, (int) (dp * 33), (int) (dp * 33));
-			(HierarchyItemModel.icWord =
-					Controller.activity.getResources().getDrawable(R.drawable.ic_word))
+			(HierarchyItemModel.icWord = getResources().getDrawable(R.drawable.ic_word))
 					.setBounds(0, 0, (int) (dp * 30), (int) (dp * 30));
-			(HierarchyItemModel.icChap =
-					Controller.activity.getResources().getDrawable(R.drawable.ic_chapter))
+			(HierarchyItemModel.icChap = getResources().getDrawable(R.drawable.ic_chapter))
 					.setBounds(0, 0, (int) (dp * 30), (int) (dp * 30));
-			(HierarchyItemModel.icMCh =
-					Controller.activity.getResources().getDrawable(R.drawable.ic_subject))
+			(HierarchyItemModel.icMCh = getResources().getDrawable(R.drawable.ic_subject))
 					.setBounds(0, 0, (int) (dp * 30), (int) (dp * 30));
-			(HierarchyItemModel.icRef =
-					Controller.activity.getResources().getDrawable(R.drawable.ic_ref))
+			(HierarchyItemModel.icRef = getResources().getDrawable(R.drawable.ic_ref))
 					.setBounds(0, 0, (int) (dp * 30), (int) (dp * 30));
 			DirAdapter.internal = getString(R.string.storage_internal);
 			DirAdapter.external = getString(R.string.storage_external);
@@ -100,7 +95,8 @@ public class MainActivity extends PopupCareActivity {
 			defDir = Environment.getExternalStorageDirectory().getAbsolutePath();
 			AndroidIOSystem.storageDir = defDir.substring(0, defDir.lastIndexOf(File.separatorChar +
 					(defDir.contains("emulated") ? "emulated" : "")));
-			new AndroidIOSystem().testWrite();
+			new AndroidIOSystem();
+			AndroidIOSystem.testWrite();
 			(background = new Thread(() -> {
 				if (!Formatter.getPath().getAbsolutePath().contains(defDir
 						+ "/Android/data/com.schlmgr") && !AndroidIOSystem.canWrite()) {

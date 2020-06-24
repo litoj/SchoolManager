@@ -148,8 +148,9 @@
         \n\t&lt; - must be lower
         \n\t= - must be equal to the value
         \n\nExamples:
-        \n\t\\WDr.*\t- all words with some description
+        \n\t\\WD\t- all words with some description
         \n\t\\R>50\t- items with success rate above 50%
+        \n\t\\sD  \t - items starting with \'D\'
         \n\t\\C\\K72\t- all chapters with name containing \'k72\'</string>
     <string name="help_select">Editing</string>
     <string name="help_select_delete">Permanently deletes the selected items after accepting the delete-check dialog.</string>

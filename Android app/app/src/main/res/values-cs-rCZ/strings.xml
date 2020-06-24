@@ -151,8 +151,9 @@
         \n\t&lt; - musí být menší
         \n\t= - musí být rovno dané hodnotě
         \n\nPříklady:
-        \n\t\\WDr.*\t- všechna slova s poznámkou
+        \n\t\\WD\t- všechna slova s poznámkou
         \n\t\\R>50\t- položky s úspěšností nad 50%
+        \n\t\\sD  \t - položky začínající na \'D\'
         \n\t\\C\\K72\t- všechny kapitoly se jménem obsahujícím \'k72\'</string>
     <string name="help_select">Upravování</string>
     <string name="help_select_delete">Po potvrzení odstraňovacího dialogu nenávratně smaže všechny vybrané položky.</string>
