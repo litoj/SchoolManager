@@ -235,7 +235,8 @@
                 android:layout_margin="8dp"
                 android:text="@string/help_select_delete"
                 android:textAlignment="textStart"
-                android:textSize="15sp" />
+                android:textSize="15sp"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/help_select_ref"
@@ -260,7 +261,8 @@
                 android:layout_margin="8dp"
                 android:text="@string/help_select_ref"
                 android:textAlignment="textStart"
-                android:textSize="15sp" />
+                android:textSize="15sp"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/help_select_cut"
@@ -285,7 +287,8 @@
                 android:layout_margin="8dp"
                 android:text="@string/help_select_move"
                 android:textAlignment="textStart"
-                android:textSize="15sp" />
+                android:textSize="15sp"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/help_select_edit"
@@ -310,7 +313,8 @@
                 android:layout_margin="8dp"
                 android:text="@string/help_select_edit"
                 android:textAlignment="textStart"
-                android:textSize="15sp" />
+                android:textSize="15sp"
+                android:visibility="gone" />
         </LinearLayout>
 
         <TextView
@@ -323,7 +327,6 @@
             android:paddingVertical="7dp"
             android:text="@string/help_search"
             android:textSize="19sp" />
-<!--        TODO: Přidat nové vyhledávací možnosti do vysvětlivek-->
 
         <View
             android:layout_width="match_parent"
@@ -337,7 +340,7 @@
             android:orientation="vertical"
             android:visibility="gone">
 
-        <TextView
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="8dp"
@@ -554,7 +557,8 @@
                 android:layout_margin="8dp"
                 android:text="@string/help_test_select_how"
                 android:textAlignment="textStart"
-                android:textSize="15sp" />
+                android:textSize="15sp"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/help_test_run"
@@ -578,7 +582,8 @@
                 android:layout_margin="8dp"
                 android:text="@string/help_test_run_how"
                 android:textAlignment="textStart"
-                android:textSize="15sp" />
+                android:textSize="15sp"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/help_test_results"
@@ -602,7 +607,8 @@
                 android:layout_margin="8dp"
                 android:text="@string/help_test_results_how"
                 android:textAlignment="textStart"
-                android:textSize="15sp" />
+                android:textSize="15sp"
+                android:visibility="gone" />
         </LinearLayout>
 
         <TextView
@@ -658,7 +664,8 @@
                 android:layout_margin="8dp"
                 android:text="@string/help_extra_naming_how"
                 android:textAlignment="textStart"
-                android:textSize="15sp" />
+                android:textSize="15sp"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/help_extra_sch_import"
@@ -682,7 +689,8 @@
                 android:layout_margin="8dp"
                 android:text="@string/help_extra_sch_import_how"
                 android:textAlignment="textStart"
-                android:textSize="15sp" />
+                android:textSize="15sp"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/help_extra_words_import"
@@ -706,7 +714,8 @@
                 android:layout_margin="8dp"
                 android:text="@string/help_extra_words_import_how"
                 android:textAlignment="textStart"
-                android:textSize="15sp" />
+                android:textSize="15sp"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/help_extra_words_export"
@@ -730,7 +739,8 @@
                 android:layout_margin="8dp"
                 android:text="@string/help_extra_words_export_how"
                 android:textAlignment="textStart"
-                android:textSize="15sp" />
+                android:textSize="15sp"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/help_extra_import_mch"
@@ -755,7 +765,8 @@
                 android:layout_margin="8dp"
                 android:text="@string/help_extra_import_mch_how"
                 android:textAlignment="textStart"
-                android:textSize="15sp" />
+                android:textSize="15sp"
+                android:visibility="gone" />
         </LinearLayout>
 
         <TextView

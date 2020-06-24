@@ -71,6 +71,8 @@ public class AboutFragment extends Fragment implements ControlListener {
 			new TglVisibility(R.id.help_extra, R.id.help_extra_layout);
 	private static final TglVisibility help_extra_naming =
 			new TglVisibility(R.id.help_extra_naming, R.id.help_extra_naming_how);
+	private static final TglVisibility help_extra_sch_import =
+			new TglVisibility(R.id.help_extra_sch_import, R.id.help_extra_sch_import_how);
 	private static final TglVisibility help_extra_words_import =
 			new TglVisibility(R.id.help_extra_words_import, R.id.help_extra_words_import_how);
 	private static final TglVisibility help_extra_words_export =
@@ -216,6 +218,7 @@ public class AboutFragment extends Fragment implements ControlListener {
 		help_test_results.setTgl(root);
 		help_extra.setTgl(root);
 		help_extra_naming.setTgl(root);
+		help_extra_sch_import.setTgl(root);
 		help_extra_words_import.setTgl(root);
 		help_extra_words_export.setTgl(root);
 		help_extra_import_mch.setTgl(root);
