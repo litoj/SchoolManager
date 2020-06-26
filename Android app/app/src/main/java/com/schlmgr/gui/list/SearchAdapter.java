@@ -4,7 +4,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.LinearLayout.LayoutParams;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -19,7 +18,6 @@ import java.util.List;
 
 import objects.Reference;
 
-import static com.schlmgr.gui.Controller.dp;
 import static com.schlmgr.gui.activity.MainActivity.ic_check_empty;
 import static com.schlmgr.gui.activity.MainActivity.ic_check_filled;
 
@@ -71,15 +69,8 @@ public class SearchAdapter<I extends HierarchyItemModel>
 		final ImageView info;
 		HierarchyItemModel last;
 		final ImageView check;
-		private boolean faking;
 
-		private void checkFake(boolean setOn) {
-			if (faking == setOn) return;
-			else itemView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
-					(faking = setOn) ? (int) (60 * dp) : LayoutParams.WRAP_CONTENT));
-		}
-
-		public ItemHolder(@NonNull View itemView) {
+		ItemHolder(@NonNull View itemView) {
 			super(itemView);
 			name = itemView.findViewById(R.id.item_name);
 			name.setOnClickListener(v -> listener.onItemClick(last));
@@ -102,7 +93,6 @@ public class SearchAdapter<I extends HierarchyItemModel>
 		}
 
 		protected void setData(int pos) {
-			checkFake(false);
 			HierarchyItemModel item = list.get(pos);
 			name.setText(item.toShow);
 			info.setVisibility(selectActivity || item.info.isEmpty() ? View.GONE : View.VISIBLE);
@@ -127,16 +117,7 @@ public class SearchAdapter<I extends HierarchyItemModel>
 
 	@Override
 	public void onBindViewHolder(@NonNull SearchAdapter.ItemHolder holder, int position) {
-		if (position != 0) holder.setData(position - 1);
-		else {
-			holder.name.setText("Hello there!");
-			holder.checkFake(true);
-		}
-	}
-
-	@Override
-	public int getItemCount() {
-		return list.size() + 1;
+		holder.setData(position);
 	}
 
 	/**

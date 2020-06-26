@@ -57,16 +57,17 @@
                 tools:listitem="@layout/item_hierarchy" />
 
             <com.google.android.material.appbar.AppBarLayout
+                android:id="@+id/search_collapser"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:id="@+id/search_collapser">
+                android:background="#0000">
 
                 <SearchView
                     android:id="@+id/explorer_search"
                     android:layout_width="match_parent"
                     android:layout_height="40dp"
                     android:layout_margin="10dp"
-                    android:background="@drawable/outline_black"
+                    android:background="@drawable/search_back"
                     android:queryHint="@string/search"
                     app:layout_scrollFlags="scroll|enterAlways" />
 

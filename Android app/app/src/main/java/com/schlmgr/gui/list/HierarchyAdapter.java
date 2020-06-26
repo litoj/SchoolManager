@@ -21,20 +21,6 @@ public class HierarchyAdapter extends SearchAdapter<HierarchyItemModel> {
 	public HierarchyAdapter(RecyclerView parent, OnItemActionListener listener,
 	                        @NonNull List<HierarchyItemModel> objects, Runnable occ) {
 		super(parent, listener, objects, occ);
-		noSearch = !list.isEmpty() && list.get(0).bd instanceof MainChapter;
-	}
-
-	private final boolean noSearch;
-
-	@Override
-	public void onBindViewHolder(@NonNull SearchAdapter.ItemHolder holder, int position) {
-		if (noSearch) holder.setData(position);
-		else super.onBindViewHolder(holder, position);
-	}
-
-	@Override
-	public int getItemCount() {
-		return noSearch ? list.size() : (list.size() + 1);
 	}
 
 	@NonNull

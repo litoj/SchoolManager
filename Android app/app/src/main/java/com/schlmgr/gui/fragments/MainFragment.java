@@ -111,6 +111,7 @@ public class MainFragment extends Fragment
 		pasteOpts = root.findViewById(R.id.objects_paster);
 		root.findViewById(R.id.objects_cancel).setOnClickListener(v -> {
 			VS.pasteMode = false;
+			Controller.toggleSelectBtn(true);
 			pasteOpts.setVisibility(View.GONE);
 		});
 		paste = root.findViewById(R.id.objects_paste);
@@ -360,7 +361,7 @@ public class MainFragment extends Fragment
 			} else {
 				List<ContainerFile> toSave = new LinkedList<>();
 				for (HierarchyItemModel him : toMove) {
-					him.bd.move(him.parent, search ? (Container) ((SearchItemModel) him).path.get(-2)
+					him.bd.move(him.parent, search ? ((SearchItemModel) him).path.get(-2)
 							: original.get(original.size() - 2), np, npp);
 					if (search) {
 						List<? extends BasicData> path = ((SearchItemModel) him).path;
@@ -396,6 +397,7 @@ public class MainFragment extends Fragment
 			}
 			CurrentData.save(backLog.path);
 			VS.pasteMode = false;
+			Controller.toggleSelectBtn(true);
 			pasteOpts.setVisibility(View.GONE);
 		});
 		VS.contentAdapter.selected = -1;
@@ -533,26 +535,16 @@ public class MainFragment extends Fragment
 	}
 
 	private void prepareContainerContent(Container bd) {
-		if (VS.pasteMode) test:{
-			BasicData holder = original.get(original.size() - 1);
-			int i = 0;
-			for (BasicData c : backLog.path) {
-				i++;
-				if (c == holder) {
-					for (; i < backLog.path.size(); i++) {
-						holder = backLog.path.get(i);
-						for (HierarchyItemModel him : toMove) {
-							if (holder == him.bd) {
-								tglEnabled(paste, false);
-								break test;
-							}
-						}
+		if (VS.pasteMode)test: {
+			if (toMove.get(0) instanceof SearchItemModel) {
+				Container current = (Container) backLog.path.get(-1);
+				for (HierarchyItemModel moving : toMove)
+					if (((SearchItemModel) moving).path.get(-1) == current) {
+						tglEnabled(paste, false);
+						break test;
 					}
-					tglEnabled(paste, c != holder);
-					break test;
-				}
-			}
-			tglEnabled(paste, true);
+				tglEnabled(paste, true);
+			} else tglEnabled(paste, backLog.path.get(-1) != original.get(original.size() - 1));
 		}
 		Controller.setMenuRes(VS.menuRes = bd instanceof MainChapter
 				? R.menu.more_mch : R.menu.more_container);

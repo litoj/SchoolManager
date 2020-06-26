@@ -124,9 +124,7 @@ public class ExplorerStuff {
 	}
 
 	public void updateSearch(boolean gone) {
-		if (!gone) {
-			searchHide.setExpanded(true, false);
-		}
+		if (!gone) searchHide.setExpanded(false, false);
 		searchView.setVisibility((VS.sv_visible = !gone) ? View.VISIBLE : View.GONE);
 	}
 
@@ -169,13 +167,7 @@ public class ExplorerStuff {
 			SearchEngine(EasyList<Container> path, String compare) {
 				Correct cor1 = (bd, par) -> true, cor2 = null;
 				SFManipulation sfm = null;
-				StringFinder strCor = (name) -> {
-					name = name.toLowerCase();
-					if (name.contains(comp)) return true;
-					for (String parsed : NameReader.readName(comp))
-						if (name.contains(parsed)) return true;
-					return false;
-				};
+				StringFinder strCor = (name) -> name.toLowerCase().contains(comp);
 				int start = 0;
 				boolean desc = false;
 				resolver:
@@ -260,29 +252,14 @@ public class ExplorerStuff {
 							}
 							strCor = (name) -> p.matcher(name).matches();
 							break;
-						case 's': //if the object's value starts with the given text
-							strCor = (name) -> {
-								if (name.startsWith(comp)) return true;
-								for (String parsed : NameReader.readName(comp))
-									if (name.startsWith(parsed)) return true;
-								return false;
-							};
+						case 's':
+							strCor = (name) -> name.startsWith(comp);
 							break;
-						case 'e': //if the object's value ends with the given text
-							strCor = (name) -> {
-								if (name.endsWith(comp)) return true;
-								for (String parsed : NameReader.readName(comp))
-									if (name.endsWith(parsed)) return true;
-								return false;
-							};
+						case 'e':
+							strCor = (name) -> name.endsWith(comp);
 							break;
-						case 'c': //if the object's value contains the given text
-							strCor = (name) -> {
-								if (name.contains(comp)) return true;
-								for (String parsed : NameReader.readName(comp))
-									if (name.contains(parsed)) return true;
-								return false;
-							};
+						case 'c':
+							strCor = (name) -> name.contains(comp);
 							break;
 						case '\\': //the object's value must contain the written text, ignores case
 							comp = comp.toLowerCase();
