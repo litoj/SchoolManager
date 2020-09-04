@@ -6,12 +6,14 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
+import android.widget.NumberPicker;
 import android.widget.TextView;
 
 import com.schlmgr.R;
+import com.schlmgr.gui.fragments.MainFragment;
+import com.schlmgr.gui.list.HierarchyAdapter;
 
-import static com.schlmgr.gui.Controller.activity;
+import IOSystem.Formatter;
 
 public class CreatorPopup extends AbstractPopup {
 
@@ -19,6 +21,8 @@ public class CreatorPopup extends AbstractPopup {
 	public EditText et_name;
 	public EditText et_desc;
 	public ViewGroup view;
+	public NumberPicker np;
+	public View npLayout;
 
 	final String type;
 	final Includer toInclude;
@@ -39,6 +43,16 @@ public class CreatorPopup extends AbstractPopup {
 		(et_name = view.findViewById(R.id.popup_new_name)).setText(text);
 		if (et_desc != null) text = et_desc.getText().toString();
 		(et_desc = view.findViewById(R.id.popup_new_desc)).setText(text);
+
+		if ((Boolean) Formatter.getSetting("doChoosePos")
+				&& MainFragment.VS.contentAdapter instanceof HierarchyAdapter) {
+			int max = MainFragment.VS.contentAdapter.list.size() + 1;
+			np = view.findViewById(R.id.popup_pos_choose);
+			(npLayout = (View) np.getParent()).setVisibility(View.VISIBLE);
+			np.setMaxValue(max);
+			np.setMinValue(1);
+			np.setValue(max);
+		}
 		ok = view.findViewById(R.id.ok);
 		view.findViewById(R.id.cancel).setOnClickListener(x -> dismiss());
 		View include = toInclude.onInclude(LayoutInflater.from(view.getContext()), this);

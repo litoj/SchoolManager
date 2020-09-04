@@ -54,6 +54,20 @@
             android:text="@string/setts_him_allflip"
             android:textSize="18sp" />
 
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="5dp"
+            android:background="#3888" />
+
+        <Switch
+            android:id="@+id/setts_index"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="5dp"
+            android:text="@string/setts_index"
+            android:textSize="18sp" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

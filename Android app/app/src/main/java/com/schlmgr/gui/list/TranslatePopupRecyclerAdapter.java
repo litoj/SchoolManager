@@ -81,6 +81,8 @@ public class TranslatePopupRecyclerAdapter
 			item.tvName = name;
 			item.tvDesc = desc;
 			remove.setOnClickListener(v -> {
+				name.setFocusable(false);
+				desc.setFocusable(false);
 				int index = list.indexOf(item);
 				if (index < 0 || index >= list.size()) return;
 				if (item.twosided != null) toRemove.add(item.twosided);
@@ -131,13 +133,14 @@ public class TranslatePopupRecyclerAdapter
 				String[] names = SimpleReader.nameResolver(name);
 				String[] descs = SimpleReader.nameResolver(cp.et_desc.getText().toString());
 				Data d = new Data(null, mch).addPar(parent);
+				int pos = cp.np.getValue();
 				for (int i = 0; i < names.length; i++) {
 					d.name = names[i];
 					d.description = i < descs.length ? descs[i].replace("\\t", "\t") : null;
 					Word w = Word.mkElement(d, translates);
-					backLog.adapter.addItem(
-							new HierarchyItemModel(w, parent, backLog.adapter.list.size() + 1));
-					parent.putChild((Container) backLog.path.get(-2), w);
+					backLog.adapter.addItem(pos + i - 1,
+							new HierarchyItemModel(w, parent, pos + i));
+					parent.putChild((Container) backLog.path.get(-2), w, pos + i - 1);
 				}
 			} else {
 				for (Word w : toRemove) ((Word) edited.bd).removeChild(parent, w);

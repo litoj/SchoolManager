@@ -56,7 +56,7 @@ public class HierarchyItemModel {
 	}
 
 	public boolean flipped;
-	public final int position;
+	public int position;
 	boolean selected;
 
 	public void setSelected(boolean isSelected) {

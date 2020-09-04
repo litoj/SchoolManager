@@ -41,6 +41,10 @@ public class SettingsFragment extends Fragment implements ControlListener {
 		flipAll.setChecked(HierarchyItemModel.flipAllOnClick);
 		flipAll.setOnClickListener(v -> HierarchyItemModel.setFlipAllOnClick(flipAll.isChecked()));
 
+		CompoundButton position = root.findViewById(R.id.setts_index);
+		position.setChecked((Boolean) Formatter.getSetting("doChoosePos"));
+		position.setOnClickListener(v -> Formatter.putSetting("doChoosePos", position.isChecked()));
+
 		amount = root.findViewById(R.id.setts_test_amount);
 		amount.setText("" + Test.getAmount(), BufferType.EDITABLE);
 		amount.setOnFocusChangeListener((v, hasFocus) -> {

@@ -194,6 +194,7 @@
     <string name="hierarchy_ref">Odkaz</string>
     <string name="hierarchy_sch_file">Soubor kapitoly</string>
     <string name="hierarchy_word">Slovíčko</string>
+    <string name="choose_pos">Vyberte pozici položky</string>
     <string name="image_choose_capture">Kamera</string>
     <string name="image_choose_gallery">Galerie</string>
     <string name="import_mch">Importovat předmět"</string>
@@ -239,6 +240,7 @@
     <string name="setts_him_allflip">Přeložit všechna slovíčka každým kliknutím</string>
     <string name="setts_him_flipped">Automaticky překládat slovíčka</string>
     <string name="setts_him_parse">Zobrazovat názvy položek ve zpracované formě</string>
+    <string name="setts_index">Vybírat pořadí položky</string>
     <string name="setts_interface">Rozhraní</string>
     <string name="setts_test">Přednastavení testů</string>
     <string name="setts_test_amount">Výchozí počet položek v testu</string>

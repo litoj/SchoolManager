@@ -29,10 +29,13 @@ public abstract class OpenListAdapter<I, H extends RecyclerView.ViewHolder>
 	}
 
 	public void addItem(I item) {
-		list.add(0, item);
 		container.post(() -> notifyDataSetChanged());
 	}
-	
+	public void addItem(int index, I item) {
+		list.add(index, item);
+		container.post(() -> notifyDataSetChanged());
+	}
+
 	public void removeItem(int pos) {
 		list.remove(pos);
 		container.post(() -> {

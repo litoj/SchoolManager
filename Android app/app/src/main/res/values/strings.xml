@@ -186,6 +186,7 @@
     <string name="hierarchy_ref">Reference</string>
     <string name="hierarchy_sch_file">Chapter file</string>
     <string name="hierarchy_word">Word</string>
+    <string name="choose_pos">Choose new item position</string>
     <string name="image_choose_capture">Camera</string>
     <string name="image_choose_gallery">Gallery</string>
     <string name="import_mch">Import subject</string>
@@ -231,6 +232,7 @@
     <string name="setts_him_allflip">Translate all words on every click</string>
     <string name="setts_him_flipped">Translate words automatically</string>
     <string name="setts_him_parse">Display item names parsed</string>
+    <string name="setts_index">Choose item order</string>
     <string name="setts_interface">Interface</string>
     <string name="setts_test">Test preset</string>
     <string name="setts_test_amount">Default tested amount</string>

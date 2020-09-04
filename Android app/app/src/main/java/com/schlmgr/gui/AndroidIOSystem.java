@@ -144,6 +144,9 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 						for (MainChapter mch : MainChapter.ELEMENTS) mch.removeSetting("schNameCount");
 					});
 				}
+				if (lastVersion < 36) {
+					settings.put("doChoosePos", false);
+				}
 				settings.put("version", BuildConfig.VERSION_CODE);
 				save = true;
 			}

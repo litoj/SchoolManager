@@ -94,7 +94,10 @@ public class AboutFragment extends Fragment implements ControlListener {
 			versions_beta.setTgl(root);
 			RecyclerView rvRelease = (RecyclerView) versions_release.toToggle;
 			String[][] releases = {
-					{"3.5", "- improved the visual look of search field\n-added item separating lines\n",
+					{"3.6", "- added option to change the item's list order/position\n" +
+							"- fixed app-crash on deleting currently written translate\n" +
+							"- fixed app-crash when moving 1st-lvl items"},
+					{"3.5", "- improved the visual look of search field\n-added item separating lines\n" +
 							"- search field now hidden, must scroll up to use it"},
 					{"3.4", "- remake of search field handling\n- improved performance\n" +
 							"- added many new search syntax features, see help\n" +

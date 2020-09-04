@@ -25,8 +25,8 @@
             android:background="#888" />
 
         <ScrollView
-            android:layout_width="match_parent"
             android:id="@+id/popup_new_scroll"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
             <LinearLayout
@@ -54,6 +54,38 @@
                     android:background="@drawable/outline_gray"
                     android:hint="@string/data_desc"
                     android:textSize="17sp" />
+
+                <LinearLayout
+                    android:id="@+id/popup_pos_layout"
+                    android:layout_width="200dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:background="@drawable/search_back"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="@string/choose_pos"
+                        android:textSize="25sp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="5dp"
+                        android:background="#888" />
+
+                    <NumberPicker
+                        android:id="@+id/popup_pos_choose"
+                        android:layout_width="100dp"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:layout_marginVertical="5dp"
+                        android:solidColor="#AAA" />
+                </LinearLayout>
 
                 <View
                     android:layout_width="match_parent"

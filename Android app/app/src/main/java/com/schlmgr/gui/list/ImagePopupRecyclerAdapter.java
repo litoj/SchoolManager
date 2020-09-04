@@ -131,9 +131,10 @@ public class ImagePopupRecyclerAdapter
 					else images.add(new Data(i.f.getAbsolutePath(), mch).addPar(parent).addExtra(map));
 				}
 			if (edited == null) {
+				int pos = cp.np.getValue();
 				Picture p = Picture.mkElement(new Data(name, mch).addDesc(desc).addPar(parent), images);
-				backLog.adapter.addItem(new HierarchyItemModel(p, parent, backLog.adapter.list.size() + 1));
-				parent.putChild((Container) backLog.path.get(-2), p);
+				backLog.adapter.addItem(pos - 1, new HierarchyItemModel(p, parent, pos));
+				parent.putChild((Container) backLog.path.get(-2), p, pos - 1);
 			} else {
 				for (Picture p : toRemove) ((Picture) edited.bd).removeChild(parent, p);
 				edited.bd.putDesc(parent, desc);

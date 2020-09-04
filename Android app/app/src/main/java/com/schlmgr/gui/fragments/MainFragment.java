@@ -199,81 +199,101 @@ public class MainFragment extends Fragment
 			});
 			cut.setOnClickListener(v -> move(false));
 			edit.setOnClickListener(none -> {
-				for (HierarchyItemModel him : VS.contentAdapter.list) {
-					if (him.isSelected()) {
-						if (him.bd instanceof Container && !(him.bd instanceof TwoSided)) {
-							boolean isMch = him.bd instanceof MainChapter;
-							boolean isSch = him.bd instanceof SaveChapter;
-							activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.edit), (li, cp) -> {
-								if (cp.et_name.getText().toString().isEmpty()) {
-									cp.et_name.setText(him.bd.getName());
-									cp.et_desc.setText(him.bd.getDesc(him.parent));
-								}
-								View v = isMch ? null : li.inflate(R.layout.new_chapter, null);
-								((CheckBox) v.findViewById(R.id.chapter_file))
-										.setChecked(isSch);
-								cp.ok.setOnClickListener(x -> {
-									String name = cp.et_name.getText().toString();
-									if (name.isEmpty()) return;
-									try {
-										if (!name.equals(him.bd.getName())) {
-											if (him.bd instanceof ContainerFile) ContainerFile.isCorrect(name);
-											him.bd.setName(him.parent, name);
-										}
-										him.bd.putDesc(him.parent,
-												cp.et_desc.getText().toString().replace("\\t", "\t"));
-										if (!isMch) {
-											boolean sch = ((CheckBox) cp.view.findViewById(R.id.chapter_file))
-													.isChecked();
-											if (sch != isSch)
-												him.bd = ((SemiElementContainer) him.bd).convert();
-											CurrentData.save(backLog.path);
-										} else ((MainChapter) him.bd).save();
-										VS.contentAdapter.selected = -1;
-										setSelectOpts(false);
-										him.toShow = him.bd.toString();
-										backLog.adapter.notifyDataSetChanged();
-										cp.dismiss();
-									} catch (IllegalArgumentException iae) {
-										if (!iae.getMessage().contains("Name can't")) throw iae;
-										defaultReacts.get(ContainerFile.class + ":name")
-												.react(iae.getMessage().contains("longer"));
-									}
-								});
-								return v;
-							}));
-						} else if (him.bd instanceof TwoSided) {
-							boolean pic = him.bd instanceof Picture;
-							activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.edit), new Includer() {
-								AbstractPopupRecyclerAdapter content;
-
-								@Override
-								public View onInclude(LayoutInflater li, CreatorPopup cp) {
-									LinearLayout ll = (LinearLayout) li.inflate(R.layout.new_twosided, null);
-									if (content == null)
-										content = pic ? new ImagePopupRecyclerAdapter(him, cp)
-												: new TranslatePopupRecyclerAdapter(him, cp);
-									Runnable onClick = content.onClick(ll);
-									cp.ok.setOnClickListener(v -> {
-										onClick.run();
-										if (content.toRemove != null) return;
-										CurrentData.save(backLog.path);
-										VS.contentAdapter.selected = -1;
-										setSelectOpts(false);
-										if (pic) him.toShow = him.bd.toString();
-										else {
-											him.flipped = !him.flipped;
-											him.flip();
-										}
-										backLog.adapter.notifyDataSetChanged();
-										cp.dismiss();
-									});
-									return ll;
-								}
-							}));
-						}
+				HierarchyItemModel him, item1 = null;
+				for (HierarchyItemModel item : VS.contentAdapter.list)
+					if (item.isSelected()) {
+						item1 = item;
 						break;
 					}
+				him = item1;
+				if (him.bd instanceof Container && !(him.bd instanceof TwoSided)) {
+					boolean isMch = him.bd instanceof MainChapter;
+					boolean isSch = him.bd instanceof SaveChapter;
+					activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.edit), (li, cp) -> {
+						if (cp.et_name.getText().toString().isEmpty()) {
+							cp.et_name.setText(him.bd.getName());
+							cp.et_desc.setText(him.bd.getDesc(him.parent));
+						}
+						View v = isMch ? null : li.inflate(R.layout.new_chapter, null);
+						if (!isMch) {
+							((CheckBox) v.findViewById(R.id.chapter_file))
+									.setChecked(isSch);
+							cp.np.setValue(him.position);
+							cp.np.setMaxValue(cp.np.getMaxValue() - 1);
+						} else cp.npLayout.setVisibility(View.GONE);
+						cp.ok.setOnClickListener(x -> {
+							String name = cp.et_name.getText().toString();
+							if (name.isEmpty()) return;
+							try {
+								boolean sch = isMch ||
+										((CheckBox) cp.view.findViewById(R.id.chapter_file))
+												.isChecked();
+								if (!name.equals(him.bd.getName())) {
+									if (him.bd instanceof ContainerFile
+											|| sch) ContainerFile.isCorrect(name);
+									him.bd.setName(him.parent, name);
+								}
+								him.bd.putDesc(him.parent,
+										cp.et_desc.getText().toString().replace("\\t", "\t"));
+								if (!isMch) {
+									if (sch != isSch)
+										him.bd = ((SemiElementContainer) him.bd).convert();
+									int position = cp.np.getValue();
+									if (position != him.position)
+										him.parent.putChild(him.parent.removeChild(him.bd),
+												him.bd, position - 1);
+									CurrentData.save(backLog.path);
+								} else ((MainChapter) him.bd).save();
+								VS.contentAdapter.selected = -1;
+								setSelectOpts(false);
+								him.toShow = him.bd.toString();
+								backLog.adapter.notifyDataSetChanged();
+								cp.dismiss();
+							} catch (IllegalArgumentException iae) {
+								if (!iae.getMessage().contains("Name can't")) throw iae;
+								defaultReacts.get(ContainerFile.class + ":name")
+										.react(iae.getMessage().contains("longer"));
+							}
+						});
+						return v;
+					}));
+				} else if (him.bd instanceof TwoSided) {
+					boolean pic = him.bd instanceof Picture;
+					activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.edit), new Includer() {
+						AbstractPopupRecyclerAdapter content;
+
+						@Override
+						public View onInclude(LayoutInflater li, CreatorPopup cp) {
+							LinearLayout ll = (LinearLayout) li.inflate(R.layout.new_twosided, null);
+							if (content == null)
+								content = pic ? new ImagePopupRecyclerAdapter(him, cp)
+										: new TranslatePopupRecyclerAdapter(him, cp);
+							Runnable onClick = content.onClick(ll);
+							cp.np.setValue(him.position);
+							cp.np.setMaxValue(cp.np.getMaxValue() - 1);
+							cp.ok.setOnClickListener(v -> {
+								onClick.run();
+								int position = cp.np.getValue();
+								if (position != him.position) {
+									him.parent.putChild(him.parent.removeChild(him.bd),
+											him.bd, position - 1);
+									if (content.toRemove != null) CurrentData.save(backLog.path);
+								}
+								if (content.toRemove != null) return;
+								CurrentData.save(backLog.path);
+								VS.contentAdapter.selected = -1;
+								setSelectOpts(false);
+								if (pic) him.toShow = him.bd.toString();
+								else {
+									him.flipped = !him.flipped;
+									him.flip();
+								}
+								backLog.adapter.notifyDataSetChanged();
+								cp.dismiss();
+							});
+							return ll;
+						}
+					}));
 				}
 			});
 			if (backLog.adapter instanceof SearchAdapter && VS.contentAdapter.selected > -1) {
@@ -361,8 +381,9 @@ public class MainFragment extends Fragment
 			} else {
 				List<ContainerFile> toSave = new LinkedList<>();
 				for (HierarchyItemModel him : toMove) {
-					him.bd.move(him.parent, search ? ((SearchItemModel) him).path.get(-2)
-							: original.get(original.size() - 2), np, npp);
+					him.bd.move(him.parent, original.size() == 1 ? null :
+							search ? ((SearchItemModel) him).path.get(-2)
+									: original.get(original.size() - 2), np, npp);
 					if (search) {
 						List<? extends BasicData> path = ((SearchItemModel) him).path;
 						for (int i = path.size() - 1; i >= 0; i--)
@@ -535,7 +556,7 @@ public class MainFragment extends Fragment
 	}
 
 	private void prepareContainerContent(Container bd) {
-		if (VS.pasteMode)test: {
+		if (VS.pasteMode) test:{
 			if (toMove.get(0) instanceof SearchItemModel) {
 				Container current = (Container) backLog.path.get(-1);
 				for (HierarchyItemModel moving : toMove)
@@ -640,6 +661,7 @@ public class MainFragment extends Fragment
 			switch (item.getItemId()) {
 				case R.id.more_new_mch:
 					activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.new_mch), (x, cp) -> {
+						cp.npLayout.setVisibility(View.GONE);
 						cp.ok.setOnClickListener(v -> {
 							String name = cp.et_name.getText().toString();
 							if (name.isEmpty()) return;
@@ -654,7 +676,6 @@ public class MainFragment extends Fragment
 							backLog.adapter.addItem(new HierarchyItemModel(new MainChapter(
 									new Data(name, null).addDesc(cp.et_desc.getText().toString()
 											.replace("\\t", "\t"))), null, backLog.adapter.list.size() + 1));
-							backLog.adapter.notifyDataSetChanged();
 							cp.dismiss();
 						});
 						return null;
@@ -672,10 +693,10 @@ public class MainFragment extends Fragment
 										.addPar(par);
 								Container ch = ((CheckBox) cp.view.findViewById(R.id.chapter_file))
 										.isChecked() ? SaveChapter.mkElement(d) : new Chapter(d);
-								backLog.adapter.addItem(
-										new HierarchyItemModel(ch, par, backLog.adapter.list.size() + 1));
-								par.putChild((Container) backLog.path.get(-2), ch);
-								backLog.adapter.notifyDataSetChanged();
+								int pos = cp.np.getValue();
+								backLog.adapter.addItem(pos - 1,
+										new HierarchyItemModel(ch, par, pos));
+								par.putChild((Container) backLog.path.get(-2), ch, pos - 1);
 								CurrentData.newChapters.add(ch);
 								cp.dismiss();
 							} catch (IllegalArgumentException iae) {
