@@ -27,14 +27,6 @@ public class HierarchyItemModel {
 	convert(List<T> list, Container parent) {
 		List<HierarchyItemModel> ret = new ArrayList<>(list.size());
 		int pos = 1;
-		for (int i = 0; i < list.size(); i++) {
-			BasicData bd = list.get(i);
-			if (bd instanceof Container && !(bd instanceof TwoSided))
-				ret.add(new HierarchyItemModel(list.remove(i--), parent, pos++));
-		}
-		for (int i = 0; i < list.size(); i++)
-			if (list.get(i) instanceof TwoSided)
-				ret.add(new HierarchyItemModel(list.remove(i--), parent, pos++));
 		for (BasicData bd : list) ret.add(new HierarchyItemModel(bd, parent, pos++));
 		return ret;
 	}

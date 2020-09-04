@@ -44,14 +44,15 @@ public class CreatorPopup extends AbstractPopup {
 		if (et_desc != null) text = et_desc.getText().toString();
 		(et_desc = view.findViewById(R.id.popup_new_desc)).setText(text);
 
+		np = view.findViewById(R.id.popup_pos_choose);
+		int max = MainFragment.VS.contentAdapter.list.size() + 1;
+		np.setMaxValue(max);
+		np.setMinValue(1);
+		np.setValue(max);
+		npLayout = (View) np.getParent();
 		if ((Boolean) Formatter.getSetting("doChoosePos")
 				&& MainFragment.VS.contentAdapter instanceof HierarchyAdapter) {
-			int max = MainFragment.VS.contentAdapter.list.size() + 1;
-			np = view.findViewById(R.id.popup_pos_choose);
-			(npLayout = (View) np.getParent()).setVisibility(View.VISIBLE);
-			np.setMaxValue(max);
-			np.setMinValue(1);
-			np.setValue(max);
+			npLayout.setVisibility(View.VISIBLE);
 		}
 		ok = view.findViewById(R.id.ok);
 		view.findViewById(R.id.cancel).setOnClickListener(x -> dismiss());
