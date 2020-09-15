@@ -366,6 +366,7 @@ public class ExplorerStuff {
 					rv.post(() -> {
 						backLog.adapter.addItem(new SearchItemModel(bd, copy,
 								VS.contentAdapter.list.size() + 1));
+
 						info.setText(activity.getString(R.string.data_child_count) + set.size() + ";\t" +
 								activity.getString(R.string.time) + (System.currentTimeMillis() - start) + "ms");
 					});

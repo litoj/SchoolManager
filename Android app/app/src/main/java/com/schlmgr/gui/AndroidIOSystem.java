@@ -121,6 +121,7 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 	@Override
 	protected void setDefaults(boolean first) {
 		if (first) {
+			settings.put("doChoosePos", false);
 			settings.put("defaultTestTypePicture", false);
 			settings.put("flipWord", true);
 			settings.put("flipAllOnClick", false);
@@ -160,6 +161,7 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 			if ((value = settings.get("parseNames")) != null)
 				HierarchyItemModel.parse = (Boolean) value;
 			else settings.put("parseNames", save = true);
+			if (settings.get("doChoosePos") == null) settings.put("doChoosePos", !(save = true));
 			if (settings.get("defaultTestTypePicture") == null)
 				settings.put("defaultTestTypePicture", !(save = true));
 			if (save) deserializeTo(setts.getAbsolutePath(), settings, true);
