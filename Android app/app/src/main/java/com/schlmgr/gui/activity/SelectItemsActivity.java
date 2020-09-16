@@ -151,6 +151,7 @@ public class SelectItemsActivity extends PopupCareActivity
 	public void updateBackPath(int skip) {
 		es.updateBackPath(skip);
 		es.updateSearch(backLog.path.isEmpty());
+		VS.contentAdapter.occ = this::checkSelectUsability;
 		checkSelectUsability();
 	}
 
@@ -171,7 +172,8 @@ public class SelectItemsActivity extends PopupCareActivity
 		if (clear()) return;
 		VS.sv_focused = false;
 		es.searchView.clearFocus();
-		if (!backLog.path.isEmpty() && list.isEmpty() || backLog.path.size() > 1) updateBackPath(1);
+		if (!backLog.path.isEmpty() && list.isEmpty() || backLog.path.size() > 1
+				|| !(VS.contentAdapter instanceof HierarchyAdapter)) updateBackPath(1);
 		else {
 			if (System.currentTimeMillis() - backTime > 3000) {
 				backTime = System.currentTimeMillis();
@@ -234,6 +236,7 @@ public class SelectItemsActivity extends PopupCareActivity
 		} else if (VS.contentAdapter instanceof HierarchyAdapter) {
 			boolean selected = !item.isSelected();
 			item.setSelected(selected);
+			checkSelectUsability();
 			VS.contentAdapter.notifyDataSetChanged();
 		} else return false;
 		return true;
