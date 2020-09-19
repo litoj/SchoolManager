@@ -61,11 +61,25 @@
             android:background="#3888" />
 
         <Switch
-            android:id="@+id/setts_index"
+            android:id="@+id/setts_choose_pos"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="5dp"
-            android:text="@string/setts_index"
+            android:text="@string/setts_choose_pos"
+            android:textSize="18sp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="5dp"
+            android:background="#3888" />
+
+        <Switch
+            android:id="@+id/setts_show_desc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="5dp"
+            android:text="@string/setts_show_desc"
             android:textSize="18sp" />
 
         <TextView

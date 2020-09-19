@@ -20,6 +20,7 @@ import objects.Reference;
 
 import static com.schlmgr.gui.activity.MainActivity.ic_check_empty;
 import static com.schlmgr.gui.activity.MainActivity.ic_check_filled;
+import static com.schlmgr.gui.list.HierarchyItemModel.show_desc;
 
 public class SearchAdapter<I extends HierarchyItemModel>
 		extends OpenListAdapter<I, ItemHolder> {
@@ -64,11 +65,9 @@ public class SearchAdapter<I extends HierarchyItemModel>
 
 	public class ItemHolder extends RecyclerView.ViewHolder {
 
-		final TextView name;
-		final TextView position;
-		final ImageView info;
+		final TextView name, position, desc;
+		final ImageView info, check;
 		HierarchyItemModel last;
-		final ImageView check;
 
 		ItemHolder(@NonNull View itemView) {
 			super(itemView);
@@ -78,6 +77,9 @@ public class SearchAdapter<I extends HierarchyItemModel>
 			position = itemView.findViewById(R.id.item_pos);
 			position.setOnClickListener(v -> listener.onItemClick(last));
 			position.setOnLongClickListener(v -> listener.onItemLongClick(last));
+			desc = itemView.findViewById(R.id.item_desc);
+			desc.setOnClickListener(v -> listener.onItemClick(last));
+			desc.setOnLongClickListener(v -> listener.onItemLongClick(last));
 			info = itemView.findViewById(R.id.item_info);
 			info.setOnClickListener((v) -> new TextPopup(last.info, last.info));
 			info.setOnLongClickListener(v -> listener.onItemLongClick(last));
@@ -95,7 +97,13 @@ public class SearchAdapter<I extends HierarchyItemModel>
 		protected void setData(int pos) {
 			HierarchyItemModel item = list.get(pos);
 			name.setText(item.toShow);
-			info.setVisibility(selectActivity || item.info.isEmpty() ? View.GONE : View.VISIBLE);
+			if (!selectActivity) {
+				info.setVisibility(show_desc || item.info.isEmpty()
+						? View.GONE : View.VISIBLE);
+				desc.setVisibility(show_desc && !item.info.isEmpty()
+						? View.VISIBLE : View.GONE);
+				if (show_desc && !item.info.isEmpty()) desc.setText(item.info);
+			}
 			position.setText((pos + 1) + ".");
 			position.setBackgroundColor(item.bd instanceof Reference ?
 					0x600000FF : background(item.bd.getRatio()));

@@ -240,8 +240,9 @@
     <string name="setts_him_allflip">Přeložit všechna slovíčka každým kliknutím</string>
     <string name="setts_him_flipped">Automaticky překládat slovíčka</string>
     <string name="setts_him_parse">Zobrazovat názvy položek ve zpracované formě</string>
-    <string name="setts_index">Vybírat pořadí položky</string>
+    <string name="setts_choose_pos">Vybírat pořadí položky</string>
     <string name="setts_interface">Rozhraní</string>
+    <string name="setts_show_desc">Zobrazovat poznámky přímo</string>
     <string name="setts_test">Přednastavení testů</string>
     <string name="setts_test_amount">Výchozí počet položek v testu</string>
     <string name="setts_test_clever">Vytváření testů podle úspěšnosti</string>

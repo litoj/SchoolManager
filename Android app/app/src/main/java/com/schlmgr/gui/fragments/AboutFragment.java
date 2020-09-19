@@ -94,6 +94,8 @@ public class AboutFragment extends Fragment implements ControlListener {
 			versions_beta.setTgl(root);
 			RecyclerView rvRelease = (RecyclerView) versions_release.toToggle;
 			String[][] releases = {
+					{"4.0", "- added description direct displaying option\n" +
+							"- increased adaptability of word import"},
 					{"3.8", "- patched buggy test source selection"},
 					{"3.7", "- fixed new installations missing variables\n- fixed search display"},
 					{"3.6", "- added option to change the item's list order/position\n" +

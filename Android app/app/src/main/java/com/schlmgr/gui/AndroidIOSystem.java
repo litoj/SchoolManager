@@ -121,6 +121,7 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 	@Override
 	protected void setDefaults(boolean first) {
 		if (first) {
+			settings.put("doShowDesc", false);
 			settings.put("doChoosePos", false);
 			settings.put("defaultTestTypePicture", false);
 			settings.put("flipWord", true);
@@ -128,9 +129,8 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 			settings.put("parseNames", true);
 			settings.put("version", BuildConfig.VERSION_CODE);
 		} else {
-			boolean save = false;
 			Object value;
-			if ((value = settings.get("version")) == null //old version handler for compatibility
+			if ((value = settings.get("version")) == null //old version update compatibility ensure
 					|| BuildConfig.VERSION_CODE > (Integer) value) {
 				int lastVersion;
 				if (value == null) {
@@ -145,26 +145,16 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 						for (MainChapter mch : MainChapter.ELEMENTS) mch.removeSetting("schNameCount");
 					});
 				}
-				if (lastVersion < 36) {
-					settings.put("doChoosePos", false);
-				}
+				if (lastVersion < 36) settings.put("doChoosePos", false);
+				if (lastVersion < 40) settings.put("doShowDesc", false);
 				settings.put("version", BuildConfig.VERSION_CODE);
-				save = true;
+				deserializeTo(setts.getAbsolutePath(), settings, true);
 			}
 
-			if ((value = settings.get("flipWord")) != null)
-				HierarchyItemModel.defFlip = (Boolean) value;
-			else settings.put("flipWord", save = true);
-			if ((value = settings.get("flipAllOnClick")) != null)
-				HierarchyItemModel.flipAllOnClick = (Boolean) value;
-			else settings.put("flipAllOnClick", !(save = true));
-			if ((value = settings.get("parseNames")) != null)
-				HierarchyItemModel.parse = (Boolean) value;
-			else settings.put("parseNames", save = true);
-			if (settings.get("doChoosePos") == null) settings.put("doChoosePos", !(save = true));
-			if (settings.get("defaultTestTypePicture") == null)
-				settings.put("defaultTestTypePicture", !(save = true));
-			if (save) deserializeTo(setts.getAbsolutePath(), settings, true);
+			HierarchyItemModel.defFlip = (Boolean) settings.get("flipWord");
+			HierarchyItemModel.flipAllOnClick = (Boolean) settings.get("flipAllOnClick");
+			HierarchyItemModel.parse = (Boolean) settings.get("parseNames");
+			HierarchyItemModel.show_desc = (Boolean) settings.get("doShowDesc");
 		}
 	}
 
@@ -196,14 +186,14 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 				makeText(CONTEXT, activity.getString(((boolean) o[0]) ? R.string.fail_cf_name_length :
 						R.string.fail_cf_name_typo), Toast.LENGTH_LONG).show()));
 		defaultReacts.put(ContainerFile.class + ":load", (o) -> {
-			String msg = activity.getString(R.string.fail_load) + '\n' + visibleFilePath(o[1].toString()) + '\n' +
+			String msg = activity.getString(R.string.fail_load) + '\n' + o[1].toString() + '\n' +
 					activity.getString(R.string.fail_load_src) + o[2] + activity.getString(R.string.fail_type)
 					+ translate(o[2].getClass()) + ":\n";
 			showMsg(msg + getFirstCause((Exception) o[0]), msg + ((Exception) o[0]).getMessage()
 					+ '\n' + getStackTrace((Exception) o[0]));
 		});
 		defaultReacts.put(ContainerFile.class + ":save", (o) -> {
-			String msg = activity.getString(R.string.fail_save) + '\n' + visibleFilePath(o[1].toString()) + '\n' +
+			String msg = activity.getString(R.string.fail_save) + '\n' + o[1].toString() + '\n' +
 					activity.getString(R.string.fail_save_src) + o[2] + activity.getString(R.string.fail_type)
 					+ translate(o[2].getClass()) + ":\n";
 			showMsg(msg + getFirstCause((Exception) o[0]), msg + ((Exception) o[0]).getMessage()

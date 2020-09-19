@@ -31,16 +31,21 @@ public class HierarchyItemModel {
 		return ret;
 	}
 
+	public static boolean show_desc = false;
 	public static boolean parse = true;
 	public static boolean defFlip = true;
 	public static boolean flipAllOnClick;
 
-	public static void setParse(boolean on) {
-		Formatter.putSetting("parseNames", parse = on);
+	public static void setShowDesc(boolean yes) {
+		Formatter.putSetting("doShowDesc", show_desc = yes);
 	}
 
-	public static void setDefFlip(boolean on) {
-		Formatter.putSetting("flipWord", defFlip = on);
+	public static void setParse(boolean yes) {
+		Formatter.putSetting("parseNames", parse = yes);
+	}
+
+	public static void setDefFlip(boolean yes) {
+		Formatter.putSetting("flipWord", defFlip = yes);
 	}
 
 	public static void setFlipAllOnClick(boolean on) {

@@ -157,33 +157,26 @@ public class Test<T extends TwoSided> {
 	}
 
 	/**
-	 * {@code true} - clever choosing when creating a test
-	 */
-	private static boolean CLEVER_RND = true;
-
-	/**
 	 * @return whether the created tests will prefer less tested and worse result
 	 * object, when selecting the content of a test.
 	 */
 	public static boolean isClever() {
-		return CLEVER_RND;
+		return (Boolean) Formatter.getSetting("isClever");
 	}
 
 	public static void setClever(boolean isClever) {
-		Formatter.putSetting("isClever", CLEVER_RND = isClever);
+		Formatter.putSetting("isClever", isClever);
 	}
 
 	/**
-	 * Default amount items to be tested.
+	 * @return the amount of items in a test
 	 */
-	private static int AMOUNT = 10;
-
 	public static int getAmount() {
-		return AMOUNT;
+		return (Integer) Formatter.getSetting("testAmount");
 	}
 
 	public static void setAmount(int amount) {
-		Formatter.putSetting("testAmount", AMOUNT = amount);
+		Formatter.putSetting("testAmount", amount);
 	}
 
 	private List<SrcPath> source;

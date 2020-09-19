@@ -232,8 +232,9 @@
     <string name="setts_him_allflip">Translate all words on every click</string>
     <string name="setts_him_flipped">Translate words automatically</string>
     <string name="setts_him_parse">Display item names parsed</string>
-    <string name="setts_index">Choose item order</string>
+    <string name="setts_choose_pos">Choose item order</string>
     <string name="setts_interface">Interface</string>
+    <string name="setts_show_desc">Show description directly</string>
     <string name="setts_test">Test preset</string>
     <string name="setts_test_amount">Default tested amount</string>
     <string name="setts_test_clever">Make tests by success rate</string>

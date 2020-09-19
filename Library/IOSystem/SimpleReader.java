@@ -76,7 +76,7 @@ public class SimpleReader {
 	}
 
 	/**
-	 * Loads everything from the given file based on the given parameters.
+	 * Loads everything to chapters in the specified name format.
 	 *
 	 * @param source     where to read the data from
 	 * @param parent     the object where all created chapters and their content will be
@@ -135,7 +135,7 @@ public class SimpleReader {
 
 	/**
 	 * Creates hierarchy of words and chapters.
-	 * Used for converting simple text to programs database.
+	 * Used for converting simple text to database format.
 	 *
 	 * @param source where to get the content from
 	 * @return the created simple hierarchy
@@ -172,11 +172,11 @@ public class SimpleReader {
 		SimpleChapter(String name, Lines lines) {
 			this.name = name;
 			sch = false;
-			LinkedList<SimpleLine> sls = new LinkedList<>();
+			LinkedList<SimpleLine> sLines = new LinkedList<>();
 			LinkedList<SimpleChapter> schs = new LinkedList<>();
 			sorter:
 			for (int i = lines.i; i < lines.length - 1; i++) {
-				if (lines.str[i].length() <= 1) {
+				if (lines.str[i].length() <= 2) {//2 for occasional char codepoint-13
 					if (lines.str[i].length() == 0) continue;
 					switch (lines.str[i].charAt(0)) {
 						case '}':
@@ -186,16 +186,15 @@ public class SimpleReader {
 							schs.add(new SimpleChapter(lines.str[(lines.i = i + 1) - 2], lines));
 							i = lines.i;
 					}
-				} else if (lines.str[i + 1].length() != 1
-						|| lines.str[i + 1].charAt(0) != '{') {
-					String[] names = new String[2];
-					String str = lines.str[i];
+				} else if (lines.str[i + 1].length() > 2) {//every word line has at least 3
+					String[] names = new String[2];         //chars - word, ';', translate
+					String line = lines.str[i];
 					boolean first = true;
 					StringBuilder sb = new StringBuilder();
-					for (int j = 0; j < str.length(); j++) {
-						switch (str.charAt(j)) {
+					for (int j = 0; j < line.length(); j++) {
+						switch (line.charAt(j)) {
 							case '\\':
-								switch (str.charAt(j + 1)) {
+								switch (line.charAt(j + 1)) {
 									case ';':
 										j++;
 										sb.append(';');
@@ -207,7 +206,7 @@ public class SimpleReader {
 										j++;
 										sb.append('\\');
 									default:
-										sb.append(str.charAt(j));
+										sb.append(line.charAt(j));
 								}
 								break;
 							case ';':
@@ -215,21 +214,21 @@ public class SimpleReader {
 								if (first) {
 									first = false;
 									sb.setLength(0);
-								} else j = str.length();
+								} else j = line.length();
 								break;
 							default:
-								sb.append(str.charAt(j));
+								sb.append(line.charAt(j));
 						}
 					}
 					if (names[0] == null || sb.length() == 0) {
-						Formatter.defaultReacts.get(SimpleReader.class + ":fail").react(str);
+						Formatter.defaultReacts.get(SimpleReader.class + ":fail").react(line);
 						throw new IllegalArgumentException();
 					}
 					names[1] = sb.toString();
-					sls.add(new SimpleLine(names));
+					sLines.add(new SimpleLine(names));
 				}
 			}
-			this.lines = sls.toArray(new SimpleLine[sls.size()]);
+			this.lines = sLines.toArray(new SimpleLine[sLines.size()]);
 			if (!schs.isEmpty()) {
 				chaps = schs.toArray(new SimpleChapter[schs.size()]);
 				if (schs.size() > 10) {

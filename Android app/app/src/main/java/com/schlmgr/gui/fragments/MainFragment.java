@@ -840,8 +840,8 @@ public class MainFragment extends Fragment
 							CurrentData.save(currentPath);
 						} catch (Exception e) {
 							if (e instanceof IllegalArgumentException) return;
-							defaultReacts.get(ContainerFile.class + ":load").react(e,
-									Controller.getFileFromUri(data.getData()), backLog.path.get(-1));
+							defaultReacts.get(ContainerFile.class + ":load")
+									.react(e, data.getData(), backLog.path.get(-1));
 						}
 						break;
 					case WORD_WRITE:
@@ -853,9 +853,8 @@ public class MainFragment extends Fragment
 							Formatter.defaultReacts.get(SimpleWriter.class + ":success")
 									.react(backLog.path.get(-1).getName());
 						} catch (Exception e) {
-							Formatter.defaultReacts.get(ContainerFile.class + ":save").react(e,
-									Controller.getFileFromUri(data.getData()),
-									backLog.path.get(-1));
+							Formatter.defaultReacts.get(ContainerFile.class + ":save")
+									.react(e, data.getData(), backLog.path.get(-1));
 						}
 						break;
 					case IMAGE_PICK:
