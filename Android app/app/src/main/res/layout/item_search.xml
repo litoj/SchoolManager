@@ -55,7 +55,6 @@
             android:id="@+id/item_desc"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/outline_gray"
             android:paddingStart="3dp"
             android:paddingTop="3dp"
             android:textColor="#D000"
