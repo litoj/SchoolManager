@@ -57,7 +57,7 @@
             android:layout_height="wrap_content"
             android:paddingStart="3dp"
             android:paddingTop="3dp"
-            android:textColor="#D000"
+            android:textColor="#080"
             android:textSize="15sp"
             android:visibility="gone" />
 
