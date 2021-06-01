@@ -19,6 +19,7 @@ import com.schlmgr.gui.list.HierarchyItemModel;
 import com.schlmgr.gui.popup.TextPopup;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -148,7 +149,7 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 				if (lastVersion < 36) settings.put("doChoosePos", false);
 				if (lastVersion < 40) settings.put("doShowDesc", false);
 				settings.put("version", BuildConfig.VERSION_CODE);
-				deserializeTo(setts.getAbsolutePath(), settings, true);
+				deserialize(setts.getAbsolutePath(), settings, true);
 			}
 
 			HierarchyItemModel.defFlip = (Boolean) settings.get("flipWord");
@@ -254,7 +255,7 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 	}
 
 	@Override
-	protected void deserializeTo(String filePath, Object toSave, boolean internal) {
+	protected void deserialize(String filePath, Object toSave, boolean internal) {
 		try (ObjectOutputStream oos = new ObjectOutputStream(internal ?
 				CONTEXT.openFileOutput(filePath.substring(filePath.lastIndexOf('/') + 1),
 						Context.MODE_PRIVATE) : new java.io.FileOutputStream(filePath))) {
@@ -276,7 +277,7 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 	}
 
 	@Override
-	protected String fileContent(InputStream source) throws Exception {
+	protected String readStream(InputStream source) throws Exception {
 		StringBuilder sb = new StringBuilder();
 		try (InputStreamReader isr = new InputStreamReader(source, StandardCharsets.UTF_8)) {
 			char[] buffer = new char[1024];
@@ -287,6 +288,6 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 	}
 
 	public String fileContent(Uri source) throws Exception {
-		return fileContent(activity.getContentResolver().openInputStream(source));
+		return readStream(activity.getContentResolver().openInputStream(source));
 	}
 }

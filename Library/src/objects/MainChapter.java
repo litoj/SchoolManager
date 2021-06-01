@@ -12,7 +12,7 @@ import objects.templates.BasicData;
 import objects.templates.Container;
 import objects.templates.ContainerFile;
 
-import static IOSystem.Formatter.deserializeTo;
+import static IOSystem.Formatter.deserialize;
 import static IOSystem.Formatter.getPath;
 import static IOSystem.Formatter.serialize;
 
@@ -52,12 +52,12 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 
 	public void putSetting(String key, Object value) {
 		settings.put(key, value);
-		deserializeTo(new File(dir, "setts.dat"), settings);
+		deserialize(new File(dir, "setts.dat"), settings);
 	}
 
 	public void removeSetting(String key) {
 		settings.remove(key);
-		deserializeTo(new File(dir, "setts.dat"), settings);
+		deserialize(new File(dir, "setts.dat"), settings);
 	}
 
 	@Override
@@ -82,7 +82,7 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 		File setts = new File(dir, "setts.dat");
 		if (setts.exists()) settings = (Map<String, Object>) serialize(setts);
 		else {
-			deserializeTo(setts, settings);
+			deserialize(setts, settings);
 			new File(dir, "Chapters").mkdirs();
 		}
 		ELEMENTS.add(this);
@@ -318,7 +318,7 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 
 	@Override
 	public ContentWriter writeData(ContentWriter cw) {
-		deserializeTo(new File(dir, "setts.dat"), settings);
+		deserialize(new File(dir, "setts.dat"), settings);
 		return cw.addClass().addName().addSF().addDesc().addChildren();
 	}
 

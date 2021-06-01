@@ -3,11 +3,12 @@ package IOSystem;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -19,17 +20,17 @@ import objects.templates.ContainerFile;
 import testing.Test;
 
 /**
- * This class is used to operate with text files. The format of all files containing
- * necessary data of every {@link objects.templates.BasicData element} is
- * json, but the code was implemented by the author without using any templates.
+ * This class is used to operate with text files. The format of all files containing necessary data
+ * of every {@link objects.templates.BasicData element} is json, but the code was implemented by the
+ * author without using any templates.
  *
  * @author Josef Litoš
  */
 public class Formatter {
 
 	/**
-	 * Default {@link Reactioner object} made for answering on various actions, keys
-	 * should be in format:
+	 * Default {@link Reactioner object} made for answering on various actions, keys should be in
+	 * format:
 	 * <p>
 	 * fullClassName + ':' + specification (if necessary);
 	 * <p>
@@ -47,15 +48,15 @@ public class Formatter {
 	}
 
 	/**
-	 * Reacts on any event from specified locations in the program given various
-	 * parameters.
+	 * Reacts on any event from specified locations in the program given various parameters.
 	 */
 	public interface Reactioner {
+
 		void react(Object... moreInfo);
 	}
 
 	public static final String CLASS = "class", NAME = "name", SUCCESS = "s",
-			FAIL = "f", CHILDREN = "cdrn", DESC = "desc";
+		 FAIL = "f", CHILDREN = "cdrn", DESC = "desc";
 
 	/**
 	 * @return path to directory currently set for containing objects.
@@ -66,8 +67,7 @@ public class Formatter {
 
 	/**
 	 * @param key tag of the setting
-	 * @return the value of the given key or {@code null} if settings doesn't contain that
-	 * key
+	 * @return the value of the given key or {@code null} if settings doesn't contain that key
 	 * @see Map#get(Object)
 	 */
 	public static Object getSetting(String key) {
@@ -75,13 +75,13 @@ public class Formatter {
 	}
 
 	/**
-	 * @param key   tag to be added or overrated in the settings of this program
+	 * @param key tag to be added or overrated in the settings of this program
 	 * @param value value associated with the given tag
 	 * @see Map#put(Object, Object)
 	 */
 	public static void putSetting(String key, Object value) {
 		ios.settings.put(key, value);
-		deserializeTo(ios.setts, ios.settings);
+		deserialize(ios.setts, ios.settings);
 	}
 
 	/**
@@ -91,7 +91,7 @@ public class Formatter {
 	 */
 	public static void removeSetting(String key) {
 		ios.settings.remove(key);
-		deserializeTo(ios.setts, ios.settings);
+		deserialize(ios.setts, ios.settings);
 	}
 
 	/**
@@ -101,8 +101,12 @@ public class Formatter {
 	 * @return if the dir was changed, {@code false} when given same dir
 	 */
 	public static boolean changeDir(String path) {
-		if (ios.objDir.getAbsolutePath().equals(path)) return false;
-		while (MainChapter.ELEMENTS.size() > 0) MainChapter.ELEMENTS.get(0).close();
+		if (ios.objDir.getAbsolutePath().equals(path)) {
+			return false;
+		}
+		while (MainChapter.ELEMENTS.size() > 0) {
+			MainChapter.ELEMENTS.get(0).close();
+		}
 		(ios.objDir = new File(path)).mkdirs();
 		putSetting("objdir", ios.changeDir(path));
 		return true;
@@ -115,12 +119,12 @@ public class Formatter {
 		changeDir(ios.getDefaultObjectsDir());
 	}
 
-	public static void deserializeTo(File filePath, Object toSave) {
-		deserializeTo(filePath.toString(), toSave, false);
+	public static void deserialize(File filePath, Object toSave) {
+		deserialize(filePath.toString(), toSave, false);
 	}
 
-	public static void deserializeTo(String filePath, Object toSave, boolean internal) {
-		ios.deserializeTo(filePath, toSave, internal);
+	public static void deserialize(String filePath, Object toSave, boolean internal) {
+		ios.deserialize(filePath, toSave, internal);
 	}
 
 	public static Object serialize(File filePath) {
@@ -133,16 +137,16 @@ public class Formatter {
 
 	public static String loadFile(File source) {
 		try {
-			return ios.fileContent(new FileInputStream(source));
+			return ios.readStream(new FileInputStream(source));
 		} catch (Exception e) {
 			Formatter.defaultReacts.get(ContainerFile.class + ":load")
-					.react(e, source, source.getPath());
+				 .react(e, source, source.getPath());
 		}
 		return null;
 	}
 
 	public static void saveFile(String toSave, File filePath) {
-		ios.saveFile(toSave, filePath);
+		ios.writeFile(toSave, filePath);
 	}
 
 	/**
@@ -156,21 +160,18 @@ public class Formatter {
 	}
 
 	/**
-	 * File operations depend on platform, this class defines all methods required to run
-	 * the program
+	 * File operations depend on platform, this class defines all methods required to run the program
 	 * and can be platform dependant.
 	 * <p>
 	 * Only the firstly created instance will be used during the run.
 	 * <p>
-	 * Also all of them have to create all necessary
-	 * {@link Formatter#defaultReacts} by implementing the method {@link #mkDefaultReacts()}
-	 * for the library to work.
+	 * Also all of them have to create all necessary {@link Formatter#defaultReacts} by implementing
+	 * the method {@link #mkDefaultReacts()} for the library to work.
 	 */
 	public static abstract class IOSystem {
 
 		/**
-		 * Settings file of the program, contains all
-		 * {@link #settings hierarchy independant variables}.
+		 * Settings file of the program, contains all {@link #settings hierarchy independant variables}.
 		 */
 		protected File setts;
 		/**
@@ -179,8 +180,7 @@ public class Formatter {
 		protected Map<String, Object> settings = new HashMap<>();
 
 		/**
-		 * Path to the directory that contains all {@link MainChapter hierarchies's}
-		 * folders and data.
+		 * Path to the directory that contains all {@link MainChapter hierarchies's} folders and data.
 		 */
 		protected File objDir;
 
@@ -190,7 +190,9 @@ public class Formatter {
 		 * @param settsFile {@link #setts}
 		 */
 		protected IOSystem(File settsFile) {
-			if (Formatter.ios != null) return;
+			if (Formatter.ios != null) {
+				return;
+			}
 			Formatter.ios = this;
 			mkDefaultReacts();
 			setts = settsFile;
@@ -199,22 +201,28 @@ public class Formatter {
 					settings = (Map<String, Object>) serialize(setts.getName(), true);
 					try {
 						(objDir = new File(
-								mkRealPath(settings.get("objdir").toString()))).mkdirs();
+							 mkRealPath(settings.get("objdir").toString()))).mkdirs();
 					} catch (Exception e) {
 						defaultReacts.get(Formatter.class + ":newSrcDir")
-								.react(e, settings.get("objdir"));
+							 .react(e, settings.get("objdir"));
 						(objDir = new File("School objects")).mkdirs();
 					}
 					Object value;
-					if ((value = settings.get("defaultTestTime")) != null)
+					if ((value = settings.get("defaultTestTime")) != null) {
 						Test.setDefaultTime((Integer) value);
-					else settings.put("defaultTestTime", 180);
-					if ((value = settings.get("isClever")) != null)
+					} else {
+						settings.put("defaultTestTime", 180);
+					}
+					if ((value = settings.get("isClever")) != null) {
 						Test.setClever((Boolean) value);
-					else settings.put("isClever", true);
-					if ((value = settings.get("testAmount")) != null)
+					} else {
+						settings.put("isClever", true);
+					}
+					if ((value = settings.get("testAmount")) != null) {
 						Test.setAmount((Integer) value);
-					else settings.put("testAmount", 10);
+					} else {
+						settings.put("testAmount", 10);
+					}
 					setDefaults(false);
 				} catch (Exception e) {
 					defaultReacts.get(Formatter.class + ":newSrcDir").react(e, settsFile);
@@ -228,7 +236,7 @@ public class Formatter {
 				settings.put("isClever", true);
 				settings.put("testAmount", 10);
 				setDefaults(true);
-				deserializeTo(setts.getAbsolutePath(), settings, true);
+				deserialize(setts.getAbsolutePath(), settings, true);
 			}
 		}
 
@@ -250,18 +258,18 @@ public class Formatter {
 		 * Default way to save files.
 		 *
 		 * @param toSave content to be written
-		 * @param file   the file that is being written
+		 * @param file the file that is being written
 		 */
-		protected void saveFile(String toSave, File file) {
-			try (FileWriter fw = new FileWriter(file)) {
-				fw.write(toSave);
+		protected void writeFile(String toSave, File file) {
+			try {
+				Files.writeString(file.toPath(), toSave, StandardCharsets.UTF_8);
 			} catch (IOException ex) {
 				throw new IllegalArgumentException(ex);
 			}
 		}
 
-		protected abstract void deserializeTo(
-				String filePath, Object toSave, boolean internal);
+		protected abstract void deserialize(
+			 String filePath, Object toSave, boolean internal);
 
 		protected abstract Object serialize(String filePath, boolean internal);
 
@@ -288,13 +296,12 @@ public class Formatter {
 		 */
 		public abstract String mkRealPath(String path);
 
-		protected abstract String fileContent(InputStream source) throws Exception;
+		protected abstract String readStream(InputStream source) throws Exception;
 	}
 
 	/**
 	 * Object containing all necessary data for creating a {@link MainChapter hierarchy}
-	 * {@link objects.templates.BasicData element}. Used for every hierarchy object
-	 * creating.
+	 * {@link objects.templates.BasicData element}. Used for every hierarchy object creating.
 	 */
 	public static class Data {
 
@@ -333,8 +340,8 @@ public class Formatter {
 		@Override
 		public String toString() {
 			return "name=\"" + name + "\", description=" + description + "\", success="
-					+ sf[0] + ", fail=" + sf[1] + ", parent=" + par + ", extra="
-					+ tagVals.toString();
+				 + sf[0] + ", fail=" + sf[1] + ", parent=" + par + ", extra="
+				 + tagVals.toString();
 		}
 	}
 
@@ -352,10 +359,14 @@ public class Formatter {
 
 		public void waitForAccess(MainChapter lock) {
 			Integer hashCode = hashes.get(lock);
-			if (hashCode == null) hashes.put(lock, hashCode = lock.hashCode());
+			if (hashCode == null) {
+				hashes.put(lock, hashCode = lock.hashCode());
+			}
 			synchronized (hashCode) {
 				if (USED.contains(hashCode)) try {
-					while (USED.contains(hashCode)) hashCode.wait();
+					while (USED.contains(hashCode)) {
+						hashCode.wait();
+					}
 				} catch (InterruptedException ie) {
 					throw new IllegalThreadStateException("Interrupting is not allowed!");
 				}
