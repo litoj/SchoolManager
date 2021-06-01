@@ -3,9 +3,11 @@ package IOSystem;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -261,8 +263,9 @@ public class Formatter {
 		 * @param file the file that is being written
 		 */
 		protected void writeFile(String toSave, File file) {
-			try {
-				Files.writeString(file.toPath(), toSave, StandardCharsets.UTF_8);
+			try (OutputStreamWriter osw 
+				 = new OutputStreamWriter(new FileOutputStream(file),StandardCharsets.UTF_8)){
+				osw.write(toSave);
 			} catch (IOException ex) {
 				throw new IllegalArgumentException(ex);
 			}
