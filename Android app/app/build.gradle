@@ -1,16 +1,8 @@
 apply plugin: 'com.android.application'
 
 android {
-    signingConfigs {
-        debug {
-            storeFile file('/home/kepis/.android/keystore.jks')
-            storePassword 'b.l68LIT'
-            keyAlias 'key0'
-            keyPassword 'b.l68LIT'
-        }
-    }
     compileSdkVersion 30
-    buildToolsVersion '30.0.2'
+    buildToolsVersion '30.0.3'
     defaultConfig {
         applicationId "com.schlmgr"
         minSdkVersion 19
