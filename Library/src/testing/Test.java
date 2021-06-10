@@ -161,7 +161,8 @@ public class Test<T extends TwoSided> {
 	 * object, when selecting the content of a test.
 	 */
 	public static boolean isClever() {
-		return (Boolean) Formatter.getSetting("isClever");
+		Object o = Formatter.getSetting("isClever");
+		return o instanceof Boolean && (boolean) o;
 	}
 
 	public static void setClever(boolean isClever) {

@@ -12,7 +12,6 @@ import IOSystem.Formatter.Synchronizer;
 import static IOSystem.Formatter.defaultReacts;
 import IOSystem.ReadElement;
 import java.util.Arrays;
-import java.util.Comparator;
 import objects.templates.BasicData;
 import objects.templates.Container;
 import objects.templates.ContainerFile;
@@ -269,7 +268,8 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	 * @return {@code true} if an image has been deleted from the hierarchy
 	 */
 	public static boolean isCleanable(MainChapter mch) {
-		return (Boolean) mch.getSetting("schRemoved");
+		Object o = mch.getSetting("schRemoved");
+		return o instanceof Boolean && (boolean) o;
 	}
 
 	@Override

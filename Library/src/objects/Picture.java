@@ -223,7 +223,8 @@ public class Picture extends TwoSided<Picture> {
 	 * @return {@code true} if an image has been deleted from the hierarchy
 	 */
 	public static boolean isCleanable(MainChapter mch) {
-		return (boolean) mch.getSetting("imgRemoved");
+		Object o = mch.getSetting("imgRemoved");
+		return o instanceof Boolean && (boolean) o;
 	}
 
 	/**

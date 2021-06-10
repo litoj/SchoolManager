@@ -1,5 +1,4 @@
 package com.schlmgr.gui.fragments;
-
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -94,46 +93,47 @@ public class AboutFragment extends Fragment implements ControlListener {
 			versions_beta.setTgl(root);
 			RecyclerView rvRelease = (RecyclerView) versions_release.toToggle;
 			String[][] releases = {
-					{"4.2", "- made line number column of variable width\n" +
+					{"1.4.3", "- fixed some library issues with missing values"},
+					{"1.4.2", "- made line number column of variable width\n" +
 							"- fixed wrong file format of exported words"},
-					{"4.0", "- added description direct displaying option\n" +
+					{"1.4.0", "- added description direct displaying option\n" +
 							"- increased adaptability of word import"},
-					{"3.8", "- patched buggy test source selection"},
-					{"3.7", "- fixed new installations missing variables\n- fixed search display"},
-					{"3.6", "- added option to change the item's list order/position\n" +
+					{"1.3.8", "- patched buggy test source selection"},
+					{"1.3.7", "- fixed new installations missing variables\n- fixed search display"},
+					{"1.3.6", "- added option to change the item's list order/position\n" +
 							"- fixed app-crash on deleting currently written translate\n" +
 							"- fixed app-crash when moving 1st-lvl items"},
-					{"3.5", "- improved the visual look of search field\n-added item separating lines\n" +
+					{"1.3.5", "- improved the visual look of search field\n-added item separating lines\n" +
 							"- search field now hidden, must scroll up to use it"},
-					{"3.4", "- remake of search field handling\n- improved performance\n" +
+					{"1.3.4", "- remake of search field handling\n- improved performance\n" +
 							"- added many new search syntax features, see help\n" +
 							"- fixed popup bugs\n- enhanced test results color saturation"},
-					{"3.0", "- added SaveChapter import\n- added subject cleanup\n" +
+					{"1.3.0", "- added SaveChapter import\n- added subject cleanup\n" +
 							"- added 'file-chapter to chapter' and vice versa conversion option\n" +
 							"- added TAB character by writing \\t in any description"},
-					{"2.7", "- changed version view\n- separated into nested lists\n" +
+					{"1.2.7", "- changed version view\n- separated into nested lists\n" +
 							"- improved clever test item selecting algorithm"},
-					{"2.6", "- complete hierarchy saving and loading mechanism remake\n" +
+					{"1.2.6", "- complete hierarchy saving and loading mechanism remake\n" +
 							"- improved hierarchy I/O navigation and simplified use\n" +
 							"- new I/O improves compatibility and ignores potential json format" +
 							" mistakes\n- I/O now resistant to human imperfection"},
-					{"2.3", "- improved two-sided displaying\n- added old version compatibility" +
+					{"1.2.3", "- improved two-sided displaying\n- added old version compatibility" +
 							" maintainer\n- added fullscreen image in picture editor\n" +
 							"- made exception handler functional"},
-					{"2.2", "- added success rate revaluation option\n- added uncaught exception" +
+					{"1.2.2", "- added success rate revaluation option\n- added uncaught exception" +
 							" handler\n- fixed crash on 'Set subjects directory' option"},
-					{"2.1", "- fixed settings not saving\n- fixed test results not staying on screen\n" +
+					{"1.2.1", "- fixed settings not saving\n- fixed test results not staying on screen\n" +
 							"- improved code structure, some javadoc added"},
-					{"2.0", "- improved pictures loading speed\n- added nested scroll for image editing" +
+					{"1.2.0", "- improved pictures loading speed\n- added nested scroll for image editing" +
 							" + creating\n- fixed twosided partially renaming (deleting its children)"},
-					{"1.5", "- improved dir selector behavior\n- fixed transition between explorer and" +
+					{"1.1.5", "- improved dir selector behavior\n- fixed transition between explorer and" +
 							" dir selector\n- fixed gui bad icon display\n- fixed word deletion" +
 							" null-pointer\n- fixed SaveChapter hash errors"},
-					{"1.2", "- redesigned inefficient and unsafe database operations\n" +
+					{"1.1.0", "- redesigned inefficient and unsafe database operations\n" +
 							"- fixed test end possible crash"},
-					{"1.1", "- fixed chapters with file not saving\n" +
+					{"1.0.1", "- fixed chapters with file not saving\n" +
 							"- fixed renaming file-chapter - app crash"},
-					{"1.0", "- customized 'About' tab- added help- formatted this tab"}
+					{"1.0.0", "- customized 'About' tab- added help- formatted this tab"}
 			};
 			rvRelease.setAdapter(new VersionAdapter(rvRelease, (ScrollView) root, releases));
 			RecyclerView rvBeta = (RecyclerView) versions_beta.toToggle;

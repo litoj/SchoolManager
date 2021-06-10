@@ -10,7 +10,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -264,7 +263,7 @@ public class Formatter {
 		 */
 		protected void writeFile(String toSave, File file) {
 			try (OutputStreamWriter osw 
-				 = new OutputStreamWriter(new FileOutputStream(file),StandardCharsets.UTF_8)){
+				 = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)){
 				osw.write(toSave);
 			} catch (IOException ex) {
 				throw new IllegalArgumentException(ex);
