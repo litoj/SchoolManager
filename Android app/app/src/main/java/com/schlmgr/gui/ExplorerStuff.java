@@ -427,7 +427,7 @@ public class ExplorerStuff {
 				if (e == bd) break;
 			}
 			int diff = backLog.path.size() - path.size();
-			EasyList<OpenListAdapter> adapters = backLog.copyPrevAdapters();
+			EasyList<OpenListAdapter> adapters = backLog.getPrevAdaptersList();
 			for (int i = 1; i < diff && diff <= adapters.size(); i++)
 				if (((SearchAdapter) adapters.get(-i)).search) diff++;
 			if (diff >= adapters.size()) diff *= 5;

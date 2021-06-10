@@ -55,8 +55,9 @@ public class CurrentData {
 		 */
 		public final EasyList<Integer> onePath = new EasyList<>();
 
-		public EasyList<OpenListAdapter> copyPrevAdapters() {
-			return (EasyList<OpenListAdapter>) prevAdapters.clone();
+		public EasyList<OpenListAdapter> getPrevAdaptersList() {
+			//return (EasyList<OpenListAdapter>) prevAdapters.clone();
+			return prevAdapters;
 		}
 
 		public void add(Boolean newPath, BasicData bd, EasyList<BasicData> currPath) {

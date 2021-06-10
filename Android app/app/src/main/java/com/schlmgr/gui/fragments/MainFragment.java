@@ -1,5 +1,6 @@
 package com.schlmgr.gui.fragments;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.res.Resources;
@@ -32,6 +33,7 @@ import com.schlmgr.gui.list.HierarchyItemModel;
 import com.schlmgr.gui.list.ImageAdapter;
 import com.schlmgr.gui.list.ImageItemModel;
 import com.schlmgr.gui.list.ImagePopupRecyclerAdapter;
+import com.schlmgr.gui.list.OpenListAdapter;
 import com.schlmgr.gui.list.SearchAdapter;
 import com.schlmgr.gui.list.SearchAdapter.OnItemActionListener;
 import com.schlmgr.gui.list.SearchItemModel;
@@ -76,10 +78,15 @@ import static com.schlmgr.gui.list.HierarchyItemModel.convert;
 public class MainFragment extends Fragment
 		implements Controller.ControlListener, OnItemActionListener {
 
+	@SuppressLint("StaticFieldLeak")
 	private static LinearLayout selectOpts;
+	@SuppressLint("StaticFieldLeak")
 	private static TextView edit;
+	@SuppressLint("StaticFieldLeak")
 	private static TextView delete;
+	@SuppressLint("StaticFieldLeak")
 	private static TextView reference;
+	@SuppressLint("StaticFieldLeak")
 	private static TextView cut;
 
 	private LinearLayout pasteOpts;
@@ -97,6 +104,7 @@ public class MainFragment extends Fragment
 	private static Drawable icPaste_disabled;
 
 	private static long backTime;
+	@SuppressLint("StaticFieldLeak")
 	public static ExplorerStuff es;
 	public static ViewState VS = new ViewState();
 
@@ -110,7 +118,7 @@ public class MainFragment extends Fragment
 		edit = root.findViewById(R.id.select_rename);
 		pasteOpts = root.findViewById(R.id.objects_paster);
 		root.findViewById(R.id.objects_cancel).setOnClickListener(v -> {
-			VS.pasteMode = false;
+			VS.pasteData = null;
 			Controller.toggleSelectBtn(true);
 			pasteOpts.setVisibility(View.GONE);
 		});
@@ -328,12 +336,9 @@ public class MainFragment extends Fragment
 			es.onChange(true);
 		}
 		setVisibleOpts();
-		pasteOpts.setVisibility(VS.pasteMode ? View.VISIBLE : View.GONE);
+		pasteOpts.setVisibility(VS.pasteData != null ? View.VISIBLE : View.GONE);
 		return root;
 	}
-
-	private static List<Container> original = new ArrayList<>();
-	private static List<HierarchyItemModel> toMove = new ArrayList<>();
 
 	/**
 	 * Sets up move-mode.
@@ -341,35 +346,33 @@ public class MainFragment extends Fragment
 	 * @param ref if the selected items will be referenced or moved.
 	 */
 	private void move(boolean ref) {
-		VS.pasteMode = true;
+		VS.pasteData = new ViewState.PasteData(ref, VS.contentAdapter);
 		Controller.toggleSelectBtn(false);
 		pasteOpts.setVisibility(View.VISIBLE);
 		tglEnabled(paste, false);
 		boolean search = VS.contentAdapter.search;
-		toMove = new ArrayList<>();
 		for (HierarchyItemModel him : VS.contentAdapter.list)
-			if (him.isSelected()) toMove.add(him);
-		original = new ArrayList<>();
-		for (BasicData bd : backLog.path) original.add((Container) bd);
+			if (him.isSelected()) VS.pasteData.src.add(him);
+		for (BasicData bd : backLog.path) VS.pasteData.srcPath.add((Container) bd);
 		paste.setOnClickListener(v -> {
-			if (backLog.path.size() == original.size()) {
+			/*if (backLog.path.size() == VS.pasteData.srcPath.size()) {
 				int i = 0;
 				boolean ok = false;
-				for (BasicData bd : backLog.path) if (ok = bd != original.get(i++)) break;
+				for (BasicData bd : backLog.path) if (ok = bd != VS.pasteData.srcPath.get(i++)) break;
 				if (!ok) return;
-			}
+			}*/
 			Container npp = (Container) backLog.path.get(-2);
 			Container np = (Container) backLog.path.get(-1);
 			boolean searchNow = VS.contentAdapter.search;
-			for (BasicData bd : np.getChildren(npp)) toMove.remove(bd);
+			for (BasicData bd : np.getChildren(npp)) VS.pasteData.src.remove(bd);
 			if (ref) {
 				List<Container> cp = new ArrayList<>(backLog.path.size());
 				for (BasicData bd : backLog.path) cp.add((Container) bd);
-				for (HierarchyItemModel him : toMove) {
+				for (HierarchyItemModel him : VS.pasteData.src) {
 					Reference r;
 					try {
 						r = Reference.mkElement(him.bd, cp,
-								(search ? ((SearchItemModel) him).path : original)
+								(search ? ((SearchItemModel) him).path : VS.pasteData.srcPath)
 										.toArray(new Container[0]));
 					} catch (IllegalArgumentException iae) {
 						continue;
@@ -380,10 +383,10 @@ public class MainFragment extends Fragment
 				}
 			} else {
 				List<ContainerFile> toSave = new LinkedList<>();
-				for (HierarchyItemModel him : toMove) {
-					him.bd.move(him.parent, original.size() == 1 ? null :
+				for (HierarchyItemModel him : VS.pasteData.src) {
+					him.bd.move(him.parent, VS.pasteData.srcPath.size() == 1 ? null :
 							search ? ((SearchItemModel) him).path.get(-2)
-									: original.get(original.size() - 2), np, npp);
+									: VS.pasteData.srcPath.get(VS.pasteData.srcPath.size() - 2), np, npp);
 					if (search) {
 						List<? extends BasicData> path = ((SearchItemModel) him).path;
 						for (int i = path.size() - 1; i >= 0; i--)
@@ -402,9 +405,9 @@ public class MainFragment extends Fragment
 					}
 				}
 				if (!search) {
-					for (int i = original.size() - 1; i >= 0; i--)
-						if (original.get(i) instanceof ContainerFile) {
-							toSave.add((ContainerFile) original.get(i));
+					for (int i = VS.pasteData.srcPath.size() - 1; i >= 0; i--)
+						if (VS.pasteData.srcPath.get(i) instanceof ContainerFile) {
+							toSave.add((ContainerFile) VS.pasteData.srcPath.get(i));
 							break;
 						}
 				}
@@ -417,7 +420,9 @@ public class MainFragment extends Fragment
 					}
 			}
 			CurrentData.save(backLog.path);
-			VS.pasteMode = false;
+			VS.pasteData.srcView.list.removeAll(VS.pasteData.src);
+			VS.pasteData.srcView.notifyDataSetChanged();
+			VS.pasteData = null;
 			Controller.toggleSelectBtn(true);
 			pasteOpts.setVisibility(View.GONE);
 		});
@@ -482,9 +487,9 @@ public class MainFragment extends Fragment
 			VS.contentAdapter.selected = -1;
 			setSelectOpts(false);
 		} else if (Controller.isActive(this) && !backLog.path.isEmpty()) {
-			if (VS.pasteMode && backLog.path.size() == 1 && !VS.contentAdapter.search) {
+			if (VS.pasteData != null && backLog.path.size() == 1 && !VS.contentAdapter.search) {
 				pasteOpts.setVisibility(View.GONE);
-				VS.pasteMode = false;
+				VS.pasteData = null;
 			} else updateBackContent(1);
 		} else {
 			if (!Controller.isActive(this)) {
@@ -521,7 +526,8 @@ public class MainFragment extends Fragment
 					this::setVisibleOpts));
 			prepareObjectsContent();
 		} else if (bd instanceof Container)
-			if (!(container = !(bd instanceof TwoSided)) && bd instanceof Picture && !VS.pasteMode) {
+			// If opened item is a Picture holder
+			if (!(container = !(bd instanceof TwoSided)) && bd instanceof Picture && VS.pasteData == null) {
 				Controller.setMenuRes(VS.menuRes = 0);
 				Controller.toggleSelectBtn(false);
 				es.updateSearch(true);
@@ -556,20 +562,73 @@ public class MainFragment extends Fragment
 	}
 
 	private void prepareContainerContent(Container bd) {
-		if (VS.pasteMode) test:{
-			if (toMove.get(0) instanceof SearchItemModel) {
-				Container current = (Container) backLog.path.get(-1);
-				for (HierarchyItemModel moving : toMove)
-					if (((SearchItemModel) moving).path.get(-1) == current) {
+		if (VS.pasteData != null) test:{
+			if (VS.pasteData.referencing) {
+				if (VS.pasteData.src.get(0) instanceof SearchItemModel) {
+					for (SearchItemModel source
+							: (List<SearchItemModel>) (List<? extends HierarchyItemModel>) VS.pasteData.src) {
+						if (source.bd instanceof Container) for (BasicData currentParent : backLog.path)
+							if (currentParent == source.bd) {
+								tglEnabled(paste, false);
+								break test;
+							}
+						boolean match;
+						for (BasicData currentParent : backLog.path) {
+							match = false;
+							for (Container parent : source.path)
+								if (currentParent == parent) {
+									match = true;
+									break;
+								}
+							if (!match) {
+								tglEnabled(paste, true);
+								break test;
+							}
+						}
 						tglEnabled(paste, false);
-						break test;
 					}
+				} else {
+					boolean match;
+					for (BasicData currentParent : backLog.path) {
+						match = false;
+						for (HierarchyItemModel source : VS.pasteData.src)
+							if (currentParent == source.bd) {
+								match = true;
+								break;
+							}
+						if (!match) for (Container parent : VS.pasteData.srcPath)
+							if (currentParent == parent) {
+								match = true;
+								break;
+							}
+						if (!match) {
+							tglEnabled(paste, true);
+							break test;
+						}
+					}
+					tglEnabled(paste, false);
+				}
+			} else {
+				for (BasicData parent : backLog.path) {
+					if (parent instanceof MainChapter) continue;
+					for (HierarchyItemModel source : VS.pasteData.src) {
+						try {
+							if (parent == source.bd.getThis()) {
+								//System.err.println("\n" + parent + "\n"+source.bd.getThis()+"\n");
+								tglEnabled(paste, false);
+								break test;
+							}
+						} catch (IllegalArgumentException ex) {
+						}
+					}
+				}
 				tglEnabled(paste, true);
-			} else tglEnabled(paste, backLog.path.get(-1) != original.get(original.size() - 1));
+			}
 		}
+		//else tglEnabled(paste, false);
 		Controller.setMenuRes(VS.menuRes = bd instanceof MainChapter
 				? R.menu.more_mch : R.menu.more_container);
-		if (!VS.pasteMode) Controller.toggleSelectBtn(true);
+		if (VS.pasteData == null) Controller.toggleSelectBtn(true);
 		es.updateSearch(false);
 		Controller.activity.getSupportActionBar().setTitle(bd.toString());
 	}
@@ -641,7 +700,7 @@ public class MainFragment extends Fragment
 
 	@Override
 	public boolean onItemLongClick(HierarchyItemModel item) {
-		if (!VS.pasteMode) {
+		if (VS.pasteData == null) {
 			boolean selected = !item.isSelected();
 			if (VS.contentAdapter.selected == -1) VS.contentAdapter.selected = 0;
 			if (item.bd instanceof Reference)
@@ -881,7 +940,7 @@ public class MainFragment extends Fragment
 
 	@Override
 	public void onResume() {
-		Controller.setCurrentControl(this, VS.menuRes, !VS.pasteMode, true);
+		Controller.setCurrentControl(this, VS.menuRes, VS.pasteData == null, true);
 		if (!backLog.path.isEmpty())
 			Controller.activity.getSupportActionBar().setTitle(backLog.path.get(-1).toString());
 		super.onResume();
@@ -896,7 +955,19 @@ public class MainFragment extends Fragment
 
 	public static class ViewState extends ExplorerStuff.ViewState {
 		private int menuRes;
-		private boolean pasteMode;
 		public MainFragment mfInstance;
+		private PasteData pasteData;
+
+		private static class PasteData {
+			final boolean referencing;
+			final List<Container> srcPath = new ArrayList<>();
+			final List<HierarchyItemModel> src = new ArrayList<>();
+			final SearchAdapter srcView;
+
+			private PasteData(boolean referencing, SearchAdapter currentAdapter) {
+				this.referencing = referencing;
+				srcView = currentAdapter;
+			}
+		}
 	}
 }

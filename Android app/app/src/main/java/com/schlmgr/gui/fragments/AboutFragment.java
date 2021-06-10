@@ -93,6 +93,7 @@ public class AboutFragment extends Fragment implements ControlListener {
 			versions_beta.setTgl(root);
 			RecyclerView rvRelease = (RecyclerView) versions_release.toToggle;
 			String[][] releases = {
+					{"1.5.0", "- working system for moving and referencing objects with recursion protection"},
 					{"1.4.3", "- fixed some library issues with missing values"},
 					{"1.4.2", "- made line number column of variable width\n" +
 							"- fixed wrong file format of exported words"},
