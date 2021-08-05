@@ -33,7 +33,7 @@ public interface ContainerFile extends Container {
 	/**
 	 * @return the File that this object is saved in.
 	 */
-	File getSaveFile();
+	IOSystem.Formatter.IOSystem.GeneralPath getSaveFile();
 
 	default void save() {
 		save(defaultReacts.get(ContainerFile.class + ":save"));

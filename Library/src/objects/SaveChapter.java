@@ -1,12 +1,12 @@
 package objects;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import IOSystem.Formatter;
 import IOSystem.Formatter.Data;
+import IOSystem.Formatter.IOSystem.GeneralPath;
 import IOSystem.Formatter.Reactioner;
 import IOSystem.Formatter.Synchronizer;
 import static IOSystem.Formatter.defaultReacts;
@@ -126,9 +126,9 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 		hash = d.tagVals == null || d.tagVals.get("hash") == null
 				? 1 : (int) d.tagVals.get("hash");
 		if (full) {
-			File dir = new File(identifier.getDir(), "Chapters");
-			File src = getSaveFile();
-			while (src.exists()) src = new File(dir, name + "[" + ++hash + "].json");
+			GeneralPath dir = identifier.getChapDir();
+			GeneralPath src = getSaveFile();
+			while (src.exists()) src = dir.getChild(name + "[" + ++hash + "].json");
 		}
 		ELEMENTS.get(d.identifier).add(this);
 	}
@@ -200,8 +200,8 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 			try {
 				if (saving) return;
 				saving = true;
-				Formatter.saveFile(writeData(new ContentWriter().startWritingItem(
-						this, parent)).endWritingItem().toString(), getSaveFile());
+				getSaveFile().save(writeData(new ContentWriter().startWritingItem(
+						this, parent)).endWritingItem().toString());
 				saving = false;
 			} catch (Exception e) {
 				if (rtr != null) rtr.react(e, getSaveFile(), this);
@@ -240,21 +240,21 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	public static void clean(MainChapter mch) {
 		if (!isCleanable(mch)) return;
 		mch.load(false);
-		File dir = new File(mch.getDir(), "Chapters");
+		GeneralPath dir = mch.getChapDir();
 		USED.waitForAccess(mch);
 		boolean allok = true;
 		for (SaveChapter sch : ELEMENTS.get(mch)) {
 			if (sch.hash == 1) continue;
 			int hash = 1;
-			File src = new File(dir, sch.name + ".json");
+			GeneralPath src = dir.getChild(sch.name + ".json");
 			while (src.exists() && hash < sch.hash)
-				src = new File(dir, sch.name + "[" + ++hash + "].json");
-			File origin = sch.getSaveFile();
+				src = dir.getChild(sch.name + "[" + ++hash + "].json");
+			GeneralPath origin = sch.getSaveFile();
 			if (hash < sch.hash && origin.exists() && !origin.renameTo(
-				new File(dir, sch.name + (hash == 1 ? ".json" : "[" + hash + "].json")))) {
+				 sch.name + (hash == 1 ? ".json" : "[" + hash + "].json"))) {
 				allok = false;
 				defaultReacts.get(ContainerFile.class + ":save").react(
-						new IllegalArgumentException("File can't be renamed"), src, sch);
+						new IllegalArgumentException("SaveChapter cannot be renamed"), src, sch);
 			} else sch.hash = hash;
 		}
 		USED.endAccess(mch);
@@ -273,9 +273,8 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	}
 
 	@Override
-	public File getSaveFile() {
-		return new File(new File(identifier.getDir(), "Chapters"), name
-				+ (hash == 1 ? ".json" : "[" + hash + "].json"));
+	public GeneralPath getSaveFile() {
+		return identifier.getChapDir().getChild(name + (hash == 1 ? ".json" : "[" + hash + "].json"));
 	}
 
 	/**
@@ -287,15 +286,14 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	public BasicData setName(Container none, String name) {
 		load();
 		int current = 1;
-		File dir = new File(identifier.getDir(), "Chapters");
-		File src = new File(dir, name + ".json");
-		while (src.exists()) src = new File(dir, name + "[" + ++current + "].json");
+		GeneralPath dir = identifier.getChapDir();
+		GeneralPath src = dir.getChild(name + ".json");
+		while (src.exists()) src = dir.getChild(name + "[" + ++current + "].json");
 		try {
 			while (loading) Thread.sleep(20);
 		} catch (InterruptedException ie) {
 		}
-		if (getSaveFile().renameTo(new File(new File(identifier.getDir(), "Chapters"),
-				name + (current == 1 ? ".json" : "[" + current + "].json")))) {
+		if (getSaveFile().renameTo(name + (current == 1 ? ".json" : "[" + current + "].json"))) {
 			this.name = name;
 			hash = current;
 		}
@@ -305,7 +303,7 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	@Override
 	public boolean destroy(Container par) {
 		if (par == parent || par == null) {
-			getSaveFile().delete();
+			if (!getSaveFile().delete()) return false;
 			identifier.putSetting("schRemoved", true);
 			USED.waitForAccess(identifier);
 			parent.removeChild(this);

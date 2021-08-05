@@ -1,8 +1,5 @@
 package objects;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -12,6 +9,8 @@ import java.util.Map;
 
 import IOSystem.Formatter;
 import IOSystem.Formatter.Data;
+import IOSystem.Formatter.IOSystem.GeneralPath;
+import static IOSystem.Formatter.getIOSystem;
 import IOSystem.ReadElement;
 import objects.templates.BasicData;
 import objects.templates.Container;
@@ -117,11 +116,11 @@ public class Picture extends TwoSided<Picture> {
 	 */
 	public static Picture mkImage(Data d, Picture main) {
 		int serialINum = -1;
-		File par = new File(d.identifier.getDir(), "Pictures");
+		GeneralPath par = d.identifier.getDir().getChild("Pictures");
 		String front = readName(main)[0] + ' ';
-		File source = new File(d.name);
+		GeneralPath source = getIOSystem().createGeneralPath(d.name);
 		d.sf = main.sf.clone();
-		while (new File(par, front + ++serialINum + ".jpg").exists()) ;
+		while (par.getChild(front + ++serialINum + ".jpg").exists()) ;
 		d.name = front + serialINum;
 		Picture img = new Picture(main, source, d, true);
 		main.putChild(d.par, img);
@@ -138,14 +137,14 @@ public class Picture extends TwoSided<Picture> {
 	 */
 	private void addImages(List<Data> images, Container parent, boolean isNew) {
 		int serialINum = -1;
-		File par = new File(identifier.getDir(), "Pictures");
+		GeneralPath par = identifier.getDir().getChild("Pictures");
 		String front = readName(this)[0] + ' ';
 		for (int i = 0; i < images.size(); i++) {
 			Data child = images.get(i);
 			child.sf = sf.clone();
-			File source = new File(child.name);
+			GeneralPath source = getIOSystem().createGeneralPath(child.name);
 			if (isNew) {
-				while (new File(par, front + ++serialINum + ".jpg").exists()) ;
+				while (par.getChild(front + ++serialINum + ".jpg").exists()) ;
 				images.get(i).name = readName(this)[0] + ' ' + serialINum;
 			}
 			putChild(parent, new Picture(this, source, child, isNew));
@@ -155,22 +154,15 @@ public class Picture extends TwoSided<Picture> {
 	/**
 	 * This constructor is used only to construct an image part.
 	 */
-	private Picture(Picture pic, File save, Data bd, boolean isNew) {
+	private Picture(Picture pic, GeneralPath save, Data bd, boolean isNew) {
 		super(bd, false, IMAGES);
 		if (bd.tagVals != null && bd.tagVals.get("imageRender") != null)
 			imageRender = bd.tagVals.get("imageRender");
 		children.put(bd.par, new ArrayList<>(Arrays.asList(new Picture[]{pic})));
 		parentCount = 1;
 		if (isNew) {
-			File dest = new File(new File(identifier.getDir(), "Pictures"), name + ".jpg");
-			if (!dest.exists()) try (FileOutputStream bos = new FileOutputStream(dest);
-			                         FileInputStream bis = new FileInputStream(save)) {
-				byte[] buffer = new byte[32768];
-				int amount;
-				while ((amount = bis.read(buffer)) != -1) bos.write(buffer, 0, amount);
-			} catch (java.io.IOException ex) {
-				throw new IllegalArgumentException(ex);
-			}
+			GeneralPath dest = identifier.getDir().getChild("Pictures").getChild(name + ".jpg");
+			if (!dest.exists()) save.copyTo(dest);
 		}
 	}
 
@@ -179,7 +171,6 @@ public class Picture extends TwoSided<Picture> {
 	 */
 	private Picture(Data bd, List<Data> images, boolean isNew) {
 		super(bd, true, ELEMENTS);
-		new File(identifier.getDir(), "Pictures").mkdirs();
 		picParentCount(isNew);
 		children.put(bd.par, new ArrayList<>(images.size()));
 		addImages(images, bd.par, isNew);
@@ -195,7 +186,7 @@ public class Picture extends TwoSided<Picture> {
 		if (!isCleanable(mch)) return;
 		mch.load(false);
 		String exceptions = "";
-		File dir = new File(mch.getDir(), "Pictures");
+		GeneralPath dir = mch.getDir().getChild("Pictures");
 		USED.waitForAccess(mch);
 		for (Picture p : ELEMENTS.get(mch)) {
 			int serialINum = -1;
@@ -204,10 +195,13 @@ public class Picture extends TwoSided<Picture> {
 				String[] name = img.getName().split(" ");
 				int srnum = Integer.parseInt(name[name.length - 1]);
 				if (serialINum < srnum) {
-					File pic = new File(dir, img.getName() + ".jpg");
-					while (serialINum < srnum
-							&& !pic.renameTo(new File(dir, front + ++serialINum + ".jpg"))) ;
-					((Picture) img).name = p.name + ' ' + serialINum;
+					GeneralPath pic = dir.getChild(img.getName() + ".jpg");
+					GeneralPath newPath;
+					do {
+					newPath = dir.getChild(front + ++serialINum + ".jpg");
+					} while (serialINum < srnum && newPath.exists());
+					if (pic.renameTo(front + serialINum + ".jpg"))
+						((Picture) img).name = front + serialINum;
 				}
 			}
 		}
@@ -232,9 +226,8 @@ public class Picture extends TwoSided<Picture> {
 	 *
 	 * @return the picture file this object refers to, {@code null} if this {@link #isMain}
 	 */
-	public File getFile() {
-		return isMain ? null : new File(
-				new File(identifier.getDir(), "Pictures"), getName() + ".jpg");
+	public GeneralPath getFile() {
+		return isMain ? null : identifier.getDir().getChild("Pictures").getChild(getName() + ".jpg");
 	}
 
 	/**
@@ -266,12 +259,17 @@ public class Picture extends TwoSided<Picture> {
 			ret = this;
 			map.put(name, map.remove(this.name));
 			this.name = name;
-			File path = new File(identifier.getDir(), "Pictures");
+			GeneralPath path = identifier.getDir().getChild("Pictures");
 			int serialINum = -1;
 			for (Picture img : children.get(ch)) {
-				File pic = new File(path, img.getName() + ".jpg");
-				while (!pic.renameTo(new File(path, name + ' ' + ++serialINum + ".jpg")))
-					if (serialINum > 256) serialINum = -1;
+				GeneralPath pic = path.getChild(img.getName() + ".jpg");
+				GeneralPath newName;
+				do {
+					newName = path.getChild(name + ' ' + ++serialINum + ".jpg");
+					if (serialINum > 256)
+						throw new IllegalArgumentException("Picture " + pic + "cannot be renamed.");
+				} while (newName.exists());
+				pic.renameTo(name + ' ' + serialINum + ".jpg");
 				if (serialINum > -1) img.name = name + ' ' + serialINum;
 			}
 		} else {
@@ -297,13 +295,18 @@ public class Picture extends TwoSided<Picture> {
 		} else p.children.get(ch).addAll(children.get(ch));
 		Map<String, Integer> map =
 				(Map<String, Integer>) identifier.getSetting("picParCount");
-		File path = new File(identifier.getDir(), "Pictures");
+		GeneralPath path = identifier.getDir().getChild("Pictures");
 		int serialINum = -1;
 		for (Picture img : children.remove(ch)) {
-			File pic = new File(path, img.getName() + ".jpg");
-			while (!pic.renameTo(new File(path, p.name + ' ' + ++serialINum + ".jpg")))
-				if (serialINum > 256) serialINum = -1;
-			if (serialINum > -1) img.name = p.name + ' ' + serialINum;
+			GeneralPath pic = path.getChild(img.getName() + ".jpg");
+			GeneralPath newName;
+			do {
+				newName = path.getChild(name + ' ' + ++serialINum + ".jpg");
+				if (serialINum > 256)
+					throw new IllegalArgumentException("Picture " + pic + "cannot be renamed.");
+			} while (newName.exists());
+			pic.renameTo(name + ' ' + serialINum + ".jpg");
+			if (serialINum > -1) img.name = name + ' ' + serialINum;
 			img.children.get(ch).remove(this);
 			img.children.get(ch).add(p);
 		}
@@ -353,7 +356,7 @@ public class Picture extends TwoSided<Picture> {
 		}
 		IMAGES.get(identifier).remove(this);
 		USED.endAccess(identifier);
-		return new File(new File(identifier.getDir(), "Pictures"), name + ".jpg").delete();
+		return identifier.getDir().getChild("Pictures").getChild(name + ".jpg").delete();
 	}
 
 	/**

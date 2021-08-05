@@ -1,25 +1,22 @@
 package objects;
 
-import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import IOSystem.Formatter;
+import IOSystem.Formatter.IOSystem.GeneralPath;
 import IOSystem.Formatter.Reactioner;
 import IOSystem.ReadElement;
 import objects.templates.BasicData;
 import objects.templates.Container;
 import objects.templates.ContainerFile;
 
-import static IOSystem.Formatter.deserialize;
-import static IOSystem.Formatter.getPath;
-import static IOSystem.Formatter.serialize;
 
 /**
  * Head object of hierarchy of all {@link BasicData elemetary} objects. The
  * hierarchy is stored in its own folder under name of this object in the
- * specified {@link Formatter#getPath()}  directory}. Should be
+ * specified {@link Formatter#getSubjectsDir()}  directory}. Should be
  * {@link #name named} after the school object this hierarchy represents.
  *
  * @author Josef Litoš
@@ -34,10 +31,16 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 	 * This file contains everything about this object and its {@link #children content}
 	 * together with its own {@link #settings settings}.
 	 */
-	protected File dir;
+	protected GeneralPath dir;
+	protected GeneralPath settsPath;
+	protected GeneralPath chapDir;
 
-	public File getDir() {
+	public GeneralPath getDir() {
 		return dir;
+	}
+	
+	public GeneralPath getChapDir() {
+		return chapDir;
 	}
 
 	/**
@@ -52,17 +55,17 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 
 	public void putSetting(String key, Object value) {
 		settings.put(key, value);
-		deserialize(new File(dir, "setts.dat"), settings);
+		settsPath.deserialize(settings);
 	}
 
 	public void removeSetting(String key) {
 		settings.remove(key);
-		deserialize(new File(dir, "setts.dat"), settings);
+		settsPath.deserialize(settings);
 	}
 
 	@Override
-	public File getSaveFile() {
-		return new File(dir, "main.json");
+	public GeneralPath getSaveFile() {
+		return dir.getChild("main.json");
 	}
 
 	/**
@@ -72,19 +75,18 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 	 * @param d must contain {@link #name name} of this hierarchy.
 	 */
 	public MainChapter(Formatter.Data d) {
-		this(d, ContainerFile.isCorrect(d.name) ? new File(getPath(), d.name) : null);
+		this(d, ContainerFile.isCorrect(d.name) ? Formatter.getSubjectsDir().getChild(d.name) : null);
 	}
 
-	public MainChapter(Formatter.Data d, File dir) {
+	public MainChapter(Formatter.Data d, GeneralPath dir) {
 		super(d);
 		description = d.description;
-		(this.dir = dir).mkdirs();
-		File setts = new File(dir, "setts.dat");
-		if (setts.exists()) settings = (Map<String, Object>) serialize(setts);
-		else {
-			deserialize(setts, settings);
-			new File(dir, "Chapters").mkdirs();
-		}
+		this.dir = dir;
+		settsPath = dir.getChild("setts.dat");
+		if (settsPath.exists())
+			settings = (Map<String, Object>)settsPath.serialize();
+		else settsPath.deserialize(settings);
+		chapDir = dir.getChild("Chapters");
 		ELEMENTS.add(this);
 	}
 
@@ -112,27 +114,28 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 		for (int i = children.size() - 1; i >= 0; i--) children.get(i).destroy(this);
 		children.clear();
 		ELEMENTS.remove(this);
-		return remFiles(dir);
+		return dir.delete();
 	}
 
-	private boolean remFiles(File src) {
-		if (src.isDirectory()) for (File f : src.listFiles()) remFiles(f);
-		return src.delete();
-	}
 
 	@Override
 	public BasicData setName(Container none, String name) {
 		ContainerFile.isCorrect(name);
-		File newDir = new File(getPath(), name);
+		GeneralPath newDir = Formatter.getSubjectsDir().getChild(name);
 		if (Reference.ELEMENTS.get(this) != null)
 			for (Reference ref : Reference.ELEMENTS.get(this)) ref.pathStr[0] = name;
-		for (byte i = 0; i < 5; i++)
-			if (dir.renameTo(newDir)) {
+		for (byte i = 0; i < 5; i++) {
+			newDir = dir.moveTo(newDir);
+			if (newDir != dir) {
+				if (newDir == null) return null;
 				dir = newDir;
+				settsPath = dir.getChild("setts.dat");
+				chapDir = dir.getChild("Chapters");
 				this.name = name;
 				save();
 				return this;
 			}
+		}
 		return this;
 	}
 
@@ -241,8 +244,8 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 			try {
 				if (saving) return;
 				saving = true;
-				Formatter.saveFile(writeData(new ContentWriter().startWritingItem(this, null))
-						.endWritingItem().toString(), getSaveFile());
+				getSaveFile().save(
+					 writeData(new ContentWriter().startWritingItem(this, null)).endWritingItem().toString());
 				saving = false;
 			} catch (Exception e) {
 				if (rtr != null) rtr.react(e, getSaveFile(), this);
@@ -290,7 +293,7 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 					notifyAll();
 				}
 			} catch (Exception e) {
-				if (rtr != null) rtr.react(e, getSaveFile().getAbsolutePath(), this);
+				if (rtr != null) rtr.react(e, getSaveFile(), this);
 				return;
 			}
 		} else {
@@ -318,7 +321,7 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 
 	@Override
 	public ContentWriter writeData(ContentWriter cw) {
-		deserialize(new File(dir, "setts.dat"), settings);
+		settsPath.deserialize(settings);
 		return cw.addClass().addName().addSF().addDesc().addChildren();
 	}
 

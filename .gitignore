@@ -3,6 +3,7 @@ Android app/.idea
 Android app/build
 Android app/local.properties
 Android app/app/build
+Android app/build.gradle
 Android app/app/release
 Library/build/
 Library/dist/

@@ -1,11 +1,9 @@
 package IOSystem;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
@@ -62,8 +60,8 @@ public class Formatter {
 	/**
 	 * @return path to directory currently set for containing objects.
 	 */
-	public static File getPath() {
-		return ios.objDir;
+	public static IOSystem.GeneralPath getSubjectsDir() {
+		return ios.subjDir;
 	}
 
 	/**
@@ -82,7 +80,7 @@ public class Formatter {
 	 */
 	public static void putSetting(String key, Object value) {
 		ios.settings.put(key, value);
-		deserialize(ios.setts, ios.settings);
+		ios.settsPath.deserialize(ios.settings);
 	}
 
 	/**
@@ -92,62 +90,37 @@ public class Formatter {
 	 */
 	public static void removeSetting(String key) {
 		ios.settings.remove(key);
-		deserialize(ios.setts, ios.settings);
+		ios.settsPath.deserialize(ios.settings);
 	}
 
 	/**
 	 * This method changes the directory of saves of hierarchies.
 	 *
-	 * @param path the directory for this application
+	 * @param path the directory for this application as String (either path or uri)
 	 * @return if the dir was changed, {@code false} when given same dir
 	 */
 	public static boolean changeDir(String path) {
-		if (ios.objDir.getAbsolutePath().equals(path)) {
+		if (ios.subjDir.getOriginalName().equals(path)) {
+			return false;
+		}
+		try {
+			ios.changeDir(path);
+		} catch (IllegalArgumentException iae) {
+			resetDir();
 			return false;
 		}
 		while (MainChapter.ELEMENTS.size() > 0) {
 			MainChapter.ELEMENTS.get(0).close();
 		}
-		(ios.objDir = new File(path)).mkdirs();
-		putSetting("objdir", ios.changeDir(path));
+		putSetting("subjdir", path);
 		return true;
 	}
 
 	/**
-	 * Restores the default objects directory.
+	 * Restores the default subjects directory.
 	 */
 	public static void resetDir() {
-		changeDir(ios.getDefaultObjectsDir());
-	}
-
-	public static void deserialize(File filePath, Object toSave) {
-		deserialize(filePath.toString(), toSave, false);
-	}
-
-	public static void deserialize(String filePath, Object toSave, boolean internal) {
-		ios.deserialize(filePath, toSave, internal);
-	}
-
-	public static Object serialize(File filePath) {
-		return serialize(filePath.toString(), false);
-	}
-
-	public static Object serialize(String filePath, boolean internal) {
-		return ios.serialize(filePath, internal);
-	}
-
-	public static String loadFile(File source) {
-		try {
-			return ios.readStream(new FileInputStream(source));
-		} catch (Exception e) {
-			Formatter.defaultReacts.get(ContainerFile.class + ":load")
-				 .react(e, source, source.getPath());
-		}
-		return null;
-	}
-
-	public static void saveFile(String toSave, File filePath) {
-		ios.writeFile(toSave, filePath);
+		changeDir(ios.getDefaultSubjectsDir());
 	}
 
 	/**
@@ -174,7 +147,7 @@ public class Formatter {
 		/**
 		 * Settings file of the program, contains all {@link #settings hierarchy independant variables}.
 		 */
-		protected File setts;
+		protected GeneralPath settsPath;
 		/**
 		 * All file-stored variables and options for the program.
 		 */
@@ -183,30 +156,29 @@ public class Formatter {
 		/**
 		 * Path to the directory that contains all {@link MainChapter hierarchies's} folders and data.
 		 */
-		protected File objDir;
+		protected GeneralPath subjDir;
 
 		/**
 		 * Loads all stored variables and defines its extension as the {@link Formatter#ios}.
 		 *
-		 * @param settsFile {@link #setts}
+		 * @param setts {@link #settsPath}
 		 */
-		protected IOSystem(File settsFile) {
+		protected IOSystem(String setts) {
 			if (Formatter.ios != null) {
 				return;
 			}
 			Formatter.ios = this;
 			mkDefaultReacts();
-			setts = settsFile;
-			if (setts.exists()) {
+			this.settsPath = createGeneralPath(setts);
+			if (settsPath.exists()) {
 				try {
-					settings = (Map<String, Object>) serialize(setts.getName(), true);
+					settings = (Map<String, Object>) settsPath.serialize();
 					try {
-						(objDir = new File(
-							 mkRealPath(settings.get("objdir").toString()))).mkdirs();
+						changeDir(settings.get("subjdir").toString());
 					} catch (Exception e) {
 						defaultReacts.get(Formatter.class + ":newSrcDir")
-							 .react(e, settings.get("objdir"));
-						(objDir = new File("School objects")).mkdirs();
+							 .react(e, settings.get(""));
+						resetDir();
 					}
 					Object value;
 					if ((value = settings.get("defaultTestTime")) != null) {
@@ -226,18 +198,18 @@ public class Formatter {
 					}
 					setDefaults(false);
 				} catch (Exception e) {
-					defaultReacts.get(Formatter.class + ":newSrcDir").react(e, settsFile);
-					(objDir = new File(getDefaultObjectsDir())).mkdirs();
+					defaultReacts.get(Formatter.class + ":newSrcDir").react(e, setts);
+					resetDir();
 				}
 			}
-			if (objDir == null) {
-				(objDir = new File(getDefaultObjectsDir())).mkdirs();
-				settings.put("objdir", objDir.getAbsolutePath());
+			if (subjDir == null) {
+				resetDir();
+				settings.put("subjdir", getDefaultSubjectsDir());
 				settings.put("defaultTestTime", 180);
 				settings.put("isClever", true);
 				settings.put("testAmount", 10);
 				setDefaults(true);
-				deserialize(setts.getAbsolutePath(), settings, true);
+				settsPath.deserialize(settings);
 			}
 		}
 
@@ -255,39 +227,23 @@ public class Formatter {
 		 */
 		protected abstract void mkDefaultReacts();
 
-		/**
-		 * Default way to save files.
-		 *
-		 * @param toSave content to be written
-		 * @param file the file that is being written
-		 */
-		protected void writeFile(String toSave, File file) {
-			try (OutputStreamWriter osw 
-				 = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)){
-				osw.write(toSave);
-			} catch (IOException ex) {
-				throw new IllegalArgumentException(ex);
-			}
+		public GeneralPath createGeneralPath(String src) {
+			return new FilePath(src);
 		}
 
-		protected abstract void deserialize(
-			 String filePath, Object toSave, boolean internal);
-
-		protected abstract Object serialize(String filePath, boolean internal);
-
 		/**
-		 * @return default {@link #objDir objects storage}
+		 * @return default {@link #subjDir objects storage}
 		 */
-		public abstract String getDefaultObjectsDir();
+		public abstract String getDefaultSubjectsDir();
 
 		/**
-		 * Any necessary actions needed when the {@link #objDir objects storage} is changed.
+		 * Any necessary actions needed when the {@link #subjDir objects storage} is changed.
 		 *
-		 * @param path the new objects storage
-		 * @return the path that will be saved to the {@link #setts settings}
+		 * @param newDir the new directory for storing school subjects
+		 * @return the path that will be saved to the {@link #settsPath settings}
 		 */
-		protected String changeDir(String path) {
-			return path;
+		protected GeneralPath changeDir(String newDir) {
+			return subjDir = getIOSystem().createGeneralPath(newDir);
 		}
 
 		/**
@@ -298,7 +254,80 @@ public class Formatter {
 		 */
 		public abstract String mkRealPath(String path);
 
-		protected abstract String readStream(InputStream source) throws Exception;
+		public static interface GeneralPath {
+
+			public String getOriginalName();
+			
+			public String getName();
+
+			public default void save(String content) {
+				try ( OutputStreamWriter osw
+					 = new OutputStreamWriter(createOutputStream(), StandardCharsets.UTF_8)) {
+					osw.write(content);
+				} catch (IOException e) {
+					defaultReacts.get(ContainerFile.class + ":save")
+						 .react(e, getOriginalName(), ios.createGeneralPath(getOriginalName()));
+				}
+			}
+
+			public default String load() {
+				StringBuilder sb = new StringBuilder(4096);
+				try ( InputStreamReader isr
+					 = new InputStreamReader(createInputStream(), StandardCharsets.UTF_8)) {
+					char[] buffer = new char[1024];
+					int amount;
+					while ((amount = isr.read(buffer)) != -1) {
+						sb.append(buffer, 0, amount);
+					}
+				} catch (IOException e) {
+					defaultReacts.get(ContainerFile.class + ":load")
+						 .react(e, getOriginalName(), ios.createGeneralPath(getOriginalName()));
+					return null;
+				}
+				return sb.toString();
+			}
+
+			public OutputStream createOutputStream() throws IOException;
+
+			public InputStream createInputStream() throws IOException;
+
+			public void deserialize(Object toSave);
+
+			public Object serialize();
+
+			public GeneralPath getChild(String name);
+
+			public GeneralPath getParentDir();
+
+			public boolean renameTo(String newName);
+
+			public GeneralPath moveTo(GeneralPath newPath);
+
+			public default boolean copyTo(GeneralPath destination) {
+				if (destination.exists()) {
+					return false;
+				}
+				try ( InputStream is = createInputStream();
+					 OutputStream os = destination.createOutputStream()) {
+					byte[] buffer = new byte[32768];
+					int amount;
+					while ((amount = is.read(buffer)) != -1) {
+						os.write(buffer, 0, amount);
+					}
+					return true;
+				} catch (java.io.IOException ex) {
+					throw new IllegalArgumentException(ex);
+				}
+			}
+
+			public boolean delete();
+
+			public boolean exists();
+
+			public boolean isDir();
+
+			public GeneralPath[] listFiles();
+		}
 	}
 
 	/**
