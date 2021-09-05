@@ -177,17 +177,12 @@ public class SimpleReader {
 			sorter:
 			for (int i = lines.i; i < lines.length - 1; i++) {
 				if (lines.str[i].length() <= 2) {//2 for occasional char codepoint-13
-					if (lines.str[i].length() == 0) continue;
-					switch (lines.str[i].charAt(0)) {
-						case '}':
-							lines.i = i;
-							break sorter;
-						case '{':
-							schs.add(new SimpleChapter(lines.str[(lines.i = i + 1) - 2], lines));
-							i = lines.i;
+					if (!lines.str[i].isEmpty() && lines.str[i].charAt(0) == '}') {
+						lines.i = i;
+						break sorter;
 					}
-				} else if (lines.str[i + 1].length() > 2) {//every word line has at least 3
-					String[] names = new String[2];         //chars - word, ';', translate
+				} else {//every word line has at least 3 chars - word, ';', translate
+					String[] names = new String[2];
 					String line = lines.str[i];
 					boolean first = true;
 					StringBuilder sb = new StringBuilder();
@@ -220,12 +215,17 @@ public class SimpleReader {
 								sb.append(line.charAt(j));
 						}
 					}
-					if (names[0] == null || sb.length() == 0) {
+					if (names[0] == null && sb.length() == 0) {
 						Formatter.defaultReacts.get(SimpleReader.class + ":fail").react(line);
 						throw new IllegalArgumentException();
+					} else if (sb.length() > 0 && lines.str[i + 1].startsWith("{")) {
+						lines.i = i + 2;
+						schs.add(new SimpleChapter(sb.toString(), lines));
+						i = lines.i;
+					} else {
+						names[1] = sb.toString();
+						sLines.add(new SimpleLine(names));
 					}
-					names[1] = sb.toString();
-					sLines.add(new SimpleLine(names));
 				}
 			}
 			this.lines = sLines.toArray(new SimpleLine[sLines.size()]);
