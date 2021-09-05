@@ -11,8 +11,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 
 /**
@@ -23,21 +21,39 @@ public class FilePath implements GeneralPath {
 
 	private File file;
 	private String original;
+	final private boolean internal;
 
 	public FilePath(String original) {
+		this(original, false);
+	}
+
+	public FilePath(String original, boolean internal) {
 		this.original = original;
-		file = new File(Formatter.getIOSystem().mkRealPath(original));
-		file.mkdirs();
-		if (!original.contains(".") && !file.exists()) {
-			file.mkdir();
+		file = new File(original);
+		if (!file.getName().contains(".") && !file.exists()) {
+			file.mkdirs();
 		}
+		this.internal = internal;
+	}
+
+	public FilePath(File src) {
+		this(src, false);
+	}
+
+	public FilePath(File src, boolean internal) {
+		this.original = src.getAbsolutePath();
+		file = src;
+		if (!file.getName().contains(".") && !src.exists()) {
+			src.mkdirs();
+		}
+		this.internal = internal;
 	}
 
 	@Override
 	public String getOriginalName() {
 		return original;
 	}
-	
+
 	@Override
 	public String getName() {
 		return file.getName();
@@ -45,35 +61,17 @@ public class FilePath implements GeneralPath {
 
 	@Override
 	public OutputStream createOutputStream() throws IOException {
-		return new FileOutputStream(file);
+		return internal ? Formatter.getIOSystem().outputInternal(this) : new FileOutputStream(file);
 	}
 
 	@Override
 	public InputStream createInputStream() throws IOException {
-		return new FileInputStream(file);
-	}
-
-	@Override
-	public void deserialize(Object toSave) {
-		try ( ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
-			oos.writeObject(toSave);
-		} catch (IOException ex) {
-			throw new IllegalArgumentException(ex);
-		}
-	}
-
-	@Override
-	public Object serialize() {
-		try ( ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
-			return ois.readObject();
-		} catch (IOException | ClassNotFoundException ex) {
-			throw new IllegalArgumentException(ex);
-		}
+		return internal ? Formatter.getIOSystem().inputInternal(this) : new FileInputStream(file);
 	}
 
 	@Override
 	public FilePath getChild(String name) {
-		return new FilePath(original + File.pathSeparatorChar + name);
+		return new FilePath(new File(original, name));
 	}
 
 	@Override
@@ -84,21 +82,23 @@ public class FilePath implements GeneralPath {
 	@Override
 	public boolean renameTo(String newName) {
 		File newFile = new File(file.getParentFile(), newName);
-		if (file.renameTo(newFile)) {
-			file = newFile;
-			original = file.getPath();
-			return true;
-		} else {
-			return false;
+		if (!newFile.exists() || newFile.isDirectory() && newFile.listFiles().length == 0) {
+			newFile.delete();
+			if (file.renameTo(newFile)) {
+				file = newFile;
+				original = file.getPath();
+				return true;
+			}
 		}
+		return false;
 	}
 
 	@Override
 	public GeneralPath moveTo(GeneralPath newPath) {
-		if (newPath.exists()) {
+		if (!newPath.isEmpty()) {
 			return null;
 		}
-		if (newPath instanceof FilePath) {
+		if (newPath instanceof FilePath && !internal) {
 			if (file.renameTo(((FilePath) newPath).file)) {
 				file = ((FilePath) newPath).file;
 				original = ((FilePath) newPath).original;
@@ -127,18 +127,30 @@ public class FilePath implements GeneralPath {
 	}
 
 	@Override
-	public boolean isDir() {
-		return file.isDirectory();
-	}
-
-	@Override
 	public boolean exists() {
 		return file.exists();
 	}
 
 	@Override
+	public boolean isDir() {
+		return file.isDirectory();
+	}
+
+	@Override
+	public boolean isEmpty() {
+		return !file.exists() || file.isDirectory() && (file.listFiles() == null
+			 || file.listFiles().length == 0);
+	}
+
+	@Override
+	public boolean equals(GeneralPath comparison) {
+		return file.getAbsolutePath().equals(comparison.getOriginalName());
+	}
+
+	@Override
 	public FilePath[] listFiles() {
 		File[] files = file.listFiles();
+		if (files == null) return new FilePath[0];
 		FilePath[] paths = new FilePath[files.length];
 		for (int i = 0; i < files.length; i++) {
 			paths[i] = new FilePath(files[i].getPath());

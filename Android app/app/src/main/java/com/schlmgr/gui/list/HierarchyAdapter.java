@@ -19,7 +19,7 @@ import objects.MainChapter;
 public class HierarchyAdapter extends SearchAdapter<HierarchyItemModel> {
 
 	public HierarchyAdapter(RecyclerView parent, OnItemActionListener listener,
-	                        @NonNull List<HierarchyItemModel> objects, Runnable occ) {
+													@NonNull List<HierarchyItemModel> objects, Runnable occ) {
 		super(parent, listener, objects, occ);
 	}
 
@@ -51,7 +51,8 @@ public class HierarchyAdapter extends SearchAdapter<HierarchyItemModel> {
 		protected void setData(int pos) {
 			super.setData(pos);
 			remove.setVisibility(last.bd instanceof MainChapter && !((MainChapter) last.bd).getDir()
-					.getPath().contains(Formatter.getPath().getPath()) ? View.VISIBLE : View.GONE);
+					.getOriginalName().contains(Formatter.getSubjectsDir().getOriginalName())
+					? View.VISIBLE : View.GONE);
 		}
 	}
 }

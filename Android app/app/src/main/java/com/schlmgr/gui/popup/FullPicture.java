@@ -10,6 +10,7 @@ import com.schlmgr.gui.list.ImageItemModel;
 
 import java.io.File;
 
+import IOSystem.Formatter;
 import objects.Picture;
 
 public class FullPicture extends AbstractPopup {
@@ -22,10 +23,10 @@ public class FullPicture extends AbstractPopup {
 		this(picture.getFile());
 	}
 
-	public FullPicture(File img) {
+	public FullPicture(Formatter.IOSystem.GeneralPath img) {
 		super(R.layout.popup_pic, false);
 		Runtime.getRuntime().gc();
-		pic = ImageItemModel.getScaledBitmap(img.getAbsolutePath(), size, true);
+		pic = ImageItemModel.getScaledBitmap(img, size, true);
 		wide = pic.getWidth() > pic.getHeight();
 		create();
 	}

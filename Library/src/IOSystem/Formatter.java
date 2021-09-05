@@ -4,6 +4,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
@@ -99,8 +101,8 @@ public class Formatter {
 	 * @param path the directory for this application as String (either path or uri)
 	 * @return if the dir was changed, {@code false} when given same dir
 	 */
-	public static boolean changeDir(String path) {
-		if (ios.subjDir.getOriginalName().equals(path)) {
+	public static boolean changeDir(IOSystem.GeneralPath path) {
+		if (ios.subjDir != null && ios.subjDir.equals(path)) {
 			return false;
 		}
 		try {
@@ -112,7 +114,7 @@ public class Formatter {
 		while (MainChapter.ELEMENTS.size() > 0) {
 			MainChapter.ELEMENTS.get(0).close();
 		}
-		putSetting("subjdir", path);
+		putSetting("subjdir", path.getOriginalName());
 		return true;
 	}
 
@@ -163,18 +165,18 @@ public class Formatter {
 		 *
 		 * @param setts {@link #settsPath}
 		 */
-		protected IOSystem(String setts) {
+		protected IOSystem(Object setts) {
 			if (Formatter.ios != null) {
 				return;
 			}
 			Formatter.ios = this;
 			mkDefaultReacts();
-			this.settsPath = createGeneralPath(setts);
+			this.settsPath = createGeneralPath(setts, true);
 			if (settsPath.exists()) {
 				try {
 					settings = (Map<String, Object>) settsPath.serialize();
 					try {
-						changeDir(settings.get("subjdir").toString());
+						changeDir(createGeneralPath(settings.get("subjdir").toString()));
 					} catch (Exception e) {
 						defaultReacts.get(Formatter.class + ":newSrcDir")
 							 .react(e, settings.get(""));
@@ -203,8 +205,7 @@ public class Formatter {
 				}
 			}
 			if (subjDir == null) {
-				resetDir();
-				settings.put("subjdir", getDefaultSubjectsDir());
+				settings.put("subjdir", getDefaultSubjectsDir().getOriginalName());
 				settings.put("defaultTestTime", 180);
 				settings.put("isClever", true);
 				settings.put("testAmount", 10);
@@ -227,14 +228,18 @@ public class Formatter {
 		 */
 		protected abstract void mkDefaultReacts();
 
-		public GeneralPath createGeneralPath(String src) {
-			return new FilePath(src);
+		public GeneralPath createGeneralPath(Object src) {
+			return createGeneralPath(src, false);
+		}
+
+		public GeneralPath createGeneralPath(Object src, boolean internal) {
+			return new FilePath(src.toString(), internal);
 		}
 
 		/**
 		 * @return default {@link #subjDir objects storage}
 		 */
-		public abstract String getDefaultSubjectsDir();
+		public abstract GeneralPath getDefaultSubjectsDir();
 
 		/**
 		 * Any necessary actions needed when the {@link #subjDir objects storage} is changed.
@@ -242,22 +247,18 @@ public class Formatter {
 		 * @param newDir the new directory for storing school subjects
 		 * @return the path that will be saved to the {@link #settsPath settings}
 		 */
-		protected GeneralPath changeDir(String newDir) {
-			return subjDir = getIOSystem().createGeneralPath(newDir);
+		protected GeneralPath changeDir(GeneralPath newDir) {
+			return subjDir = newDir;
 		}
 
-		/**
-		 * Makes a real path.
-		 *
-		 * @param path § on index 0 changes to current disc name (for USB disc portability)
-		 * @return the corrected path
-		 */
-		public abstract String mkRealPath(String path);
+		public abstract OutputStream outputInternal(GeneralPath file) throws IOException;
+
+		public abstract InputStream inputInternal(GeneralPath file) throws IOException;
 
 		public static interface GeneralPath {
 
 			public String getOriginalName();
-			
+
 			public String getName();
 
 			public default void save(String content) {
@@ -287,13 +288,25 @@ public class Formatter {
 				return sb.toString();
 			}
 
+			public default void deserialize(Object toSave) {
+				try ( ObjectOutputStream oos = new ObjectOutputStream(createOutputStream())) {
+					oos.writeObject(toSave);
+				} catch (IOException ex) {
+					throw new IllegalArgumentException(ex);
+				}
+			}
+
+			public default Object serialize() {
+				try ( ObjectInputStream ois = new ObjectInputStream(createInputStream())) {
+					return ois.readObject();
+				} catch (IOException | ClassNotFoundException ex) {
+					throw new IllegalArgumentException(ex);
+				}
+			}
+
 			public OutputStream createOutputStream() throws IOException;
 
 			public InputStream createInputStream() throws IOException;
-
-			public void deserialize(Object toSave);
-
-			public Object serialize();
 
 			public GeneralPath getChild(String name);
 
@@ -307,8 +320,7 @@ public class Formatter {
 				if (destination.exists()) {
 					return false;
 				}
-				try ( InputStream is = createInputStream();
-					 OutputStream os = destination.createOutputStream()) {
+				try ( InputStream is = createInputStream();  OutputStream os = destination.createOutputStream()) {
 					byte[] buffer = new byte[32768];
 					int amount;
 					while ((amount = is.read(buffer)) != -1) {
@@ -325,6 +337,10 @@ public class Formatter {
 			public boolean exists();
 
 			public boolean isDir();
+
+			public boolean isEmpty();
+
+			public boolean equals(GeneralPath comparison);
 
 			public GeneralPath[] listFiles();
 		}

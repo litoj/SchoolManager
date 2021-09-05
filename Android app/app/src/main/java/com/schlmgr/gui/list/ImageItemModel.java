@@ -5,10 +5,15 @@ import android.graphics.BitmapFactory;
 import android.graphics.BitmapFactory.Options;
 import android.widget.ImageView;
 
+import com.schlmgr.gui.UriPath;
+
+import java.io.IOException;
 import java.util.LinkedList;
 
+import IOSystem.Formatter.IOSystem.GeneralPath;
 import objects.Picture;
 
+import static com.schlmgr.gui.Controller.CONTEXT;
 import static com.schlmgr.gui.Controller.dp;
 
 public class ImageItemModel {
@@ -55,28 +60,50 @@ public class ImageItemModel {
 			if (((Bitmap) pic.imageRender).getWidth() <= maxWidth) return (Bitmap) pic.imageRender;
 			else return getScaledBitmap((Bitmap) pic.imageRender, maxWidth);
 		}
-		return (Bitmap) (pic.imageRender = getScaledBitmap(pic.getFile().getAbsolutePath(), maxWidth));
+		return (Bitmap) (pic.imageRender = getScaledBitmap(pic.getFile(), maxWidth));
 	}
 
 	/**
 	 * Creates a Bitmap from the given path.
 	 */
-	public static Bitmap getScaledBitmap(String absolutePath, float maxSize) {
-		return getScaledBitmap(absolutePath, maxSize, false);
+	public static Bitmap getScaledBitmap(GeneralPath path, float maxSize) {
+		return getScaledBitmap(path, maxSize, false);
 	}
 
 	/**
 	 * Creates a Bitmap from the given path.
 	 */
-	public static Bitmap getScaledBitmap(String absolutePath, float maxSize, boolean bigger) {
+	public static Bitmap getScaledBitmap(GeneralPath path, float maxSize, boolean bigger) {
 		Options opts = new Options();
 		opts.inJustDecodeBounds = true;
-		BitmapFactory.decodeFile(absolutePath, opts);
+		try {
+			if (path instanceof UriPath) BitmapFactory.decodeStream(
+					CONTEXT.getContentResolver().openInputStream(
+							((UriPath) path).getUri()));
+			else BitmapFactory.decodeFile(path.getOriginalName());
+		} catch (IOException e) {
+			throw new IllegalArgumentException(e);
+		}
 		float ratio = (opts.outHeight > opts.outWidth != bigger ? opts.outHeight : opts.outWidth) / maxSize;
-		if (ratio <= 1) return BitmapFactory.decodeFile(absolutePath);
+		if (ratio <= 1)
+			try {
+				return path instanceof UriPath ? BitmapFactory.decodeStream(
+						CONTEXT.getContentResolver().openInputStream(
+								((UriPath) path).getUri())) :
+						BitmapFactory.decodeFile(path.getOriginalName());
+			} catch (IOException e) {
+				throw new IllegalArgumentException(e);
+			}
 		opts.inSampleSize = (int) ratio;
 		opts.inJustDecodeBounds = false;
-		return BitmapFactory.decodeFile(absolutePath, opts);
+		try {
+			return path instanceof UriPath ? BitmapFactory.decodeStream(
+					CONTEXT.getContentResolver().openInputStream(
+							((UriPath) path).getUri()), null, opts) :
+					BitmapFactory.decodeFile(path.getOriginalName(), opts);
+		} catch (IOException e) {
+			throw new IllegalArgumentException(e);
+		}
 	}
 
 	/**

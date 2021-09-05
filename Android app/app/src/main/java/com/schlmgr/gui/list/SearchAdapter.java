@@ -106,7 +106,7 @@ public class SearchAdapter<I extends HierarchyItemModel>
 			}
 			position.setText((pos + 1) + ".");
 			position.setBackgroundColor(item.bd instanceof Reference ?
-					0x600000FF : background(item.bd.getRatio()));
+					0x1a6ab8 : background(item.bd.getRatio()));
 			if (last == null || last.ic != item.ic)
 				position.setCompoundDrawablesRelative(null, null, item.ic, null);
 			if (selected > -1 || selectActivity) {
@@ -136,17 +136,17 @@ public class SearchAdapter<I extends HierarchyItemModel>
 	 */
 	public static int background(int sf) {
 		if (sf == -2) return 0;
-		if (sf == -1) return 0x600000FF;
-		if (sf == 0) return 0x60FF0000;
-		if (sf == 50) return 0x60FFFF00;
+		if (sf == -1) return 0x801a6ab8;
+		if (sf == 0) return 0x30FF0000;
+		if (sf == 50) return 0xf0FFFF00;
 		if (sf == 100) return 0x6000FF00;
 		String ret;
 		if (sf < 50) {
 			ret = Integer.toHexString(sf * 256 / 50);
-			return Integer.parseInt("60FF" + (ret.length() == 1 ? '0' + ret : ret) + "00", 16);
+			return Integer.parseInt("40FF" + (ret.length() == 1 ? '0' + ret : ret) + "22", 16);
 		} else {
 			ret = Integer.toHexString((100 - sf) * 256 / 50);
-			return Integer.parseInt("60" + (ret.length() == 1 ? '0' + ret : ret) + "FF00", 16);
+			return Integer.parseInt("60" + (ret.length() == 1 ? '0' + ret : ret) + "FF22", 16);
 		}
 	}
 }

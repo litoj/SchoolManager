@@ -19,12 +19,12 @@ import com.schlmgr.gui.list.ImagePopupRecyclerAdapter.ImageHolder;
 import com.schlmgr.gui.popup.CreatorPopup;
 import com.schlmgr.gui.popup.FullPicture;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
 import IOSystem.Formatter.Data;
+import IOSystem.Formatter.IOSystem.GeneralPath;
 import objects.MainChapter;
 import objects.Picture;
 import objects.templates.Container;
@@ -46,12 +46,12 @@ public class ImagePopupRecyclerAdapter
 	public static class Image {
 
 		public final Picture twosided;
-		public final File f;
+		public final GeneralPath f;
 		public final Bitmap bm;
 
-		public Image(File file) {
+		public Image(GeneralPath file) {
 			f = file;
-			bm = getScaledBitmap(f.getAbsolutePath(), 150 * dp);
+			bm = getScaledBitmap(f, 150 * dp);
 			twosided = null;
 		}
 
@@ -95,7 +95,7 @@ public class ImagePopupRecyclerAdapter
 	public ImagePopupRecyclerAdapter(HierarchyItemModel edited, CreatorPopup cp) {
 		super(edited, cp, 2);
 		defaultReacts.put("NotifyNewImage", (o) -> {
-			File file = ((File) o[0]);
+			GeneralPath file = ((GeneralPath) o[0]);
 			if (!file.exists()) return;
 			for (Image img : list) if (img.f.equals(file)) return;
 			addItem(new Image(file));
@@ -126,9 +126,9 @@ public class ImagePopupRecyclerAdapter
 					Map<String, Object> map = new HashMap<>();
 					map.put("imageRender", i.bm);
 					if (edited != null)
-						Picture.mkImage(new Data(i.f.getPath(), mch).addPar(parent).addExtra(map),
+						Picture.mkImage(new Data(i.f.getOriginalName(), mch).addPar(parent).addExtra(map),
 								(Picture) edited.bd);
-					else images.add(new Data(i.f.getAbsolutePath(), mch).addPar(parent).addExtra(map));
+					else images.add(new Data(i.f.getOriginalName(), mch).addPar(parent).addExtra(map));
 				}
 			if (edited == null) {
 				int pos = cp.np.getValue();

@@ -11,6 +11,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
 
 import androidx.core.content.ContextCompat;
+import androidx.documentfile.provider.DocumentFile;
 
 import com.google.android.material.snackbar.Snackbar;
 import com.schlmgr.BuildConfig;
@@ -19,14 +20,11 @@ import com.schlmgr.gui.list.HierarchyItemModel;
 import com.schlmgr.gui.popup.TextPopup;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.OutputStream;
 
+import IOSystem.FilePath;
 import IOSystem.Formatter;
 import IOSystem.SimpleReader;
 import IOSystem.SimpleWriter;
@@ -109,7 +107,7 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 		imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
 	}
 
-	public static String visibleFilePath(String path) {
+	public static String visibleInternalPath(String path) {
 		if (!path.contains(defDir)) return path;
 		return path.substring(defDir.length());
 	}
@@ -133,23 +131,15 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 			Object value;
 			if ((value = settings.get("version")) == null //old version update compatibility ensure
 					|| BuildConfig.VERSION_CODE > (Integer) value) {
-				int lastVersion;
-				if (value == null) {
-					settings.put("defaultTestTypePicture", settings.remove("testTypePicture"));
-					settings.put("flipWord", settings.remove("HIMflip"));
-					settings.put("flipAllOnClick", settings.remove("HIMflipAll"));
-					settings.put("parseNames", settings.remove("HIMparse"));
-					lastVersion = 22;
-				} else lastVersion = (Integer) value;
-				if (lastVersion < 30) {
+				int lastVersion = (Integer) value;
+				/*0if (lastVersion < 30) {
 					defaultReacts.put("removeSchNames", moreInfo -> {
 						for (MainChapter mch : MainChapter.ELEMENTS) mch.removeSetting("schNameCount");
 					});
 				}
 				if (lastVersion < 36) settings.put("doChoosePos", false);
-				if (lastVersion < 40) settings.put("doShowDesc", false);
+				if (lastVersion < 40) settings.put("doShowDesc", false);*/
 				settings.put("version", BuildConfig.VERSION_CODE);
-				deserialize(setts.getAbsolutePath(), settings, true);
 			}
 
 			HierarchyItemModel.defFlip = (Boolean) settings.get("flipWord");
@@ -205,7 +195,7 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 			showMsg(msg, msg);
 		});
 		defaultReacts.put(SimpleWriter.class + ":success", (o) -> activity.runOnUiThread(() ->
-				makeText(CONTEXT, visibleFilePath(o[0].toString())
+				makeText(CONTEXT, visibleInternalPath(o[0].toString())
 						+ activity.getString(R.string.action_sw_success), Toast.LENGTH_SHORT).show()));
 		defaultReacts.put(SimpleReader.class + ":success", (o) -> {
 			int[] i = (int[]) o[0];
@@ -245,49 +235,30 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 	}
 
 	@Override
-	public String getDefaultObjectsDir() {
-		return CONTEXT.getExternalFilesDir(null).getAbsolutePath() + "/School objects";
+	public GeneralPath getDefaultSubjectsDir() {
+		return new FilePath(new File(CONTEXT.getExternalFilesDir(
+				null).getAbsolutePath(), "School objects"));
 	}
 
 	@Override
-	public String mkRealPath(String path) {
-		return path;
+	public OutputStream outputInternal(GeneralPath file) throws IOException {
+		return CONTEXT.openFileOutput(file.getName(), Context.MODE_PRIVATE);
 	}
 
 	@Override
-	protected void deserialize(String filePath, Object toSave, boolean internal) {
-		try (ObjectOutputStream oos = new ObjectOutputStream(internal ?
-				CONTEXT.openFileOutput(filePath.substring(filePath.lastIndexOf('/') + 1),
-						Context.MODE_PRIVATE) : new java.io.FileOutputStream(filePath))) {
-			oos.writeObject(toSave);
-		} catch (IOException ex) {
-			throw new IllegalArgumentException(ex);
-		}
+	public InputStream inputInternal(GeneralPath file) throws IOException {
+		return CONTEXT.openFileInput(file.getName());
 	}
 
 	@Override
-	protected Object serialize(String filePath, boolean internal) {
-		try (ObjectInputStream ois = new ObjectInputStream(internal ?
-				CONTEXT.openFileInput(filePath.substring(filePath.lastIndexOf('/') + 1))
-				: new java.io.FileInputStream(filePath))) {
-			return ois.readObject();
-		} catch (IOException | ClassNotFoundException ex) {
-			throw new IllegalArgumentException(ex);
-		}
+	public GeneralPath createGeneralPath(Object path) {
+		return createGeneralPath(path, false);
 	}
 
 	@Override
-	protected String readStream(InputStream source) throws Exception {
-		StringBuilder sb = new StringBuilder();
-		try (InputStreamReader isr = new InputStreamReader(source, StandardCharsets.UTF_8)) {
-			char[] buffer = new char[1024];
-			int amount;
-			while ((amount = isr.read(buffer)) != -1) sb.append(buffer, 0, amount);
-		}
-		return sb.toString();
-	}
-
-	public String fileContent(Uri source) throws Exception {
-		return readStream(activity.getContentResolver().openInputStream(source));
+	public GeneralPath createGeneralPath(Object path, boolean internal) {
+		return path instanceof Uri ? new UriPath((Uri) path, internal) : path instanceof DocumentFile ?
+				new UriPath((DocumentFile) path, internal) : !(path instanceof File) && path.toString().contains(":")
+				? new UriPath(path.toString(), internal) : super.createGeneralPath(path, internal);
 	}
 }

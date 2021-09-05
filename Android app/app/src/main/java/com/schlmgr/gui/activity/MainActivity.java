@@ -1,5 +1,11 @@
 package com.schlmgr.gui.activity;
 
+import static android.content.pm.PackageManager.PERMISSION_GRANTED;
+import static com.schlmgr.gui.AndroidIOSystem.defDir;
+import static com.schlmgr.gui.Controller.CONTEXT;
+import static com.schlmgr.gui.Controller.dp;
+import static com.schlmgr.gui.fragments.MainFragment.STORAGE_PERMISSION;
+
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Environment;
@@ -28,12 +34,6 @@ import java.io.File;
 
 import IOSystem.Formatter;
 import objects.templates.ContainerFile;
-
-import static android.content.pm.PackageManager.PERMISSION_GRANTED;
-import static com.schlmgr.gui.AndroidIOSystem.defDir;
-import static com.schlmgr.gui.Controller.CONTEXT;
-import static com.schlmgr.gui.Controller.dp;
-import static com.schlmgr.gui.fragments.MainFragment.STORAGE_PERMISSION;
 
 public class MainActivity extends PopupCareActivity {
 
@@ -75,7 +75,7 @@ public class MainActivity extends PopupCareActivity {
 		if (background == null) {
 			DisplayMetrics dm = new DisplayMetrics();
 			getWindowManager().getDefaultDisplay().getMetrics(dm);
-			FullPicture.size = dm.heightPixels > dm.widthPixels ? dm.heightPixels : dm.widthPixels;
+			FullPicture.size = Math.max(dm.heightPixels, dm.widthPixels);
 			dp = getResources().getDimension(R.dimen.dp);
 			(HierarchyItemModel.icPic = getResources().getDrawable(R.drawable.ic_pic))
 					.setBounds((int) dp, 0, (int) (dp * 33), (int) (dp * 33));
@@ -94,15 +94,15 @@ public class MainActivity extends PopupCareActivity {
 			ic_check_filled = getResources().getDrawable(R.drawable.ic_check_box_filled);
 			defDir = Environment.getExternalStorageDirectory().getAbsolutePath();
 			AndroidIOSystem.storageDir = defDir.substring(0, defDir.lastIndexOf(File.separatorChar +
-					(defDir.contains("emulated") ? "emulated" : "")));
+					(defDir.contains("emulated") ? "emulated/0" : "")));
 			new AndroidIOSystem();
 			AndroidIOSystem.testWrite();
 			(background = new Thread(() -> {
-				if (!Formatter.getPath().getAbsolutePath().contains(defDir
+				if (!Formatter.getSubjectsDir().getOriginalName().contains(defDir
 						+ "/Android/data/com.schlmgr") && !AndroidIOSystem.canWrite()) {
 					runOnUiThread(() -> {
 						Toast.makeText(this, getString(R.string.fail_permission_write)
-								+ AndroidIOSystem.visibleFilePath(Formatter.getPath().getAbsolutePath())
+								+ AndroidIOSystem.visibleInternalPath(Formatter.getSubjectsDir().getOriginalName())
 								+ '\n' + getString(R.string.fail_formatter), Toast.LENGTH_LONG).show();
 						Formatter.resetDir();
 						CurrentData.createMchs();
@@ -149,7 +149,7 @@ public class MainActivity extends PopupCareActivity {
 
 	@Override
 	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-	                                       @NonNull int[] grantResults) {
+																				 @NonNull int[] grantResults) {
 		if (requestCode == STORAGE_PERMISSION) {
 			if (grantResults[0] != PERMISSION_GRANTED) {
 				AndroidIOSystem.setCanWrite(false);

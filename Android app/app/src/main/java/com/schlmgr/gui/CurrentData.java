@@ -10,7 +10,6 @@ import com.schlmgr.gui.list.OpenListAdapter;
 import com.schlmgr.gui.list.SearchAdapter;
 import com.schlmgr.gui.popup.TextPopup;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -19,12 +18,14 @@ import java.util.Set;
 
 import IOSystem.Formatter;
 import IOSystem.Formatter.Data;
+import IOSystem.Formatter.IOSystem.GeneralPath;
 import objects.MainChapter;
 import objects.Picture;
 import objects.templates.BasicData;
 import objects.templates.Container;
 import objects.templates.ContainerFile;
 
+import static IOSystem.Formatter.getIOSystem;
 import static com.schlmgr.gui.AndroidIOSystem.getFirstCause;
 import static com.schlmgr.gui.Controller.activity;
 
@@ -174,32 +175,32 @@ public class CurrentData {
 
 	public static void createMchs() {
 		synchronized (toLoad) {
-			if (Formatter.getPath().listFiles() != null) for (File f : Formatter.getPath().listFiles())
+			if (Formatter.getSubjectsDir().listFiles() != null) for (GeneralPath f : Formatter.getSubjectsDir().listFiles())
 				load:{
 					for (MainChapter mch : MainChapter.ELEMENTS)
 						if (mch.getDir().equals(f)) break load;
-					if (new File(f, "setts.dat").exists())
+					if (f.getChild("setts.dat").exists())
 						toLoad.add(new MainChapter(new Data(f.getName(), null)));
 				}
-			for (File f : ImportedMchs.get())
+			for (GeneralPath f : ImportedMchs.get())
 				load:{
 					for (MainChapter mch : MainChapter.ELEMENTS)
-						if (mch.getDir().equals(f)) break load;
+						if (mch.getDir().getOriginalName().equals(f.getOriginalName())) break load;
 					if (f.exists()) toLoad.add(new MainChapter(new Data(f.getName(), null), f));
 				}
 		}
 	}
 
 	public static class ImportedMchs {
-		static Set<File> importedMchs;
+		static Set<GeneralPath> importedMchs;
 
-		public static void importMch(File mchDir) {
+		public static void importMch(GeneralPath mchDir) {
 			checkLoaded();
 			importedMchs.add(mchDir);
 			save();
 		}
 
-		public static void removeMch(File mchDir) {
+		public static void removeMch(GeneralPath mchDir) {
 			importedMchs.remove(mchDir);
 			save();
 		}
@@ -211,7 +212,7 @@ public class CurrentData {
 				String imds = (String) Formatter.getSetting("importedMchDirs");
 				if (imds != null) for (String s : imds.split(";"))
 					try {
-						importedMchs.add(new File(s));
+						importedMchs.add(getIOSystem().createGeneralPath(s));
 					} catch (Exception e) {
 						Snackbar.make(Controller.activity.getCurrentFocus(),
 								Controller.activity.getString(R.string.subject_not_found) + s,
@@ -225,18 +226,18 @@ public class CurrentData {
 			else {
 				StringBuilder sb = new StringBuilder();
 				boolean first = true;
-				for (File f : get()) {
+				for (GeneralPath f : get()) {
 					if (first) first = false;
 					else sb.append(';');
-					sb.append(f.getPath());
+					sb.append(f.getOriginalName());
 				}
 				Formatter.putSetting("importedMchDirs", sb.toString());
 			}
 		}
 
-		public static File[] get() {
+		public static GeneralPath[] get() {
 			checkLoaded();
-			return importedMchs.toArray(new File[0]);
+			return importedMchs.toArray(new GeneralPath[0]);
 		}
 	}
 

@@ -26,6 +26,7 @@ import com.schlmgr.gui.Controller;
 import com.schlmgr.gui.CurrentData;
 import com.schlmgr.gui.CurrentData.EasyList;
 import com.schlmgr.gui.ExplorerStuff;
+import com.schlmgr.gui.UriPath;
 import com.schlmgr.gui.activity.SelectDirActivity;
 import com.schlmgr.gui.list.AbstractPopupRecyclerAdapter;
 import com.schlmgr.gui.list.HierarchyAdapter;
@@ -892,8 +893,7 @@ public class MainFragment extends Fragment
 						try {
 							List<BasicData> currentPath = (List<BasicData>) backLog.path.clone();
 							defaultReacts.get(SimpleReader.class + ":success").react(
-									SimpleReader.simpleLoad(((AndroidIOSystem) getIOSystem())
-													.fileContent(data.getData()),
+									SimpleReader.simpleLoad(new UriPath(data.getData()).load(),
 											(Container) backLog.path.get(-1),
 											(Container) backLog.path.get(-2), 0, -1, -1));
 							CurrentData.save(currentPath);
@@ -918,14 +918,13 @@ public class MainFragment extends Fragment
 						break;
 					case IMAGE_PICK:
 						defaultReacts.get("NotifyNewImage")
-								.react(Controller.getFileFromUri(data.getData()));
+								.react(new UriPath(data.getData()));
 						break;
 					case SCH_READ:
 						try {
 							List<BasicData> currentPath = (List<BasicData>) backLog.path.clone();
 							((Container) backLog.path.get(-1)).putChild((Container) backLog.path.get(-2),
-									new ContentReader(((AndroidIOSystem) getIOSystem())
-											.fileContent(data.getData()), (MainChapter) backLog.path.get(0))
+									new ContentReader(new UriPath(data.getData()).load(), (MainChapter) backLog.path.get(0))
 											.mContent.getItem((Container) backLog.path.get(-1)));
 							CurrentData.save(currentPath);
 						} catch (Exception e) {

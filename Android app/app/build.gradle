@@ -7,8 +7,8 @@ android {
         applicationId "com.schlmgr"
         minSdkVersion 19
         targetSdkVersion 30
-        versionCode 50
-        versionName '1.5.0'
+        versionCode 52
+        versionName '1.5.2'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         signingConfig signingConfigs.debug
     }
@@ -17,6 +17,9 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             debuggable false
+        }
+        debug {
+            debuggable true
         }
     }
     compileOptions {

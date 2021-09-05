@@ -131,12 +131,12 @@ public class Controller {
 	 *
 	 * @author Allan Jiang
 	 */
-	public static File getFileFromUri(Uri uri) {
+	/*public static File getFileFromUri(Uri uri) {
 		Looper.prepare();
 		Cursor c = new CursorLoader(activity.getApplicationContext(), uri,
 				new String[]{Media.DATA}, null, null, null).loadInBackground();
 		int index = c.getColumnIndexOrThrow(Media.DATA);
 		c.moveToFirst();
 		return new File(c.getString(index));
-	}
+	}*/
 }

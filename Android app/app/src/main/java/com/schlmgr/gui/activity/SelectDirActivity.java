@@ -1,7 +1,10 @@
 package com.schlmgr.gui.activity;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Build.VERSION;
 import android.os.Bundle;
 import android.view.MenuItem;
@@ -19,12 +22,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.core.graphics.drawable.DrawableCompat;
+import androidx.documentfile.provider.DocumentFile;
 
 import com.schlmgr.R;
 import com.schlmgr.gui.AndroidIOSystem;
 import com.schlmgr.gui.Controller;
 import com.schlmgr.gui.CurrentData;
 import com.schlmgr.gui.CurrentData.EasyList;
+import com.schlmgr.gui.UriPath;
 import com.schlmgr.gui.fragments.MainFragment;
 import com.schlmgr.gui.list.DirAdapter;
 import com.schlmgr.gui.list.DirAdapter.DirItemModel;
@@ -32,8 +37,11 @@ import com.schlmgr.gui.list.DirAdapter.DirItemModel;
 import java.io.File;
 import java.util.LinkedList;
 
+import IOSystem.FilePath;
 import IOSystem.Formatter;
 
+import static com.schlmgr.gui.Controller.CONTEXT;
+import static com.schlmgr.gui.Controller.activity;
 import static com.schlmgr.gui.Controller.dp;
 import static com.schlmgr.gui.CurrentData.backLog;
 
@@ -55,10 +63,16 @@ public class SelectDirActivity extends PopupCareActivity
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		if (VERSION.SDK_INT >= 29) {
+			Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+			startActivityForResult(Intent.createChooser(i,
+					activity.getString(R.string.action_chooser_dir)), GET_DIR);
+			return;
+		}
 		setContentView(R.layout.activity_select_dir);
 		((TextView) findViewById(R.id.bar)).setText(importing ? R.string.select_dir_import : R.string.select_dir_src);
 		findViewById(R.id.bar_more).setOnClickListener(v -> {
-			PopupMenu pm = new PopupMenu(Controller.CONTEXT, v);
+			PopupMenu pm = new PopupMenu(CONTEXT, v);
 			pm.inflate(importing ? R.menu.more_current_dir : R.menu.more_choose_dir);
 			pm.setOnMenuItemClickListener(this::onMenuItemClick);
 			pm.show();
@@ -71,11 +85,13 @@ public class SelectDirActivity extends PopupCareActivity
 		if (importing) {
 			set_subjdir.setVisibility(View.GONE);
 			mch_import.setOnClickListener(v -> {
-				if (VS.path.get(-1).equals(Formatter.getPath()) || VS.da.list.size() < 1) return;
+				if (VS.path.get(-1).equals(Formatter.getSubjectsDir().getOriginalName())
+						|| VS.da.list.size() < 1) return;
 				for (DirItemModel item : VS.da.list)
 					if (item.selected) for (File f : item.f.listFiles())
 						if (f.getName().equals("main.json")) {
-							CurrentData.ImportedMchs.importMch(item.f);
+							CurrentData.ImportedMchs.importMch(
+									Formatter.getIOSystem().createGeneralPath(item.f.getPath()));
 							break;
 						}
 				CurrentData.createMchs();
@@ -87,7 +103,7 @@ public class SelectDirActivity extends PopupCareActivity
 			set_subjdir.setOnClickListener(v -> {
 				for (DirItemModel item : VS.da.list) {
 					if (item.selected) {
-						if (Formatter.changeDir(item.f.getAbsolutePath())) {
+						if (Formatter.changeDir(new FilePath(item.f))) {
 							MainFragment.VS = new MainFragment.ViewState();
 							backLog.clear();
 							CurrentData.createMchs();
@@ -131,10 +147,10 @@ public class SelectDirActivity extends PopupCareActivity
 	}
 
 	private File resetView() {
-		File f = Formatter.getPath();
+		File f = new File(Formatter.getSubjectsDir().getOriginalName());
 		String path;
 		if (f.getAbsolutePath().contains("/0")) {
-			path = AndroidIOSystem.visibleFilePath(f.getAbsolutePath());
+			path = AndroidIOSystem.visibleInternalPath(f.getAbsolutePath());
 		} else {
 			path = f.getAbsolutePath().substring(AndroidIOSystem.storageDir.length());
 			path = path.substring(path.indexOf(File.separatorChar, 1));
@@ -269,4 +285,33 @@ public class SelectDirActivity extends PopupCareActivity
 		}
 		return true;
 	}
+
+	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if (resultCode == Activity.RESULT_OK) {
+			new Thread(() -> {
+				if (requestCode == GET_DIR) {
+					Uri path = data.getData();
+					CONTEXT.grantUriPermission(CONTEXT.getPackageName(), path, Intent
+							.FLAG_GRANT_READ_URI_PERMISSION | Intent
+							.FLAG_GRANT_WRITE_URI_PERMISSION);
+					CONTEXT.getContentResolver().takePersistableUriPermission(path, Intent
+							.FLAG_GRANT_READ_URI_PERMISSION | Intent
+							.FLAG_GRANT_WRITE_URI_PERMISSION);
+					DocumentFile dir = DocumentFile.fromTreeUri(CONTEXT, data.getData());
+					if (Formatter.changeDir(new UriPath(dir))) {
+						MainFragment.VS = new MainFragment.ViewState();
+						backLog.clear();
+						CurrentData.createMchs();
+						runOnUiThread(() -> Toast.makeText(
+								context, getString(R.string.choose_dir), Toast.LENGTH_SHORT).show());
+					}
+				}
+				super.onActivityResult(requestCode, resultCode, data);
+			}, "MFrag onActivityResult").start();
+		}
+		super.onBackPressed();
+	}
+
+	private static final int GET_DIR = 7;
 }
