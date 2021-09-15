@@ -218,7 +218,11 @@ public class Picture extends TwoSided<Picture> {
 	 */
 	public static boolean isCleanable(MainChapter mch) {
 		Object o = mch.getSetting("imgRemoved");
-		return o instanceof Boolean && (boolean) o;
+		if (o instanceof Boolean && (boolean) o) {
+			if (ELEMENTS.get(mch) != null && !ELEMENTS.get(mch).isEmpty()) return true;
+			else mch.removeSetting("imgRemoved");
+		}
+		return false;
 	}
 
 	/**

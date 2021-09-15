@@ -75,10 +75,10 @@ public class ExplorerStuff {
 	}
 
 	public ExplorerStuff(OnItemActionListener l, Content onItemClick, Runnable oss, Runnable onCheck,
-	                     ViewState vs, BackLog bl, Context c, HorizontalScrollView hsv,
-	                     RecyclerView rv, LinearLayout path, ScrollView infoScroll, TextView info,
-	                     SearchView searchView, View touchOutside, AppBarLayout searchCollapser,
-	                     BackUpdater bu) {
+											 ViewState vs, BackLog bl, Context c, HorizontalScrollView hsv,
+											 RecyclerView rv, LinearLayout path, ScrollView infoScroll, TextView info,
+											 SearchView searchView, View touchOutside, AppBarLayout searchCollapser,
+											 BackUpdater bu) {
 		this.itemListener = l;
 		this.bu = bu;
 		content = onItemClick;

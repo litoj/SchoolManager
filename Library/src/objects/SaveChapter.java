@@ -162,7 +162,7 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	public Container removeChild(BasicData e) {
 		if (!loaded) load(false);
 		Container ret = super.removeChild(e);
-		if (children.isEmpty()) getSaveFile().delete();
+		if (ret != null && children.isEmpty()) getSaveFile().delete();
 		return ret;
 	}
 
@@ -170,7 +170,7 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	public boolean removeChild(Container c, BasicData e) {
 		if (!loaded) load(false);
 		boolean ret = super.removeChild(c, e);
-		if (children.isEmpty()) getSaveFile().delete();
+		if (ret && children.isEmpty()) getSaveFile().delete();
 		return ret;
 	}
 
@@ -269,7 +269,11 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	 */
 	public static boolean isCleanable(MainChapter mch) {
 		Object o = mch.getSetting("schRemoved");
-		return o instanceof Boolean && (boolean) o;
+		if (o instanceof Boolean && (boolean) o) {
+			if (ELEMENTS.get(mch) != null && !ELEMENTS.get(mch).isEmpty()) return true;
+			else mch.removeSetting("schRemoved");
+		}
+		return false;
 	}
 
 	@Override

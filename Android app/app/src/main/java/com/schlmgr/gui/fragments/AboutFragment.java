@@ -87,12 +87,13 @@ public class AboutFragment extends Fragment implements ControlListener {
 	public View onCreateView(@NonNull LayoutInflater inflater,
 	                         ViewGroup container, Bundle savedInstanceState) {
 		View root = inflater.inflate(R.layout.fragment_about, container, false);
-		activity.getSupportActionBar().setTitle(activity.getString(R.string.app_name) + " " + BuildConfig.VERSION_NAME);
+		activity.getSupportActionBar().setTitle(activity.getString(R.string.app_name) + " v" + BuildConfig.VERSION_NAME);
 		new Thread(() -> {
 			versions_release.setTgl(root);
 			versions_beta.setTgl(root);
 			RecyclerView rvRelease = (RecyclerView) versions_release.toToggle;
 			String[][] releases = {
+					{"1.6.0", "- reworked and improved simple word exports, now more robust"},
 					{"1.5.2", "- altered filesystem usage to handle Android 10+ Storage access framework"},
 					{"1.5.0", "- working system for moving and referencing objects with recursion protection"},
 					{"1.4.3", "- fixed some library issues with missing values"},

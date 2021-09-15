@@ -95,23 +95,21 @@
     <string name="help_extra_words_import">Import slovíček</string>
     <string name="help_extra_words_import_how">Slovíčka lze do předmětu hromadně přidat pomocí souboru, který vyberete po kliknutí na možnost \'Importovat slovíčka\' v menu pro více možností.
         \nSoubor může obsahovat kapitoly a slovíčka.
-        \nPro zápis více slovíček se stejným překladem (a naopak) oddělte slovíčka zpětným lomítkem \.
-        \nSlovíčka a jejich překlady oddělte středníkem ;.
-        \nKapitoly pište na nový řádek název, na další \'{\', jako začátek kapitoly a pro zakončení kapitoly na další řádek \'}\'.
-        \nKaždou položku pište na nový řádek, nepřidávejte předsazení.
-        \nPište soubor v následujícím formátu:
-        \nnázev kapitoly
-        \n{
-        \nslovíčko;překlad
-        \ndalší kapitola
-        \n{
-        \n…
-        \n}
-        \ndalší kapitola
-        \n{
-        \n…
-        \n}
-        \nslovíčko 1\slovíčko 2;překlad pro obě
+        \nPoznámky k položkám pište ve tvaru \'\\[poznámky k položce\\]\'.
+        \nSlovíčka a jejich překlady oddělte pomocí \';\', \'=\', nebo \'→\'.
+        \nPro zápis více slovíček se stejným překladem (a naopak) oddělte slovíčka zpětným lomítkem \\.
+        \nKapitoly začínají řádkem ve tvaru \'název kapitoly \\[případné poznámky\\] {\', kapitolu ukončíte pomocí \'}\' na samostatném řádku. Přímo před otevřenou závorku můžete přidat \'§\' pro uložení kapitoly do vlastního souboru.
+        \nKaždou položku pište na nový řádek, odsazení a mezery mezi jednotlivými položkami jsou libovolné.
+        \nMožný příkladný formát:
+        \n\nkapitola v souboru §{
+        \n\tslovíčko 1;překlad 1
+        \n\tslovíčko 2=překlad 2
+        \n\tnázev podkapitoly \\[poznámky k podkapitole\\] {
+        \n\t\tslovíčko 3 \\[poznámky\\] = překlad 3
+        \n\t\tslovíčko 4\\slovíčko 5;překlad 4
+        \n\t\tslovíčko 6 \\[poznámka\\] \\ slovíčko 7 → překlad 5
+        \n\t}
+        \n\tslovíčko 7;překlad 1 \\[poznámka překladu\\]\\překlad 6
         \n}</string>
     <string name="help_search">Vyhledávání</string>
     <string name="help_search_how">Vyhledávání je umožňěno ve všech kapitolách a předmětech.
@@ -228,6 +226,7 @@
     <string name="paste">Vložit</string>
     <string name="pattern_err">Špatná syntax regexu:</string>
     <string name="popup_copy">Kopírovat</string>
+    <string name="popup_delete_fail">Odstranění neúspěšné</string>
     <string name="press_exit">Stiskněte ještě jednou pro ukončení</string>
     <string name="search">Zadat klíčové slovo</string>
     <string name="select">Zvolit</string>
@@ -254,6 +253,7 @@
     <string name="setts_theme_fg">Barva textu</string>
     <string name="setts_theme_head">Barva záhlaví</string>
     <string name="setts_theme_main">Hlavní barvy</string>
+    <string name="setts_word_splitter">Sekvence dělící slova od překladů při exportu</string>
     <string name="sort">Seřadit</string>
     <string name="sort_alpha_AZ">abecedně ▼</string>
     <string name="sort_alpha_ZA">abecedně ▲</string>

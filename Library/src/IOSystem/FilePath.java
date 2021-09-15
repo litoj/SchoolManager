@@ -60,8 +60,9 @@ public class FilePath implements GeneralPath {
 	}
 
 	@Override
-	public OutputStream createOutputStream() throws IOException {
-		return internal ? Formatter.getIOSystem().outputInternal(this) : new FileOutputStream(file);
+	public OutputStream createOutputStream(boolean append) throws IOException {
+		return internal ? Formatter.getIOSystem().outputInternal(this, append)
+			 : new FileOutputStream(file, append);
 	}
 
 	@Override

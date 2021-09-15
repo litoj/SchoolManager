@@ -1,10 +1,10 @@
 package IOSystem;
 
-import java.io.File;
-import java.io.FileOutputStream;
+import IOSystem.Formatter.IOSystem.GeneralPath;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 
+import objects.SaveChapter;
 import objects.Word;
 import objects.templates.BasicData;
 import objects.templates.Container;
@@ -18,43 +18,88 @@ import objects.templates.TwoSided;
  *
  * @author Josef Litoš
  */
-public class SimpleWriter {
+public final class SimpleWriter {
 
+	static String wordSplitter = ";";
+	static String wordSeparator = "\\";
+
+	/**
+	 * Translates actual wordSplitter to a number representing the correspondent option.
+	 * @return ";", "=", " = ", or " → "
+	 */
+	public static String getWordSplitter() {
+		return wordSplitter;
+	}
+	
+	public static void setWordSplitter(String splitter) {
+		switch (splitter) {
+			case " = ":
+			case " → ":
+				wordSplitter = splitter;
+				wordSeparator = " \\ ";
+				break;
+			case ";":
+			case "=":
+				wordSplitter = splitter;
+			default:
+				wordSeparator = "\\";
+		}
+		Formatter.putSetting("exportWordSplit", splitter);
+	}
+	
+	private int tabs = 0;
+	private final StringBuilder sb = new StringBuilder();
+	
 	/**
 	 * Saves content of the given container into specified file, adding it to the end of
 	 * its content.
 	 *
 	 * @param dest the file to obtain the content of the source
-	 * @param par  parent of the object to be written
-	 * @param src  the object to be saved
+	 * @param src  pairs of object and parent (in this order) to be saved
 	 */
-	public static void saveWords(File dest, Container par, Container src) {
-		try (OutputStreamWriter osw = new OutputStreamWriter(
-				new FileOutputStream(dest, true), StandardCharsets.UTF_8)) {
-			osw.append(writeChapter(new StringBuilder(), par, src));
-			Formatter.defaultReacts.get(SimpleWriter.class + ":success")
-					.react(src.getName());
+	public SimpleWriter(GeneralPath dest, Container[] ... src) {
+		try {
+			for (Container[] couple : src) saveContent(couple[0], couple[1]);
+			try (OutputStreamWriter osw =
+				 new OutputStreamWriter(dest.createOutputStream(true), StandardCharsets.UTF_8)) {
+				osw.append(sb);
+			}
+			Formatter.defaultReacts.get(SimpleWriter.class + ":success").react("OK");
 		} catch (Exception e) {
 			Formatter.defaultReacts.get(ContainerFile.class + ":save").react(e, dest, src);
 		}
 	}
 
-	public static StringBuilder writeChapter(
-			StringBuilder sb, Container par, Container src) {
-		sb.append('\n').append(src.getName()).append("\n{");
-		for (BasicData bd : src.getChildren(par)) {
+	private void saveContent(Container self, Container par) {
+		indentation().writeData(self, par).append(self instanceof SaveChapter ? " §{\n" : " {\n");
+		tabs++;
+		for (BasicData bd : self.getChildren(par)) {
 			if (bd instanceof Word) {
-				sb.append('\n').append(bd.getName()).append(';');
+				indentation().writeData(bd, self).append(wordSplitter);
 				boolean first = true;
-				for (BasicData trl : ((Container) bd).getChildren(src)) {
+				for (BasicData trl : ((Container) bd).getChildren(self)) {
 					if (first) first = false;
-					else sb.append('\\');
-					sb.append(trl.getName());
+					else sb.append(wordSeparator);
+					writeData(trl, self);
 				}
+				sb.append('\n');
 			} else if (bd instanceof Container && !(bd instanceof TwoSided)) {
-				writeChapter(sb, src, (Container) bd);
+				saveContent((Container) bd, self);
 			}
 		}
-		return sb.append("\n}");
+		tabs--;
+		indentation().sb.append("}\n");
+	}
+	
+	private StringBuilder writeData(BasicData bd, Container par) {
+		sb.append(bd.getName().replaceAll(";", "\\;").replaceAll("=", "\\=").replaceAll("→", "\\→"));
+		String desc = bd.getDesc(par);
+		if (desc != null && !desc.isEmpty()) sb.append(" \\[").append(desc).append("\\]");
+		return sb;
+	}
+	
+	private SimpleWriter indentation() {
+		for (int i = tabs; i > 0; i--) sb.append('\t');
+		return this;
 	}
 }

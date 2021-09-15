@@ -1,7 +1,5 @@
 package objects.templates;
 
-import java.io.File;
-
 import IOSystem.Formatter.Reactioner;
 
 import static IOSystem.Formatter.defaultReacts;
@@ -56,8 +54,7 @@ public interface ContainerFile extends Container {
 	void save(Reactioner rtr, boolean thread);
 
 	/**
-	 * @return if this object has already loaded all its content from its
-	 * {@link #getSaveFile() file}.
+	 * @return if this object has already loaded all its content from its {@link #getSaveFile() file}.
 	 */
 	boolean isLoaded();
 

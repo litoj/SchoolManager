@@ -90,26 +90,24 @@
         \nAny pictures or file chapters included in the loaded file have to be copied manually.
         \nIt is highly recommended not to import subject files.</string>
     <string name="help_extra_words_export">Words exporting</string>
-    <string name="help_extra_words_export_how">Export words by opening a chapter which content you want to export and select \'Export words\' option in the more options menu.
-        \nThan just select the file you want to add the current word content in.
-        \nThe exported words can be imported again without loss.</string>
+    <string name="help_extra_words_export_how">Export words by opening a chapter which content you want to export and select \'Export words\' option in the more options menu.          Than just select the file you want to add the current word content in.          The exported words can be imported again without loss.</string>
     <string name="help_extra_words_import">Words importing</string>
-    <string name="help_extra_words_import_how">You can import words from a file, it can be also structured in a simpler hierarchy.
+    <string name="help_extra_words_import_how">You can import words from a file, it can be also structured in a simpler hierarchy. The file can contain chapters and words.
+        \nDescription to individual items can be written directly behind the item in format like \'\\[description\\]\'.
+        \nWords and translates can be separated using \';\', \'=\', or \'→\'.
         \nWords with same translate are separated by a backward slash \'\\\'.
-        \nWrite the file for import in the following format:
-        \nname of a chapter
-        \n{
-        \na word;its translate
-        \nanother word;translate
-        \nsubchapter\'s name
-        \n{
-        \n…
-        \n}
-        \nanother subchapter
-        \n{
-        \n…
-        \n}
-        \nword 1\word 2;their translate
+        \nChapters begin on a separate line in the following format \'chapter name \\[optional description\\] {\', end them with a single \'}\' on a separate line. For saving the chapter into an etra file, use \'§\' directly before \'{\'.
+        \nEvery item should be written on a new line, spacing and indentation between them is ignored - meant only for better readability.
+        \nPossible format example:
+        \n\nchapter-in-file 1 §{
+        \n\tword 1;translate 1
+        \n\tword 2=translate 2
+        \n\tsubchapter name \\[subchapter description\\] {
+        \n\t\tword 3 \\[description\\] = translate 3
+        \n\t\tword 4\\word 5;translate 4
+        \n\t\tword 6 \\[description\\] \\ word 7 → translate 5
+        \n\t}
+        \n\tword 7;translate 1 \\[description\\]\\translate 6
         \n}</string>
     <string name="help_search">Searching</string>
     <string name="help_search_how">Searching is enabled in all chapters and subjects.
@@ -221,6 +219,7 @@
     <string name="paste">Paste</string>
     <string name="pattern_err">Invalid regex syntax:</string>
     <string name="popup_copy">Copy</string>
+    <string name="popup_delete_fail">Deletion failed</string>
     <string name="press_exit">Press again to exit</string>
     <string name="search">Input Keyword</string>
     <string name="select">Select</string>
@@ -247,6 +246,7 @@
     <string name="setts_theme_fg">Text color</string>
     <string name="setts_theme_head">Header color</string>
     <string name="setts_theme_main">Main colors</string>
+    <string name="setts_word_splitter">Sequence splitting words from translates when exporting</string>
     <string name="sort">Sort</string>
     <string name="sort_alpha_AZ">alphabet ▼</string>
     <string name="sort_alpha_ZA">alphabet ▲</string>

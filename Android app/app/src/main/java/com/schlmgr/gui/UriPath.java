@@ -47,7 +47,6 @@ public class UriPath implements GeneralPath {
 	}
 
 	public UriPath(Uri uri, boolean internal) {
-		System.out.println(uri.toString());
 		this.uri = uri;
 		original = uri.toString();
 		if (uri.toString().startsWith("file://"))
@@ -75,8 +74,8 @@ public class UriPath implements GeneralPath {
 	}
 
 	@Override
-	public OutputStream createOutputStream() throws IOException {
-		return CONTEXT.getContentResolver().openOutputStream(uri);
+	public OutputStream createOutputStream(boolean append) throws IOException {
+		return CONTEXT.getContentResolver().openOutputStream(uri, "wa");
 	}
 
 	@Override

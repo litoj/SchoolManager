@@ -1,17 +1,14 @@
 package IOSystem;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import IOSystem.Formatter.Data;
 import java.util.LinkedList;
 import java.util.List;
 
 import objects.Chapter;
-import objects.MainChapter;
 import objects.SaveChapter;
 import objects.Word;
 import objects.templates.Container;
-
-import static IOSystem.Formatter.Data;
+import objects.templates.BasicData;
 
 /**
  * Creates hierarchy object structure out of {@link Word words} inside {@link SaveChapter}
@@ -30,268 +27,188 @@ import static IOSystem.Formatter.Data;
  *
  * @author Josef Litoš
  */
-public class SimpleReader {
-
-	/**
-	 * @param saveTo     where to save the loaded data
-	 * @param source     where are the data to be read
-	 * @param startIndex the first read chapter (inclusive)
-	 * @param endIndex   the last chapter to be read (exclusive), put -1 for no limit
-	 * @param minWords   how many words wil be created before the end of loading, put -1
-	 *                   for no limit
-	 * @return amount of created chapters, words, and translates
-	 */
-	static int[] loadWords(Container saveTo, Container parent, SimpleChapter source,
-	                       int startIndex, int endIndex, int minWords) {
-		int[] ret = {0, 0, 0};
-		if (minWords == -1) minWords = Integer.MAX_VALUE;
-		MainChapter mch = saveTo.getIdentifier();
-		Data bd = new Data(null, mch).addPar(saveTo);
-		if (source.chaps != null) {
-			if (endIndex == -1) endIndex = source.chaps.length;
-			startIndex--;
-			endIndex--;
-			while (startIndex++ < endIndex && ret[1] + source.lines.length < minWords) {
-				bd.name = source.chaps[startIndex].name;
-				Container ch = source.chaps[startIndex].sch
-						? SaveChapter.mkElement(bd) : new Chapter(bd);
-				saveTo.putChild(parent, ch);
-				int[] x = loadWords(ch, saveTo, source.chaps[startIndex], 0, -1, minWords);
-				ret[0]++;
-				ret[1] += x[1];
-				ret[2] += x[2];
-			}
-		}
-		for (SimpleLine sl : source.lines) {
-			ArrayList<Data> bds = new ArrayList<>(sl.words[1].length);
-			for (String trl : sl.words[1]) bds.add(new Data(trl, mch).addPar(saveTo));
-			for (String s : sl.words[0]) {
-				bd.name = s;
-				saveTo.putChild(parent, Word.mkElement(bd, new ArrayList<>(bds)));
-			}
-			ret[1] += sl.words[0].length;
-			ret[2] += sl.words[1].length;
-		}
-		return ret;
-	}
-
-	/**
-	 * Loads everything to chapters in the specified name format.
-	 *
-	 * @param source     where to read the data from
-	 * @param parent     the object where all created chapters and their content will be
-	 *                   stored
-	 * @param prevPar    parent of the given param {@code parent}
-	 * @param startIndex the first read chapter (inclusive)
-	 * @param endIndex   the last chapter to be read (exclusive), put -1 for no limit
-	 * @param wordCount  amount of words read before starting another
-	 *                   {@link SaveChapter} (after the last chapter in the boundary is
-	 *                   loaded)
-	 * @param startNum   increasing number used to name all the created chapters
-	 * @param psFix      prefix and suffix for the names of created chapters with the
-	 *                   current increasing {@code startNum} value
-	 * @param b          if the containers should save into separate files
-	 * @return the final amount of read chapters and of all created words
-	 */
-	public static int[] sortLoad(String source, Container parent,
-	                             Container prevPar, int startIndex, int endIndex,
-	                             int wordCount, int startNum, String[] psFix, boolean b) {
-		MainChapter mch = parent.getIdentifier();
-		int[] res = {0, 0, 0}, i;
-		SimpleChapter sch = getContent(source);
-		if (sch.chaps != null)
-			if (endIndex == -1 || endIndex > sch.chaps.length) endIndex = sch.chaps.length;
-		do {
-			Data bd = new Data(psFix[0] + startNum++ + psFix[1], mch).addPar(parent);
-			Container c = b ? SaveChapter.mkElement(bd) : new Chapter(bd);
-			i = loadWords(c, parent, sch, startIndex, -1, wordCount);
-			res[0] += i[0];
-			startIndex += i[0];
-			res[1] += i[1];
-			res[2] += i[2];
-			if (i[1] <= 0) break;
-			else parent.putChild(prevPar, c);
-		} while (startIndex < endIndex);
-		return res;
-	}
-
-	/**
-	 * Loads everything from the given file based on the given parameters.
-	 *
-	 * @param source     where to read the data from
-	 * @param parent     the object where all created chapters and their content will be
-	 *                   stored
-	 * @param prevPar    parent of the given param {@code parent}
-	 * @param startIndex the first read chapter (inclusive)
-	 * @param endIndex   the last chapter to be read (exclusive), put -1 for no limit
-	 * @param wordCount  amount of words read before the end, put -1 for no limit
-	 * @return the final amount of read chapters and of all created words
-	 */
-	public static int[] simpleLoad(String source, Container parent, Container prevPar,
-	                               int startIndex, int endIndex, int wordCount) {
-		return loadWords(parent, prevPar,
-				getContent(source), startIndex, endIndex, wordCount);
-	}
-
-	/**
-	 * Creates hierarchy of words and chapters.
-	 * Used for converting simple text to database format.
-	 *
-	 * @param source where to get the content from
-	 * @return the created simple hierarchy
-	 */
-	private static SimpleChapter getContent(String source) {
-		String[] lines = source.split("\n");
-		return new SimpleChapter(
-				null, new Lines(0, Arrays.copyOf(lines, lines.length + 1)));
-	}
-
-	private static class Lines {
-
-		int i;
-		final int length;
-		final String[] str;
-
-		Lines(int index, String[] lines) {
-			i = index;
-			str = lines;
-			length = lines.length;
+public final class SimpleReader {
+	
+	public final int[] result = {0, 0, 0};
+	public final List<BasicData> added = new LinkedList<>();
+	final String src;
+	int i = -1;
+	int lineStart = 0, line = 1;
+	
+	public SimpleReader(String source, Container container, Container parent) {
+		src = source;
+		try {
+			loadContent(added, container, parent);
+		} catch (IllegalArgumentException iae) {
+			for (BasicData bd : added) bd.destroy(container);
+			throw iae;
 		}
 	}
-
-	/**
-	 * Stores chapters and word-lines. Part of the simple hierarchy loading.
-	 */
-	private static class SimpleChapter {
-
-		SimpleChapter[] chaps;
-		SimpleLine[] lines;
-		String name;
-		boolean sch;
-
-		SimpleChapter(String name, Lines lines) {
-			this.name = name;
-			sch = false;
-			LinkedList<SimpleLine> sLines = new LinkedList<>();
-			LinkedList<SimpleChapter> schs = new LinkedList<>();
-			sorter:
-			for (int i = lines.i; i < lines.length - 1; i++) {
-				if (lines.str[i].length() <= 2) {//2 for occasional char codepoint-13
-					if (!lines.str[i].isEmpty() && lines.str[i].charAt(0) == '}') {
-						lines.i = i;
-						break sorter;
-					}
-				} else {//every word line has at least 3 chars - word, ';', translate
-					String[] names = new String[2];
-					String line = lines.str[i];
-					boolean first = true;
-					StringBuilder sb = new StringBuilder();
-					for (int j = 0; j < line.length(); j++) {
-						switch (line.charAt(j)) {
-							case '\\':
-								switch (line.charAt(j + 1)) {
-									case ';':
-										j++;
-										sb.append(';');
-										break;
-									case '\\':
-									case '/':
-									case '(':
-									case ')':
-										j++;
-										sb.append('\\');
-									default:
-										sb.append(line.charAt(j));
-								}
+	
+	private void loadContent(List<BasicData> carrier, Container self, Container parent) {
+		StringBuilder sb = new StringBuilder();
+		List<Data> words = new LinkedList<>();
+		List<Data> translates = new LinkedList<>();
+		List<Data> current = words;
+		char ch;
+		while (++i < src.length()) {
+			switch (ch = src.charAt(i)) {
+				case '\\':
+					if (i + 1 >= src.length()) break;
+					char ch2 = src.charAt(++i);
+						switch (ch2) {
+							case '[':
+								if (sb.length() > 0) current.add(new Data(sb.toString().trim(),
+									 self.getIdentifier()).addPar(self).addDesc(getDescription()));
+								else throw report(self.getName() + " - line " + line + ":\n'"
+									 + src.substring(lineStart, i + 1) + "'\nExpected text. Got '\\['.");
+								sb.setLength(0);
 								break;
-							case ';':
-								names[first ? 0 : 1] = sb.toString();
-								if (first) {
-									first = false;
-									sb.setLength(0);
-								} else j = line.length();
-								break;
-							default:
-								sb.append(line.charAt(j));
-						}
-					}
-					if (names[0] == null && sb.length() == 0) {
-						Formatter.defaultReacts.get(SimpleReader.class + ":fail").react(line);
-						throw new IllegalArgumentException();
-					} else if (sb.length() > 0 && lines.str[i + 1].startsWith("{")) {
-						lines.i = i + 2;
-						schs.add(new SimpleChapter(sb.toString(), lines));
-						i = lines.i;
-					} else {
-						names[1] = sb.toString();
-						sLines.add(new SimpleLine(names));
-					}
-				}
-			}
-			this.lines = sLines.toArray(new SimpleLine[sLines.size()]);
-			if (!schs.isEmpty()) {
-				chaps = schs.toArray(new SimpleChapter[schs.size()]);
-				if (schs.size() > 10) {
-					sch = true;
-					return;
-				}
-				int words = 0;
-				for (SimpleChapter sc : schs) {
-					if (!sc.sch) words += sc.lines.length;
-					if (words > 80) {
-						sch = true;
-						break;
-					}
-				}
-			}
-		}
-
-		@Override
-		public String toString() {
-			return name;
-		}
-	}
-
-	/**
-	 * Contains words on one line sorted by their position.
-	 */
-	private static class SimpleLine {
-
-		String[][] words;
-
-		public SimpleLine(String[] names) {
-			words = new String[][]{split(names[0]), split(names[1])};
-		}
-
-		private static String[] split(String src) {
-			if (src.indexOf('\\') == -1) return new String[]{src};
-			LinkedList<String> array = new LinkedList<>();
-			int i = 0;
-			for (int j = 0; j < src.length() - 1; j++) {
-				if (src.charAt(j) == '\\') {
-					switch (src.charAt(j + 1)) {
 						case '\\':
 						case '/':
-							j++;
+						case '(':
+						case ')':
+							sb.append('\\');
+						case ';':
+						case '=':
+						case '→':
+							sb.append(ch2);
 							break;
 						default:
-							array.add(src.substring(i, j));
-							i = ++j;
+							if (sb.length() > 0) {
+								current.add(new Data(sb.toString().trim(), self.getIdentifier()).addPar(self));
+								sb.setLength(0);
+							} else if (current.isEmpty()) throw report(self.getName() + " - line " + line + ":\n'"
+								 + src.substring(lineStart, i + 1) + "'\nExpected text. Got '\\'.");
+							if (current == words) result[1]++;
+							else result[2]++;
+							sb.append(ch2);
 					}
-				}
+					break;
+				case ';':
+				case '=':
+				case '→':
+					if (sb.length() > 0) {
+						current.add(new Data(sb.toString().trim(), self.getIdentifier()).addPar(self));
+						sb.setLength(0);
+					} 
+					if (current == words && !words.isEmpty()) {
+						result[1]++;
+						current = translates;
+						break;
+					} else throw report(self.getName() + " - line " + line + ":\n'"
+						 + src.substring(lineStart, i + 1) + "'\nExpected '\\[', '\\n' or text. Got '" + ch + "'.");
+				case '\r':
+					i++;
+				case '\n':
+					if (sb.length() > 0) {
+						current.add(new Data(sb.toString().trim(), self.getIdentifier()).addPar(self));
+						sb.setLength(0);
+					}
+					if (current == translates && !translates.isEmpty()) {
+						result[2]++;
+						for (Data word : words) {
+							Word w = Word.mkElement(word, translates);
+							self.putChild(parent, w);
+							if (carrier != null) carrier.add(w);
+						}
+					} else throw report(self.getName() + " - line " + line + ":\n'"
+						 + src.substring(lineStart, i) + "'\nExpected ';' and text, or '{'. Got '\\n'.");
+					words.clear();
+					translates.clear();
+					current = words;
+					lineStart = i + 1;
+					line++;
+					break;
+				case '}':
+					if (src.substring(lineStart, i).trim().isEmpty()) {
+						while (++i < src.length() && src.charAt(i) != '\n');
+						lineStart = i + 1;
+						line++;
+						return;
+					}
+					sb.append(ch);
+					break;
+				case '{':
+					if (i + 1 < src.length() && src.charAt(i + 1) == '\n' && current != translates) {
+						lineStart = ++i;
+						line++;
+						Data data;
+						if (words.isEmpty()) {
+							if (sb.charAt(sb.length() - 1) == '§') sb.setLength(sb.length() - 1);
+							data = new Data(sb.toString().trim(), self.getIdentifier()).addPar(self);
+						} else data = words.get(0);
+						words.clear();
+						sb.setLength(0);
+						Container child;
+						if (src.charAt(i - 2) == '§') self.putChild(parent, child = SaveChapter.mkElement(data));
+						else self.putChild(parent, child = new Chapter(data));
+						if (carrier != null) carrier.add(child);
+						loadContent(null, child, self);
+						result[0]++;
+					} else sb.append(ch);
+					break;
+				case ' ':
+				case '\t':
+					if (sb.length() == 0) break;
+				default:
+					sb.append(ch);
 			}
-			array.add(src.substring(i));
-			return array.toArray(new String[0]);
 		}
+		if (sb.length() > 0) {
+			current.add(new Data(sb.toString().trim(), self.getIdentifier()).addPar(self));
+			sb.setLength(0);
+		}
+		if (current == translates && !translates.isEmpty()) {
+			result[2]++;
+			for (Data word : words) {
+				Word w = Word.mkElement(word, translates);
+				self.putChild(parent, w);
+				if (carrier != null) carrier.add(w);
+			}
+		} else if (!words.isEmpty()) throw report(self.getName() + ":\n" + src.substring(lineStart)
+				+ "\nExpected ';' and text. Reached end of file.");
 	}
 
+	private String getDescription() {
+		StringBuilder sb = new StringBuilder();
+		char ch;
+		while (++i < src.length()) {
+			switch (ch = src.charAt(i)) {
+				case '\\':
+					char ch2 = src.charAt(++i);
+						switch (ch2) {
+							case ']':
+								return sb.toString();
+							default:
+								sb.append(ch2);
+						}
+					break;
+				case '\n':
+					line++;
+				default:
+					sb.append(ch);
+			}
+		}
+		if (i >= src.length()) {
+			throw report("line " + line + ":\n'" + src.substring(lineStart, i - lineStart > 20 ? lineStart
+				 + 20 : i) + "'\nExpected '\\]' (end of description section). Reached end of file.");
+		}
+		return sb.toString().trim();
+	}
+
+	private static IllegalArgumentException report(String info) {
+		Formatter.defaultReacts.get(SimpleReader.class + ":fail").react(info);
+		return new IllegalArgumentException(info);
+	}
+	
 	public static String[] nameResolver(String name) {
 		List<String> words = new LinkedList<>();
 		int start = 0;
 		char prev = (char) -1;
 		for (int i = 0; i < name.length(); i++) {
 			char ch = name.charAt(i);
-			if (prev == '\\' && ch != '\\' && ch != '/' && ch != '/' && ch != ')') {
+			if (prev == '\\' && ch != '\\' && ch != '/' && ch != '(' && ch != ')') {
 				words.add(name.substring(start, i - 1));
 				start = i;
 			}

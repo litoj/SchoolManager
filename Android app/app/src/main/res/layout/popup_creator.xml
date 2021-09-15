@@ -84,7 +84,7 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:layout_marginVertical="5dp"
-                        android:solidColor="#AAA" />
+                        android:descendantFocusability="blocksDescendants" />
                 </LinearLayout>
 
                 <View

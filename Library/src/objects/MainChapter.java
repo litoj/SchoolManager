@@ -170,32 +170,32 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 
 	@Override
 	public BasicData[] getChildren() {
-		if (!loaded && children.isEmpty()) load(false);
+		if (loaded < 2 && children.isEmpty()) load(false);
 		return children.toArray(new BasicData[children.size()]);
 	}
 
 	@Override
 	public BasicData[] getChildren(Container c) {
-		if (!loaded && children.isEmpty()) load(false);
+		if (loaded < 2 && children.isEmpty()) load(false);
 		return getChildren();
 	}
 
 	@Override
 	public boolean putChild(Container c, BasicData e) {
-		if (!loaded && children.isEmpty()) load(false);
+		if (loaded < 2 && children.isEmpty()) load(false);
 		return children.add(e);
 	}
 
 	@Override
 	public boolean putChild(Container c, BasicData e, int index) {
-		if (!loaded && children.isEmpty()) load(false);
+		if (loaded < 2 && children.isEmpty()) load(false);
 		children.add(index, e);
 		return true;
 	}
 	
 	@Override
 	public boolean replaceChild(Container c, BasicData old, BasicData repl) {
-		if (!loaded && children.isEmpty()) load(false);
+		if (loaded < 2 && children.isEmpty()) load(false);
 		int index = children.indexOf(old);
 		if (index > -1) {
 			children.set(index, repl);
@@ -211,7 +211,7 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 	@Override
 	public Container removeChild(BasicData e) {
 		children.remove(e);
-		return null;
+		return this;
 	}
 
 	/**
@@ -255,7 +255,8 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 		else r.run();
 	}
 
-	private volatile boolean loaded;
+	// 0: nothing loaded, 1: loaded main.json file, 2: loaded all saved chapters
+	private volatile int loaded;
 	private boolean loading;
 
 	/**
@@ -264,15 +265,15 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 	 */
 	@Override
 	public void load(Reactioner rtr, boolean thread) {
-		if (loaded) return;
+		if (loaded > 1) return;
 		if (thread) new Thread(() -> load0(rtr, true), "MCh load").start();
 		else load0(rtr, false);
 	}
 
 	private void load0(Reactioner rtr, boolean thread) {
 		if (children.isEmpty()) {
-			if (!getSaveFile().exists()) {
-				loaded = true;
+			if (!getSaveFile().exists() || loaded > 0) {
+				loaded = 2;
 				return;
 			}
 			synchronized (this) {
@@ -287,7 +288,8 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 			}
 			try {
 				ReadElement.loadFile(getSaveFile(), this, this);
-				if (children.isEmpty()) loaded = true;
+				if (SaveChapter.ELEMENTS.get(this) == null) loaded = 2;
+				else loaded = 1;
 				synchronized (this) {
 					loading = false;
 					notifyAll();
@@ -303,7 +305,7 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 			do for (int i = (size = schs.size()) - 1; i >= 0; i--)
 				if (!schs.get(i).isLoaded()) schs.get(i).load(rtr, thread);
 			while (size < schs.size());
-			loaded = true;
+			loaded = 2;
 		}
 		if (Formatter.defaultReacts.get("MChLoaded") != null)
 			Formatter.defaultReacts.get("MChLoaded").react(this);
@@ -311,7 +313,7 @@ public class MainChapter extends objects.templates.BasicElement implements Conta
 
 	@Override
 	public boolean isLoaded() {
-		return loaded;
+		return loaded > 1;
 	}
 
 	@Override

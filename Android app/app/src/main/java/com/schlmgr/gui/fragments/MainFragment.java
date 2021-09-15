@@ -70,6 +70,7 @@ import objects.templates.TwoSided;
 
 import static IOSystem.Formatter.defaultReacts;
 import static IOSystem.Formatter.getIOSystem;
+import static com.schlmgr.gui.Controller.CONTEXT;
 import static com.schlmgr.gui.Controller.activity;
 import static com.schlmgr.gui.Controller.dp;
 import static com.schlmgr.gui.CurrentData.backLog;
@@ -157,30 +158,6 @@ public class MainFragment extends Fragment
 		}
 
 		new Thread(() -> {
-			delete.setOnClickListener(v -> {
-				if (((SearchAdapter) backLog.adapter).selected > 0)
-					new ContinuePopup(getString(R.string.continue_delete), () -> {
-						for (int i = VS.contentAdapter.list.size() - 1; i >= 0; i--) {
-							HierarchyItemModel him = VS.contentAdapter.list.get(i);
-							if (him.isSelected()) {
-								if (backLog.path.isEmpty()) him.bd.destroy(null);
-								else {
-									him.parent.removeChild((Container) (him instanceof SearchItemModel ?
-											((SearchItemModel) him).path.get(-2)
-											: backLog.path.get(-2)), him.bd);
-									him.bd.destroy(him.parent);
-								}
-								VS.contentAdapter.list.remove(i);
-							}
-						}
-						if (!backLog.path.isEmpty()) CurrentData.save(backLog.path);
-						root.post(() -> {
-							VS.contentAdapter.notifyDataSetChanged();
-							VS.contentAdapter.selected = -1;
-							selectOpts.setVisibility(View.GONE);
-						});
-					});
-			});
 			reference.setOnClickListener(v -> {
 				int search = 0;
 				EasyList<? extends BasicData> list = null;
@@ -305,6 +282,29 @@ public class MainFragment extends Fragment
 					}));
 				}
 			});
+			delete.setOnClickListener(v -> {
+				if (((SearchAdapter) backLog.adapter).selected > 0)
+					new ContinuePopup(getString(R.string.continue_delete), () -> root.post(() -> {
+						boolean left = false;
+						for (int i = VS.contentAdapter.list.size() - 1; i >= 0; i--) {
+							HierarchyItemModel him = VS.contentAdapter.list.get(i);
+							if (him.isSelected()) {
+								if (him.bd.destroy(him.parent)) {
+									VS.contentAdapter.list.remove(i);
+									VS.contentAdapter.notifyItemRemoved(i);
+								} else left = true;
+							}
+						}
+						if (!backLog.path.isEmpty()) CurrentData.save(backLog.path);
+						if (VS.contentAdapter instanceof HierarchyAdapter && !backLog.path.isEmpty())
+							es.setInfo(backLog.path.get(-1), (Container) backLog.path.get(-2));
+						if (!left) {
+							VS.contentAdapter.selected = -1;
+							es.rv.postDelayed(() -> VS.contentAdapter.notifyDataSetChanged(), 200);
+							selectOpts.setVisibility(View.GONE);
+						} else Toast.makeText(CONTEXT, R.string.popup_delete_fail, Toast.LENGTH_SHORT).show();
+					}));
+			});
 			if (backLog.adapter instanceof SearchAdapter && VS.contentAdapter.selected > -1) {
 				selectOpts.setVisibility(View.VISIBLE);
 				for (HierarchyItemModel him : (List<? extends HierarchyItemModel>) backLog.adapter.list)
@@ -356,12 +356,6 @@ public class MainFragment extends Fragment
 			if (him.isSelected()) VS.pasteData.src.add(him);
 		for (BasicData bd : backLog.path) VS.pasteData.srcPath.add((Container) bd);
 		paste.setOnClickListener(v -> {
-			/*if (backLog.path.size() == VS.pasteData.srcPath.size()) {
-				int i = 0;
-				boolean ok = false;
-				for (BasicData bd : backLog.path) if (ok = bd != VS.pasteData.srcPath.get(i++)) break;
-				if (!ok) return;
-			}*/
 			Container npp = (Container) backLog.path.get(-2);
 			Container np = (Container) backLog.path.get(-1);
 			boolean searchNow = VS.contentAdapter.search;
@@ -465,14 +459,14 @@ public class MainFragment extends Fragment
 	 */
 	private void tglEnabled(TextView tv, boolean enabled) {
 		if (tv.isEnabled() == enabled) return;
-		if (tv == delete)
-			tv.setCompoundDrawables(null, enabled ? icDelete : icDelete_disabled, null, null);
-		else if (tv == reference)
+		if (tv == reference)
 			tv.setCompoundDrawables(null, enabled ? icReference : icReference_disabled, null, null);
 		else if (tv == cut)
 			tv.setCompoundDrawables(null, enabled ? icCut : icCut_disabled, null, null);
 		else if (tv == edit)
 			tv.setCompoundDrawables(null, enabled ? icEdit : icEdit_disabled, null, null);
+		else if (tv == delete)
+			tv.setCompoundDrawables(null, enabled ? icDelete : icDelete_disabled, null, null);
 		else if (tv == paste)
 			tv.setCompoundDrawables(null, enabled ? icPaste : icPaste_disabled, null, null);
 		tv.setTextColor(enabled ? 0xFFFFFFFF : 0x66FFFFFF);
@@ -543,6 +537,8 @@ public class MainFragment extends Fragment
 				Controller.activity.getSupportActionBar().setTitle(bd.toString());
 			}
 		if (container) {
+			if (VS.contentAdapter.list != null)
+				for (HierarchyItemModel him : VS.contentAdapter.list) him.setSelected(false);
 			es.rv.setAdapter(backLog.adapter = VS.contentAdapter = new HierarchyAdapter(es.rv,
 					this, convert(((Container) bd).getChildren(parent), (Container) bd),
 					this::setVisibleOpts));
@@ -892,10 +888,18 @@ public class MainFragment extends Fragment
 					case WORD_READ:
 						try {
 							List<BasicData> currentPath = (List<BasicData>) backLog.path.clone();
-							defaultReacts.get(SimpleReader.class + ":success").react(
-									SimpleReader.simpleLoad(new UriPath(data.getData()).load(),
-											(Container) backLog.path.get(-1),
-											(Container) backLog.path.get(-2), 0, -1, -1));
+							Container self = (Container) backLog.path.get(-1),
+									par = (Container) backLog.path.get(-2);
+							SimpleReader content = new SimpleReader(new UriPath(data.getData()).load(), self, par);
+							if (backLog.adapter instanceof HierarchyAdapter) {
+								HierarchyAdapter ha = (HierarchyAdapter) backLog.adapter;
+								int old = ha.list.size();
+								int pos = old;
+								for (BasicData bd : content.added)
+									ha.addItem(new HierarchyItemModel(bd, self, pos++));
+								es.rv.post(() -> es.setInfo(self, par));
+							}
+							defaultReacts.get(SimpleReader.class + ":success").react(content.result);
 							CurrentData.save(currentPath);
 						} catch (Exception e) {
 							if (e instanceof IllegalArgumentException) return;
@@ -904,17 +908,8 @@ public class MainFragment extends Fragment
 						}
 						break;
 					case WORD_WRITE:
-						try (OutputStreamWriter osw = new OutputStreamWriter(
-								activity.getContentResolver().openOutputStream(data.getData()),
-								StandardCharsets.UTF_8)) {
-							osw.append(SimpleWriter.writeChapter(new StringBuilder(),
-									(Container) backLog.path.get(-2), (Container) backLog.path.get(-1)));
-							Formatter.defaultReacts.get(SimpleWriter.class + ":success")
-									.react(backLog.path.get(-1).getName());
-						} catch (Exception e) {
-							Formatter.defaultReacts.get(ContainerFile.class + ":save")
-									.react(e, data.getData(), backLog.path.get(-1));
-						}
+						new SimpleWriter(new UriPath(data.getData()), new Container[]{
+								(Container) backLog.path.get(-1), (Container) backLog.path.get(-2)});
 						break;
 					case IMAGE_PICK:
 						defaultReacts.get("NotifyNewImage")

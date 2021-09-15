@@ -241,8 +241,9 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 	}
 
 	@Override
-	public OutputStream outputInternal(GeneralPath file) throws IOException {
-		return CONTEXT.openFileOutput(file.getName(), Context.MODE_PRIVATE);
+	public OutputStream outputInternal(GeneralPath file, boolean append) throws IOException {
+		return CONTEXT.openFileOutput(file.getName(),
+				append ? Context.MODE_APPEND : Context.MODE_PRIVATE);
 	}
 
 	@Override

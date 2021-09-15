@@ -27,7 +27,7 @@ import testing.Test;
  *
  * @author Josef Litoš
  */
-public class Formatter {
+public final class Formatter {
 
 	/**
 	 * Default {@link Reactioner object} made for answering on various actions, keys should be in
@@ -198,6 +198,11 @@ public class Formatter {
 					} else {
 						settings.put("testAmount", 10);
 					}
+					if ((value = settings.get("exportWordSplit")) != null) {
+						SimpleWriter.setWordSplitter((String) value);
+					} else {
+						settings.put("exportWordSplit", 1);
+					}
 					setDefaults(false);
 				} catch (Exception e) {
 					defaultReacts.get(Formatter.class + ":newSrcDir").react(e, setts);
@@ -205,7 +210,7 @@ public class Formatter {
 				}
 			}
 			if (subjDir == null) {
-				settings.put("subjdir", getDefaultSubjectsDir().getOriginalName());
+				settings.put("subjdir", (subjDir = getDefaultSubjectsDir()).getOriginalName());
 				settings.put("defaultTestTime", 180);
 				settings.put("isClever", true);
 				settings.put("testAmount", 10);
@@ -251,7 +256,11 @@ public class Formatter {
 			return subjDir = newDir;
 		}
 
-		public abstract OutputStream outputInternal(GeneralPath file) throws IOException;
+		public OutputStream outputInternal(GeneralPath file) throws IOException {
+			return outputInternal(file, false);
+		}
+
+		public abstract OutputStream outputInternal(GeneralPath file, boolean append) throws IOException;
 
 		public abstract InputStream inputInternal(GeneralPath file) throws IOException;
 
@@ -262,8 +271,12 @@ public class Formatter {
 			public String getName();
 
 			public default void save(String content) {
+				save(content, false);
+			}
+
+			public default void save(String content, boolean append) {
 				try ( OutputStreamWriter osw
-					 = new OutputStreamWriter(createOutputStream(), StandardCharsets.UTF_8)) {
+					 = new OutputStreamWriter(createOutputStream(append), StandardCharsets.UTF_8)) {
 					osw.write(content);
 				} catch (IOException e) {
 					defaultReacts.get(ContainerFile.class + ":save")
@@ -304,7 +317,11 @@ public class Formatter {
 				}
 			}
 
-			public OutputStream createOutputStream() throws IOException;
+			public default OutputStream createOutputStream() throws IOException {
+				return createOutputStream(false);
+			}
+
+			public OutputStream createOutputStream(boolean append) throws IOException;
 
 			public InputStream createInputStream() throws IOException;
 
