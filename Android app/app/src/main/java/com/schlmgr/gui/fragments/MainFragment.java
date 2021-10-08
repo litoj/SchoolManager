@@ -208,6 +208,7 @@ public class MainFragment extends Fragment
 							cp.np.setMaxValue(cp.np.getMaxValue() - 1);
 						} else cp.npLayout.setVisibility(View.GONE);
 						cp.ok.setOnClickListener(x -> {
+							int position = him.position;
 							String name = cp.et_name.getText().toString();
 							if (name.isEmpty()) return;
 							try {
@@ -224,16 +225,20 @@ public class MainFragment extends Fragment
 								if (!isMch) {
 									if (sch != isSch)
 										him.bd = ((SemiElementContainer) him.bd).convert();
-									int position = cp.np.getValue();
-									if (position != him.position)
-										him.parent.putChild(him.parent.removeChild(him.bd),
+									position = cp.np.getValue();
+									if (position != him.position) him.parent.putChild(him.parent.removeChild(him.bd),
 												him.bd, position - 1);
 									CurrentData.save(backLog.path);
 								} else ((MainChapter) him.bd).save();
 								VS.contentAdapter.selected = -1;
 								setSelectOpts(false);
 								him.toShow = him.bd.toString();
-								backLog.adapter.notifyDataSetChanged();
+								if (position == him.position) backLog.adapter.notifyItemChanged(position - 1);
+								else {
+									backLog.adapter.list.add(position - 1, backLog.adapter.list.remove(him.position - 1));
+									backLog.adapter.notifyItemMoved(him.position - 1, position - 1);
+									him.position = position;
+								}
 								cp.dismiss();
 							} catch (IllegalArgumentException iae) {
 								if (!iae.getMessage().contains("Name can't")) throw iae;
@@ -246,6 +251,7 @@ public class MainFragment extends Fragment
 				} else if (him.bd instanceof TwoSided) {
 					boolean pic = him.bd instanceof Picture;
 					activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.edit), new Includer() {
+						int position = him.position;
 						AbstractPopupRecyclerAdapter content;
 
 						@Override
@@ -259,7 +265,7 @@ public class MainFragment extends Fragment
 							cp.np.setMaxValue(cp.np.getMaxValue() - 1);
 							cp.ok.setOnClickListener(v -> {
 								onClick.run();
-								int position = cp.np.getValue();
+								position = cp.np.getValue();
 								if (position != him.position) {
 									him.parent.putChild(him.parent.removeChild(him.bd),
 											him.bd, position - 1);
@@ -274,7 +280,12 @@ public class MainFragment extends Fragment
 									him.flipped = !him.flipped;
 									him.flip();
 								}
-								backLog.adapter.notifyDataSetChanged();
+								if (position == him.position) backLog.adapter.notifyItemChanged(position - 1);
+								else {
+									backLog.adapter.list.add(position - 1, backLog.adapter.list.remove(him.position - 1));
+									backLog.adapter.notifyItemMoved(him.position - 1, position - 1);
+									him.position = position;
+								}
 								cp.dismiss();
 							});
 							return ll;

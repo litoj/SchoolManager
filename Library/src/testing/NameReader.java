@@ -1,8 +1,9 @@
 package testing;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 
-import objects.MainChapter;
+import java.util.List;
 import objects.templates.BasicData;
 
 /**
@@ -12,34 +13,30 @@ import objects.templates.BasicData;
  */
 public class NameReader {
 
-	/**
-	 * Used for any text reading to keep track of the current position of reading.
-	 */
-	public static class Source {
-
 		/**
-		 * Source to be read, from position {@link #index index}.
+		 * Source to be read, from position {@link #i i}.
 		 */
-		public final String str;
+		private final String str;
+		private final int length;
 		/**
 		 * Where the given {@link #str source} should be read from.
 		 */
-		public int index;
+		private int i = 0;
+		
+		public final String[] result;
 
-		public MainChapter i;
-
-		public Source(String s, int index, MainChapter identifier) {
+		public NameReader(String s) {
 			this.str = s;
-			this.index = index;
-			i = identifier;
+			length = str.length();
+			List<StringBuilder> parts = new ArrayList<>(3);
+			getParts(parts);
+			result = new String[parts.size()];
+			int i = 0;
+			for (StringBuilder sb : parts) result[i++] = sb.toString();
 		}
-	}
 
 	/**
 	 * Reads the {@link BasicData#getName() name} and gives back all name possibilities.
-	 * Keep in mind, names with more variants will in most cases make a space after
-	 * ',' or '.' or '!' or '?'. To eliminate this, write '\\' before these
-	 * chars in these cases. Doesn't work for cases like {@code "\\.)more"}
 	 * <p>
 	 * Examples, for names:
 	 * <blockquote><pre>
@@ -54,90 +51,148 @@ public class NameReader {
 	 * @return all variants of the {@link BasicData#getName() name}
 	 */
 	public static String[] readName(Object o) {
-		return getParts(new Source(o.toString(), 0, null), true);
+		String text = o.toString();
+		return text.contains("/") ? new NameReader(text).result : new String[]{text};
 	}
 
 	public static void main(String[] args) {
-		for(String str : readName("b/(a) c"))System.out.println(str);
+//		for(String str : readName("(/(1a/2(1b/2b B)a/3(1b/2(1c/2(1 D)c/3c C)b)a ))A")) System.out.println(str);
+//		for(String str : readName("0 1a\\/1b 2a/2b.")) System.out.println(str);
 	}
-	private static String[] getParts(Source src, boolean first) {
-		if (first && !src.str.contains("/")) return new String[]{src.str};
-		boolean slash = false, bracket = false, itpcn = false;
-		int start = src.index, index = start;
-		String[] ret = {""};
-		LinkedList<String> slashStrs = new LinkedList<>();
-		cycle:
-		for (; index < src.str.length(); index++) {
-			switch (src.str.charAt(index)) {
-				case '\\':
-					index++;
-					break;
-				case '.':
-				case '!':
-				case '?':
-				case ',':
-					itpcn = true;//interpunction found
-				case ' ':
-					if (itpcn && !slash && index + 1 < src.str.length()) {
-						itpcn = false;
-						break;
+	
+	private void getParts(List<StringBuilder> ret) {
+		List<StringBuilder> parts = null;
+		List<StringBuilder> recursiveParts = null;
+		StringBuilder sb = new StringBuilder(8);
+		int lastSplitter = i - 1;
+		char now;
+		renderer:
+		for (; i < length; i++) switch (now = str.charAt(i)) {
+			case '/':
+				if (recursiveParts == null) {
+					if (sb.length() > 0 || lastSplitter == i - 1) {
+						if (parts == null) parts = new ArrayList<>(3);
+						parts.add(sb);
+						sb = new StringBuilder(8);
 					}
-					if (slash) {
-						if (!bracket) slashStrs.add(substr(src.str, start, index));
-						if (itpcn) for (int i = slashStrs.size() - 1; i >= 0; i--)
-							slashStrs.set(i, slashStrs.get(i) + src.str.charAt(index));
-						ret = compile(ret, slashStrs.toArray(new String[slashStrs.size()]));
-						slash = false;
-						slashStrs.clear();
-					} else ret = compile(ret, substr(src.str, start, index + (itpcn ? 1 : 0)));
-					if (itpcn) {
-						itpcn = false;
-						if (index + 1 >= src.str.length()) {
-							src.index = src.str.length() - 1;
-							return ret;
+				} else {
+					if (parts == null) {
+						if (sb.length() > 0) for (StringBuilder part : recursiveParts) part.append(sb);
+						parts = recursiveParts;
+					} else for (StringBuilder part : recursiveParts) parts.add(part.append(sb));
+					sb.setLength(0);
+					recursiveParts = null;
+				}
+				lastSplitter = i;
+				break;
+			case '.':
+			case '!':
+			case '?':
+			case ',':
+			case ' ':
+				if (parts == null) {
+					sb.append(now);
+					if (recursiveParts == null) {
+						if (ret.isEmpty()) ret.add(sb);
+						else for (StringBuilder part : ret) if (sb.length() > 0) part.append(sb);
+						sb = new StringBuilder(8);
+					} else {
+						if (ret.isEmpty()) for (StringBuilder part : recursiveParts)
+							ret.add(part.length() > 0 ? part.append(sb) : part);
+						else {
+							int size = ret.size();
+							StringBuilder retPart;
+							for (int j = 0; j < size; j++) {
+								retPart = ret.remove(0);
+								for (StringBuilder part : recursiveParts)
+									ret.add(part.length() > 0 ? new StringBuilder(retPart).append(part).append(now)
+										 : new StringBuilder(retPart).append(part));
+							}
+						}
+						sb.setLength(0);
+						recursiveParts = null;
+					}
+				} else {
+					if (sb.length() > 0) {
+						if (recursiveParts == null) parts.add(sb);
+						else {
+							for (StringBuilder part : recursiveParts) parts.add(part.append(sb));
+							recursiveParts = null;
+						}
+						sb = new StringBuilder(8);
+					} else if (recursiveParts != null) {
+						for (StringBuilder part : recursiveParts) parts.add(part);
+						recursiveParts = null;
+					}
+					if (ret.isEmpty()) for (StringBuilder part : parts)
+						ret.add(part.length() > 0 ? part.append(now) : part);
+					else {
+						int size = ret.size();
+						StringBuilder retPart;
+						for (int j = 0; j < size; j++) {
+							retPart = ret.remove(0);
+							for (StringBuilder part : parts) ret.add(part.length() > 0 ? new StringBuilder(retPart)
+								 .append(part).append(now) : new StringBuilder(retPart).append(part));
 						}
 					}
-					start = index + 1;
-					bracket = false;
-					break;
-				case '(':
-					src.index = index + 1;
-					slashStrs.addAll(java.util.Arrays.asList(getParts(src, false)));
-					start = 1 + (index = src.index);
-					bracket = true;
-					break;
-				case ')':
-					bracket = false;
-					break cycle;
-				case '/':
-					if (!bracket) slashStrs.add(substr(src.str, start, index));
-					else bracket = false;
-					start = index + 1;
-					slash = true;
+					parts = null;
+				}
+				lastSplitter = i;
+				break;
+			case ')':
+				break renderer;
+			case '(':
+				i++;
+				recursiveParts = new ArrayList<>(2);
+				if (sb.length() > 0) recursiveParts.add(sb);
+				sb = new StringBuilder(8);
+				getParts(recursiveParts);
+				if (recursiveParts.size() == 1) {
+					if (sb.length() > 0) sb.append(recursiveParts.get(0));
+					else sb = recursiveParts.get(0);
+					recursiveParts = null;
+				}
+				break;
+			case '\\':
+				now = str.charAt(++i);
+			default:
+				sb.append(now);
+		}
+		if (parts == null) {
+			if (recursiveParts == null) {
+				if (sb.length() > 0) {
+					if (ret.isEmpty()) ret.add(sb);
+					else for (StringBuilder part : ret) part.append(sb);
+				}
+			} else {
+				if (ret.isEmpty()) for (StringBuilder part : recursiveParts) ret.add(part.append(sb));
+				else {
+					int size = ret.size();
+					for (int j = 0; j < size; j++) {
+						StringBuilder retPart = ret.remove(j);
+						for (StringBuilder part : recursiveParts) {
+							ret.add(new StringBuilder(retPart).append(part).append(sb));
+						}
+					}
+				}
+			}
+		} else {
+			if (sb.length() > 0) {
+				if (recursiveParts == null) parts.add(sb);
+				else for (StringBuilder part : recursiveParts) parts.add(part.append(sb));
+			} else if (recursiveParts != null) {
+				for (StringBuilder part : recursiveParts) parts.add(part);
+			}
+			if (ret.isEmpty()) for (StringBuilder part : parts) ret.add(part);
+			else {
+				int size = ret.size();
+				for (int j = 0; j < size; j++) {
+					StringBuilder retPart = ret.remove(j);
+					for (StringBuilder part : parts) {
+						ret.add(new StringBuilder(retPart).append(part));
+					}
+				}
 			}
 		}
-		if (slash) {
-			if (start < (src.index = index)) slashStrs.add(substr(src.str, start, index));
-			return compile(ret, slashStrs.toArray(new String[slashStrs.size()]));
-		} else if (bracket) ret =
-				compile(ret, slashStrs.toArray(new String[slashStrs.size()]));
-		return compile(ret, substr(src.str, start, src.index = index));
-	}
-
-	private static String[] compile(String[] src1, String... src2) {
-		if (src1.length == 0 || src2.length == 0) return src1.length == 0 ? src2 : src1;
-		String[] ret = new String[src1.length * src2.length];
-		for (int i = src2.length - 1; i != -1; i--) {
-			int ch = src2[i].isEmpty() ? -1 : src2[i].charAt(0);
-			for (int j = src1.length - 1; j != -1; j--)
-				ret[j + i * src1.length] = src1[j].isEmpty() ? src2[i] : (src1[j]
-						+ (ch != ',' && ch != '.' && ch != '?' && ch != '!'
-						&& ch != '\'' && ch != -1 ? ' ' + src2[i] : src2[i]));
-		}
-		return ret;
-	}
-
-	private static String substr(String str, int begin, int end) {
-		return str.substring(begin, end).replace("\\", "");
 	}
 }

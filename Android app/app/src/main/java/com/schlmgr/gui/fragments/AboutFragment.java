@@ -93,6 +93,7 @@ public class AboutFragment extends Fragment implements ControlListener {
 			versions_beta.setTgl(root);
 			RecyclerView rvRelease = (RecyclerView) versions_release.toToggle;
 			String[][] releases = {
+					{"1.6.1", "- reworked and improved word name resolving features, now more robust"},
 					{"1.6.0", "- reworked and improved simple word exports, now more robust"},
 					{"1.5.2", "- altered filesystem usage to handle Android 10+ Storage access framework"},
 					{"1.5.0", "- working system for moving and referencing objects with recursion protection"},
