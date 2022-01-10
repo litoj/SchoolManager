@@ -245,7 +245,7 @@
     <string name="setts_test">Přednastavení testů</string>
     <string name="setts_test_amount">Výchozí počet položek v testu</string>
     <string name="setts_test_clever">Vytváření testů podle úspěšnosti</string>
-    <string name="setts_test_time">Výchozí délka testu (s)</string>
+    <string name="setts_test_time">Výchozí čas na položku</string>
     <string name="setts_test_type">Výchozí typ testu – obrázky</string>
     <string name="setts_theme">Motiv</string>
     <string name="setts_theme_bg">Barva pozadí</string>

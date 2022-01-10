@@ -1,4 +1,5 @@
 package com.schlmgr.gui.fragments;
+
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -85,7 +86,7 @@ public class AboutFragment extends Fragment implements ControlListener {
 			new TglVisibility(R.id.versions_beta, R.id.versions_beta_list);
 
 	public View onCreateView(@NonNull LayoutInflater inflater,
-	                         ViewGroup container, Bundle savedInstanceState) {
+													 ViewGroup container, Bundle savedInstanceState) {
 		View root = inflater.inflate(R.layout.fragment_about, container, false);
 		activity.getSupportActionBar().setTitle(activity.getString(R.string.app_name) + " v" + BuildConfig.VERSION_NAME);
 		new Thread(() -> {
@@ -93,6 +94,9 @@ public class AboutFragment extends Fragment implements ControlListener {
 			versions_beta.setTgl(root);
 			RecyclerView rvRelease = (RecyclerView) versions_release.toToggle;
 			String[][] releases = {
+					{"1.6.2", "- popup background now does nothing\n" +
+							"- fixed description not updating\n" +
+							"- test time now calculated based on time set for one item"},
 					{"1.6.1", "- reworked and improved word name resolving features, now more robust"},
 					{"1.6.0", "- reworked and improved simple word exports, now more robust"},
 					{"1.5.2", "- altered filesystem usage to handle Android 10+ Storage access framework"},

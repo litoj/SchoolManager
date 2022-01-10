@@ -1,5 +1,13 @@
 package com.schlmgr.gui.fragments;
 
+import static com.schlmgr.gui.Controller.CONTEXT;
+import static com.schlmgr.gui.Controller.activity;
+import static com.schlmgr.gui.Controller.dp;
+import static com.schlmgr.gui.CurrentData.backLog;
+import static com.schlmgr.gui.CurrentData.finishLoad;
+import static com.schlmgr.gui.list.HierarchyItemModel.convert;
+import static IOSystem.Formatter.defaultReacts;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
@@ -34,7 +42,6 @@ import com.schlmgr.gui.list.HierarchyItemModel;
 import com.schlmgr.gui.list.ImageAdapter;
 import com.schlmgr.gui.list.ImageItemModel;
 import com.schlmgr.gui.list.ImagePopupRecyclerAdapter;
-import com.schlmgr.gui.list.OpenListAdapter;
 import com.schlmgr.gui.list.SearchAdapter;
 import com.schlmgr.gui.list.SearchAdapter.OnItemActionListener;
 import com.schlmgr.gui.list.SearchItemModel;
@@ -43,8 +50,6 @@ import com.schlmgr.gui.popup.ContinuePopup;
 import com.schlmgr.gui.popup.CreatorPopup;
 import com.schlmgr.gui.popup.CreatorPopup.Includer;
 
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -67,15 +72,6 @@ import objects.templates.Container;
 import objects.templates.ContainerFile;
 import objects.templates.SemiElementContainer;
 import objects.templates.TwoSided;
-
-import static IOSystem.Formatter.defaultReacts;
-import static IOSystem.Formatter.getIOSystem;
-import static com.schlmgr.gui.Controller.CONTEXT;
-import static com.schlmgr.gui.Controller.activity;
-import static com.schlmgr.gui.Controller.dp;
-import static com.schlmgr.gui.CurrentData.backLog;
-import static com.schlmgr.gui.CurrentData.finishLoad;
-import static com.schlmgr.gui.list.HierarchyItemModel.convert;
 
 public class MainFragment extends Fragment
 		implements Controller.ControlListener, OnItemActionListener {
@@ -232,7 +228,7 @@ public class MainFragment extends Fragment
 								} else ((MainChapter) him.bd).save();
 								VS.contentAdapter.selected = -1;
 								setSelectOpts(false);
-								him.toShow = him.bd.toString();
+								him.update();
 								if (position == him.position) backLog.adapter.notifyItemChanged(position - 1);
 								else {
 									backLog.adapter.list.add(position - 1, backLog.adapter.list.remove(him.position - 1));
@@ -275,11 +271,7 @@ public class MainFragment extends Fragment
 								CurrentData.save(backLog.path);
 								VS.contentAdapter.selected = -1;
 								setSelectOpts(false);
-								if (pic) him.toShow = him.bd.toString();
-								else {
-									him.flipped = !him.flipped;
-									him.flip();
-								}
+								him.update();
 								if (position == him.position) backLog.adapter.notifyItemChanged(position - 1);
 								else {
 									backLog.adapter.list.add(position - 1, backLog.adapter.list.remove(him.position - 1));

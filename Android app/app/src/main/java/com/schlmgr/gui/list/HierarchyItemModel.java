@@ -79,6 +79,19 @@ public class HierarchyItemModel {
 		}
 	}
 
+	public void update() {
+		if (!(bd instanceof Word)) {
+			info = bd.getDesc(parent);
+			toShow = nameParser(bd.getName());
+			return;
+		}
+		if (flipped) toShow = translates();
+		else {
+			toShow = nameParser(bd.getName());
+			info = bd.getDesc(parent);
+		}
+	}
+
 	protected String translates() {
 		StringBuilder desc = new StringBuilder();
 		StringBuilder trls = new StringBuilder();

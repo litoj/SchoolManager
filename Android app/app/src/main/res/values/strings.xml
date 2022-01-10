@@ -238,7 +238,7 @@
     <string name="setts_test">Test preset</string>
     <string name="setts_test_amount">Default tested amount</string>
     <string name="setts_test_clever">Make tests by success rate</string>
-    <string name="setts_test_time">Default duration (s)</string>
+    <string name="setts_test_time">Default time per item</string>
     <string name="setts_test_type">Default test type – pictures</string>
     <string name="setts_theme">Theme</string>
     <string name="setts_theme_bg">Background color</string>

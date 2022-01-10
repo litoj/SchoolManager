@@ -142,9 +142,9 @@ public class Test<T extends TwoSided> {
 	}
 
 	/**
-	 * Default duration of a test in seconds.
+	 * Default time for one item in a test.
 	 */
-	private static int DEFAULT_TIME = 180;
+	private static int DEFAULT_TIME = 18;
 
 	public static int getDefaultTime() {
 		return DEFAULT_TIME;
@@ -191,7 +191,7 @@ public class Test<T extends TwoSided> {
 	 * @param amount  the amount of object to be randomly picked for the test or
 	 *                -1 if all of the words are supposed to be used
 	 * @param doOnSec action to be done every second of the test, last call on time out
-	 * @param timeSec duration of a test
+	 * @param timeSec time give per item in test
 	 * @param source  List of paths to the tested objects. Don't include MainChapter.
 	 */
 	public void setTested(int amount, Timer doOnSec, int timeSec, List<SrcPath> source) {
@@ -199,11 +199,11 @@ public class Test<T extends TwoSided> {
 		else if (amount < 1)
 			throw new IllegalArgumentException("Amount of tested elements must be >= 1!");
 		else if (timeSec < 1)
-			throw new IllegalArgumentException("Duration of a test must be >= 1 s!");
+			throw new IllegalArgumentException("Time given for an item must be >= 1 s!");
 		else if (source.size() < 2)
 			throw new IllegalArgumentException("The source' size must be > 1!");
 		this.source = isClever() ? cleverTest(source, amount) : rndTest(source, amount);
-		time = timeSec;
+		time = timeSec * amount;
 		this.doOnSec = doOnSec;
 		answered = new boolean[this.source.size()];
 	}

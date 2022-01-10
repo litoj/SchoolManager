@@ -70,7 +70,6 @@ public abstract class AbstractPopup {
 				isShowing = false;
 				if (backBtnDismiss) (onlyMain ? activity : currentActivity).onBackPressed();
 			});
-			view.setOnClickListener(v -> dismiss(true));
 			pw.setBackgroundDrawable(new ColorDrawable(0x90000000));
 			addContent(view);
 			showed.add(this);

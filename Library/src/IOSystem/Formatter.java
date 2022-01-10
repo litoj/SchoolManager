@@ -186,7 +186,7 @@ public final class Formatter {
 					if ((value = settings.get("defaultTestTime")) != null) {
 						Test.setDefaultTime((Integer) value);
 					} else {
-						settings.put("defaultTestTime", 180);
+						settings.put("defaultTestTime", Test.getDefaultTime());
 					}
 					if ((value = settings.get("isClever")) != null) {
 						Test.setClever((Boolean) value);
@@ -211,7 +211,7 @@ public final class Formatter {
 			}
 			if (subjDir == null) {
 				settings.put("subjdir", (subjDir = getDefaultSubjectsDir()).getOriginalName());
-				settings.put("defaultTestTime", 180);
+				settings.put("defaultTestTime", Test.getDefaultTime());
 				settings.put("isClever", true);
 				settings.put("testAmount", 10);
 				setDefaults(true);
