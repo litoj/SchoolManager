@@ -96,7 +96,8 @@ public class AboutFragment extends Fragment implements ControlListener {
 			String[][] releases = {
 					{"1.6.2", "- popup background now does nothing\n" +
 							"- fixed description not updating\n" +
-							"- test time now calculated based on time set for one item"},
+							"- test time now calculated based on time set for one item\n" +
+							"- fixed minor bugs in name-resloving engine"},
 					{"1.6.1", "- reworked and improved word name resolving features, now more robust"},
 					{"1.6.0", "- reworked and improved simple word exports, now more robust"},
 					{"1.5.2", "- altered filesystem usage to handle Android 10+ Storage access framework"},

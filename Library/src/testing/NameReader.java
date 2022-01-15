@@ -1,7 +1,6 @@
 package testing;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 
 import java.util.List;
 import objects.templates.BasicData;
@@ -57,7 +56,7 @@ public class NameReader {
 
 	public static void main(String[] args) {
 //		for(String str : readName("(/(1a/2(1b/2b B)a/3(1b/2(1c/2(1 D)c/3c C)b)a ))A")) System.out.println(str);
-//		for(String str : readName("0 1a\\/1b 2a/2b.")) System.out.println(str);
+//		for(String str : readName("0 1(b/c)a 2a/2b")) System.out.println(str);
 	}
 	
 	private void getParts(List<StringBuilder> ret) {
@@ -91,22 +90,22 @@ public class NameReader {
 			case ',':
 			case ' ':
 				if (parts == null) {
-					sb.append(now);
 					if (recursiveParts == null) {
+						sb.append(now);
 						if (ret.isEmpty()) ret.add(sb);
 						else for (StringBuilder part : ret) if (sb.length() > 0) part.append(sb);
 						sb = new StringBuilder(8);
 					} else {
 						if (ret.isEmpty()) for (StringBuilder part : recursiveParts)
-							ret.add(part.length() > 0 ? part.append(sb) : part);
+							ret.add(part.append(sb).append(now));
 						else {
 							int size = ret.size();
 							StringBuilder retPart;
 							for (int j = 0; j < size; j++) {
 								retPart = ret.remove(0);
 								for (StringBuilder part : recursiveParts)
-									ret.add(part.length() > 0 ? new StringBuilder(retPart).append(part).append(now)
-										 : new StringBuilder(retPart).append(part));
+									ret.add(part.length() > 0 ? new StringBuilder(retPart).append(part).append(sb).append(now)
+										 : new StringBuilder(retPart).append(sb));
 							}
 						}
 						sb.setLength(0);
@@ -168,8 +167,9 @@ public class NameReader {
 				if (ret.isEmpty()) for (StringBuilder part : recursiveParts) ret.add(part.append(sb));
 				else {
 					int size = ret.size();
+					StringBuilder retPart;
 					for (int j = 0; j < size; j++) {
-						StringBuilder retPart = ret.remove(j);
+						retPart = ret.remove(0);
 						for (StringBuilder part : recursiveParts) {
 							ret.add(new StringBuilder(retPart).append(part).append(sb));
 						}
@@ -182,12 +182,13 @@ public class NameReader {
 				else for (StringBuilder part : recursiveParts) parts.add(part.append(sb));
 			} else if (recursiveParts != null) {
 				for (StringBuilder part : recursiveParts) parts.add(part);
-			}
+			} else parts.add(sb);
 			if (ret.isEmpty()) for (StringBuilder part : parts) ret.add(part);
 			else {
 				int size = ret.size();
+				StringBuilder retPart;
 				for (int j = 0; j < size; j++) {
-					StringBuilder retPart = ret.remove(j);
+					retPart = ret.remove(0);
 					for (StringBuilder part : parts) {
 						ret.add(new StringBuilder(retPart).append(part));
 					}
