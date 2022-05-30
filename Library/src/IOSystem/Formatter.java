@@ -201,7 +201,7 @@ public final class Formatter {
 					if ((value = settings.get("exportWordSplit")) != null) {
 						SimpleWriter.setWordSplitter((String) value);
 					} else {
-						settings.put("exportWordSplit", 1);
+						settings.put("exportWordSplit", SimpleWriter.wordSplitter);
 					}
 					setDefaults(false);
 				} catch (Exception e) {

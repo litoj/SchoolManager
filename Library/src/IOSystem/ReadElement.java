@@ -259,7 +259,7 @@ public abstract class ReadElement {
 	}
 
 	/**
-	 * Loads all data into the respective {@link SaveChapter} using 	 {@link #readData(Content, Container)
+	 * Loads all data into the respective {@link SaveChapter} using {@link #readData(Content, Container)
 	 * method} which all objects have to implement in static form.
 	 *
 	 * @param toLoad file containing the data of the loaded object

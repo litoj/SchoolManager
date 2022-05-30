@@ -51,7 +51,7 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 	private static AndroidIOSystem ios;
 
 	public static boolean canWrite() {
-		if (!canWrite && VERSION.SDK_INT >= 23 && PERMISSION_GRANTED !=
+		if (!canWrite && VERSION.SDK_INT >= 23 && VERSION.SDK_INT < 30 && PERMISSION_GRANTED !=
 				ContextCompat.checkSelfPermission(CONTEXT, permission.WRITE_EXTERNAL_STORAGE)) {
 			activity.requestPermissions
 					(new String[]{permission.WRITE_EXTERNAL_STORAGE}, STORAGE_PERMISSION);
@@ -67,8 +67,8 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 
 	public static boolean testWrite() {
 		if (!canWrite) {
-			if (VERSION.SDK_INT >= 23 && PERMISSION_GRANTED != ContextCompat.checkSelfPermission(
-					CONTEXT, permission.WRITE_EXTERNAL_STORAGE)) return false;
+			if (VERSION.SDK_INT >= 23 && VERSION.SDK_INT < 30 && PERMISSION_GRANTED != ContextCompat
+					.checkSelfPermission(CONTEXT, permission.WRITE_EXTERNAL_STORAGE)) return false;
 			else return canWrite = true;
 		} else return true;
 	}
@@ -128,17 +128,15 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 			settings.put("parseNames", true);
 			settings.put("version", BuildConfig.VERSION_CODE);
 		} else {
-			Object value;
-			if ((value = settings.get("version")) == null //old version update compatibility ensure
-					|| BuildConfig.VERSION_CODE > (Integer) value) {
-				int lastVersion = (Integer) value;
-				/*0if (lastVersion < 30) {
+			int version;
+			if ((version = (Integer) settings.get("version")) < BuildConfig.VERSION_CODE) {
+				/*if (version < 30) {
 					defaultReacts.put("removeSchNames", moreInfo -> {
 						for (MainChapter mch : MainChapter.ELEMENTS) mch.removeSetting("schNameCount");
 					});
 				}
-				if (lastVersion < 36) settings.put("doChoosePos", false);
-				if (lastVersion < 40) settings.put("doShowDesc", false);*/
+				if (version < 36) settings.put("doChoosePos", false);
+				if (version < 40) settings.put("doShowDesc", false);*/
 				settings.put("version", BuildConfig.VERSION_CODE);
 			}
 
@@ -258,8 +256,8 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 
 	@Override
 	public GeneralPath createGeneralPath(Object path, boolean internal) {
-		return path instanceof Uri ? new UriPath((Uri) path, internal) : path instanceof DocumentFile ?
+		return path instanceof Uri ? null : path instanceof DocumentFile ?
 				new UriPath((DocumentFile) path, internal) : !(path instanceof File) && path.toString().contains(":")
-				? new UriPath(path.toString(), internal) : super.createGeneralPath(path, internal);
+				? new UriPath(path.toString()) : super.createGeneralPath(path, internal);
 	}
 }

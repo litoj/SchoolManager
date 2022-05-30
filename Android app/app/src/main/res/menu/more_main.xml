@@ -7,6 +7,9 @@
         android:id="@+id/more_import_mch"
         android:title="@string/import_mch" />
     <item
+        android:id="@+id/more_change_dir"
+        android:title="@string/menu_choose_dir" />
+    <item
         android:id="@+id/more_sort"
         android:title="@string/sort">
         <menu>

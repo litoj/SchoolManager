@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorSecondaryBg"
@@ -773,62 +772,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/side_nav_bar"
-            android:drawableEnd="@drawable/ic_versions"
-            android:gravity="center_vertical"
-            android:paddingHorizontal="15dp"
-            android:paddingVertical="3dp"
-            android:text="@string/versions"
-            android:textSize="25sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/versions_release"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="#5888"
-            android:paddingHorizontal="15dp"
-            android:paddingVertical="7dp"
-            android:text="Release"
-            android:textSize="19sp" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="0.6dp"
-            android:background="#F000" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/versions_release_list"
-            android:layout_width="match_parent"
-            android:layout_height="400dp"
-            android:visibility="gone"
-            tools:listitem="@layout/item_version" />
-
-        <TextView
-            android:id="@+id/versions_beta"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="#5888"
-            android:paddingHorizontal="15dp"
-            android:paddingVertical="7dp"
-            android:text="Beta"
-            android:textSize="19sp" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="0.6dp"
-            android:background="#F000" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/versions_beta_list"
-            android:layout_width="match_parent"
-            android:layout_height="400dp"
-            android:visibility="gone"
-            tools:listitem="@layout/item_version" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/side_nav_bar"
             android:drawableEnd="@drawable/ic_app_mini"
             android:gravity="center_vertical"
             android:paddingHorizontal="15dp"
@@ -845,7 +788,7 @@
             android:layout_marginEnd="8dp"
             android:text="
 This program was developed to help people with school subjects, especially with foreign languages and biology.
-\n\nFor any further help contact me at LitosPepa@gmail.com"
+\n\nFor any further help contact me at litos@tuta.io"
             android:textSize="13sp" />
     </LinearLayout>
 </ScrollView>

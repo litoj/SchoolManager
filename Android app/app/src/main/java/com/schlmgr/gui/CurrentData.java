@@ -163,25 +163,21 @@ public class CurrentData {
 		}, "uncaughtShower").start();
 		synchronized (toLoad) {
 			boolean thread = false;
-			for (MainChapter mch : toLoad) {
-				if (mch.isEmpty(null)) try {
-					mch.load(thread = !thread);
-				} catch (Exception e) {
-				}
-			}
+			for (MainChapter mch : toLoad) mch.load(thread = !thread);
 			toLoad.clear();
 		}
 	}
 
 	public static void createMchs() {
 		synchronized (toLoad) {
-			if (Formatter.getSubjectsDir().listFiles() != null) for (GeneralPath f : Formatter.getSubjectsDir().listFiles())
-				load:{
-					for (MainChapter mch : MainChapter.ELEMENTS)
-						if (mch.getDir().equals(f)) break load;
-					if (f.getChild("setts.dat").exists())
-						toLoad.add(new MainChapter(new Data(f.getName(), null)));
-				}
+			if (Formatter.getSubjectsDir().listFiles() != null)
+				for (GeneralPath f : Formatter.getSubjectsDir().listFiles())
+					load:{
+						for (MainChapter mch : MainChapter.ELEMENTS)
+							if (mch.getDir().equals(f)) break load;
+						if (f.getChild("setts.dat").exists())
+							toLoad.add(new MainChapter(new Data(f.getName(), null)));
+					}
 			for (GeneralPath f : ImportedMchs.get())
 				load:{
 					for (MainChapter mch : MainChapter.ELEMENTS)

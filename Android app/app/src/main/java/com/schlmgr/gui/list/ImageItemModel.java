@@ -77,9 +77,7 @@ public class ImageItemModel {
 		Options opts = new Options();
 		opts.inJustDecodeBounds = true;
 		try {
-			if (path instanceof UriPath) BitmapFactory.decodeStream(
-					CONTEXT.getContentResolver().openInputStream(
-							((UriPath) path).getUri()));
+			if (path instanceof UriPath) BitmapFactory.decodeStream(((UriPath) path).createInputStream());
 			else BitmapFactory.decodeFile(path.getOriginalName());
 		} catch (IOException e) {
 			throw new IllegalArgumentException(e);
@@ -87,9 +85,7 @@ public class ImageItemModel {
 		float ratio = (opts.outHeight > opts.outWidth != bigger ? opts.outHeight : opts.outWidth) / maxSize;
 		if (ratio <= 1)
 			try {
-				return path instanceof UriPath ? BitmapFactory.decodeStream(
-						CONTEXT.getContentResolver().openInputStream(
-								((UriPath) path).getUri())) :
+				return path instanceof UriPath ? BitmapFactory.decodeStream(((UriPath) path).createInputStream()) :
 						BitmapFactory.decodeFile(path.getOriginalName());
 			} catch (IOException e) {
 				throw new IllegalArgumentException(e);
@@ -98,8 +94,7 @@ public class ImageItemModel {
 		opts.inJustDecodeBounds = false;
 		try {
 			return path instanceof UriPath ? BitmapFactory.decodeStream(
-					CONTEXT.getContentResolver().openInputStream(
-							((UriPath) path).getUri()), null, opts) :
+					((UriPath) path).createInputStream(), null, opts) :
 					BitmapFactory.decodeFile(path.getOriginalName(), opts);
 		} catch (IOException e) {
 			throw new IllegalArgumentException(e);

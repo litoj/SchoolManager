@@ -1,5 +1,6 @@
 package com.schlmgr.gui;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.webkit.MimeTypeMap;
 
@@ -11,6 +12,7 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 
 import IOSystem.FilePath;
 import IOSystem.Formatter.IOSystem.GeneralPath;
@@ -25,11 +27,7 @@ public class UriPath implements GeneralPath {
 	private final boolean internal;
 
 	public UriPath(String original) {
-		this(original, false);
-	}
-
-	public UriPath(String original, boolean internal) {
-		this(Uri.parse(original), internal);
+		this(Uri.parse(original), true);
 	}
 
 	public UriPath(DocumentFile file) {
@@ -42,17 +40,14 @@ public class UriPath implements GeneralPath {
 		this.internal = internal;
 	}
 
-	public UriPath(Uri uri) {
-		this(uri, false);
-	}
-
-	public UriPath(Uri uri, boolean internal) {
+	/**
+	 * Use only for folders obtained using Intent.ACTION_OPEN_DOCUMENT_TREE
+	 */
+	public UriPath(Uri uri, boolean folder) {
 		this.uri = uri;
 		original = uri.toString();
-		if (uri.toString().startsWith("file://"))
-			file = DocumentFile.fromTreeUri(CONTEXT, uri);
-		else file = DocumentFile.fromSingleUri(CONTEXT, uri);
-		this.internal = internal;
+		file = folder ? DocumentFile.fromTreeUri(CONTEXT, uri) : DocumentFile.fromSingleUri(CONTEXT, uri);
+		this.internal = false;
 	}
 
 	@Override
@@ -63,10 +58,6 @@ public class UriPath implements GeneralPath {
 	@Override
 	public String getName() {
 		return file.getName();
-	}
-
-	public Uri getUri() {
-		return uri;
 	}
 
 	public DocumentFile getDocumentFile() {
@@ -159,10 +150,12 @@ public class UriPath implements GeneralPath {
 
 	@Override
 	public UriPath[] listFiles() {
-		DocumentFile[] files = file.listFiles();
-		UriPath[] paths = new UriPath[files.length];
-		for (int i = 0; i < files.length; i++) paths[i] = new UriPath(files[i]);
-		return paths;
+		if (file.isDirectory()) {
+			DocumentFile[] files = file.listFiles();
+			UriPath[] paths = new UriPath[files.length];
+			for (int i = 0; i < files.length; i++) paths[i] = new UriPath(files[i]);
+			return paths;
+		} else return null;
 	}
 
 	@Override

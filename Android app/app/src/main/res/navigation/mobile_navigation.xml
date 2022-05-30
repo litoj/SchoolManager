@@ -18,11 +18,6 @@
         tools:layout="@layout/fragment_test" />
 
     <fragment
-        android:id="@+id/menu_choose_dir"
-        android:name="com.schlmgr.gui.fragments.ChooseDirFragment"
-        android:label="@string/menu_choose_dir"/>
-
-    <fragment
         android:id="@+id/menu_options"
         android:name="com.schlmgr.gui.fragments.SettingsFragment"
         android:label="@string/menu_settings"

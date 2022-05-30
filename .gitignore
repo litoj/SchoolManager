@@ -7,4 +7,4 @@ Android app/build.gradle
 Android app/app/release
 Library/build/
 Library/dist/
-
+Library/nbproject/private/private.xml

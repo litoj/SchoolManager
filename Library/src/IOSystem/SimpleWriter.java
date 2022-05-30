@@ -92,9 +92,15 @@ public final class SimpleWriter {
 	}
 	
 	private StringBuilder writeData(BasicData bd, Container par) {
-		sb.append(bd.getName().replaceAll(";", "\\;").replaceAll("=", "\\=").replaceAll("→", "\\→"));
-		String desc = bd.getDesc(par);
-		if (desc != null && !desc.isEmpty()) sb.append(" \\[").append(desc).append("\\]");
+		sb.append(bd.getName().replaceAll(";", "\\\\;").replaceAll("=",
+			"\\\\=").replaceAll("→", "\\\\→").replaceAll("\\[", "\\\\[").replaceAll("\\]", "\\\\]"));
+		String desc = bd.getDesc(par).replaceAll("\\\\","\\\\\\\\").replaceAll("\\]", "\\\\]");
+		if (desc != null && !desc.isEmpty()) {
+			if (desc.indexOf('\n') != -1) {
+				sb.append(" [\n").append(desc).append('\n');
+				indentation().sb.append(']');
+			} else sb.append(" [").append(desc).append("]");
+		}
 		return sb;
 	}
 	

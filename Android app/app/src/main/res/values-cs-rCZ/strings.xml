@@ -98,18 +98,18 @@
         \nPoznámky k položkám pište ve tvaru \'\\[poznámky k položce\\]\'.
         \nSlovíčka a jejich překlady oddělte pomocí \';\', \'=\', nebo \'→\'.
         \nPro zápis více slovíček se stejným překladem (a naopak) oddělte slovíčka zpětným lomítkem \\.
-        \nKapitoly začínají řádkem ve tvaru \'název kapitoly \\[případné poznámky\\] {\', kapitolu ukončíte pomocí \'}\' na samostatném řádku. Přímo před otevřenou závorku můžete přidat \'§\' pro uložení kapitoly do vlastního souboru.
+        \nKapitoly začínají řádkem ve tvaru \'název kapitoly [případné poznámky] {\', kapitolu ukončíte pomocí \'}\' na samostatném řádku. Přímo před otevřenou závorku můžete přidat \'§\' pro uložení kapitoly do vlastního souboru.
         \nKaždou položku pište na nový řádek, odsazení a mezery mezi jednotlivými položkami jsou libovolné.
         \nMožný příkladný formát:
         \n\nkapitola v souboru §{
         \n\tslovíčko 1;překlad 1
         \n\tslovíčko 2=překlad 2
-        \n\tnázev podkapitoly \\[poznámky k podkapitole\\] {
-        \n\t\tslovíčko 3 \\[poznámky\\] = překlad 3
+        \n\tnázev podkapitoly [poznámky k podkapitole] {
+        \n\t\tslovíčko 3 [poznámky] = překlad 3
         \n\t\tslovíčko 4\\slovíčko 5;překlad 4
-        \n\t\tslovíčko 6 \\[poznámka\\] \\ slovíčko 7 → překlad 5
+        \n\t\tslovíčko 6 [poznámka] \\ slovíčko 7 → překlad 5
         \n\t}
-        \n\tslovíčko 7;překlad 1 \\[poznámka překladu\\]\\překlad 6
+        \n\tslovíčko 7;překlad 1 [poznámka překladu]\\překlad 6
         \n}</string>
     <string name="help_search">Vyhledávání</string>
     <string name="help_search_how">Vyhledávání je umožňěno ve všech kapitolách a předmětech.

@@ -65,8 +65,8 @@ public class MainActivity extends PopupCareActivity {
 				v -> c.currentControl.onClick(v));
 		// Passing each menu ID as a set of Ids because each
 		// menu should be considered as top level destinations.
-		mAppBarConfiguration = new AppBarConfiguration.Builder(R.id.menu_objects, R.id.test,
-				R.id.menu_choose_dir, R.id.menu_options, R.id.menu_about)
+		mAppBarConfiguration = new AppBarConfiguration.Builder(R.id.menu_objects,
+				R.id.test, R.id.menu_options, R.id.menu_about)
 				.setDrawerLayout(findViewById(R.id.drawer_layout)).build();
 		navController = Navigation.findNavController(this, R.id.content_main);
 		NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
@@ -98,21 +98,6 @@ public class MainActivity extends PopupCareActivity {
 			new AndroidIOSystem();
 			AndroidIOSystem.testWrite();
 			(background = new Thread(() -> {
-				if (!Formatter.getSubjectsDir().getOriginalName().contains(defDir
-						+ "/Android/data/com.schlmgr") && !AndroidIOSystem.canWrite()) {
-					runOnUiThread(() -> {
-						Toast.makeText(this, getString(R.string.fail_permission_write)
-								+ AndroidIOSystem.visibleInternalPath(Formatter.getSubjectsDir().getOriginalName())
-								+ '\n' + getString(R.string.fail_formatter), Toast.LENGTH_LONG).show();
-						Formatter.resetDir();
-						CurrentData.createMchs();
-						MainFragment.VS.mfInstance.setContent(null, null, 0);
-						loaded = true;
-					});
-				} else {
-					loaded = true;
-					CurrentData.createMchs();
-				}
 				try {
 					while (true) {
 						Thread.sleep(100_000);
@@ -123,6 +108,20 @@ public class MainActivity extends PopupCareActivity {
 				} catch (Exception e) {
 				}
 			}, "MA background")).start();
+			if (!Formatter.getSubjectsDir().getOriginalName().contains(defDir
+					+ "/Android/data/com.schlmgr") && !AndroidIOSystem.canWrite() ||
+					!Formatter.getSubjectsDir().exists()) {
+				Toast.makeText(this, getString(R.string.fail_permission_write)
+						+ AndroidIOSystem.visibleInternalPath(Formatter.getSubjectsDir().getOriginalName())
+						+ '\n' + getString(R.string.fail_formatter), Toast.LENGTH_LONG).show();
+				Formatter.resetDir();
+				CurrentData.createMchs();
+				MainFragment.VS.mfInstance.setContent(null, null, 0);
+				loaded = true;
+			} else {
+				CurrentData.createMchs();
+				loaded = true;
+			}
 		}
 	}
 

@@ -13,6 +13,8 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Build.VERSION;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -223,7 +225,7 @@ public class MainFragment extends Fragment
 										him.bd = ((SemiElementContainer) him.bd).convert();
 									position = cp.np.getValue();
 									if (position != him.position) him.parent.putChild(him.parent.removeChild(him.bd),
-												him.bd, position - 1);
+											him.bd, position - 1);
 									CurrentData.save(backLog.path);
 								} else ((MainChapter) him.bd).save();
 								VS.contentAdapter.selected = -1;
@@ -399,6 +401,7 @@ public class MainFragment extends Fragment
 						else {
 							backLog.adapter.addItem(him);
 							him.parent = np;
+							him.position = backLog.adapter.getItemCount();
 						}
 					}
 				}
@@ -419,6 +422,11 @@ public class MainFragment extends Fragment
 			}
 			CurrentData.save(backLog.path);
 			VS.pasteData.srcView.list.removeAll(VS.pasteData.src);
+			int i = 0;
+			for (Object him :
+					VS.pasteData.srcView.list) {
+				((HierarchyItemModel) him).position = i++;
+			}
 			VS.pasteData.srcView.notifyDataSetChanged();
 			VS.pasteData = null;
 			Controller.toggleSelectBtn(true);
@@ -824,21 +832,42 @@ public class MainFragment extends Fragment
 					break;
 				case R.id.more_import_word:
 					i = new Intent(Intent.ACTION_GET_CONTENT);
-					i.setType("*/*");
+					i.setType("text/plain");
 					i.addCategory(Intent.CATEGORY_OPENABLE);
 					startActivityForResult(Intent.createChooser(i,
 							activity.getString(R.string.action_chooser_file)), WORD_READ);
 					break;
 				case R.id.more_export_word:
-					i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-					i.setType("*/*");
-					i.addCategory(Intent.CATEGORY_OPENABLE);
-					startActivityForResult(Intent.createChooser(i,
-							activity.getString(R.string.action_chooser_file)), WORD_WRITE);
+					if (VERSION.SDK_INT < 30) {
+						i = new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("text/plain");
+						i.addCategory(Intent.CATEGORY_OPENABLE);
+						startActivityForResult(Intent.createChooser(i,
+								activity.getString(R.string.action_chooser_file)), WORD_WRITE);
+					} else {
+						i = new Intent(Intent.ACTION_CREATE_DOCUMENT).setType("text/plain");
+						i.putExtra(Intent.EXTRA_TITLE, backLog.path.get(-1).getName() + ".txt");
+						i.addCategory(Intent.CATEGORY_OPENABLE);
+						startActivityForResult(i, WORD_WRITE);
+					}
 					break;
 				case R.id.more_import_mch:
 					SelectDirActivity.importing = true;
-					startActivity(new Intent(getContext(), SelectDirActivity.class));
+					if (VERSION.SDK_INT >= 30) {
+						startActivityForResult(Intent.createChooser(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE),
+								activity.getString(R.string.action_chooser_dir)), GET_DIR);
+					} else {
+						startActivity(new Intent(getContext(), SelectDirActivity.class));
+					}
+					break;
+				case R.id.more_change_dir:
+					SelectDirActivity.importing = false;
+					if (Build.VERSION.SDK_INT >= 30) {
+						startActivityForResult(Intent.createChooser(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE),
+								activity.getString(R.string.action_chooser_dir)), GET_DIR);
+					} else {
+						SelectDirActivity.importing = false;
+						startActivity(new Intent(getContext(), SelectDirActivity.class));
+					}
 					break;
 				case R.id.more_sf_revaluate:
 					List<Container> currentPath = (List<Container>) backLog.path.clone();
@@ -893,7 +922,7 @@ public class MainFragment extends Fragment
 							List<BasicData> currentPath = (List<BasicData>) backLog.path.clone();
 							Container self = (Container) backLog.path.get(-1),
 									par = (Container) backLog.path.get(-2);
-							SimpleReader content = new SimpleReader(new UriPath(data.getData()).load(), self, par);
+							SimpleReader content = new SimpleReader(new UriPath(data.getData(), false).load(), self, par);
 							if (backLog.adapter instanceof HierarchyAdapter) {
 								HierarchyAdapter ha = (HierarchyAdapter) backLog.adapter;
 								int old = ha.list.size();
@@ -911,24 +940,62 @@ public class MainFragment extends Fragment
 						}
 						break;
 					case WORD_WRITE:
-						new SimpleWriter(new UriPath(data.getData()), new Container[]{
-								(Container) backLog.path.get(-1), (Container) backLog.path.get(-2)});
+						if (VS.contentAdapter.selected < 1) {
+							new SimpleWriter(new UriPath(data.getData(), false), new Container[]{
+									(Container) backLog.path.get(-1), (Container) backLog.path.get(-2)});
+							break;
+						}
+						Container[][] toExport = new Container[VS.contentAdapter.selected][2];
+						int i = 0;
+						for (HierarchyItemModel him : VS.contentAdapter.list)
+							if (him.isSelected() && him.bd instanceof Container) {
+								toExport[i][0] = (Container) him.bd;
+								toExport[i++][1] = him.parent;
+							}
+						VS.contentAdapter.selected = -1;
+						setSelectOpts(false);
+						new SimpleWriter(new UriPath(data.getData(), false), toExport);
 						break;
 					case IMAGE_PICK:
 						defaultReacts.get("NotifyNewImage")
-								.react(new UriPath(data.getData()));
+								.react(new UriPath(data.getData(), false));
 						break;
 					case SCH_READ:
 						try {
 							List<BasicData> currentPath = (List<BasicData>) backLog.path.clone();
 							((Container) backLog.path.get(-1)).putChild((Container) backLog.path.get(-2),
-									new ContentReader(new UriPath(data.getData()).load(), (MainChapter) backLog.path.get(0))
+									new ContentReader(new UriPath(data.getData(), false).load(), (MainChapter) backLog.path.get(0))
 											.mContent.getItem((Container) backLog.path.get(-1)));
 							CurrentData.save(currentPath);
 						} catch (Exception e) {
 							defaultReacts.get("uncaught").react(Thread.currentThread(), e);
 						}
 						break;
+					case GET_DIR:
+						Uri path = data.getData();
+						CONTEXT.getContentResolver().takePersistableUriPermission(path, Intent
+								.FLAG_GRANT_READ_URI_PERMISSION | Intent
+								.FLAG_GRANT_WRITE_URI_PERMISSION);
+						UriPath file = new UriPath(path, true);
+						if (SelectDirActivity.importing) {
+							if (file.getChild("main.json") != null && file.getChild("setts.dat") != null)
+								CurrentData.ImportedMchs.importMch(file);
+							CurrentData.createMchs();
+							if (backLog.path.isEmpty())
+								activity.runOnUiThread(() -> MainFragment.VS.mfInstance.setContent(null, null, 0));
+						} else {
+							if (Formatter.changeDir(file)) {
+								VS.pasteData = null;
+								backLog.clear();
+								CurrentData.createMchs();
+								activity.runOnUiThread(() -> {
+									MainFragment.VS.mfInstance.setContent(null, null, 0);
+									Toast.makeText(
+											CONTEXT, getString(R.string.choose_dir), Toast.LENGTH_SHORT).show();
+								});
+							} else activity.runOnUiThread(
+									() -> Toast.makeText(CONTEXT, "Error", Toast.LENGTH_SHORT).show());
+						}
 				}
 				super.onActivityResult(requestCode, resultCode, data);
 			}, "MFrag onActivityResult").start();
@@ -949,6 +1016,7 @@ public class MainFragment extends Fragment
 	public static final int STORAGE_PERMISSION = 3;
 	public static final int IMAGE_PICK = 4;
 	public static final int SCH_READ = 5;
+	public static final int GET_DIR = 7;
 
 	public static class ViewState extends ExplorerStuff.ViewState {
 		private int menuRes;

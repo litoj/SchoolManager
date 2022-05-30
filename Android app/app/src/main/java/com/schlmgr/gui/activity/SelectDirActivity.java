@@ -63,12 +63,7 @@ public class SelectDirActivity extends PopupCareActivity
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		if (VERSION.SDK_INT >= 29) {
-			Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
-			startActivityForResult(Intent.createChooser(i,
-					activity.getString(R.string.action_chooser_dir)), GET_DIR);
-			return;
-		}
+		context = getApplicationContext();
 		setContentView(R.layout.activity_select_dir);
 		((TextView) findViewById(R.id.bar)).setText(importing ? R.string.select_dir_import : R.string.select_dir_src);
 		findViewById(R.id.bar_more).setOnClickListener(v -> {
@@ -116,7 +111,6 @@ public class SelectDirActivity extends PopupCareActivity
 				}
 			});
 		}
-		context = getApplicationContext();
 		path_handler = findViewById(R.id.dir_path_handler);
 		path = findViewById(R.id.dir_path);
 		list = findViewById(R.id.dir_list);
@@ -286,32 +280,4 @@ public class SelectDirActivity extends PopupCareActivity
 		return true;
 	}
 
-	@Override
-	public void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if (resultCode == Activity.RESULT_OK) {
-			new Thread(() -> {
-				if (requestCode == GET_DIR) {
-					Uri path = data.getData();
-					CONTEXT.grantUriPermission(CONTEXT.getPackageName(), path, Intent
-							.FLAG_GRANT_READ_URI_PERMISSION | Intent
-							.FLAG_GRANT_WRITE_URI_PERMISSION);
-					CONTEXT.getContentResolver().takePersistableUriPermission(path, Intent
-							.FLAG_GRANT_READ_URI_PERMISSION | Intent
-							.FLAG_GRANT_WRITE_URI_PERMISSION);
-					DocumentFile dir = DocumentFile.fromTreeUri(CONTEXT, data.getData());
-					if (Formatter.changeDir(new UriPath(dir))) {
-						MainFragment.VS = new MainFragment.ViewState();
-						backLog.clear();
-						CurrentData.createMchs();
-						runOnUiThread(() -> Toast.makeText(
-								context, getString(R.string.choose_dir), Toast.LENGTH_SHORT).show());
-					}
-				}
-				super.onActivityResult(requestCode, resultCode, data);
-			}, "MFrag onActivityResult").start();
-		}
-		super.onBackPressed();
-	}
-
-	private static final int GET_DIR = 7;
 }
