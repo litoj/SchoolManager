@@ -129,7 +129,7 @@ public class UriPath implements GeneralPath {
 
 	@Override
 	public boolean exists() {
-		return file.exists();
+		return file.exists() && (file.isDirectory() || file.length() > 0);
 	}
 
 	@Override
