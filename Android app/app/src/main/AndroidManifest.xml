@@ -27,9 +27,6 @@
             android:name=".gui.activity.SelectItemsActivity"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
-            android:name=".gui.activity.SelectDirActivity"
-            android:theme="@style/AppTheme.NoActionBar" />
-        <activity
             android:name=".gui.activity.TestActivity"
             android:theme="@style/AppTheme.NoActionBar"
             android:windowSoftInputMode="adjustPan" />

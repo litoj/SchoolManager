@@ -12,6 +12,7 @@ import IOSystem.Formatter.Synchronizer;
 import static IOSystem.Formatter.defaultReacts;
 import IOSystem.ReadElement;
 import java.util.Arrays;
+import java.util.TreeSet;
 import objects.templates.BasicData;
 import objects.templates.Container;
 import objects.templates.ContainerFile;
@@ -240,21 +241,21 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	public static void clean(MainChapter mch) {
 		if (!isCleanable(mch)) return;
 		mch.load(false);
-		GeneralPath dir = mch.getChapDir();
+		GeneralPath[] content = mch.getChapDir().listFiles();
+		TreeSet<String> names = new TreeSet<>(); 
+		for (GeneralPath gp : content) names.add(gp.getName().substring(0, gp.getName().length() - 6));
 		USED.waitForAccess(mch);
 		boolean allok = true;
 		for (SaveChapter sch : ELEMENTS.get(mch)) {
 			if (sch.hash == 1) continue;
 			int hash = 1;
-			GeneralPath src = dir.getChild(sch.name + ".json");
-			while (src.exists() && hash < sch.hash)
-				src = dir.getChild(sch.name + "[" + ++hash + "].json");
+			while (hash < sch.hash && names.contains(sch.name + '[' + hash + "].json")) hash++;
 			GeneralPath origin = sch.getSaveFile();
 			if (hash < sch.hash && origin.exists() && !origin.renameTo(
-				 sch.name + (hash == 1 ? ".json" : "[" + hash + "].json"))) {
+				 sch.name + (hash == 1 ? ".json" : '[' + hash + "].json"))) {
 				allok = false;
 				defaultReacts.get(ContainerFile.class + ":save").react(
-						new IllegalArgumentException("SaveChapter cannot be renamed"), src, sch);
+						new IllegalArgumentException("SaveChapter cannot be renamed"), origin, sch);
 			} else sch.hash = hash;
 		}
 		USED.endAccess(mch);
@@ -278,7 +279,7 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 
 	@Override
 	public GeneralPath getSaveFile() {
-		return identifier.getChapDir().getChild(name + (hash == 1 ? ".json" : "[" + hash + "].json"));
+		return identifier.getChapDir().getChild(name + (hash == 1 ? ".json" : '[' + hash + "].json"));
 	}
 
 	/**
@@ -288,16 +289,12 @@ public class SaveChapter extends SemiElementContainer implements ContainerFile {
 	 */
 	@Override
 	public BasicData setName(Container none, String name) {
-		load();
+		load(false);
 		int current = 1;
 		GeneralPath dir = identifier.getChapDir();
 		GeneralPath src = dir.getChild(name + ".json");
-		while (src.exists()) src = dir.getChild(name + "[" + ++current + "].json");
-		try {
-			while (loading) Thread.sleep(20);
-		} catch (InterruptedException ie) {
-		}
-		if (getSaveFile().renameTo(name + (current == 1 ? ".json" : "[" + current + "].json"))) {
+		while (src.exists()) src = dir.getChild(name + '[' + ++current + "].json");
+		if (getSaveFile().renameTo(name + (current == 1 ? ".json" : '[' + current + "].json"))) {
 			this.name = name;
 			hash = current;
 		}

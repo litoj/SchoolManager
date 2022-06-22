@@ -38,15 +38,15 @@ public class CurrentData {
 		/**
 		 * Path to the currently displayed element (inclusive).
 		 */
-		public EasyList<BasicData> path = new EasyList<>();
+		public EasyList<Container> path = new EasyList<>();
 		/**
-		 * This value is set after {@link #add(Boolean, BasicData, EasyList) adding} an updated path.
+		 * This value is set after {@link #add(Boolean, Container, EasyList) adding} an updated path.
 		 */
 		public OpenListAdapter adapter;
 		/**
 		 * The previous paths to the displayed elements.
 		 */
-		private final EasyList<EasyList<BasicData>> prevPaths = new EasyList<>();
+		private final EasyList<EasyList<Container>> prevPaths = new EasyList<>();
 		/**
 		 * All old states of the main RecyclerView.
 		 */
@@ -61,7 +61,7 @@ public class CurrentData {
 			return prevAdapters;
 		}
 
-		public void add(Boolean newPath, BasicData bd, EasyList<BasicData> currPath) {
+		public void add(Boolean newPath, Container bd, EasyList<Container> currPath) {
 			if (newPath == null) if (newPath = currPath.size() == path.size())
 				for (int i = path.size() - 1; i >= 0; i--) {
 					if (path.get(i) != currPath.get(i)) {
@@ -144,23 +144,17 @@ public class CurrentData {
 	private static final LinkedList<MainChapter> toLoad = new LinkedList<>();
 
 	public static void finishLoad() {
-		new Thread(() -> {
-			try {
-				Thread.sleep(500);
-			} catch (Exception e) {
-			}
-			Object uE = Formatter.getSetting("uncaughtException");
-			if (uE != null) {
-				new TextPopup(activity.getString(R.string.exception_handler)
-						+ getFirstCause((Throwable) ((Object[]) uE)[0]), (String) ((Object[]) uE)[1]) {
-					@Override
-					public void dismiss(boolean forever) {
-						super.dismiss(forever);
-						if (forever) Formatter.removeSetting("uncaughtException");
-					}
-				};
-			}
-		}, "uncaughtShower").start();
+		Object uE = Formatter.getSetting("uncaughtException");
+		if (uE != null) {
+			new TextPopup(activity.getString(R.string.exception_handler)
+					+ getFirstCause((Throwable) ((Object[]) uE)[0]), (String) ((Object[]) uE)[1]) {
+				@Override
+				public void dismiss(boolean forever) {
+					super.dismiss(forever);
+					if (forever) Formatter.removeSetting("uncaughtException");
+				}
+			};
+		}
 		synchronized (toLoad) {
 			boolean thread = false;
 			for (MainChapter mch : toLoad) mch.load(thread = !thread);
@@ -175,7 +169,7 @@ public class CurrentData {
 					load:{
 						for (MainChapter mch : MainChapter.ELEMENTS)
 							if (mch.getDir().equals(f)) break load;
-						if (f.getChild("setts.dat").exists())
+						if (f.hasChild("setts.dat"))
 							toLoad.add(new MainChapter(new Data(f.getName(), null)));
 					}
 			for (GeneralPath f : ImportedMchs.get())
@@ -237,33 +231,12 @@ public class CurrentData {
 		}
 	}
 
-	public static final List<Container> newChapters = new ArrayList<>();
-
 	public static void save(List<? extends BasicData> blPath) {
-		new Thread(() -> {
-			for (int i = blPath.size() - 1; i >= 0; i--)
-				if (blPath.get(i) instanceof ContainerFile) {
-					((ContainerFile) blPath.get(i)).save();
-					int saveAbove = i + 1;
-					for (Container c : newChapters.toArray(new Container[0])) {
-						int index = -1;
-						for (int j = i; j >= 0; j--) {
-							if (blPath.get(j) == c) {
-								index = j;
-								break;
-							}
-						}
-						if (index != -1) {
-							if (index < saveAbove) saveAbove = index;
-							newChapters.remove(c);
-						}
-					}
-					if (saveAbove != i + 1) {
-						while (!(blPath.get(--saveAbove) instanceof ContainerFile)) ;
-						((ContainerFile) blPath.get(saveAbove)).save();
-					}
-					return;
-				}
-		}, "CurrentData saver").start();
+		for (int i = blPath.size() - 1; i >= 0; i--) {
+			if (blPath.get(i) instanceof ContainerFile) {
+				changed.add((ContainerFile) blPath.get(i));
+				return;
+			}
+		}
 	}
 }

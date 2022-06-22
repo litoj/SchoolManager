@@ -100,7 +100,7 @@ public final class SimpleReader {
 					if (sb.length() > 0) {
 						current.add(new Data(sb.toString().trim(), self.getIdentifier()).addPar(self));
 						sb.setLength(0);
-					}
+					} else if (current == words && words.isEmpty()) continue;
 					if (current == translates && !translates.isEmpty()) {
 						result[2]++;
 						for (Data word : words) {

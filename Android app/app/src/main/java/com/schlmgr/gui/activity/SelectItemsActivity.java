@@ -205,17 +205,17 @@ public class SelectItemsActivity extends PopupCareActivity
 					} else {
 						if (bd.getThis() instanceof Picture) return;
 						backLog.add(true, null, EasyList.convert(((Reference) bd).getRefPath()));
-						backLog.path.add(bd = bd.getThis());
+						backLog.path.add((Container) (bd = bd.getThis()));
 					}
 				} catch (Exception e) {
 					return;
 				}
 			} else if (!(ref = VS.contentAdapter.search))
-				backLog.add(false, bd, null);
+				backLog.add(false, (Container) bd, null);
 			else {
-				EasyList<BasicData> list = new EasyList<>();
+				EasyList<Container> list = new EasyList<>();
 				list.addAll(((SearchItemModel) item).path);
-				list.add(item.bd);
+				list.add((Container) item.bd);
 				backLog.add(true, null, list);
 			}
 			setContent(bd, item.parent, backLog.path.size());
@@ -227,9 +227,9 @@ public class SelectItemsActivity extends PopupCareActivity
 	public boolean onItemLongClick(HierarchyItemModel item) {
 		if (VS.contentAdapter.search) {
 			SearchItemModel sim = (SearchItemModel) item;
-			EasyList<BasicData> list = new EasyList<>();
+			EasyList<Container> list = new EasyList<>();
 			list.addAll(sim.path);
-			list.add(item.bd);
+			list.add((Container) item.bd);
 			backLog.add(true, null, list);
 			setContent(sim.path.get(-1), sim.path.get(-2), 1);
 			es.onChange(true);

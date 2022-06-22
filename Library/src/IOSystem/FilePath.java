@@ -74,6 +74,12 @@ public class FilePath implements GeneralPath {
 	public FilePath getChild(String name) {
 		return new FilePath(new File(original, name));
 	}
+	
+	@Override
+	public boolean hasChild(String name) {
+		File f = new File(original, name);
+		return f.exists();
+	}
 
 	@Override
 	public FilePath getParentDir() {

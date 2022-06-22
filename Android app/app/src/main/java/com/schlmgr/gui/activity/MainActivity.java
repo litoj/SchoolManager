@@ -9,6 +9,7 @@ import static com.schlmgr.gui.fragments.MainFragment.STORAGE_PERMISSION;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.StrictMode;
 import android.util.DisplayMetrics;
 import android.widget.PopupMenu;
 import android.widget.Toast;

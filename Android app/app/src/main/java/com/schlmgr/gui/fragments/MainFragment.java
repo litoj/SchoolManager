@@ -1,5 +1,6 @@
 package com.schlmgr.gui.fragments;
 
+import static android.widget.Toast.makeText;
 import static com.schlmgr.gui.Controller.CONTEXT;
 import static com.schlmgr.gui.Controller.activity;
 import static com.schlmgr.gui.Controller.dp;
@@ -14,7 +15,6 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Build.VERSION;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -37,7 +37,6 @@ import com.schlmgr.gui.CurrentData;
 import com.schlmgr.gui.CurrentData.EasyList;
 import com.schlmgr.gui.ExplorerStuff;
 import com.schlmgr.gui.UriPath;
-import com.schlmgr.gui.activity.SelectDirActivity;
 import com.schlmgr.gui.list.AbstractPopupRecyclerAdapter;
 import com.schlmgr.gui.list.HierarchyAdapter;
 import com.schlmgr.gui.list.HierarchyItemModel;
@@ -158,7 +157,7 @@ public class MainFragment extends Fragment
 		new Thread(() -> {
 			reference.setOnClickListener(v -> {
 				int search = 0;
-				EasyList<? extends BasicData> list = null;
+				EasyList<Container> list = null;
 				for (HierarchyItemModel him : VS.contentAdapter.list)
 					if (him.isSelected()) {
 						if (search == 0 && VS.contentAdapter.search) {
@@ -173,9 +172,8 @@ public class MainFragment extends Fragment
 						}
 					}
 				if (search < 2) {
-					backLog.add(true, null, (EasyList<BasicData>) list);
-					setContent(((EasyList<Container>) list).get(-1),
-							((EasyList<Container>) list).get(-2), 10);
+					backLog.add(true, null, list);
+					setContent(list.get(-1), list.get(-2), 10);
 					es.onChange(true);
 					VS.contentAdapter.selected = -1;
 					setSelectOpts(false);
@@ -209,17 +207,22 @@ public class MainFragment extends Fragment
 							int position = him.position;
 							String name = cp.et_name.getText().toString();
 							if (name.isEmpty()) return;
+							cp.dismiss();
 							try {
+								him.bd.putDesc(him.parent,
+										cp.et_desc.getText().toString().replace("\\t", "\t"));
 								boolean sch = isMch ||
 										((CheckBox) cp.view.findViewById(R.id.chapter_file))
 												.isChecked();
 								if (!name.equals(him.bd.getName())) {
 									if (him.bd instanceof ContainerFile
 											|| sch) ContainerFile.isCorrect(name);
-									him.bd.setName(him.parent, name);
+									BasicData newBD = him.bd.setName(him.parent, name);
+									if (newBD != him.bd) {
+										if (him.bd instanceof ContainerFile) CurrentData.changed.remove(him.bd);
+										him.bd = newBD;
+									}
 								}
-								him.bd.putDesc(him.parent,
-										cp.et_desc.getText().toString().replace("\\t", "\t"));
 								if (!isMch) {
 									if (sch != isSch)
 										him.bd = ((SemiElementContainer) him.bd).convert();
@@ -237,7 +240,6 @@ public class MainFragment extends Fragment
 									backLog.adapter.notifyItemMoved(him.position - 1, position - 1);
 									him.position = position;
 								}
-								cp.dismiss();
 							} catch (IllegalArgumentException iae) {
 								if (!iae.getMessage().contains("Name can't")) throw iae;
 								defaultReacts.get(ContainerFile.class + ":name")
@@ -297,12 +299,13 @@ public class MainFragment extends Fragment
 								if (him.bd.destroy(him.parent)) {
 									VS.contentAdapter.list.remove(i);
 									VS.contentAdapter.notifyItemRemoved(i);
+									if (him.bd instanceof ContainerFile) CurrentData.changed.remove(him.bd);
 								} else left = true;
 							}
 						}
 						if (!backLog.path.isEmpty()) CurrentData.save(backLog.path);
 						if (VS.contentAdapter instanceof HierarchyAdapter && !backLog.path.isEmpty())
-							es.setInfo(backLog.path.get(-1), (Container) backLog.path.get(-2));
+							es.setInfo(backLog.path.get(-1), backLog.path.get(-2));
 						if (!left) {
 							VS.contentAdapter.selected = -1;
 							es.rv.postDelayed(() -> VS.contentAdapter.notifyDataSetChanged(), 200);
@@ -334,8 +337,8 @@ public class MainFragment extends Fragment
 			if (backLog.path.isEmpty()) root.post(() -> backLog.adapter.notifyDataSetChanged());
 		});
 		if (backLog.adapter == null) {
-			setContent(backLog.path.get(-1), (Container) backLog.path.get(-2), backLog.path.size());
-			es.setInfo(backLog.path.get(-1), (Container) backLog.path.get(-2));
+			setContent(backLog.path.get(-1), backLog.path.get(-2), backLog.path.size());
+			es.setInfo(backLog.path.get(-1), backLog.path.get(-2));
 		} else {
 			es.rv.setAdapter(backLog.adapter);
 			if (!VS.sv_visible) es.searchView.setVisibility(View.GONE);
@@ -361,8 +364,8 @@ public class MainFragment extends Fragment
 			if (him.isSelected()) VS.pasteData.src.add(him);
 		for (BasicData bd : backLog.path) VS.pasteData.srcPath.add((Container) bd);
 		paste.setOnClickListener(v -> {
-			Container npp = (Container) backLog.path.get(-2);
-			Container np = (Container) backLog.path.get(-1);
+			Container npp = backLog.path.get(-2);
+			Container np = backLog.path.get(-1);
 			boolean searchNow = VS.contentAdapter.search;
 			for (BasicData bd : np.getChildren(npp)) VS.pasteData.src.remove(bd);
 			if (ref) {
@@ -520,7 +523,7 @@ public class MainFragment extends Fragment
 		if (size == 0) {
 			new Thread(() -> {
 				try {
-					Thread.sleep(20);
+					Thread.sleep(100);
 				} catch (Exception e) {
 				}
 				finishLoad();
@@ -560,7 +563,7 @@ public class MainFragment extends Fragment
 	public void updateBackContent(int skip) {
 		es.updateBackPath(skip);
 		if (backLog.path.isEmpty()) prepareObjectsContent();
-		else prepareContainerContent((Container) backLog.path.get(-1));
+		else prepareContainerContent(backLog.path.get(-1));
 	}
 
 	private void prepareObjectsContent() {
@@ -622,7 +625,6 @@ public class MainFragment extends Fragment
 					for (HierarchyItemModel source : VS.pasteData.src) {
 						try {
 							if (parent == source.bd.getThis()) {
-								//System.err.println("\n" + parent + "\n"+source.bd.getThis()+"\n");
 								tglEnabled(paste, false);
 								break test;
 							}
@@ -688,17 +690,17 @@ public class MainFragment extends Fragment
 						return;
 					} else {
 						backLog.add(true, null, EasyList.convert(((Reference) bd).getRefPath()));
-						backLog.path.add(bd = bd.getThis());
+						backLog.path.add((Container) (bd = bd.getThis()));
 					}
 				} catch (Exception e) {
 					return;
 				}
 			} else if (ref = VS.contentAdapter.search) {
-				EasyList<BasicData> list = new EasyList<>();
+				EasyList<Container> list = new EasyList<>();
 				list.addAll(((SearchItemModel) item).path);
-				list.add(item.bd);
+				list.add((Container) item.bd);
 				backLog.add(true, null, list);
-			} else backLog.add(false, bd, null);
+			} else backLog.add(false, (Container) bd, null);
 			VS.contentAdapter.selected = -1;
 			setSelectOpts(true);
 			setContent(bd, item.parent, backLog.path.size());
@@ -753,7 +755,7 @@ public class MainFragment extends Fragment
 						cp.ok.setOnClickListener(v -> {
 							String name = cp.et_name.getText().toString();
 							if (name.isEmpty()) return;
-							Container par = (Container) backLog.path.get(-1);
+							Container par = backLog.path.get(-1);
 							try {
 								Data d = new Data(name, (MainChapter) backLog.path.get(0))
 										.addDesc(cp.et_desc.getText().toString().replace("\\t", "\t"))
@@ -763,8 +765,7 @@ public class MainFragment extends Fragment
 								int pos = cp.np.getValue();
 								backLog.adapter.addItem(pos - 1,
 										new HierarchyItemModel(ch, par, pos));
-								par.putChild((Container) backLog.path.get(-2), ch, pos - 1);
-								CurrentData.newChapters.add(ch);
+								par.putChild(backLog.path.get(-2), ch, pos - 1);
 								cp.dismiss();
 							} catch (IllegalArgumentException iae) {
 								if (!iae.getMessage().contains("Name can't")) throw iae;
@@ -838,40 +839,22 @@ public class MainFragment extends Fragment
 							activity.getString(R.string.action_chooser_file)), WORD_READ);
 					break;
 				case R.id.more_export_word:
-					if (VERSION.SDK_INT < 30) {
-						i = new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("text/plain");
-						i.addCategory(Intent.CATEGORY_OPENABLE);
-						startActivityForResult(Intent.createChooser(i,
-								activity.getString(R.string.action_chooser_file)), WORD_WRITE);
-					} else {
-						i = new Intent(Intent.ACTION_CREATE_DOCUMENT).setType("text/plain");
-						i.putExtra(Intent.EXTRA_TITLE, backLog.path.get(-1).getName() + ".txt");
-						i.addCategory(Intent.CATEGORY_OPENABLE);
-						startActivityForResult(i, WORD_WRITE);
-					}
+					i = new Intent(Intent.ACTION_CREATE_DOCUMENT).setType("text/plain");
+					i.putExtra(Intent.EXTRA_TITLE, backLog.path.get(-1).getName() + ".txt");
+					i.addCategory(Intent.CATEGORY_OPENABLE);
+					startActivityForResult(i, WORD_WRITE);
 					break;
 				case R.id.more_import_mch:
-					SelectDirActivity.importing = true;
-					if (VERSION.SDK_INT >= 30) {
-						startActivityForResult(Intent.createChooser(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE),
-								activity.getString(R.string.action_chooser_dir)), GET_DIR);
-					} else {
-						startActivity(new Intent(getContext(), SelectDirActivity.class));
-					}
+					startActivityForResult(Intent.createChooser(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE),
+							activity.getString(R.string.action_chooser_dir)), IMPORT_DIR);
 					break;
 				case R.id.more_change_dir:
-					SelectDirActivity.importing = false;
-					if (Build.VERSION.SDK_INT >= 30) {
-						startActivityForResult(Intent.createChooser(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE),
-								activity.getString(R.string.action_chooser_dir)), GET_DIR);
-					} else {
-						SelectDirActivity.importing = false;
-						startActivity(new Intent(getContext(), SelectDirActivity.class));
-					}
+					startActivityForResult(Intent.createChooser(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE),
+							activity.getString(R.string.action_chooser_dir)), CHANGE_DIR);
 					break;
 				case R.id.more_sf_revaluate:
 					List<Container> currentPath = (List<Container>) backLog.path.clone();
-					Container opened = (Container) backLog.path.get(-1);
+					Container opened = backLog.path.get(-1);
 					int[] sf = opened.getSF();
 					int[] refreshSF = opened.refreshSF();
 					if (sf[0] != refreshSF[0] || sf[1] != refreshSF[1]) {
@@ -887,7 +870,9 @@ public class MainFragment extends Fragment
 					try {
 						Picture.clean(mch);
 						SaveChapter.clean(mch);
-						mch.save();
+						mch.save(false);
+						activity.runOnUiThread(() -> makeText(CONTEXT, mch.getName()
+								+ activity.getString(R.string.action_sw_success), Toast.LENGTH_SHORT).show());
 					} catch (IllegalArgumentException iae) {
 					}
 			}
@@ -920,8 +905,8 @@ public class MainFragment extends Fragment
 					case WORD_READ:
 						try {
 							List<BasicData> currentPath = (List<BasicData>) backLog.path.clone();
-							Container self = (Container) backLog.path.get(-1),
-									par = (Container) backLog.path.get(-2);
+							Container self = backLog.path.get(-1),
+									par = backLog.path.get(-2);
 							SimpleReader content = new SimpleReader(new UriPath(data.getData(), false).load(), self, par);
 							if (backLog.adapter instanceof HierarchyAdapter) {
 								HierarchyAdapter ha = (HierarchyAdapter) backLog.adapter;
@@ -942,7 +927,7 @@ public class MainFragment extends Fragment
 					case WORD_WRITE:
 						if (VS.contentAdapter.selected < 1) {
 							new SimpleWriter(new UriPath(data.getData(), false), new Container[]{
-									(Container) backLog.path.get(-1), (Container) backLog.path.get(-2)});
+									backLog.path.get(-1), backLog.path.get(-2)});
 							break;
 						}
 						Container[][] toExport = new Container[VS.contentAdapter.selected][2];
@@ -962,22 +947,27 @@ public class MainFragment extends Fragment
 						break;
 					case SCH_READ:
 						try {
-							List<BasicData> currentPath = (List<BasicData>) backLog.path.clone();
-							((Container) backLog.path.get(-1)).putChild((Container) backLog.path.get(-2),
-									new ContentReader(new UriPath(data.getData(), false).load(), (MainChapter) backLog.path.get(0))
-											.mContent.getItem((Container) backLog.path.get(-1)));
-							CurrentData.save(currentPath);
+							BasicData bd = new ContentReader(new UriPath(data.getData(), false).load(),
+									(MainChapter) backLog.path.get(0)).mContent.getItem(backLog.path.get(-1));
+							backLog.path.get(-1).putChild(backLog.path.get(-2), bd);
+							if (backLog.adapter instanceof HierarchyAdapter) {
+								HierarchyAdapter ha = (HierarchyAdapter) backLog.adapter;
+								ha.addItem(new HierarchyItemModel(bd, backLog.path.get(-1), ha.list.size()));
+								es.rv.post(() -> es.setInfo(backLog.path.get(-1), backLog.path.get(-2)));
+							}
+							CurrentData.save(backLog.path);
 						} catch (Exception e) {
 							defaultReacts.get("uncaught").react(Thread.currentThread(), e);
 						}
 						break;
-					case GET_DIR:
+					case IMPORT_DIR:
+					case CHANGE_DIR:
 						Uri path = data.getData();
 						CONTEXT.getContentResolver().takePersistableUriPermission(path, Intent
 								.FLAG_GRANT_READ_URI_PERMISSION | Intent
 								.FLAG_GRANT_WRITE_URI_PERMISSION);
 						UriPath file = new UriPath(path, true);
-						if (SelectDirActivity.importing) {
+						if (requestCode == IMPORT_DIR) {
 							if (file.getChild("main.json") != null && file.getChild("setts.dat") != null)
 								CurrentData.ImportedMchs.importMch(file);
 							CurrentData.createMchs();
@@ -1016,7 +1006,8 @@ public class MainFragment extends Fragment
 	public static final int STORAGE_PERMISSION = 3;
 	public static final int IMAGE_PICK = 4;
 	public static final int SCH_READ = 5;
-	public static final int GET_DIR = 7;
+	public static final int IMPORT_DIR = 7;
+	public static final int CHANGE_DIR = 8;
 
 	public static class ViewState extends ExplorerStuff.ViewState {
 		private int menuRes;

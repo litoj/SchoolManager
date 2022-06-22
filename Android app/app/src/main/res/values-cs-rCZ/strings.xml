@@ -207,15 +207,12 @@
     <string name="menu_word_import">Vložit slovíčka</string>
     <string name="more_clean">Vyčistit databázi</string>
     <string name="more_content">Obsah</string>
-    <string name="more_dir_default">Obnovit na výchozí složku</string>
-    <string name="more_dir_view">Jí do aktuální složky</string>
     <string name="more_export">Exportovat</string>
     <string name="more_export_word">Exportovat soubor se slovíčky</string>
     <string name="more_import">Importovat</string>
     <string name="more_import_sch">Přidat kapitolu ze souboru</string>
     <string name="more_import_word">Importovat soubor se slovíčky</string>
     <string name="more_new">Nový</string>
-    <string name="more_select">Vybrat</string>
     <string name="more_sf_reval_mch">Přepočítat úspěšnost</string>
     <string name="more_sf_revaluate">Přepočítat úspěšnost této kapitoly</string>
     <string name="new_chapter">Nová kapitola</string>

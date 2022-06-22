@@ -1,6 +1,8 @@
 package com.schlmgr.gui;
 
-import android.content.Intent;
+import static com.schlmgr.gui.Controller.CONTEXT;
+
+import android.content.ContentResolver;
 import android.net.Uri;
 import android.webkit.MimeTypeMap;
 
@@ -9,15 +11,9 @@ import androidx.documentfile.provider.DocumentFile;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.util.Arrays;
 
-import IOSystem.FilePath;
 import IOSystem.Formatter.IOSystem.GeneralPath;
-
-import static com.schlmgr.gui.Controller.CONTEXT;
 
 public class UriPath implements GeneralPath {
 
@@ -66,7 +62,7 @@ public class UriPath implements GeneralPath {
 
 	@Override
 	public OutputStream createOutputStream(boolean append) throws IOException {
-		return CONTEXT.getContentResolver().openOutputStream(uri, "wa");
+		return CONTEXT.getContentResolver().openOutputStream(uri, append ? "wa" : "wt");
 	}
 
 	@Override
@@ -74,7 +70,6 @@ public class UriPath implements GeneralPath {
 		return CONTEXT.getContentResolver().openInputStream(uri);
 	}
 
-	//Why does this damn thing not let me create a directory, I resign from trying to fix it.
 	@Override
 	public UriPath getChild(String name) {
 		DocumentFile child = file.findFile(name);
@@ -88,29 +83,65 @@ public class UriPath implements GeneralPath {
 	}
 
 	@Override
+	public boolean hasChild(String name) {
+		DocumentFile child = file.findFile(name);
+		return child != null;
+	}
+
+	@Override
 	public UriPath getParentDir() {
 		return new UriPath(file.getParentFile());
 	}
 
+	// TODO: Find out why it creates one file and then renames to 'name (1).ext'
 	@Override
 	public boolean renameTo(String newName) {
-		DocumentFile newFile = file.getParentFile().findFile(newName);
-		if (newFile == null || newFile.isDirectory() && newFile.listFiles().length == 0) {
-			newFile.delete();
-			if (file.renameTo(newName)) {
-				uri = file.getUri();
-				original = uri.toString();
-			}
-		}
-		return false;
+		if (newName.equals(getName())) return true;
+		if (file.renameTo(newName)) {
+			uri = file.getUri();
+			original = uri.toString();
+			return true;
+		} else return false;
 	}
 
 	@Override
 	public GeneralPath moveTo(GeneralPath newPath) {
-		if (!newPath.exists() && copyTo(newPath)) {
+		if (newPath.getParentDir() == getParentDir()) {
+			renameTo(newPath.getName());
+			return newPath;
+		} else if (!newPath.exists() || copyTo(newPath)) {
 			delete();
 			return newPath;
 		} else return null;
+	}
+
+	@Override
+	public boolean copyTo(GeneralPath newPath) {
+		if (!newPath.isDir() && !file.isDirectory()) {
+			return GeneralPath.super.copyTo(newPath);
+		} else if (copy(file, newPath, CONTEXT.getContentResolver())) return true;
+		else {
+			newPath.delete();
+			return false;
+		}
+	}
+
+	private static boolean copy(DocumentFile file, GeneralPath mirror, ContentResolver cr) {
+		for (DocumentFile f : file.listFiles()) {
+			if (f.isFile()) {
+				try (OutputStream os = mirror.getChild(f.getName()).createOutputStream();
+						 InputStream is = cr.openInputStream(f.getUri())) {
+					byte[] buffer = new byte[32768];
+					int amount;
+					while ((amount = is.read(buffer)) != -1) {
+						os.write(buffer, 0, amount);
+					}
+				} catch (Exception e) {
+					return false;
+				}
+			} else if (!copy(f, mirror.getChild(f.getName()), cr)) return false;
+		}
+		return true;
 	}
 
 	@Override

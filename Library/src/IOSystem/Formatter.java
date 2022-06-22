@@ -326,6 +326,8 @@ public final class Formatter {
 			public InputStream createInputStream() throws IOException;
 
 			public GeneralPath getChild(String name);
+			
+			public boolean hasChild(String name);
 
 			public GeneralPath getParentDir();
 
