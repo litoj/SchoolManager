@@ -169,40 +169,4 @@ public class AboutFragment extends Fragment implements ControlListener {
 	public void run() {
 		Controller.defaultBack.run();
 	}
-
-	private static class VersionAdapter
-			extends AbstractNestAdapter<String[], VersionAdapter.VersionHolder> {
-
-		protected VersionAdapter(RecyclerView rv, ScrollView firstScroll, String[]... items) {
-			super(new ArrayList<>(Arrays.asList(items)));
-			update(rv, firstScroll);
-		}
-
-		@NonNull
-		@Override
-		public VersionHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-			return new VersionHolder(LayoutInflater.from(
-					parent.getContext()).inflate(R.layout.item_version, parent, false));
-		}
-
-		private class VersionHolder extends AbstractNestAdapter.ViewHolder {
-
-			final TextView name;
-			final TextView description;
-
-			VersionHolder(@NonNull View itemView) {
-				super(itemView);
-				name = itemView.findViewById(R.id.version_name);
-				description = itemView.findViewById(R.id.version_description);
-			}
-
-			@Override
-			protected void setData(int pos) {
-				String[] item = list.get(pos);
-				name.setText(item[0]);
-				description.setText(item[1]);
-			}
-		}
-
-	}
 }

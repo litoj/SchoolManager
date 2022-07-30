@@ -16,7 +16,7 @@
         android:textColor="#000000"
         android:textSize="18sp"
         tools:background="#1a6ab8"
-        tools:drawableEnd="@drawable/ic_object"
+        tools:drawableEnd="@drawable/ic_subject"
         tools:text="1." />
 
     <LinearLayout

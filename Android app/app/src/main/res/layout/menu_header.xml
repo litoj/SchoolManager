@@ -3,8 +3,7 @@
     android:id="@+id/nav_head_layout"
     android:layout_width="match_parent"
     android:layout_height="55dp"
-    android:background="@drawable/side_nav_bar"
-    android:theme="@style/AppThemeDark">
+    android:background="@drawable/side_nav_bar">
 
     <TextView
         android:id="@+id/menu_name"

@@ -3,7 +3,4 @@
     <color name="colorPrimaryFg">#DD000000</color>
     <color name="colorPrimaryBg">#FFFFFF</color>
     <color name="colorPrimaryHeader">#559915</color>
-    <color name="colorSecondaryFg">#EFEFEF</color>
-    <color name="colorSecondaryBg">#1B1B1B</color>
-    <color name="colorSecondaryHeader">#035300</color>
 </resources>
