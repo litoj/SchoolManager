@@ -1,0 +1,34 @@
+<resources>
+    <string name="app_name">SchoolManager</string>
+    <string name="double_back_press">Press again to exit</string>
+    <string name="subjects">Subjects</string>
+    <string name="new_subject">New subject</string>
+    <string name="new_chapter">New chapter</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="done">Done</string>
+    <string name="name">Name</string>
+    <string name="description">Description</string>
+    <string name="update">Update</string>
+    <string name="new_word">New word</string>
+    <string name="new_picture">New picture</string>
+    <string name="word">Word</string>
+    <string name="picture">Picture</string>
+    <string name="subject">Subject</string>
+    <string name="translation">Translation</string>
+    <string name="chapter">Chapter</string>
+    <string name="new_item">New</string>
+    <string name="settings">Settings</string>
+    <string name="picture_url">Picture URL</string>
+    <string name="settings_preview_query">Data preview query</string>
+    <string name="settings_section_general">General settings</string>
+    <string name="settings_toggle_all">Toggle all items at once</string>
+    <string name="settings_show_translated">Show translated by default</string>
+    <string name="settings_description_line_count">Embedded description line count</string>
+    <string name="settings_section_test_success_rate">Test success rate color settings</string>
+    <string name="settings_test_success_color_intensity">Color intensity</string>
+    <string name="settings_test_success_colorize_background">Colorize background (or icon)</string>
+    <string name="settings_untested_item_colorize">Colorize untested items</string>
+    <string name="export_settings">Export settings</string>
+    <string name="import_settings">Import settings</string>
+</resources>
