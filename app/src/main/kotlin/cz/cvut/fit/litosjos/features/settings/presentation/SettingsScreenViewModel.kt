@@ -3,18 +3,18 @@ package cz.cvut.fit.litosjos.features.settings.presentation
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import cz.cvut.fit.litosjos.core.domain.Item
-import cz.cvut.fit.litosjos.core.domain.ItemType
+import cz.cvut.fit.litosjos.features.chapter.domain.Chapter
 import cz.cvut.fit.litosjos.features.picture.domain.Picture
 import cz.cvut.fit.litosjos.features.settings.data.SettingsRepository
 import cz.cvut.fit.litosjos.features.settings.data.data_preview_api.PreviewRemoteDataSource
 import cz.cvut.fit.litosjos.features.settings.domain.PreviewData
 import cz.cvut.fit.litosjos.features.settings.domain.Settings
+import cz.cvut.fit.litosjos.features.subject.domain.Subject
 import cz.cvut.fit.litosjos.features.word.domain.Word
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 private const val DEBOUNCE = 500L
@@ -28,10 +28,10 @@ class SettingsScreenViewModel(
 		SettingsScreenState(
 			previewQuery = "JosefLitos",
 			previewData = PreviewData(
-				parent = Item(),
-				chapter = Item(type = ItemType.CHAPTER),
-				picture = Picture(Item(type = ItemType.PICTURE), ""),
-				word = Word(Item(type = ItemType.WORD), ""),
+				parent = Subject(),
+				chapter = Chapter(),
+				picture = Picture(),
+				word = Word(),
 			),
 			settings = Settings(),
 		)
@@ -39,9 +39,12 @@ class SettingsScreenViewModel(
 
 	val state = _state.asStateFlow()
 
+	lateinit var original: Settings
+
 	init {
 		viewModelScope.launch {
-			repository.getSettings().collectLatest(::update)
+			original = repository.getSettings().first()
+			update(original)
 		}
 		query(state.value.previewQuery)
 	}
@@ -66,7 +69,7 @@ class SettingsScreenViewModel(
 		_state.value = state.copy(
 			previewData = state.previewData.copy(
 				picture = state.previewData.picture.copy(
-					base = state.previewData.picture.base.copy(
+					base = state.previewData.picture.copy(
 						description = if (state.settings.descriptionLineCount == 0 || state.settings.descriptionLineCount > 20) ""
 						else {
 							val list = mutableListOf("1.")
@@ -89,7 +92,11 @@ class SettingsScreenViewModel(
 
 	fun update(settings: Settings) = adaptDescription(state.value.copy(settings = settings))
 
-	fun save() = viewModelScope.launch { repository.updateSettings(state.value.settings) }
+	fun save() {
+		if (state.value.settings != original) viewModelScope.launch {
+			repository.updateSettings(state.value.settings)
+		}
+	}
 }
 
 data class SettingsScreenState(

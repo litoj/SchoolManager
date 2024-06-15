@@ -27,6 +27,9 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,22 +40,26 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cz.cvut.fit.litosjos.R
 import cz.cvut.fit.litosjos.features.chapter.presentation.ChapterListItem
 import cz.cvut.fit.litosjos.features.picture.presentation.PictureListItem
-import cz.cvut.fit.litosjos.features.picture.presentation.PictureListItemState
 import cz.cvut.fit.litosjos.features.settings.domain.Settings
 import cz.cvut.fit.litosjos.features.settings.presentation.presets.Icon
 import cz.cvut.fit.litosjos.features.settings.theme.Sizes
 import cz.cvut.fit.litosjos.features.subject.presentation.SubjectListItem
 import cz.cvut.fit.litosjos.features.word.presentation.WordListItem
-import cz.cvut.fit.litosjos.features.word.presentation.WordListItemState
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun Preview(
-	state: SettingsScreenState,
-	onQuery: (String) -> Unit,
-	onSettingsChange: (Settings) -> Unit,
-	modifier: Modifier
+	state: SettingsScreenState, onQuery: (String) -> Unit, modifier: Modifier
 ) {
+	// kinda hacky but there's no other way to do distinguish local changes from settings change
+	var toggled by remember { mutableStateOf(state.settings.showTranslated) }
+	var original by remember { mutableStateOf(state.settings.showTranslated) }
+	if (original != state.settings.showTranslated) {
+		toggled = state.settings.showTranslated
+		original = state.settings.showTranslated
+	}
+	val settings = state.settings.copy(showTranslated = toggled)
+
 	Column(
 		Modifier
 			.clip(RoundedCornerShape(Sizes.roundness))
@@ -77,35 +84,30 @@ fun Preview(
 		Column(modifier) {
 			SubjectListItem(
 				item = state.previewData.parent,
-				settings = state.settings,
-				dialogUpdater = {},
+				settings = settings,
 				onOpen = {},
 				onDelete = {},
 			)
 
 			ChapterListItem(
 				item = state.previewData.chapter,
-				settings = state.settings,
-				dialogUpdater = {},
+				settings = settings,
 				onOpen = {},
 				onDelete = {},
 			)
 
-			PictureListItem(state = PictureListItemState(
-				state.settings, state.previewData.picture, state.settings.showTranslated
-			), dialogUpdater = {}, onDelete = {}, onClick = {
-				// fake separated toggling by differentiating behaviour of the toggleable items
-				if (state.settings.toggleAll) onSettingsChange(
-					state.settings.copy(showTranslated = !state.settings.showTranslated)
-				)
-			})
-
-			WordListItem(state = WordListItemState(
-				state.settings, state.previewData.word, state.settings.showTranslated
-			), dialogUpdater = {}, onDelete = {}, onClick = {
-				// always toggles both
-				onSettingsChange(state.settings.copy(showTranslated = !state.settings.showTranslated))
-			})
+			PictureListItem(
+				item = state.previewData.picture,
+				settings = settings,
+				onDelete = {},
+				onToggleAll = { toggled = it },
+			)
+			WordListItem(
+				item = state.previewData.word,
+				settings = settings,
+				onDelete = {},
+				onToggleAll = { toggled = it },
+			)
 		}
 	}
 }
@@ -219,9 +221,8 @@ fun SettingsScreen(onBackPress: () -> Unit) {
 			Preview(
 				state = state,
 				onQuery = viewModel::query,
-				onSettingsChange = viewModel::update,
 				modifier = Modifier
-					.heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 2 / 5)
+					.heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 1 / 3)
 					.verticalScroll(rememberScrollState())
 			)
 

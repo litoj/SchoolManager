@@ -1,13 +1,12 @@
 package cz.cvut.fit.litosjos.features.word.domain
 
 import cz.cvut.fit.litosjos.core.domain.Item
-import cz.cvut.fit.litosjos.core.domain.isValid
 
-typealias Translation = String
+typealias Translation = String // NOTE: this is for future change to a list+separate entity
 
-data class Word(
-	val base: Item,
-	val translations: Translation,
-)
+class Word(base: Item = Item(), val translations: Translation = "") : Item(base) {
+	fun copy(base: Item = this, translations: Translation = this.translations) =
+		Word(base, translations)
 
-fun Word.isValid() = base.isValid() && translations.isNotBlank()
+	override fun isValid() = super.isValid() && translations.isNotBlank()
+}

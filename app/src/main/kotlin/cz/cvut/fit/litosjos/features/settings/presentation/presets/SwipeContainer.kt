@@ -29,12 +29,11 @@ import kotlinx.coroutines.delay
 
 
 @Composable
-fun <T> SwipeContainer(
-	item: T,
-	onDelete: (T) -> Unit,
-	onUpdate: (T) -> Unit,
+fun SwipeContainer(
+	onDelete: () -> Unit,
+	onUpdate: () -> Unit,
 	animationDuration: Int = 500,
-	content: @Composable (T) -> Unit
+	content: @Composable () -> Unit
 ) {
 	var isRemoved by remember { mutableStateOf(false) }
 	val state = rememberSwipeToDismissBoxState(confirmValueChange = { value ->
@@ -43,10 +42,12 @@ fun <T> SwipeContainer(
 				isRemoved = true
 				true
 			}
+
 			SwipeToDismissBoxValue.StartToEnd -> {
-				onUpdate(item)
+				onUpdate()
 				false
 			}
+
 			else -> false
 		}
 	})
@@ -54,7 +55,7 @@ fun <T> SwipeContainer(
 	LaunchedEffect(key1 = isRemoved) {
 		if (isRemoved) {
 			delay(animationDuration.toLong())
-			onDelete(item)
+			onDelete()
 		}
 	}
 
@@ -69,7 +70,7 @@ fun <T> SwipeContainer(
 				DeleteBackground(state = state)
 			},
 		) {
-			content(item)
+			content()
 		}
 	}
 }

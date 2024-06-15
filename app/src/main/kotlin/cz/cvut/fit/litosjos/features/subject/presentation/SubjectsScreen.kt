@@ -16,71 +16,61 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import cz.cvut.fit.litosjos.MainActivity
 import cz.cvut.fit.litosjos.R
-import cz.cvut.fit.litosjos.core.data.ItemRepository
-import cz.cvut.fit.litosjos.core.domain.Item
-import cz.cvut.fit.litosjos.core.domain.ItemType
 import cz.cvut.fit.litosjos.core.presentation.Screens
-import cz.cvut.fit.litosjos.core.presentation.item.ListItemSharedViewModel
 import cz.cvut.fit.litosjos.features.settings.SettingsActivity
-import kotlinx.coroutines.launch
+import cz.cvut.fit.litosjos.features.subject.domain.Subject
+import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
-import org.koin.compose.getKoin
 
 @Composable
 // BackPress: close dialog, first press toast, second press exit
-fun HandleBackPress(hasDialog: Boolean, hideDialog: () -> Unit) {
-	var showToast by remember { mutableStateOf(false) }
-	if (showToast) {
+fun HandleBackPress() {
+	var state by remember { mutableStateOf("idle") }
+	if (state == "toast") {
 		// a lot simpler than: https://developer.android.com/develop/ui/compose/components/snackbar
 		Toast.makeText(
 			LocalContext.current, stringResource(R.string.double_back_press), Toast.LENGTH_SHORT
 		).show()
-		showToast = false
+		state = "first"
 	}
 
-	var lastBackPress by remember { mutableLongStateOf(0L) }
-	if (lastBackPress == -1L) (LocalContext.current as MainActivity).finish()
+	LaunchedEffect(key1 = state) {
+		if (state == "first") {
+			delay(2000)
+			state = "idle"
+		}
+	}
+	if (state == "end") (LocalContext.current as MainActivity).finish()
 	BackHandler {
-		if (hasDialog) hideDialog()
-		else if (System.currentTimeMillis() - lastBackPress > 2000) {
-			lastBackPress = System.currentTimeMillis()
-			showToast = true
-		} else lastBackPress = -1L // https://stackoverflow.com/a/67402808
+		if (state == "idle") state = "toast"
+		else if (state == "first") state = "end"
 	}
 }
 
 @Composable
-fun SubjectsScreen(navController: NavController) {
-	val repository = getKoin().get<ItemRepository>()
-	val scope = rememberCoroutineScope()
-	val subjects by repository.getByParent(null)
-		.collectAsStateWithLifecycle(initialValue = emptyList())
+fun SubjectsScreen(navigate: (route: String) -> Unit) {
 
-	val sharedViewModel: ListItemSharedViewModel = koinViewModel()
-	val sharedState by sharedViewModel.state.collectAsStateWithLifecycle()
-
-	val dialogUpdater =
-		{ it: (@Composable () -> Unit)? -> sharedViewModel.update(sharedState.copy(dialog = it)) }
-	val onOpen = { item: Item -> navController.navigate(Screens.ChapterDetail.of(item.id)) }
-	val onDelete: (Item) -> Unit = { item -> scope.launch { repository.delete(item.id) } }
-
-	HandleBackPress(hasDialog = sharedState.dialog != null, hideDialog = { dialogUpdater(null) })
-
+	val viewModel: SubjectsScreenViewModel = koinViewModel()
+	val state by viewModel.state.collectAsStateWithLifecycle()
 	val context = LocalContext.current
+
+	var creating by rememberSaveable { mutableStateOf(false) }
+	if (creating) SubjectDialog(item = Subject()) { creating = false }
+
+	HandleBackPress()
 
 	Scaffold(topBar = {
 		TopAppBar(title = {
@@ -93,27 +83,22 @@ fun SubjectsScreen(navController: NavController) {
 			}) {
 				Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.settings))
 			}
-			IconButton(onClick = {
-				dialogUpdater { SubjectDialog(item = Item(type = ItemType.SUBJECT)) { dialogUpdater(null) } }
-			}) {
+			IconButton(onClick = { creating = true }) {
 				Icon(Icons.Default.Add, contentDescription = stringResource(R.string.new_item))
 			}
 		})
 	}) {
-		sharedState.dialog?.invoke()
-
 		LazyColumn(
 			modifier = Modifier
 				.fillMaxSize()
 				.padding(it)
 		) {
-			items(count = subjects.size, key = { idx -> subjects[idx].id }) { idx ->
+			items(count = state.items.size, key = { idx -> state.items[idx].id }) { idx ->
 				SubjectListItem(
-					item = subjects[idx],
-					settings = sharedState.settings,
-					dialogUpdater = dialogUpdater,
-					onOpen = onOpen,
-					onDelete = onDelete,
+					item = state.items[idx],
+					settings = state.settings,
+					onOpen = { navigate(Screens.ChapterDetail.of(state.items[idx].id)) },
+					onDelete = { viewModel.deleteChild(state.items[idx]) },
 				)
 			}
 		}

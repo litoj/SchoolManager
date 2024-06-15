@@ -1,5 +1,6 @@
 package cz.cvut.fit.litosjos.core.presentation.item
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -10,9 +11,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cz.cvut.fit.litosjos.R
 import cz.cvut.fit.litosjos.core.domain.Item
 import cz.cvut.fit.litosjos.features.settings.presentation.presets.Dialog
@@ -35,30 +38,34 @@ fun RowScope.ItemDialogHeader(titleId: Int, iconId: Int) {
 
 @Composable
 fun ItemDialog(
-	state: Item,
-	onChange: (Item) -> Unit,
+	src: Item,
 	onDismiss: () -> Unit,
-	onConfirm: () -> Unit,
+	onConfirm: (Item) -> Unit,
 	header: @Composable RowScope.() -> Unit,
 	additionalContent: @Composable ColumnScope.() -> Unit
 ) {
+	var name by rememberSaveable { mutableStateOf(src.name) }
+	var description by rememberSaveable { mutableStateOf(src.description) }
+
+	BackHandler(onBack = onDismiss)
+
 	Dialog(onDismissRequest = onDismiss, header = header, footer = {
 		Button(onClick = onDismiss) {
 			Text(stringResource(R.string.cancel))
 		}
 		Spacer(Modifier.weight(1f))
-		Button(onClick = onConfirm) {
+		Button(onClick = { onConfirm(src.copy(name = name, description = description)) }) {
 			Text(stringResource(R.string.done))
 		}
 	}) {
 		TextField(
-			value = state.name,
-			onValueChange = { onChange(state.copy(name = it)) },
+			value = name,
+			onValueChange = { name = it },
 			label = { Text(stringResource(R.string.name)) },
 			singleLine = true,
 		)
-		TextField(value = state.description,
-			onValueChange = { onChange(state.copy(description = it)) },
+		TextField(value = description,
+			onValueChange = { description = it },
 			label = { Text(stringResource(R.string.description)) })
 
 		additionalContent()
@@ -72,15 +79,13 @@ fun ItemDialog(
 	header: @Composable RowScope.() -> Unit,
 ) {
 	val viewModel: ItemDialogViewModel = koinViewModel(
-		parameters = { parametersOf(item) }, key = item.id.toString()
+		parameters = { parametersOf(item.isValid()) }, key = item.id.toString()
 	)
 
-	val state by viewModel.state.collectAsStateWithLifecycle()
 	ItemDialog(
-		state = state,
-		onChange = viewModel::updateState,
+		src = item,
 		onDismiss = onDismiss,
-		onConfirm = { viewModel.save(onDismiss) },
+		onConfirm = { viewModel.save(it, onDismiss) },
 		header = header
 	) {}
 }

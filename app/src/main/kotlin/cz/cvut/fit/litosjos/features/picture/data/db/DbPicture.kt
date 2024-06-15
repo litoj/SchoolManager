@@ -1,6 +1,5 @@
 package cz.cvut.fit.litosjos.features.picture.data.db
 
-import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
@@ -16,10 +15,5 @@ import cz.cvut.fit.litosjos.core.data.db.DbItem
 )
 data class DbPicture(
 	@PrimaryKey val id: Int,
-	val uri: String,
-)
-
-data class DbPictureGet(
-	@Embedded val base: DbItem,
 	val uri: String,
 )

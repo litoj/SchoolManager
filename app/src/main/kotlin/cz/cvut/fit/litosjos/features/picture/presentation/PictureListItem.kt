@@ -1,6 +1,5 @@
 package cz.cvut.fit.litosjos.features.picture.presentation
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -14,57 +13,58 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import cz.cvut.fit.litosjos.R
-import cz.cvut.fit.litosjos.core.domain.Item
 import cz.cvut.fit.litosjos.core.presentation.ColorizedItemIcon
 import cz.cvut.fit.litosjos.core.presentation.DescriptionInfoWrapper
-import cz.cvut.fit.litosjos.core.presentation.item.ListItemSharedViewModel
+import cz.cvut.fit.litosjos.features.picture.domain.Picture
+import cz.cvut.fit.litosjos.features.settings.domain.Settings
 import cz.cvut.fit.litosjos.features.settings.presentation.presets.SwipeContainer
 import cz.cvut.fit.litosjos.features.settings.theme.Sizes
-import org.koin.androidx.compose.koinViewModel
-import org.koin.core.parameter.parametersOf
 
 @Composable
 fun PictureListItem(
-	state: PictureListItemState,
-	dialogUpdater: (@Composable (() -> Unit)?) -> Unit,
-	onDelete: (Item) -> Unit,
-	onClick: () -> Unit,
+	item: Picture,
+	settings: Settings,
+	onDelete: () -> Unit,
+	onToggleAll: (on: Boolean) -> Unit,
 ) {
-	// FIXME: why do we receive redundant updates, even when the state is the same?
-	Log.d("PictureListItem", "child.hasUri: ${state.picture.uri.isNotEmpty()}")
+	var toggled by rememberSaveable(key = item.id.toString()) { mutableStateOf(settings.showTranslated) }
+	var settingsToggle by rememberSaveable { mutableStateOf(settings.showTranslated) }
+	if (settingsToggle != settings.showTranslated) {
+		toggled = settings.showTranslated
+		settingsToggle = settings.showTranslated
+	}
 
-	SwipeContainer(item = state.picture.base, onDelete = onDelete, onUpdate = {
-		dialogUpdater { // FIXME: why does this not use the latest state?
-			Log.d("PictureListItem", "dialog.hasUri: ${state.picture.uri.isNotEmpty()}")
-			PictureDialog(item = state.picture, onDismiss = { dialogUpdater(null) })
-		}
-	}) { item ->
+	var editing by rememberSaveable { mutableStateOf(false) }
+	if (editing) PictureDialog(item = item) { editing = false }
+
+	SwipeContainer(onDelete = onDelete, onUpdate = { editing = true }) {
 		Column {
-			Row(
-				modifier = Modifier
-					.clickable(onClick = onClick)
-					.background(MaterialTheme.colorScheme.background)
-					.fillMaxWidth(),
-				verticalAlignment = Alignment.CenterVertically
-			) {
-				ColorizedItemIcon(R.drawable.ic_picture, item.passedTests, item.failedTests, state.settings)
+			Row(modifier = Modifier
+				.clickable {
+					if (settings.toggleAll) onToggleAll(!toggled) else toggled = !toggled
+				}
+				.background(MaterialTheme.colorScheme.background)
+				.fillMaxWidth(),
+				verticalAlignment = Alignment.CenterVertically) {
+				ColorizedItemIcon(R.drawable.ic_picture, item.passedTests, item.failedTests, settings)
 				DescriptionInfoWrapper(
 					name = item.name,
 					description = item.description,
-					maxLinesPreview = state.settings.descriptionLineCount,
-					dialogUpdater = dialogUpdater,
+					maxLinesPreview = settings.descriptionLineCount,
 					modifier = Modifier
 						.weight(1f)
 						.padding(vertical = Sizes.padding, horizontal = 1.dp),
 				) {
-					if (state.showImage) AsyncImage(
-						model = state.picture.uri,
+					if (toggled) AsyncImage(
+						model = item.uri,
 						contentDescription = item.description,
 						modifier = it
 							.fillMaxSize()
@@ -75,29 +75,4 @@ fun PictureListItem(
 			HorizontalDivider()
 		}
 	}
-}
-
-
-@Composable
-fun PictureListItem(
-	item: Item,
-	sharedViewModel: ListItemSharedViewModel,
-	dialogUpdater: (@Composable (() -> Unit)?) -> Unit,
-	onDelete: (Item) -> Unit,
-) {
-	val viewModel: PictureListItemViewModel =
-		koinViewModel(parameters = { parametersOf(item, sharedViewModel) }, key = item.id.toString())
-
-	val state by viewModel.state.collectAsStateWithLifecycle()
-	Log.d(
-		"PictureListItem", "viewmodel: ${viewModel.hashCode()}; state: ${
-			state.hashCode()
-		}, hasUri: ${state.picture.uri.isNotEmpty()}, $state"
-	)
-	PictureListItem(
-		state = state,
-		dialogUpdater = dialogUpdater,
-		onDelete = onDelete,
-		onClick = viewModel::toggleImage
-	)
 }

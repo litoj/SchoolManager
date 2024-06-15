@@ -22,11 +22,21 @@ data class DbItem(
 	val description: String,
 	@ColumnInfo(name = "passed_tests") val passedTests: Short,
 	@ColumnInfo(name = "failed_tests") val failedTests: Short,
-	val type: String, // for simpler icon + complete-object type determination
 	@ColumnInfo(name = "created_at") val createdAt: Long, // for sync with server
 	@ColumnInfo(name = "modified_at") val modifiedAt: Long, // -||-
-//	val uri: String? = null, // picture data
-//	val translation: String? = null, // word data
+)
+
+data class DbItemComplete(
+	@PrimaryKey(autoGenerate = true) val id: Int = 0,
+	@ColumnInfo(name = "parent_id") val parentId: Int? = null,
+	val name: String = "",
+	val description: String = "",
+	@ColumnInfo(name = "passed_tests") val passedTests: Short = 0,
+	@ColumnInfo(name = "failed_tests") val failedTests: Short = 0,
+	@ColumnInfo(name = "created_at") val createdAt: Long = 0, // for sync with server
+	@ColumnInfo(name = "modified_at") val modifiedAt: Long = 0, // -||-
+	val uri: String? = null, // picture data
+	val translation: String? = null, // word data
 )
 
 data class DbItemUpdate(
@@ -37,11 +47,9 @@ data class DbItemUpdate(
 	@ColumnInfo(name = "passed_tests") val passedTests: Short,
 	@ColumnInfo(name = "failed_tests") val failedTests: Short,
 	@ColumnInfo(name = "modified_at") val modifiedAt: Long,
-//	val uri: String? = null,
-//	val translation: String? = null,
 )
 
-fun DbItem.asUpdateData(modifiedAt: Long = System.currentTimeMillis()) = DbItemUpdate(
+fun DbItemComplete.asUpdateData(modifiedAt: Long = System.currentTimeMillis()) = DbItemUpdate(
 	id = id,
 	parentId = parentId,
 	name = name,
@@ -49,9 +57,15 @@ fun DbItem.asUpdateData(modifiedAt: Long = System.currentTimeMillis()) = DbItemU
 	passedTests = passedTests,
 	failedTests = failedTests,
 	modifiedAt = modifiedAt,
-//	uri = uri,
-//	translation = translation,
 )
 
-fun DbItem.asInsertData() =
-	copy(createdAt = System.currentTimeMillis(), modifiedAt = System.currentTimeMillis())
+fun DbItemComplete.asInsertData() = DbItem(
+	id = id,
+	parentId = parentId,
+	name = name,
+	description = description,
+	passedTests = passedTests,
+	failedTests = failedTests,
+	createdAt = System.currentTimeMillis(),
+	modifiedAt = System.currentTimeMillis(),
+)

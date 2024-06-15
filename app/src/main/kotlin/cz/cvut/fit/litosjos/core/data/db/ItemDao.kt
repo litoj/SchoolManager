@@ -6,30 +6,31 @@ import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
+private const val ALL_TYPES = "item LEFT JOIN word USING (id) LEFT JOIN picture USING (id)"
+
 @Dao
 abstract class ItemDao {
 	@Insert
 	protected abstract suspend fun insert(data: DbItem): Long
 
-	suspend fun insertWithTimestamp(data: DbItem): Int = insert(data.asInsertData()).toInt()
+	suspend fun insertWithTimestamp(data: DbItemComplete): Int = insert(data.asInsertData()).toInt()
 
 	@Update(entity = DbItem::class)
 	protected abstract suspend fun update(data: DbItemUpdate)
 
-	suspend fun updateWithTimestamp(data: DbItem) = update(data.asUpdateData())
+	suspend fun updateWithTimestamp(data: DbItemComplete) = update(data.asUpdateData())
 
+	@Query("SELECT * FROM $ALL_TYPES WHERE parent_id = :id")
+	protected abstract fun getByParentId(id: Int): Flow<List<DbItemComplete>>
 
-	@Query("SELECT * FROM item WHERE parent_id = :id")
-	protected abstract fun getByParentId(id: Int): Flow<List<DbItem>>
+	@Query("SELECT * FROM $ALL_TYPES WHERE parent_id IS NULL")
+	protected abstract fun getByParentRoot(): Flow<List<DbItemComplete>>
 
-	@Query("SELECT * FROM item WHERE parent_id IS NULL")
-	protected abstract fun getByParentRoot(): Flow<List<DbItem>>
-
-	fun getByParent(id: Int?): Flow<List<DbItem>> =
+	fun getByParent(id: Int?): Flow<List<DbItemComplete>> =
 		if (id == null) getByParentRoot() else getByParentId(id)
 
-	@Query("SELECT * FROM item WHERE id = :id")
-	abstract suspend fun get(id: Int): DbItem?
+	@Query("SELECT * FROM $ALL_TYPES WHERE id = :id")
+	abstract suspend fun get(id: Int): DbItemComplete?
 
 	@Query("DELETE FROM item WHERE id = :id")
 	abstract suspend fun delete(id: Int)

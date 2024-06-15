@@ -3,12 +3,15 @@ package cz.cvut.fit.litosjos.core.presentation
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import cz.cvut.fit.litosjos.R
@@ -37,27 +40,23 @@ fun DescriptionDialog(name: String, description: String, onDismissRequest: () ->
 fun DescriptionInfoWrapper(
 	name: String,
 	description: String,
-	// TODO: I expect passing params faster then settings repo flow subscription per each item, test it
 	maxLinesPreview: Int,
-	dialogUpdater: (@Composable (() -> Unit)?) -> Unit,
 	modifier: Modifier,
 	content: @Composable (Modifier) -> Unit,
 ) {
-	// TODO: should we remember this?
 	val descriptionLineCount = if (description.isEmpty()) 0 else description.count { it == '\n' } + 1
 
 	if (descriptionLineCount > maxLinesPreview) {
+		var showDialog by remember { mutableStateOf(false) }
+		if (showDialog) {
+			DescriptionDialog(name = name, description = description) { showDialog = false }
+		}
+
 		content(modifier)
 		RowFillIcon(R.drawable.ic_info,
 			Modifier
 				.clip(RoundedCornerShape(Sizes.roundness))
-				.clickable {
-					dialogUpdater {
-						DescriptionDialog(name = name, description = description) {
-							dialogUpdater(null)
-						}
-					}
-				})
+				.clickable { showDialog = true })
 	} else Column(modifier = modifier, verticalArrangement = Arrangement.Center) {
 		content(Modifier)
 		if (descriptionLineCount > 0) Text(

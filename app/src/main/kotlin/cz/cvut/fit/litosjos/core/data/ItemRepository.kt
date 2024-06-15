@@ -2,7 +2,6 @@ package cz.cvut.fit.litosjos.core.data
 
 import cz.cvut.fit.litosjos.core.data.db.ItemLocalDataSource
 import cz.cvut.fit.litosjos.core.domain.Item
-import cz.cvut.fit.litosjos.core.domain.isValid
 import kotlinx.coroutines.flow.Flow
 
 class ItemRepository(private val local: ItemLocalDataSource) {

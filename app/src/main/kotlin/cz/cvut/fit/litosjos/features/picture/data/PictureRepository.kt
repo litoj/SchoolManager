@@ -2,7 +2,6 @@ package cz.cvut.fit.litosjos.features.picture.data
 
 import cz.cvut.fit.litosjos.features.picture.data.db.PictureLocalDataSource
 import cz.cvut.fit.litosjos.features.picture.domain.Picture
-import cz.cvut.fit.litosjos.features.picture.domain.isValid
 
 class PictureRepository(private val local: PictureLocalDataSource) {
 
@@ -15,7 +14,5 @@ class PictureRepository(private val local: PictureLocalDataSource) {
 		if (!data.isValid()) throw IllegalArgumentException("Missing fields")
 		local.update(data)
 	}
-
-	suspend fun getBy(id: Int) = local.getBy(id)
 }
 

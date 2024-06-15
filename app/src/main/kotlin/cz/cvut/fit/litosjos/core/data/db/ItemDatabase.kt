@@ -7,11 +7,11 @@ import androidx.room.RoomDatabase
 import cz.cvut.fit.litosjos.core.Constants.dbName
 import cz.cvut.fit.litosjos.features.picture.data.db.DbPicture
 import cz.cvut.fit.litosjos.features.picture.data.db.PictureDao
-import cz.cvut.fit.litosjos.features.word.data.db.DbRawWord
+import cz.cvut.fit.litosjos.features.word.data.db.DbWord
 import cz.cvut.fit.litosjos.features.word.data.db.WordDao
 
 @Database(
-	entities = [DbItem::class, DbPicture::class, DbRawWord::class],
+	entities = [DbItem::class, DbPicture::class, DbWord::class],
 	version = 1,
 	exportSchema = false
 )

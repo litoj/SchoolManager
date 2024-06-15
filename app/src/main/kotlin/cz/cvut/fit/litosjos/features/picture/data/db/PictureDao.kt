@@ -11,7 +11,4 @@ abstract class PictureDao {
 
 	@Update
 	abstract suspend fun update(data: DbPicture)
-
-	@Query("SELECT * FROM item JOIN picture USING (id) WHERE id = :id")
-	abstract suspend fun getBy(id: Int): DbPictureGet?
 }

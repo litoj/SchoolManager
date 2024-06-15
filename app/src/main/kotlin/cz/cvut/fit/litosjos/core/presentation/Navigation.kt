@@ -10,27 +10,28 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import cz.cvut.fit.litosjos.core.presentation.Screens.Companion.ID_KEY
 import cz.cvut.fit.litosjos.features.chapter.presentation.ChapterScreen
-import cz.cvut.fit.litosjos.features.settings.presentation.SettingsScreen
 import cz.cvut.fit.litosjos.features.subject.presentation.SubjectsScreen
-
 
 @Composable
 fun Navigation() {
 	val navController = rememberNavController()
+	val onNavigate: (String) -> Unit = {// FIXME: why doesn't this fix fastclicking/doubleopen
+		if (!navController.popBackStack(it, inclusive = false)) navController.navigate(it)
+	}
 	NavHost(
 		navController = navController,
 		startDestination = Screens.SubjectsList.route,
 		modifier = Modifier.fillMaxSize()
 	) {
 		composable(route = Screens.SubjectsList.route) {
-			SubjectsScreen(navController = navController)
+			SubjectsScreen(onNavigate)
 		}
 
 		composable(
 			route = Screens.ChapterDetail.route,
 			arguments = listOf(navArgument(ID_KEY) { type = NavType.IntType }),
 		) {
-			ChapterScreen(navController = navController)
+			ChapterScreen(onNavigate)
 		}
 	}
 }
