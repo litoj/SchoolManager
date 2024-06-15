@@ -3,6 +3,8 @@ plugins {
 	alias(libs.plugins.jetbrainsKotlinAndroid)
 	alias(libs.plugins.jetbrainsKotlinSerialization)
 	alias(libs.plugins.googleDevtoolsKsp)
+	alias(libs.plugins.gms)
+	alias(libs.plugins.firebaseCrashlytics)
 }
 
 android {
@@ -72,6 +74,10 @@ dependencies {
 	implementation(platform(libs.koin.bom))
 	implementation(libs.koin.android)
 	implementation(libs.koin.compose)
+
+	implementation(platform(libs.firebase.bom))
+	implementation(libs.firebase.crashlytics)
+	implementation(libs.firebase.analytics)
 
 	implementation(libs.androidx.lifecycle.runtime.ktx)
 	implementation(libs.androidx.lifecycle.runtime.compose)

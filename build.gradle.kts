@@ -4,4 +4,6 @@ plugins {
 	alias(libs.plugins.jetbrainsKotlinAndroid) apply false
 	alias(libs.plugins.jetbrainsKotlinSerialization) apply false
 	alias(libs.plugins.googleDevtoolsKsp) apply false
+	alias(libs.plugins.gms) apply false
+	alias(libs.plugins.firebaseCrashlytics) apply false
 }

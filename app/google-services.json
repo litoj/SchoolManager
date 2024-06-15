@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "275262559411",
+    "project_id": "schoolmanager-53123",
+    "storage_bucket": "schoolmanager-53123.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:275262559411:android:f9a121651c0d38bbc00cc6",
+        "android_client_info": {
+          "package_name": "cz.cvut.fit.litosjos"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD198oiGpWb2VR5_JENxtawnWk-z2ewQWc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
