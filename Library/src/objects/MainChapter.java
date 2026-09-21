@@ -16,7 +16,7 @@ import objects.templates.ContainerFile;
 /**
  * Head object of hierarchy of all {@link BasicData elemetary} objects. The
  * hierarchy is stored in its own folder under name of this object in the
- * specified {@link Formatter#getSubjectsDir()}  directory}. Should be
+ * specified {@link Formatter#getSubjectsDir()  directory}. Should be
  * {@link #name named} after the school object this hierarchy represents.
  *
  * @author Josef Litoš
