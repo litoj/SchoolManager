@@ -2,7 +2,9 @@ package com.schlmgr.gui.activity;
 
 import android.os.Bundle;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.WindowCompat;
 
 import com.schlmgr.gui.Controller;
 import com.schlmgr.gui.popup.AbstractPopup;
@@ -17,10 +19,39 @@ public class PopupCareActivity extends AppCompatActivity {
 
 	private boolean exists;
 
+	private final OnBackPressedCallback backCallback = new OnBackPressedCallback(true) {
+		@Override
+		public void handleOnBackPressed() {
+			onUserBackPressed();
+		}
+	};
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		getOnBackPressedDispatcher().addCallback(this, backCallback);
+		// Edge-to-edge is enforced for apps targeting Android 15+; opt in consistently on
+		// older versions too so the insets handling applies everywhere.
+		WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 		Controller.currentActivity = this;
+	}
+
+	/**
+	 * Replaces the deprecated {@link android.app.Activity#onBackPressed()}.
+	 * Subclasses override this instead of {@code onBackPressed()}.
+	 */
+	protected void onUserBackPressed() {
+		goBack();
+	}
+
+	/**
+	 * Hands the back event over to the system (this activity's callback is temporarily
+	 * disabled), so the predictive back animations (back-to-home, cross-activity) can run.
+	 */
+	protected final void goBack() {
+		backCallback.setEnabled(false);
+		getOnBackPressedDispatcher().onBackPressed();
+		backCallback.setEnabled(true);
 	}
 
 	@Override
@@ -42,7 +73,7 @@ public class PopupCareActivity extends AppCompatActivity {
 	@Override
 	public void onDestroy() {
 		if (AbstractPopup.isActive && !AbstractPopup.isShowing) AbstractPopup.clear();
-		else runOnUiThread(() -> AbstractPopup.clean());
+		else runOnUiThread(AbstractPopup::clean);
 		super.onDestroy();
 	}
 

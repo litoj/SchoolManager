@@ -1,6 +1,5 @@
 package com.schlmgr.gui.list;
 
-import android.os.Build.VERSION;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,7 +19,6 @@ import IOSystem.Formatter.Data;
 import IOSystem.SimpleReader;
 import objects.MainChapter;
 import objects.Word;
-import objects.templates.Container;
 import objects.templates.TwoSided;
 
 import static com.schlmgr.gui.CurrentData.backLog;
@@ -61,10 +59,6 @@ public class TranslatePopupRecyclerAdapter
 		public TranslateHolder(@NonNull View itemView) {
 			super(itemView);
 			desc = itemView.findViewById(R.id.item_desc);
-			if (VERSION.SDK_INT < 21) {
-				name.setOnTouchListener(TranslatePopupRecyclerAdapter.this);
-				desc.setOnTouchListener(TranslatePopupRecyclerAdapter.this);
-			}
 		}
 
 		@Override
@@ -115,7 +109,7 @@ public class TranslatePopupRecyclerAdapter
 			for (Translate item : list) {
 				String[] trls = SimpleReader.nameResolver(item.tvName == null
 						? item.name : item.tvName.getText().toString());
-				if (trls[0].length() == 0) return;
+				if (trls[0].isEmpty()) return;
 				String[] trlDescs = SimpleReader.nameResolver(item.tvDesc == null
 						? item.desc : item.tvDesc.getText().toString());
 				if (edited == null) {
@@ -140,7 +134,7 @@ public class TranslatePopupRecyclerAdapter
 					Word w = Word.mkElement(d, translates);
 					backLog.adapter.addItem(pos + i - 1,
 							new HierarchyItemModel(w, parent, pos + i));
-					parent.putChild((Container) backLog.path.get(-2), w, pos + i - 1);
+					parent.putChild(backLog.path.get(-2), w, pos + i - 1);
 				}
 			} else {
 				for (Word w : toRemove) ((Word) edited.bd).removeChild(parent, w);

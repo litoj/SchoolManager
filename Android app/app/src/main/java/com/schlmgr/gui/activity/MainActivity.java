@@ -1,20 +1,17 @@
 package com.schlmgr.gui.activity;
 
-import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static com.schlmgr.gui.AndroidIOSystem.defDir;
 import static com.schlmgr.gui.Controller.CONTEXT;
 import static com.schlmgr.gui.Controller.dp;
-import static com.schlmgr.gui.fragments.MainFragment.STORAGE_PERMISSION;
 
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.StrictMode;
-import android.util.DisplayMetrics;
 import android.widget.PopupMenu;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -25,6 +22,7 @@ import com.schlmgr.R;
 import com.schlmgr.gui.AndroidIOSystem;
 import com.schlmgr.gui.Controller;
 import com.schlmgr.gui.CurrentData;
+import com.schlmgr.gui.EdgeToEdge;
 import com.schlmgr.gui.fragments.MainFragment;
 import com.schlmgr.gui.list.DirAdapter;
 import com.schlmgr.gui.list.HierarchyItemModel;
@@ -32,6 +30,7 @@ import com.schlmgr.gui.popup.AbstractPopup;
 import com.schlmgr.gui.popup.FullPicture;
 
 import java.io.File;
+import java.util.Objects;
 
 import IOSystem.Formatter;
 import objects.templates.ContainerFile;
@@ -41,7 +40,6 @@ public class MainActivity extends PopupCareActivity {
 	private AppBarConfiguration mAppBarConfiguration;
 	private NavController navController;
 	static final Controller c = Controller.getControl();
-	private static boolean loaded;
 	private static Thread background;
 
 	public static Drawable ic_check_empty;
@@ -52,8 +50,11 @@ public class MainActivity extends PopupCareActivity {
 		super.onCreate(savedInstanceState);
 		Controller.activity = this;
 		CONTEXT = getApplicationContext();
-		Controller.defaultBack = super::onBackPressed;
+		Controller.defaultBack = this::goBack;
 		setContentView(R.layout.nav_menu);
+		// The top (status bar) inset is handled by the AppBarLayout itself
+		// (fitsSystemWindows), so only the remaining insets are padded here.
+		EdgeToEdge.apply(findViewById(R.id.include), false);
 		setSupportActionBar(findViewById(R.id.bar));
 		(c.moreButton = findViewById(R.id.bar_more)).setOnClickListener(v -> {
 			if (c.menuRes == 0) return;
@@ -63,41 +64,39 @@ public class MainActivity extends PopupCareActivity {
 			pm.show();
 		});
 		(c.selectButton = findViewById(R.id.bar_select)).setOnClickListener(
-				v -> c.currentControl.onClick(v));
+				c.currentControl);
 		// Passing each menu ID as a set of Ids because each
 		// menu should be considered as top level destinations.
 		mAppBarConfiguration = new AppBarConfiguration.Builder(R.id.menu_objects,
 				R.id.test, R.id.menu_options, R.id.menu_about)
-				.setDrawerLayout(findViewById(R.id.drawer_layout)).build();
+				.setOpenableLayout(findViewById(R.id.drawer_layout)).build();
 		navController = Navigation.findNavController(this, R.id.content_main);
 		NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
 		NavigationUI.setupWithNavController(
 				(NavigationView) findViewById(R.id.nav_menu), navController);
 		if (background == null) {
-			DisplayMetrics dm = new DisplayMetrics();
-			getWindowManager().getDefaultDisplay().getMetrics(dm);
-			FullPicture.size = Math.max(dm.heightPixels, dm.widthPixels);
+			Rect windowBounds = getWindowManager().getCurrentWindowMetrics().getBounds();
+			FullPicture.size = Math.max(windowBounds.height(), windowBounds.width());
 			dp = getResources().getDimension(R.dimen.dp);
-			(HierarchyItemModel.icPic = getResources().getDrawable(R.drawable.ic_pic))
+			(HierarchyItemModel.icPic = Objects.requireNonNull(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_pic, null)))
 					.setBounds((int) dp, 0, (int) (dp * 33), (int) (dp * 33));
-			(HierarchyItemModel.icWord = getResources().getDrawable(R.drawable.ic_word))
+			(HierarchyItemModel.icWord = Objects.requireNonNull(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_word, null)))
 					.setBounds(0, 0, (int) (dp * 30), (int) (dp * 30));
-			(HierarchyItemModel.icChap = getResources().getDrawable(R.drawable.ic_chapter))
+			(HierarchyItemModel.icChap = Objects.requireNonNull(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_chapter, null)))
 					.setBounds(0, 0, (int) (dp * 30), (int) (dp * 30));
-			(HierarchyItemModel.icMCh = getResources().getDrawable(R.drawable.ic_subject))
+			(HierarchyItemModel.icMCh = Objects.requireNonNull(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_subject, null)))
 					.setBounds(0, 0, (int) (dp * 30), (int) (dp * 30));
-			(HierarchyItemModel.icRef = getResources().getDrawable(R.drawable.ic_ref))
+			(HierarchyItemModel.icRef = Objects.requireNonNull(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_ref, null)))
 					.setBounds(0, 0, (int) (dp * 30), (int) (dp * 30));
 			DirAdapter.internal = getString(R.string.storage_internal);
 			DirAdapter.external = getString(R.string.storage_external);
 			DirAdapter.usbotg = getString(R.string.storage_usbotg);
-			ic_check_empty = getResources().getDrawable(R.drawable.ic_check_box_empty);
-			ic_check_filled = getResources().getDrawable(R.drawable.ic_check_box_filled);
+			ic_check_empty = Objects.requireNonNull(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_check_box_empty, null));
+			ic_check_filled = Objects.requireNonNull(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_check_box_filled, null));
 			defDir = Environment.getExternalStorageDirectory().getAbsolutePath();
 			AndroidIOSystem.storageDir = defDir.substring(0, defDir.lastIndexOf(File.separatorChar +
 					(defDir.contains("emulated") ? "emulated/0" : "")));
 			new AndroidIOSystem();
-			AndroidIOSystem.testWrite();
 			(background = new Thread(() -> {
 				try {
 					while (true) {
@@ -110,7 +109,7 @@ public class MainActivity extends PopupCareActivity {
 				}
 			}, "MA background")).start();
 			if (!Formatter.getSubjectsDir().getOriginalName().contains(defDir
-					+ "/Android/data/com.schlmgr") && !AndroidIOSystem.canWrite() ||
+					+ "/Android/data/com.schlmgr") ||
 					!Formatter.getSubjectsDir().exists()) {
 				Toast.makeText(this, getString(R.string.fail_permission_write)
 						+ AndroidIOSystem.visibleInternalPath(Formatter.getSubjectsDir().getOriginalName())
@@ -118,10 +117,8 @@ public class MainActivity extends PopupCareActivity {
 				Formatter.resetDir();
 				CurrentData.createMchs();
 				MainFragment.VS.mfInstance.setContent(null, null, 0);
-				loaded = true;
 			} else {
 				CurrentData.createMchs();
-				loaded = true;
 			}
 		}
 	}
@@ -133,28 +130,18 @@ public class MainActivity extends PopupCareActivity {
 	}
 
 	@Override
-	public void onBackPressed() {
+	public void onUserBackPressed() {
 		if (!clear()) (c != null ? c.onBackPressed : Controller.defaultBack).run();
 	}
 
 	@Override
 	public void onDestroy() {
 		if (AbstractPopup.isActive && !AbstractPopup.isShowing) AbstractPopup.clear();
-		runOnUiThread(() -> AbstractPopup.clean());
+		runOnUiThread(AbstractPopup::clean);
 		for (ContainerFile cf : CurrentData.changed) cf.save(false);
 		CurrentData.changed.clear();
-		for (File f : CONTEXT.getCacheDir().listFiles()) if (!f.delete()) f.deleteOnExit();
+		File[] cacheFiles = CONTEXT.getCacheDir().listFiles();
+		if (cacheFiles != null) for (File f : cacheFiles) if (!f.delete()) f.deleteOnExit();
 		super.onDestroy();
-	}
-
-	@Override
-	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-																				 @NonNull int[] grantResults) {
-		if (requestCode == STORAGE_PERMISSION) {
-			if (grantResults[0] != PERMISSION_GRANTED) {
-				AndroidIOSystem.setCanWrite(false);
-				if (loaded) super.onBackPressed();
-			} else AndroidIOSystem.setCanWrite(true);
-		} else super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 	}
 }

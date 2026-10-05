@@ -104,7 +104,8 @@ public class SearchAdapter<I extends HierarchyItemModel>
 						? View.VISIBLE : View.GONE);
 				if (show_desc && !item.info.isEmpty()) desc.setText(item.info);
 			}
-			position.setText((pos + 1) + ".");
+			position.setText(position.getContext()
+				.getString(R.string.position_number, pos + 1));
 			position.setBackgroundColor(item.bd instanceof Reference ?
 					0x1a6ab8 : background(item.bd.getRatio()));
 			if (last == null || last.ic != item.ic)

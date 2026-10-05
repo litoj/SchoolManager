@@ -73,20 +73,20 @@ public class TestFragment extends Fragment implements ControlListener {
 			}
 		});
 		(amount = root.findViewById(R.id.test_amount))
-				.setText("" + Test.getAmount(), BufferType.EDITABLE);
+				.setText(getString(R.string.number, Test.getAmount()), BufferType.EDITABLE);
 		amount.setOnFocusChangeListener((v, hasFocus) -> {
 			if (!hasFocus) {
 				if (amount.getText().toString().isEmpty())
-					amount.setText("" + Test.getAmount(), BufferType.EDITABLE);
+					amount.setText(getString(R.string.number, Test.getAmount()), BufferType.EDITABLE);
 				AndroidIOSystem.hideKeyboardFrom(v);
 			}
 		});
 		(time = root.findViewById(R.id.test_time))
-				.setText("" + Test.getDefaultTime(), BufferType.EDITABLE);
+				.setText(getString(R.string.number, Test.getDefaultTime()), BufferType.EDITABLE);
 		time.setOnFocusChangeListener((v, hasFocus) -> {
 			if (!hasFocus) {
 				if (time.getText().toString().isEmpty())
-					time.setText("" + Test.getDefaultTime(), BufferType.EDITABLE);
+					time.setText(getString(R.string.number, Test.getDefaultTime()), BufferType.EDITABLE);
 				AndroidIOSystem.hideKeyboardFrom(v);
 			}
 		});

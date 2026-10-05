@@ -1,16 +1,13 @@
 package com.schlmgr.gui;
 
-import android.Manifest.permission;
 import android.app.Activity;
 import android.content.Context;
 import android.net.Uri;
-import android.os.Build.VERSION;
 import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
 
-import androidx.core.content.ContextCompat;
 import androidx.documentfile.provider.DocumentFile;
 
 import com.google.android.material.snackbar.Snackbar;
@@ -35,64 +32,16 @@ import objects.templates.ContainerFile;
 import static IOSystem.Formatter.defaultReacts;
 import static IOSystem.Formatter.getStackTrace;
 import static IOSystem.Formatter.putSetting;
-import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static android.widget.Toast.makeText;
 import static com.schlmgr.gui.Controller.CONTEXT;
 import static com.schlmgr.gui.Controller.activity;
 import static com.schlmgr.gui.Controller.currentActivity;
 import static com.schlmgr.gui.Controller.translate;
-import static com.schlmgr.gui.fragments.MainFragment.STORAGE_PERMISSION;
 
 public class AndroidIOSystem extends Formatter.IOSystem {
 
 	public static String defDir;
 	public static String storageDir;
-	private static boolean canWrite;
-	private static AndroidIOSystem ios;
-
-	public static boolean canWrite() {
-		if (!canWrite && VERSION.SDK_INT >= 23 && VERSION.SDK_INT < 30 && PERMISSION_GRANTED !=
-				ContextCompat.checkSelfPermission(CONTEXT, permission.WRITE_EXTERNAL_STORAGE)) {
-			activity.requestPermissions
-					(new String[]{permission.WRITE_EXTERNAL_STORAGE}, STORAGE_PERMISSION);
-			try {
-				synchronized (ios) {
-					ios.wait();
-				}
-			} catch (Exception e) {
-			}
-			return canWrite;
-		} else return canWrite = true;
-	}
-
-	public static boolean testWrite() {
-		if (!canWrite) {
-			if (VERSION.SDK_INT >= 23 && VERSION.SDK_INT < 30 && PERMISSION_GRANTED != ContextCompat
-					.checkSelfPermission(CONTEXT, permission.WRITE_EXTERNAL_STORAGE)) return false;
-			else return canWrite = true;
-		} else return true;
-	}
-
-	/**
-	 * @return {@code true} if it already can wrote, otherwise {@code false} and requests permission
-	 */
-	public static boolean requestWrite() {
-		if (!canWrite) {
-			if (VERSION.SDK_INT >= 23 && PERMISSION_GRANTED !=
-					ContextCompat.checkSelfPermission(CONTEXT, permission.WRITE_EXTERNAL_STORAGE)) {
-				activity.requestPermissions(
-						new String[]{permission.WRITE_EXTERNAL_STORAGE}, STORAGE_PERMISSION);
-				return false;
-			} else return canWrite = true;
-		} else return true;
-	}
-
-	public static void setCanWrite(boolean canWrite) {
-		AndroidIOSystem.canWrite = canWrite;
-		synchronized (ios) {
-			ios.notifyAll();
-		}
-	}
 
 	/**
 	 * This method hides the keyboard from the screen when called.
@@ -114,7 +63,6 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 
 	public AndroidIOSystem() {
 		super(new File(CONTEXT.getFilesDir(), "settings.dat"));
-		ios = (AndroidIOSystem) Formatter.getIOSystem();
 	}
 
 	@Override
@@ -128,22 +76,19 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 			settings.put("parseNames", true);
 			settings.put("version", BuildConfig.VERSION_CODE);
 		} else {
-			int version;
-			if ((version = (Integer) settings.get("version")) < BuildConfig.VERSION_CODE) {
-				/*if (version < 30) {
-					defaultReacts.put("removeSchNames", moreInfo -> {
-						for (MainChapter mch : MainChapter.ELEMENTS) mch.removeSetting("schNameCount");
-					});
-				}
-				if (version < 36) settings.put("doChoosePos", false);
-				if (version < 40) settings.put("doShowDesc", false);*/
+			Integer version = (Integer) settings.get("version");
+			if (version != null && version < BuildConfig.VERSION_CODE) {
 				settings.put("version", BuildConfig.VERSION_CODE);
 			}
 
-			HierarchyItemModel.defFlip = (Boolean) settings.get("flipWord");
-			HierarchyItemModel.flipAllOnClick = (Boolean) settings.get("flipAllOnClick");
-			HierarchyItemModel.parse = (Boolean) settings.get("parseNames");
-			HierarchyItemModel.show_desc = (Boolean) settings.get("doShowDesc");
+			Boolean flipWord = (Boolean) settings.get("flipWord");
+			HierarchyItemModel.defFlip = flipWord != null && flipWord;
+			Boolean flipAllOnClick = (Boolean) settings.get("flipAllOnClick");
+			HierarchyItemModel.flipAllOnClick = flipAllOnClick != null && flipAllOnClick;
+			Boolean parseNames = (Boolean) settings.get("parseNames");
+			HierarchyItemModel.parse = parseNames != null && parseNames;
+			Boolean doShowDesc = (Boolean) settings.get("doShowDesc");
+			HierarchyItemModel.show_desc = doShowDesc != null && doShowDesc;
 		}
 	}
 
@@ -256,8 +201,8 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 
 	@Override
 	public GeneralPath createGeneralPath(Object path, boolean internal) {
-		return path instanceof Uri ? null : path instanceof DocumentFile ?
-				new UriPath((DocumentFile) path, internal) : !(path instanceof File) && path.toString().contains(":")
+		return path instanceof Uri ? null : path instanceof DocumentFile documentFile ?
+				new UriPath(documentFile, internal) : !(path instanceof File) && path.toString().contains(":")
 				? new UriPath(path.toString()) : super.createGeneralPath(path, internal);
 	}
 }

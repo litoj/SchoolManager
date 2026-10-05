@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="action_chooser_file">Choose file</string>
     <string name="action_chooser_dir">Choose dir</string>
     <string name="action_full_text">Full Text</string>
@@ -13,7 +13,9 @@
     <string name="choose_dir">Directory successfully changed.</string>
     <string name="continue_delete">Do you really want to delete the selected items?</string>
     <string name="cut">Cut</string>
-    <string name="data_child_count">"Elements: "</string>
+    <string name="data_child_count">"Elements: %1$d"</string>
+    <string name="data_children_sf">"Elements: %1$d, Success rate: %2$d%3$s"</string>
+    <string name="data_search_time">"Elements: %1$d;\tTime: %2$dms"</string>
     <string name="data_desc">Description</string>
     <string name="data_file">Separated file</string>
     <string name="data_image">Image</string>
@@ -114,12 +116,19 @@
         \nTyped text is kept in the search field even when it\'s not visible.
         \nThere are various methods for searching, the search engine accepts naming syntax.</string>
     <string name="help_search_regex">Regex syntax</string>
+    <string name="help_search_regex_char_class">"Char Class\n[abc]\n[^abc]\n[a-zA-Z]\n[a-d[m-p]]\n[a-z&amp;&amp;[def]]\n[a-z&amp;&amp;[^bc]]\n[a-z&amp;&amp;[^m-p]]"</string>
+    <string name="help_search_regex_char_class_desc">"Description\na, b, or c\nAny character except a, b, or c\na through z or A through Z, inclusive\na through d, or m through p: [a-dm-p]\nd, e, or f \na through z, except for b and c: [ad-z]\na through z, and not m through p: [a-lq-z]"</string>
     <string name="help_search_regex_how_1">Regex Source: https://www.javatpoint.com/java-regex
         \nRegex Character Classes</string>
     <string name="help_search_regex_how_2">Regex Quantifiers
         \nThe quantifiers specify the number of occurrences of a character.</string>
     <string name="help_search_regex_how_3">Regex Metacharacters
         \nThe regular expression metacharacters work as shortcuts.</string>
+    <string name="help_search_regex_meta">"Regex\n.\n\\d\n\\D\n\\s\n\\S\n\\w\n\\W\n\\b\n\\B"</string>
+    <!-- [0-9] is a regex character range; the hyphen is required, not typography -->
+    <string name="help_search_regex_meta_desc" tools:ignore="TypographyDashes">"Description\nAny character\nAny digits ([0-9])\nAny non-digit ([^0-9])\nAny whitespace character ([\\t\\n\\x0B\\f\\r])\nAny non-whitespace character ([^\\s])\nAny word character ([a-zA-Z_0-9])\nAny non-word character ([^\\w])\nA word boundary\nA non word boundary"</string>
+    <string name="help_search_regex_quant">"Regex\nX?\nX+\nX*\nX{n}\nX{n,}\nX{y,z}"</string>
+    <string name="help_search_regex_quant_desc">"Description\nX occurs once or not at all\nX occurs once or more times\nX occurs zero or more times\nX occurs n times only\nX occurs n or more times\nX occurs at least y times but less than z times"</string>
     <string name="help_search_types">Search variants</string>
     <string name="help_search_types_how">This application has more search methods aside from simple text.
         \nThe prefix syntax has 3 levels and is initiated by \'\\\' char followed by 0-3 modifiers and comparing value, the levels are:
@@ -212,11 +221,13 @@
     <string name="new_mch">New subject</string>
     <string name="new_picture">New picture</string>
     <string name="new_word">New word</string>
+    <string name="number">%1$d</string>
     <string name="objects_cancel">Cancel</string>
     <string name="paste">Paste</string>
     <string name="pattern_err">Invalid regex syntax:</string>
     <string name="popup_copy">Copy</string>
     <string name="popup_delete_fail">Deletion failed</string>
+    <string name="position_number">%1$d.</string>
     <string name="press_exit">Press again to exit</string>
     <string name="search">Input Keyword</string>
     <string name="select">Select</string>
@@ -257,11 +268,11 @@
     <string name="storage_internal">Internal storage</string>
     <string name="storage_usbotg">External USB storage</string>
     <string name="subject_not_found">"Subject folder wasn't found: "</string>
-    <string name="success_rate">Success rate</string>
+    <string name="success_rate">"Success rate: %1$s%%"</string>
     <string name="test_add">Add source</string>
     <string name="test_size">Tested amount</string>
     <string name="test_time">Duration (s)</string>
     <string name="test_type">Type</string>
-    <string name="time">"Time: "</string>
+    <string name="time_left">%1$ds</string>
     <string name="versions">Versions</string>
 </resources>

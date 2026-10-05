@@ -39,13 +39,13 @@ public class TestResultsPopup extends AbstractPopup {
 	protected void addContent(ViewGroup view) {
 		view.findViewById(R.id.ok).setOnClickListener(v -> dismiss());
 		((TextView) view.findViewById(R.id.popup_test_success))
-				.setText(activity.getString(R.string.success_rate) + ": " + success + "%");
+				.setText(activity.getString(R.string.success_rate, success + ""));
 		RecyclerView rv = view.findViewById(R.id.popup_test_list);
 		rv.setAdapter(new Adapter());
 		rv.setLayoutManager(new LinearLayoutManager(rv.getContext()));
 	}
 
-	private abstract class ResultHolder extends RecyclerView.ViewHolder {
+	private abstract static class ResultHolder extends RecyclerView.ViewHolder {
 
 		final View view;
 		final TextView name;
@@ -67,7 +67,7 @@ public class TestResultsPopup extends AbstractPopup {
 		}
 	}
 
-	private class ImageHolder extends ResultHolder {
+	private static class ImageHolder extends ResultHolder {
 		final ImageView img1;
 		final ImageView img2;
 
@@ -93,7 +93,7 @@ public class TestResultsPopup extends AbstractPopup {
 		}
 	}
 
-	private class TranslateHolder extends ResultHolder {
+	private static class TranslateHolder extends ResultHolder {
 		final TextView hint;
 
 		private TranslateHolder(@NonNull View itemView) {

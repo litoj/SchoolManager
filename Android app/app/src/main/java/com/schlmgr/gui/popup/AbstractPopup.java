@@ -39,7 +39,7 @@ public abstract class AbstractPopup {
 	final int resId;
 	private boolean backBtnDismiss = true;
 	private PopupWindow pw;
-	private final Runnable creator = () -> create();
+	private final Runnable creator = this::create;
 	private final boolean onlyMain;
 
 	protected AbstractPopup(int resourceID, boolean onlyMain) {
@@ -68,7 +68,8 @@ public abstract class AbstractPopup {
 			pw = new PopupWindow(view, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT, true);
 			pw.setOnDismissListener(() -> {
 				isShowing = false;
-				if (backBtnDismiss) (onlyMain ? activity : currentActivity).onBackPressed();
+				if (backBtnDismiss) (onlyMain ? activity : currentActivity)
+						.getOnBackPressedDispatcher().onBackPressed();
 			});
 			pw.setBackgroundDrawable(new ColorDrawable(0x90000000));
 			addContent(view);

@@ -4,21 +4,15 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.schlmgr.BuildConfig;
 import com.schlmgr.R;
 import com.schlmgr.gui.Controller;
 import com.schlmgr.gui.Controller.ControlListener;
-import com.schlmgr.gui.list.AbstractNestAdapter;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 
 import static com.schlmgr.gui.Controller.activity;
 
@@ -83,7 +77,8 @@ public class AboutFragment extends Fragment implements ControlListener {
 	public View onCreateView(@NonNull LayoutInflater inflater,
 													 ViewGroup container, Bundle savedInstanceState) {
 		View root = inflater.inflate(R.layout.fragment_about, container, false);
-		activity.getSupportActionBar().setTitle(activity.getString(R.string.app_name) + " v" + BuildConfig.VERSION_NAME);
+		if (activity.getSupportActionBar() != null)
+			activity.getSupportActionBar().setTitle(activity.getString(R.string.app_name) + " v" + BuildConfig.VERSION_NAME);
 
 		help_create.setTgl(root);
 		help_create_mch.setTgl(root);
@@ -100,25 +95,18 @@ public class AboutFragment extends Fragment implements ControlListener {
 		help_search_types.setTgl(root);
 		help_search_regex.setTgl(root);
 
-		((TextView) root.findViewById(R.id.help_search_regex_0_1)).setText("Char Class\n" +
-				"[abc]\n[^abc]\n[a-zA-Z]\n[a-d[m-p]]\n[a-z&&[def]]\n[a-z&&[^bc]]\n[a-z&&[^m-p]]");
+		((TextView) root.findViewById(R.id.help_search_regex_0_1))
+				.setText(R.string.help_search_regex_char_class);
 		((TextView) root.findViewById(R.id.help_search_regex_1_1))
-				.setText("Description\na, b, or c\nAny character except a, b, or c\na through z or A " +
-						"through Z, inclusive\na through d, or m through p: [a-dm-p]\nd, e, or f \na thr" +
-						"ough z, except for b and c: [ad-z]\na through z, and not m through p: [a-lq-z]");
+				.setText(R.string.help_search_regex_char_class_desc);
 		((TextView) root.findViewById(R.id.help_search_regex_0_2))
-				.setText("Regex\nX?\nX+\nX*\nX{n}\nX{n,}\nX{y,z}");
+				.setText(R.string.help_search_regex_quant);
 		((TextView) root.findViewById(R.id.help_search_regex_1_2))
-				.setText("Description\nX occurs once or not at all\nX occurs once or more times\n" +
-						"X occurs zero or more times\nX occurs n times only\nX occurs n or more times\n" +
-						"X occurs at least y times but less than z times");
+				.setText(R.string.help_search_regex_quant_desc);
 		((TextView) root.findViewById(R.id.help_search_regex_0_3))
-				.setText("Regex\n.\n\\d\n\\D\n\\s\n\\S\n\\w\n\\W\n\\b\n\\B");
+				.setText(R.string.help_search_regex_meta);
 		((TextView) root.findViewById(R.id.help_search_regex_1_3))
-				.setText("Description\nAny character\nAny digits ([0-9])\n" +
-						"Any non-digit ([^0-9])\nAny whitespace character ([\\t\\n\\x0B\\f\\r])\n" +
-						"Any non-whitespace character ([^\\s])\nAny word character ([a-zA-Z_0-9])\n" +
-						"Any non-word character ([^\\w])\nA word boundary\nA non word boundary");
+				.setText(R.string.help_search_regex_meta_desc);
 
 		help_subjdir.setTgl(root);
 		help_test.setTgl(root);

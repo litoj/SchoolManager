@@ -80,7 +80,7 @@ public abstract class AbstractPopupRecyclerAdapter<T, H extends ViewHolder, E ex
 				list.add(0, createItem(trl));
 			cp.et_name.setText(edited.bd.getName());
 			cp.et_desc.setText(edited.bd.getDesc(parent));
-		} else parent = (Container) backLog.path.get(-1);
+		} else parent = backLog.path.get(-1);
 		maxVisibleItemCount = maxVisibleItems;
 	}
 

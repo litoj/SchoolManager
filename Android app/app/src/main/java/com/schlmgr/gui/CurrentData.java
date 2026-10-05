@@ -1,5 +1,7 @@
 package com.schlmgr.gui;
 
+import android.view.View;
+
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.android.material.snackbar.Snackbar;
@@ -10,7 +12,7 @@ import com.schlmgr.gui.list.OpenListAdapter;
 import com.schlmgr.gui.list.SearchAdapter;
 import com.schlmgr.gui.popup.TextPopup;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -123,7 +125,7 @@ public class CurrentData {
 
 		public static <E> EasyList<E> convert(E[] source) {
 			EasyList<E> ret = new EasyList<>();
-			for (E e : source) ret.add(e);
+			ret.addAll(Arrays.asList(source));
 			return ret;
 		}
 
@@ -204,9 +206,11 @@ public class CurrentData {
 					try {
 						importedMchs.add(getIOSystem().createGeneralPath(s));
 					} catch (Exception e) {
-						Snackbar.make(Controller.activity.getCurrentFocus(),
-								Controller.activity.getString(R.string.subject_not_found) + s,
-								Snackbar.LENGTH_LONG).setAction("Action", null).setTextColor(0xFFEEEEEE).show();
+						View focus = Controller.activity.getCurrentFocus();
+						if (focus != null)
+							Snackbar.make(focus,
+									Controller.activity.getString(R.string.subject_not_found) + s,
+									Snackbar.LENGTH_LONG).setAction("Action", null).setTextColor(0xFFEEEEEE).show();
 					}
 			}
 		}

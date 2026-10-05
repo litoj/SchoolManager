@@ -8,8 +8,6 @@ import android.widget.ImageView;
 import com.schlmgr.R;
 import com.schlmgr.gui.list.ImageItemModel;
 
-import java.io.File;
-
 import IOSystem.Formatter;
 import objects.Picture;
 

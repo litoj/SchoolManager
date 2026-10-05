@@ -1,0 +1,24 @@
+[versions]
+agp = "9.3.3"
+activity = "1.13.0"
+appcompat = "1.8.0"
+# Material is pinned to the project's original version per request.
+# Bump to the latest stable only if 1.1.0 fails to build on the new toolchain.
+material = "1.1.0"
+constraintlayout = "2.2.2"
+navigation = "2.10.2"
+recyclerview = "1.4.0"
+documentfile = "1.1.0"
+
+[libraries]
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
+google-material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+androidx-navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment", version.ref = "navigation" }
+androidx-navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version.ref = "navigation" }
+androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
+androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfile" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }

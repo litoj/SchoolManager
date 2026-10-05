@@ -30,7 +30,7 @@ public class TestItemModel {
 
 	public TestItemModel(SrcPath srcPath) {
 		sp = srcPath;
-		par = (Container) sp.srcPath.get(sp.srcPath.size() - 2);
+		par = sp.srcPath.get(sp.srcPath.size() - 2);
 		children = new ArrayList<>(Arrays.asList(sp.t.getChildren(par)));
 		if (picTest) {
 			if (children.size() > 2) {

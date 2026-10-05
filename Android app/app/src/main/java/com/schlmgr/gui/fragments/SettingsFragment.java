@@ -59,21 +59,21 @@ public class SettingsFragment extends Fragment implements ControlListener {
 		wordSplit.setValue(getWordSplit(SimpleWriter.getWordSplitter()));
 
 		amount = root.findViewById(R.id.setts_test_amount);
-		amount.setText("" + Test.getAmount(), BufferType.EDITABLE);
+		amount.setText(getString(R.string.number, Test.getAmount()), BufferType.EDITABLE);
 		amount.setOnFocusChangeListener((v, hasFocus) -> {
 			if (!hasFocus) {
 				if (amount.getText().toString().isEmpty())
-					amount.setText("" + Test.getAmount(), BufferType.EDITABLE);
+					amount.setText(getString(R.string.number, Test.getAmount()), BufferType.EDITABLE);
 				AndroidIOSystem.hideKeyboardFrom(v);
 			}
 		});
 
 		time = root.findViewById(R.id.setts_test_time);
-		time.setText("" + Test.getDefaultTime(), BufferType.EDITABLE);
+		time.setText(getString(R.string.number, Test.getDefaultTime()), BufferType.EDITABLE);
 		time.setOnFocusChangeListener((v, hasFocus) -> {
 			if (!hasFocus) {
 				if (time.getText().toString().isEmpty())
-					time.setText("" + Test.getDefaultTime(), BufferType.EDITABLE);
+					time.setText(getString(R.string.number, Test.getDefaultTime()), BufferType.EDITABLE);
 				AndroidIOSystem.hideKeyboardFrom(v);
 			}
 		});
@@ -90,31 +90,21 @@ public class SettingsFragment extends Fragment implements ControlListener {
 	}
 
 	public static int getWordSplit(String wordSplitter) {
-		switch (wordSplitter) {
-			case "=":
-				return 1;
-			case " = ":
-				return 2;
-			case " → ":
-				return 3;
-			case ";":
-			default:
-				return 0;
-		}
+		return switch (wordSplitter) {
+			case "=" -> 1;
+			case " = " -> 2;
+			case " → " -> 3;
+			default -> 0;
+		};
 	}
 
 	public static String getWordSplit(int wordSplitter) {
-		switch (wordSplitter) {
-			case 1:
-				return "=";
-			case 2:
-				return " = ";
-			case 3:
-				return " → ";
-			case 0:
-			default:
-				return ";";
-		}
+		return switch (wordSplitter) {
+			case 1 -> "=";
+			case 2 -> " = ";
+			case 3 -> " → ";
+			default -> ";";
+		};
 	}
 
 	@Override

@@ -1,9 +1,6 @@
 package com.schlmgr.gui.list;
 
-import android.content.Intent;
 import android.graphics.Bitmap;
-import android.os.Build.VERSION;
-import android.provider.MediaStore.Images.Media;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,13 +24,11 @@ import IOSystem.Formatter.Data;
 import IOSystem.Formatter.IOSystem.GeneralPath;
 import objects.MainChapter;
 import objects.Picture;
-import objects.templates.Container;
 import objects.templates.TwoSided;
 
 import static IOSystem.Formatter.defaultReacts;
 import static com.schlmgr.gui.Controller.dp;
 import static com.schlmgr.gui.CurrentData.backLog;
-import static com.schlmgr.gui.fragments.MainFragment.IMAGE_PICK;
 import static com.schlmgr.gui.fragments.MainFragment.VS;
 import static com.schlmgr.gui.list.ImageItemModel.getScaledBitmap;
 
@@ -75,7 +70,6 @@ public class ImagePopupRecyclerAdapter
 			super(itemView);
 			image = itemView.findViewById(R.id.item_img);
 			itemView.setOnClickListener(v -> new FullPicture(item.f));
-			if (VERSION.SDK_INT < 21) itemView.setOnTouchListener(ImagePopupRecyclerAdapter.this);
 		}
 
 		@Override
@@ -113,8 +107,7 @@ public class ImagePopupRecyclerAdapter
 		super.onClick(ll);
 		TextView tv = ll.findViewById(R.id.new_add);
 		tv.setText(R.string.add_picture);
-		tv.setOnClickListener(v -> VS.mfInstance.startActivityForResult(
-				new Intent(Intent.ACTION_PICK, Media.EXTERNAL_CONTENT_URI), IMAGE_PICK));
+		tv.setOnClickListener(v -> VS.mfInstance.pickImage());
 		return () -> {
 			String name = cp.et_name.getText().toString();
 			if (name.isEmpty() || list.isEmpty()) return;
@@ -134,7 +127,7 @@ public class ImagePopupRecyclerAdapter
 				int pos = cp.np.getValue();
 				Picture p = Picture.mkElement(new Data(name, mch).addDesc(desc).addPar(parent), images);
 				backLog.adapter.addItem(pos - 1, new HierarchyItemModel(p, parent, pos));
-				parent.putChild((Container) backLog.path.get(-2), p, pos - 1);
+				parent.putChild(backLog.path.get(-2), p, pos - 1);
 			} else {
 				for (Picture p : toRemove) ((Picture) edited.bd).removeChild(parent, p);
 				edited.bd.putDesc(parent, desc);

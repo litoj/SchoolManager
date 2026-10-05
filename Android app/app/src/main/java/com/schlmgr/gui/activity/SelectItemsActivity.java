@@ -1,16 +1,16 @@
 package com.schlmgr.gui.activity;
 
 import android.graphics.drawable.Drawable;
-import android.os.Build.VERSION;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.core.graphics.drawable.DrawableCompat;
+import androidx.core.content.res.ResourcesCompat;
 
 import com.schlmgr.R;
 import com.schlmgr.gui.Controller;
+import com.schlmgr.gui.EdgeToEdge;
 import com.schlmgr.gui.CurrentData.BackLog;
 import com.schlmgr.gui.CurrentData.EasyList;
 import com.schlmgr.gui.ExplorerStuff;
@@ -23,6 +23,7 @@ import com.schlmgr.gui.list.SearchItemModel;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 
 import objects.MainChapter;
 import objects.Picture;
@@ -53,7 +54,8 @@ public class SelectItemsActivity extends PopupCareActivity
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_select_item);
-		findViewById(R.id.objects_cancel).setOnClickListener(v -> super.onBackPressed());
+		EdgeToEdge.apply(findViewById(android.R.id.content), true);
+		findViewById(R.id.objects_cancel).setOnClickListener(v -> finish());
 		findViewById(R.id.select_all).setOnClickListener(v -> {
 			boolean all = VS.contentAdapter.list.size() > VS.contentAdapter.selected;
 			for (HierarchyItemModel him : VS.contentAdapter.list) him.setSelected(all);
@@ -64,17 +66,17 @@ public class SelectItemsActivity extends PopupCareActivity
 		(select = findViewById(R.id.objects_select)).setOnClickListener(v -> {
 			EasyList<Container> src = new EasyList<>();
 			boolean ha = VS.contentAdapter instanceof HierarchyAdapter;
-			if (ha) for (BasicData bd : backLog.path) src.add((Container) bd);
+			if (ha) src.addAll(backLog.path);
 			for (HierarchyItemModel him : VS.contentAdapter.list) {
 				if (him.isSelected())
-					if (him.bd instanceof Reference) {
+					if (him.bd instanceof Reference ref) {
 						try {
 							him.bd.getThis();
 						} catch (IllegalArgumentException iae) {
 							continue;
 						}
 						EasyList<Container> path = new EasyList<>();
-						path.addAll(Arrays.asList(((Reference) him.bd).getRefPath()));
+						path.addAll(Arrays.asList(ref.getRefPath()));
 						list.add(0, new SearchItemModel(him.bd.getThis(), path, -1));
 					} else if (!(him.bd instanceof TwoSided)
 							|| him.bd instanceof Picture == TestFragment.picTest)
@@ -103,9 +105,9 @@ public class SelectItemsActivity extends PopupCareActivity
 						}
 					}
 				}
-				runOnUiThread(() -> TestFragment.adapter.notifyDataSetChanged());
+				runOnUiThread(TestFragment.adapter::notifyDataSetChanged);
 			}, "TFrag test item control")).start();
-			super.onBackPressed();
+			finish();
 		});
 		boolean none;
 		if (none = backLog == null) {
@@ -120,8 +122,8 @@ public class SelectItemsActivity extends PopupCareActivity
 				findViewById(R.id.touch_outside), findViewById(R.id.search_collapser),
 				this::updateBackPath);
 		if (none) {
-			setContent(backLog.path.get(-1), (Container) backLog.path.get(-2), backLog.path.size());
-			es.setInfo(backLog.path.get(-1), (Container) backLog.path.get(-2));
+			setContent(backLog.path.get(-1), backLog.path.get(-2), backLog.path.size());
+			es.setInfo(backLog.path.get(-1), backLog.path.get(-2));
 		} else {
 			VS.contentAdapter.update(es.rv);
 			VS.contentAdapter.occ = this::checkSelectUsability;
@@ -129,12 +131,10 @@ public class SelectItemsActivity extends PopupCareActivity
 			es.onChange(true);
 		}
 		if (icSelect == null) {
-			(icSelect = getResources().getDrawable(R.drawable.ic_check))
+			(icSelect = Objects.requireNonNull(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_check, null)))
 					.setBounds((int) dp, 0, (int) (dp * 35), (int) (dp * 35));
-			(icSelect_disabled = getResources().getDrawable(R.drawable.ic_check_disabled))
+			(icSelect_disabled = Objects.requireNonNull(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_check_disabled, null)))
 					.setBounds((int) dp, 0, (int) (dp * 35), (int) (dp * 35));
-			if (VERSION.SDK_INT < 21)
-				DrawableCompat.setTint(DrawableCompat.wrap(icSelect_disabled), 0x55FFFFFF);
 		}
 		checkSelectUsability();
 	}
@@ -168,7 +168,7 @@ public class SelectItemsActivity extends PopupCareActivity
 	}
 
 	@Override
-	public void onBackPressed() {
+	public void onUserBackPressed() {
 		if (clear()) return;
 		VS.sv_focused = false;
 		es.searchView.clearFocus();
@@ -178,7 +178,7 @@ public class SelectItemsActivity extends PopupCareActivity
 			if (System.currentTimeMillis() - backTime > 3000) {
 				backTime = System.currentTimeMillis();
 				Toast.makeText(getApplicationContext(), R.string.press_exit, Toast.LENGTH_SHORT).show();
-			} else super.onBackPressed();
+			} else goBack();
 		}
 	}
 
@@ -193,7 +193,6 @@ public class SelectItemsActivity extends PopupCareActivity
 					if (item1.flipped != flip) item1.flip();
 			} else item.flip();
 			VS.contentAdapter.notifyDataSetChanged();
-			return;
 		} else {
 			boolean ref;
 			if (ref = bd instanceof Reference) {

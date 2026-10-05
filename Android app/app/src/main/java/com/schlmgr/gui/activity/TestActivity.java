@@ -14,6 +14,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.schlmgr.R;
+import com.schlmgr.gui.EdgeToEdge;
 import com.schlmgr.gui.fragments.TestFragment;
 import com.schlmgr.gui.list.HierarchyItemModel;
 import com.schlmgr.gui.list.SearchItemModel;
@@ -60,7 +61,7 @@ public class TestActivity extends PopupCareActivity {
 				test = null;
 				Toast.makeText(getApplicationContext(),
 						R.string.fail_no_objects, Toast.LENGTH_SHORT).show();
-				super.onBackPressed();
+				goBack();
 				return;
 			}
 			adapter = new Adapter();
@@ -69,7 +70,7 @@ public class TestActivity extends PopupCareActivity {
 				runOnUiThread(() -> {
 					if (timer == null) return;
 					if (sl <= 30) timer.setTextColor(sl % 2 == 0 ? 0xFFDD0000 : 0xFFDDDDDD);
-					if (sl > 0) timer.setText(sl + "s");
+					if (sl > 0) timer.setText(getString(R.string.time_left, sl));
 					else onSubmit();
 				});
 				return true;
@@ -78,6 +79,7 @@ public class TestActivity extends PopupCareActivity {
 			test.startTest();
 		}
 		setContentView(R.layout.activity_test);
+		EdgeToEdge.apply(findViewById(android.R.id.content), true);
 		timer = findViewById(R.id.test_timer);
 		findViewById(R.id.ok).setOnClickListener(v -> onSubmit());
 		ListView lv = findViewById(R.id.test_list);
@@ -91,15 +93,12 @@ public class TestActivity extends PopupCareActivity {
 		adapter.notifyDataSetInvalidated();
 		adapter = null;
 		list.clear();
-		taInstance.defaultBack();
+		taInstance.goBack();
 		taInstance = null;
 		TestFragment.list.clear();
 		SelectItemsActivity.backLog = null;
 	}
 
-	private void defaultBack() {
-		super.onBackPressed();
-	}
 
 	@Override
 	public void onDestroy() {
@@ -162,7 +161,7 @@ public class TestActivity extends PopupCareActivity {
 	}
 
 	@Override
-	public void onBackPressed() {
+	public void onUserBackPressed() {
 		if (clear()) return;
 		if (System.currentTimeMillis() - backTime > 3000) {
 			backTime = System.currentTimeMillis();

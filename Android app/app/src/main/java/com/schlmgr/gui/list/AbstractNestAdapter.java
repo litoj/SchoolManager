@@ -1,6 +1,5 @@
 package com.schlmgr.gui.list;
 
-import android.os.Build.VERSION;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
@@ -26,7 +25,6 @@ public abstract class AbstractNestAdapter<I, H extends ViewHolder>
 	protected void update(RecyclerView parent, ScrollView layout) {
 		container = parent;
 		sv = layout;
-		if (VERSION.SDK_INT < 21) parent.setOnTouchListener(this);
 		parent.setAdapter(this);
 		parent.setLayoutManager(new LinearLayoutManager(parent.getContext()));
 	}
@@ -49,14 +47,12 @@ public abstract class AbstractNestAdapter<I, H extends ViewHolder>
 	@Override
 	public boolean onTouch(View v, MotionEvent event) {
 		switch (event.getAction()) {
-			case MotionEvent.ACTION_UP:
-				sv.requestDisallowInterceptTouchEvent(false);
-				break;
-			case MotionEvent.ACTION_DOWN:
+			case MotionEvent.ACTION_UP -> sv.requestDisallowInterceptTouchEvent(false);
+			case MotionEvent.ACTION_DOWN -> {
 				sv.requestDisallowInterceptTouchEvent(true);
 				first = true;
-				break;
-			case MotionEvent.ACTION_MOVE:
+			}
+			case MotionEvent.ACTION_MOVE -> {
 				if (!first) return false;
 				if (y - event.getY() == 0) return true;
 				first = false;
@@ -68,6 +64,7 @@ public abstract class AbstractNestAdapter<I, H extends ViewHolder>
 					y = event.getY();
 					return true;
 				} else sv.requestDisallowInterceptTouchEvent(true);
+			}
 		}
 		y = event.getY();
 		if (v != container) {

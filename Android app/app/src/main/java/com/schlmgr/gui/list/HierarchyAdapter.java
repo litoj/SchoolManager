@@ -50,7 +50,7 @@ public class HierarchyAdapter extends SearchAdapter<HierarchyItemModel> {
 		@Override
 		protected void setData(int pos) {
 			super.setData(pos);
-			remove.setVisibility(last.bd instanceof MainChapter && !((MainChapter) last.bd).getDir()
+			remove.setVisibility(last.bd instanceof MainChapter mch && !mch.getDir()
 					.getOriginalName().contains(Formatter.getSubjectsDir().getOriginalName())
 					? View.VISIBLE : View.GONE);
 		}

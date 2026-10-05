@@ -13,7 +13,6 @@ import java.util.LinkedList;
 import IOSystem.Formatter.IOSystem.GeneralPath;
 import objects.Picture;
 
-import static com.schlmgr.gui.Controller.CONTEXT;
 import static com.schlmgr.gui.Controller.dp;
 
 public class ImageItemModel {
@@ -21,7 +20,7 @@ public class ImageItemModel {
 	public final Picture pic1, pic2;
 	public volatile ImageView iv1, iv2;
 
-	private static LinkedList<ImageItemModel> queue = new LinkedList<>();
+	private static final LinkedList<ImageItemModel> queue = new LinkedList<>();
 
 	public ImageItemModel(Picture p1, Picture p2) {
 		this(p1, p2, 150 * dp);
@@ -77,7 +76,7 @@ public class ImageItemModel {
 		Options opts = new Options();
 		opts.inJustDecodeBounds = true;
 		try {
-			if (path instanceof UriPath) BitmapFactory.decodeStream(((UriPath) path).createInputStream());
+			if (path instanceof UriPath up) BitmapFactory.decodeStream(up.createInputStream());
 			else BitmapFactory.decodeFile(path.getOriginalName());
 		} catch (IOException e) {
 			throw new IllegalArgumentException(e);
@@ -85,7 +84,7 @@ public class ImageItemModel {
 		float ratio = (opts.outHeight > opts.outWidth != bigger ? opts.outHeight : opts.outWidth) / maxSize;
 		if (ratio <= 1)
 			try {
-				return path instanceof UriPath ? BitmapFactory.decodeStream(((UriPath) path).createInputStream()) :
+				return path instanceof UriPath up ? BitmapFactory.decodeStream(up.createInputStream()) :
 						BitmapFactory.decodeFile(path.getOriginalName());
 			} catch (IOException e) {
 				throw new IllegalArgumentException(e);
@@ -93,8 +92,8 @@ public class ImageItemModel {
 		opts.inSampleSize = (int) ratio;
 		opts.inJustDecodeBounds = false;
 		try {
-			return path instanceof UriPath ? BitmapFactory.decodeStream(
-					((UriPath) path).createInputStream(), null, opts) :
+			return path instanceof UriPath up ? BitmapFactory.decodeStream(
+					up.createInputStream(), null, opts) :
 					BitmapFactory.decodeFile(path.getOriginalName(), opts);
 		} catch (IOException e) {
 			throw new IllegalArgumentException(e);

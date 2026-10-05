@@ -56,10 +56,6 @@ public class UriPath implements GeneralPath {
 		return file.getName();
 	}
 
-	public DocumentFile getDocumentFile() {
-		return file;
-	}
-
 	@Override
 	public OutputStream createOutputStream(boolean append) throws IOException {
 		return CONTEXT.getContentResolver().openOutputStream(uri, append ? "wa" : "wt");
@@ -131,6 +127,7 @@ public class UriPath implements GeneralPath {
 			if (f.isFile()) {
 				try (OutputStream os = mirror.getChild(f.getName()).createOutputStream();
 						 InputStream is = cr.openInputStream(f.getUri())) {
+					if (is == null) return false;
 					byte[] buffer = new byte[32768];
 					int amount;
 					while ((amount = is.read(buffer)) != -1) {
@@ -175,7 +172,7 @@ public class UriPath implements GeneralPath {
 
 	@Override
 	public boolean equals(GeneralPath filePath) {
-		return file.getUri().compareTo(filePath instanceof UriPath ? ((UriPath) filePath).uri
+		return file.getUri().compareTo(filePath instanceof UriPath uriPath ? uriPath.uri
 				: Uri.fromFile(new File(filePath.getOriginalName()))) == 0;
 	}
 

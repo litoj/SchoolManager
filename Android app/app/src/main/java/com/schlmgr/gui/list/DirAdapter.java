@@ -22,7 +22,7 @@ import static com.schlmgr.gui.activity.MainActivity.ic_check_empty;
 import static com.schlmgr.gui.activity.MainActivity.ic_check_filled;
 
 public class DirAdapter extends ArrayAdapter<DirItemModel> {
-	private LayoutInflater li;
+	private final LayoutInflater li;
 	public int selected;
 	public List<DirItemModel> list;
 	private final Runnable occ;
@@ -38,6 +38,7 @@ public class DirAdapter extends ArrayAdapter<DirItemModel> {
 			return list;
 		}
 		File[] files = new File(AndroidIOSystem.storageDir).listFiles();
+		if (files == null) return list;
 		if (files.length == 1) {
 			list.add(new DirItemModel(files[0], internal));
 		} else {
@@ -81,7 +82,7 @@ public class DirAdapter extends ArrayAdapter<DirItemModel> {
 						suspicious = item;
 						list.remove(item);
 					default:
-						if (f.getName().matches(".*\\w{4}[-]\\w{4}") || f.getName().contains("ext")
+						if (f.getName().matches(".*\\w{4}-\\w{4}") || f.getName().contains("ext")
 								|| f.getName().contains("sdcard")) item.name = external;
 				}
 			}
@@ -104,7 +105,7 @@ public class DirAdapter extends ArrayAdapter<DirItemModel> {
 	}
 
 	public DirAdapter(@NonNull Context context, @NonNull List<DirItemModel> objects,
-	                  boolean storage, Runnable onClickCheck) {
+	                  Runnable onClickCheck) {
 		super(context, R.layout.item_dir, objects);
 		occ = onClickCheck;
 		li = LayoutInflater.from(context);

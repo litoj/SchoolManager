@@ -1,23 +1,16 @@
 package com.schlmgr.gui;
 
 import android.content.Context;
-import android.database.Cursor;
-import android.net.Uri;
-import android.os.Looper;
-import android.provider.MediaStore.Images.Media;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageView;
 import android.widget.PopupMenu.OnMenuItemClickListener;
 
-import androidx.loader.content.CursorLoader;
-
 import com.schlmgr.R;
 import com.schlmgr.gui.activity.MainActivity;
 import com.schlmgr.gui.activity.PopupCareActivity;
 
-import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -123,20 +116,4 @@ public class Controller {
 			return activity.getString(R.string.hierarchy_picture);
 		return type.getName();
 	}
-
-	/**
-	 * Code to create a File from the given URI created by an Intent, has to be a file, not a folder.
-	 * Original source code available at:
-	 * https://stackoverflow.com/a/7726604/12174842
-	 *
-	 * @author Allan Jiang
-	 */
-	/*public static File getFileFromUri(Uri uri) {
-		Looper.prepare();
-		Cursor c = new CursorLoader(activity.getApplicationContext(), uri,
-				new String[]{Media.DATA}, null, null, null).loadInBackground();
-		int index = c.getColumnIndexOrThrow(Media.DATA);
-		c.moveToFirst();
-		return new File(c.getString(index));
-	}*/
 }
