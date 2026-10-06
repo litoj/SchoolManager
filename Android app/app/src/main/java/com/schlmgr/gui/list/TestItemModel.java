@@ -1,7 +1,5 @@
 package com.schlmgr.gui.list;
 
-import android.view.View;
-
 import androidx.annotation.NonNull;
 
 import java.util.ArrayList;
@@ -9,17 +7,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import objects.Picture;
-import objects.templates.Container;
-import objects.templates.TwoSided;
-import testing.Test;
-import testing.Test.SrcPath;
+import com.schlmgr.gui.engine.objects.Picture;
+import com.schlmgr.gui.engine.objects.templates.Container;
+import com.schlmgr.gui.engine.objects.templates.TwoSided;
+import com.schlmgr.gui.engine.testing.Test;
+import com.schlmgr.gui.engine.testing.Test.SrcPath;
 
 import static com.schlmgr.gui.Controller.dp;
 import static com.schlmgr.gui.fragments.TestFragment.picTest;
 
 public class TestItemModel {
-	public View v;
 	public final Test.SrcPath sp;
 	public final Container par;
 	public List<TwoSided> children;

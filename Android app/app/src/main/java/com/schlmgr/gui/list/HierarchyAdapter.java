@@ -13,8 +13,8 @@ import com.schlmgr.gui.CurrentData;
 
 import java.util.List;
 
-import IOSystem.Formatter;
-import objects.MainChapter;
+import com.schlmgr.gui.engine.IOSystem.Formatter;
+import com.schlmgr.gui.engine.objects.MainChapter;
 
 public class HierarchyAdapter extends SearchAdapter<HierarchyItemModel> {
 

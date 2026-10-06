@@ -11,7 +11,6 @@ import android.widget.Toast;
 import androidx.documentfile.provider.DocumentFile;
 
 import com.google.android.material.snackbar.Snackbar;
-import com.schlmgr.BuildConfig;
 import com.schlmgr.R;
 import com.schlmgr.gui.list.HierarchyItemModel;
 import com.schlmgr.gui.popup.TextPopup;
@@ -21,23 +20,29 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import IOSystem.FilePath;
-import IOSystem.Formatter;
-import IOSystem.SimpleReader;
-import IOSystem.SimpleWriter;
-import objects.MainChapter;
-import objects.Reference;
-import objects.templates.ContainerFile;
+import com.schlmgr.gui.engine.IOSystem.FilePath;
+import com.schlmgr.gui.engine.IOSystem.Formatter;
+import com.schlmgr.gui.engine.IOSystem.SimpleReader;
+import com.schlmgr.gui.engine.IOSystem.SimpleWriter;
+import com.schlmgr.gui.engine.objects.MainChapter;
+import com.schlmgr.gui.engine.objects.Reference;
+import com.schlmgr.gui.engine.objects.templates.ContainerFile;
+import com.schlmgr.gui.engine.testing.Test;
 
-import static IOSystem.Formatter.defaultReacts;
-import static IOSystem.Formatter.getStackTrace;
-import static IOSystem.Formatter.putSetting;
+import static com.schlmgr.gui.engine.IOSystem.Formatter.defaultReacts;
+import static com.schlmgr.gui.engine.IOSystem.Formatter.getStackTrace;
 import static android.widget.Toast.makeText;
 import static com.schlmgr.gui.Controller.CONTEXT;
 import static com.schlmgr.gui.Controller.activity;
 import static com.schlmgr.gui.Controller.currentActivity;
 import static com.schlmgr.gui.Controller.translate;
 
+/**
+ * The Android platform layer of the engine. It keeps the proven file-saving implementation:
+ * the objects storage directory, per-hierarchy files and streams and the error reactions.
+ * The engine's own tiny settings cache lives in the private {@code settings.dat} file;
+ * the durable store for application options is Android's {@code "settings"} SharedPreferences.
+ */
 public class AndroidIOSystem extends Formatter.IOSystem {
 
 	public static String defDir;
@@ -68,28 +73,48 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 	@Override
 	protected void setDefaults(boolean first) {
 		if (first) {
-			settings.put("doShowDesc", false);
-			settings.put("doChoosePos", false);
-			settings.put("defaultTestTypePicture", false);
-			settings.put("flipWord", true);
-			settings.put("flipAllOnClick", false);
-			settings.put("parseNames", true);
-			settings.put("version", BuildConfig.VERSION_CODE);
+			AppSettings.set("doShowDesc", false);
+			AppSettings.set("defaultTestTypePicture", false);
+			AppSettings.set("flipWord", true);
+			AppSettings.set("flipAllOnClick", false);
+			AppSettings.set("parseNames", true);
+			AppSettings.set("version", appVersionCode());
 		} else {
-			Integer version = (Integer) settings.get("version");
-			if (version != null && version < BuildConfig.VERSION_CODE) {
-				settings.put("version", BuildConfig.VERSION_CODE);
+			if (AppSettings.getInt("version", 0) < appVersionCode()) {
+				AppSettings.set("version", appVersionCode());
 			}
 
-			Boolean flipWord = (Boolean) settings.get("flipWord");
-			HierarchyItemModel.defFlip = flipWord != null && flipWord;
-			Boolean flipAllOnClick = (Boolean) settings.get("flipAllOnClick");
-			HierarchyItemModel.flipAllOnClick = flipAllOnClick != null && flipAllOnClick;
-			Boolean parseNames = (Boolean) settings.get("parseNames");
-			HierarchyItemModel.parse = parseNames != null && parseNames;
-			Boolean doShowDesc = (Boolean) settings.get("doShowDesc");
-			HierarchyItemModel.show_desc = doShowDesc != null && doShowDesc;
+			HierarchyItemModel.defFlip = AppSettings.getBool("flipWord", true);
+			HierarchyItemModel.flipAllOnClick = AppSettings.getBool("flipAllOnClick", false);
+			HierarchyItemModel.parse = AppSettings.getBool("parseNames", true);
+			HierarchyItemModel.show_desc = AppSettings.getBool("doShowDesc", false);
+
+			// Engine options live in system SharedPreferences; apply them to the engine's
+			// (in-memory) statics once at startup.
+			Test.setAmount(AppSettings.getInt("testAmount", 10));
+			Test.setDefaultTime(AppSettings.getInt("defaultTestTime", 18));
+			Test.setClever(AppSettings.getBool("isClever", true));
+			SimpleWriter.setWordSplitter(AppSettings.getString("exportWordSplit", ";"));
 		}
+	}
+
+	/**
+	 * @return the app's version code, as declared in the build script
+	 */
+	private static int appVersionCode() {
+		try {
+			return (int) CONTEXT.getPackageManager()
+					.getPackageInfo(CONTEXT.getPackageName(), 0).getLongVersionCode();
+		} catch (android.content.pm.PackageManager.NameNotFoundException e) {
+			throw new IllegalStateException("Own package not found", e);
+		}
+	}
+
+	/**
+	 * @return {@code true} for debug builds (replaces the old {@code BuildConfig.DEBUG})
+	 */
+	private static boolean isDebugBuild() {
+		return (CONTEXT.getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0;
 	}
 
 	/**
@@ -104,10 +129,15 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 		});
 		defaultReacts.put("uncaught", (o) -> {
 			String fullMsg = o[0].toString() + '\n' + getStackTrace((Throwable) o[1]);
-			putSetting("uncaughtException", new Object[]{o[1], fullMsg});
+			// Keep only the rendered message, stored in the app's SharedPreferences
+			// (no filesystem), so it can be shown on the next launch.
+			CONTEXT.getSharedPreferences("settings", Context.MODE_PRIVATE).edit()
+					.putString("uncaughtException", activity.getString(R.string.exception_handler)
+							+ getFirstCause((Throwable) o[1]) + "\n\n" + fullMsg)
+					.apply();
 			activity.runOnUiThread(() -> makeText(CONTEXT,
 					activity.getString(R.string.exception_warning), Toast.LENGTH_LONG).show());
-			if (BuildConfig.DEBUG) Log.e("Unexpected failure", fullMsg);
+			if (isDebugBuild()) Log.e("Unexpected failure", fullMsg);
 		});
 		defaultReacts.put(Formatter.class + ":newSrcDir", (o) -> {
 			Exception e = (Exception) o[0];
@@ -163,6 +193,15 @@ public class AndroidIOSystem extends Formatter.IOSystem {
 			if (e.getCause() != null) e = e.getCause();
 			else return e.getMessage();
 		}
+	}
+
+	/**
+	 * @return the crash report of an unexpected failure from a previous session,
+	 * or {@code null} when there is none
+	 */
+	public static String getCrashReport() {
+		return CONTEXT.getSharedPreferences("settings", Context.MODE_PRIVATE)
+				.getString("uncaughtException", null);
 	}
 
 	public static void showMsg(String msg, String fullMsg) {

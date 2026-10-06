@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import IOSystem.Formatter.IOSystem.GeneralPath;
+import com.schlmgr.gui.engine.IOSystem.Formatter.IOSystem.GeneralPath;
 
 public class UriPath implements GeneralPath {
 

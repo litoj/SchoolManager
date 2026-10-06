@@ -3,31 +3,25 @@ package com.schlmgr.gui.fragments;
 import static android.widget.Toast.makeText;
 import static com.schlmgr.gui.Controller.CONTEXT;
 import static com.schlmgr.gui.Controller.activity;
-import static com.schlmgr.gui.Controller.dp;
 import static com.schlmgr.gui.CurrentData.backLog;
 import static com.schlmgr.gui.CurrentData.finishLoad;
 import static com.schlmgr.gui.list.HierarchyItemModel.convert;
-import static IOSystem.Formatter.defaultReacts;
+import static com.schlmgr.gui.engine.IOSystem.Formatter.defaultReacts;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
-import android.content.res.Resources;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.result.PickVisualMediaRequest;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.core.content.res.ResourcesCompat;
 import androidx.fragment.app.Fragment;
 import androidx.activity.result.ActivityResultLauncher;
 
@@ -37,19 +31,17 @@ import com.schlmgr.gui.CurrentData;
 import com.schlmgr.gui.CurrentData.EasyList;
 import com.schlmgr.gui.ExplorerStuff;
 import com.schlmgr.gui.UriPath;
-import com.schlmgr.gui.list.AbstractPopupRecyclerAdapter;
 import com.schlmgr.gui.list.HierarchyAdapter;
 import com.schlmgr.gui.list.HierarchyItemModel;
 import com.schlmgr.gui.list.ImageAdapter;
 import com.schlmgr.gui.list.ImageItemModel;
-import com.schlmgr.gui.list.ImagePopupRecyclerAdapter;
 import com.schlmgr.gui.list.SearchAdapter;
 import com.schlmgr.gui.list.SearchAdapter.OnItemActionListener;
 import com.schlmgr.gui.list.SearchItemModel;
-import com.schlmgr.gui.list.TranslatePopupRecyclerAdapter;
 import com.schlmgr.gui.popup.ContinuePopup;
+import com.schlmgr.gui.popup.CreatorContent;
 import com.schlmgr.gui.popup.CreatorPopup;
-import com.schlmgr.gui.popup.CreatorPopup.Includer;
+import com.schlmgr.gui.popup.TranslationRow;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -58,40 +50,25 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
-import IOSystem.Formatter;
-import IOSystem.Formatter.Data;
-import IOSystem.ReadElement.ContentReader;
-import IOSystem.SimpleReader;
-import IOSystem.SimpleWriter;
-import objects.Chapter;
-import objects.MainChapter;
-import objects.Picture;
-import objects.Reference;
-import objects.SaveChapter;
-import objects.Word;
-import objects.templates.BasicData;
-import objects.templates.Container;
-import objects.templates.ContainerFile;
-import objects.templates.SemiElementContainer;
-import objects.templates.TwoSided;
+import com.schlmgr.gui.engine.IOSystem.Formatter;
+import com.schlmgr.gui.engine.IOSystem.Formatter.Data;
+import com.schlmgr.gui.engine.IOSystem.ReadElement.ContentReader;
+import com.schlmgr.gui.engine.IOSystem.SimpleReader;
+import com.schlmgr.gui.engine.IOSystem.SimpleWriter;
+import com.schlmgr.gui.engine.objects.Chapter;
+import com.schlmgr.gui.engine.objects.MainChapter;
+import com.schlmgr.gui.engine.objects.Picture;
+import com.schlmgr.gui.engine.objects.Reference;
+import com.schlmgr.gui.engine.objects.SaveChapter;
+import com.schlmgr.gui.engine.objects.Word;
+import com.schlmgr.gui.engine.objects.templates.BasicData;
+import com.schlmgr.gui.engine.objects.templates.Container;
+import com.schlmgr.gui.engine.objects.templates.ContainerFile;
+import com.schlmgr.gui.engine.objects.templates.SemiElementContainer;
+import com.schlmgr.gui.engine.objects.templates.TwoSided;
 
 public class MainFragment extends Fragment
     implements Controller.ControlListener, OnItemActionListener {
-
-    /**
-     * Lets the user pick an image (photo picker) for a new/edit Picture.
-     * Called from {@link com.schlmgr.gui.list.ImagePopupRecyclerAdapter}.
-     */
-    public void pickImage() {
-        pickImageLauncher.launch(new PickVisualMediaRequest.Builder()
-                .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE)
-                .build());
-    }
-
-    private final ActivityResultLauncher<PickVisualMediaRequest> pickImageLauncher =
-            registerForActivityResult(new ActivityResultContracts.PickVisualMedia(), uri -> {
-                if (uri != null) onImagePicked(uri);
-            });
 
     private final ActivityResultLauncher<String> createWordFile =
             registerForActivityResult(new ActivityResultContracts.CreateDocument("text/plain"),
@@ -103,6 +80,12 @@ public class MainFragment extends Fragment
             registerForActivityResult(new ActivityResultContracts.OpenDocument(),
                     uri -> {
                         if (uri != null) onWordFilePicked(uri);
+                    });
+
+    private final ActivityResultLauncher<String[]> openWordMchFile =
+            registerForActivityResult(new ActivityResultContracts.OpenDocument(),
+                    uri -> {
+                        if (uri != null) onWordMchFilePicked(uri);
                     });
 
     private final ActivityResultLauncher<String[]> openSchFile =
@@ -124,29 +107,10 @@ public class MainFragment extends Fragment
                     });
 
     @SuppressLint("StaticFieldLeak")
-    private static LinearLayout selectOpts;
-    @SuppressLint("StaticFieldLeak")
-    private static TextView edit;
-    @SuppressLint("StaticFieldLeak")
-    private static TextView delete;
-    @SuppressLint("StaticFieldLeak")
-    private static TextView reference;
-    @SuppressLint("StaticFieldLeak")
-    private static TextView cut;
+    private static SelectionActions selActs;
 
     private LinearLayout pasteOpts;
     private TextView paste;
-
-    private static Drawable icDelete;
-    private static Drawable icDelete_disabled;
-    private static Drawable icReference;
-    private static Drawable icReference_disabled;
-    private static Drawable icCut;
-    private static Drawable icCut_disabled;
-    private static Drawable icEdit;
-    private static Drawable icEdit_disabled;
-    private static Drawable icPaste;
-    private static Drawable icPaste_disabled;
 
     private static long backTime;
     @SuppressLint("StaticFieldLeak")
@@ -156,11 +120,7 @@ public class MainFragment extends Fragment
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle oldState) {
         VS.mfInstance = this;
         View root = inflater.inflate(R.layout.fragment_main, container, false);
-        selectOpts = root.findViewById(R.id.objects_select);
-        delete = root.findViewById(R.id.select_delete);
-        reference = root.findViewById(R.id.select_reference);
-        cut = root.findViewById(R.id.select_cut);
-        edit = root.findViewById(R.id.select_rename);
+        selActs = new SelectionActions(root);
         pasteOpts = root.findViewById(R.id.objects_paster);
         root.findViewById(R.id.objects_cancel).setOnClickListener(v -> {
             VS.pasteData = null;
@@ -169,32 +129,8 @@ public class MainFragment extends Fragment
         });
         paste = root.findViewById(R.id.objects_paste);
 
-        if (icCut == null) {
-            Resources res = activity.getResources();
-            (icDelete = Objects.requireNonNull(ResourcesCompat.getDrawable(res, R.drawable.ic_delete, null)))
-                .setBounds(0, 0, (int) (dp * 40), (int) (dp * 40));
-            (icDelete_disabled = Objects.requireNonNull(ResourcesCompat.getDrawable(res, R.drawable.ic_delete_disabled, null)))
-                .setBounds(0, 0, (int) (dp * 40), (int) (dp * 40));
-            (icReference = Objects.requireNonNull(ResourcesCompat.getDrawable(res, R.drawable.ic_reference, null)))
-                .setBounds(0, 0, (int) (dp * 40), (int) (dp * 40));
-            (icReference_disabled = Objects.requireNonNull(ResourcesCompat.getDrawable(res, R.drawable.ic_reference_disabled, null)))
-                .setBounds(0, 0, (int) (dp * 40), (int) (dp * 40));
-            (icCut = Objects.requireNonNull(ResourcesCompat.getDrawable(res, R.drawable.ic_cut, null)))
-                .setBounds(0, 0, (int) (dp * 40), (int) (dp * 40));
-            (icCut_disabled = Objects.requireNonNull(ResourcesCompat.getDrawable(res, R.drawable.ic_cut_disabled, null)))
-                .setBounds(0, 0, (int) (dp * 40), (int) (dp * 40));
-            (icEdit = Objects.requireNonNull(ResourcesCompat.getDrawable(res, R.drawable.ic_edit, null)))
-                .setBounds(0, 0, (int) (dp * 35), (int) (dp * 35));
-            (icEdit_disabled = Objects.requireNonNull(ResourcesCompat.getDrawable(res, R.drawable.ic_edit_disabled, null)))
-                .setBounds(0, 0, (int) (dp * 35), (int) (dp * 35));
-            (icPaste = Objects.requireNonNull(ResourcesCompat.getDrawable(res, R.drawable.ic_paste, null)))
-                .setBounds(0, 0, (int) (dp * 33), (int) (dp * 33));
-            (icPaste_disabled = Objects.requireNonNull(ResourcesCompat.getDrawable(res, R.drawable.ic_paste_disabled, null)))
-                .setBounds(0, 0, (int) (dp * 33), (int) (dp * 33));
-        }
-
         new Thread(() -> {
-            reference.setOnClickListener(v -> {
+            selActs.onClick(SelectionActions.Action.REFERENCE, v -> {
                 int search = 0;
                 EasyList<Container> list = null;
                 for (HierarchyItemModel him : VS.contentAdapter.list)
@@ -218,8 +154,8 @@ public class MainFragment extends Fragment
                     setSelectOpts(false);
                 } else move(true);
             });
-            cut.setOnClickListener(v -> move(false));
-            edit.setOnClickListener(none -> {
+            selActs.onClick(SelectionActions.Action.CUT, v -> move(false));
+            selActs.onClick(SelectionActions.Action.EDIT, none -> {
                 HierarchyItemModel him, item1 = null;
                 for (HierarchyItemModel item : VS.contentAdapter.list)
                     if (item.isSelected()) {
@@ -230,29 +166,22 @@ public class MainFragment extends Fragment
                 if (him.bd instanceof Container && !(him.bd instanceof TwoSided)) {
                     boolean isMch = him.bd instanceof MainChapter;
                     boolean isSch = him.bd instanceof SaveChapter;
-                    activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.edit), (li, cp) -> {
-                        if (cp.et_name.getText().toString().isEmpty()) {
-                            cp.et_name.setText(him.bd.getName());
-                            cp.et_desc.setText(him.bd.getDesc(him.parent));
-                        }
-                        View v = isMch ? null : li.inflate(R.layout.new_chapter, null);
-                        if (!isMch) {
-                            ((CheckBox) v.findViewById(R.id.chapter_file))
-                                .setChecked(isSch);
-                            cp.np.setValue(him.position);
-                            cp.np.setMaxValue(cp.np.getMaxValue() - 1);
-                        } else cp.npLayout.setVisibility(View.GONE);
-                        cp.ok.setOnClickListener(x -> {
+                    int maxPos = isMch ? him.position
+                        : VS.contentAdapter.list.size();
+                    CreatorContent content = isMch ? CreatorContent.SIMPLE
+                        : new CreatorContent.Chapter(isSch);
+                    activity.runOnUiThread(() -> {
+                        CreatorPopup cp = new CreatorPopup(getString(R.string.edit), him,
+                            him.position, maxPos, content);
+                        cp.setOkListener(() -> {
                             int position = him.position;
-                            String name = cp.et_name.getText().toString();
+                            String name = cp.getName();
                             if (name.isEmpty()) return;
                             cp.dismiss();
                             try {
                                 him.bd.putDesc(him.parent,
-                                    cp.et_desc.getText().toString().replace("\\t", "\t"));
-                                boolean sch = isMch ||
-                                    ((CheckBox) cp.view.findViewById(R.id.chapter_file))
-                                        .isChecked();
+                                    cp.getDesc().replace("\\t", "\t"));
+                                boolean sch = isMch || cp.isChapterFile();
                                 if (!Objects.equals(name, him.bd.getName())) {
                                     if (him.bd instanceof ContainerFile
                                         || sch) ContainerFile.isCorrect(name);
@@ -266,7 +195,7 @@ public class MainFragment extends Fragment
                                 if (!isMch) {
                                     if (sch != isSch)
                                         him.bd = ((SemiElementContainer) him.bd).convert();
-                                    position = cp.np.getValue();
+                                    position = cp.getPosition();
                                     if (position != him.position)
                                         him.parent.putChild(him.parent.removeChild(him.bd),
                                             him.bd, position - 1);
@@ -289,52 +218,44 @@ public class MainFragment extends Fragment
                                     .react(iae.getMessage().contains("longer"));
                             }
                         });
-                        return v;
-                    }));
-                } else if (him.bd instanceof TwoSided) {
-                    boolean pic = him.bd instanceof Picture;
-                    activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.edit), new Includer() {
-                        int position = him.position;
-                        AbstractPopupRecyclerAdapter content;
-
-                        @Override
-                        public View onInclude(LayoutInflater li, CreatorPopup cp) {
-                            LinearLayout ll = (LinearLayout) li.inflate(R.layout.new_twosided, null);
-                            if (content == null)
-                                content = pic ? new ImagePopupRecyclerAdapter(him, cp)
-                                    : new TranslatePopupRecyclerAdapter(him, cp);
-                            Runnable onClick = content.onClick(ll);
-                            cp.np.setValue(him.position);
-                            cp.np.setMaxValue(cp.np.getMaxValue() - 1);
-                            cp.ok.setOnClickListener(v -> {
-                                onClick.run();
-                                position = cp.np.getValue();
-                                if (position != him.position) {
-                                    him.parent.putChild(him.parent.removeChild(him.bd),
-                                        him.bd, position - 1);
-                                    if (content.toRemove != null)
-                                        CurrentData.save(backLog.path);
-                                }
-                                if (content.toRemove != null) return;
-                                CurrentData.save(backLog.path);
-                                VS.contentAdapter.selected = -1;
-                                setSelectOpts(false);
-                                him.update();
-                                if (position == him.position)
-                                    backLog.adapter.notifyItemChanged(position - 1);
-                                else {
-                                    backLog.adapter.list.add(position - 1, backLog.adapter.list.remove(him.position - 1));
-                                    backLog.adapter.notifyItemMoved(him.position - 1, position - 1);
-                                    him.position = position;
-                                }
-                                cp.dismiss();
-                            });
-                            return ll;
-                        }
-                    }));
+                    });
+                } else if (him.bd instanceof Word) {
+                    int maxPos = VS.contentAdapter.list.size();
+                    List<TranslationRow> rows = new ArrayList<>();
+                    for (Object child : ((Word) him.bd).getChildren(him.parent)) {
+                        Word trl = (Word) child;
+                        rows.add(new TranslationRow(trl.getName(), trl.getDesc(him.parent), trl));
+                    }
+                    activity.runOnUiThread(() -> {
+                        CreatorPopup cp = new CreatorPopup(getString(R.string.edit), him,
+                            him.position, maxPos, new CreatorContent.Word(rows));
+                        cp.setOkListener(() -> {
+                            boolean ok = applyWord(cp, him);
+                            int position = cp.getPosition();
+                            if (position != him.position) {
+                                him.parent.putChild(him.parent.removeChild(him.bd),
+                                    him.bd, position - 1);
+                                if (!ok) CurrentData.save(backLog.path);
+                            }
+                            if (!ok) return;
+                            CurrentData.save(backLog.path);
+                            VS.contentAdapter.selected = -1;
+                            setSelectOpts(false);
+                            him.update();
+                            if (position == him.position)
+                                backLog.adapter.notifyItemChanged(position - 1);
+                            else {
+                                backLog.adapter.list.add(position - 1,
+                                    backLog.adapter.list.remove(him.position - 1));
+                                backLog.adapter.notifyItemMoved(him.position - 1, position - 1);
+                                him.position = position;
+                            }
+                            cp.dismiss();
+                        });
+                    });
                 }
             });
-            delete.setOnClickListener(v -> {
+            selActs.onClick(SelectionActions.Action.DELETE, v -> {
                 if (((SearchAdapter) backLog.adapter).selected > 0)
                     new ContinuePopup(getString(R.string.continue_delete), () -> root.post(() -> {
                         boolean left = false;
@@ -356,19 +277,15 @@ public class MainFragment extends Fragment
                         if (!left) {
                             VS.contentAdapter.selected = -1;
                             es.rv.postDelayed(VS.contentAdapter::notifyDataSetChanged, 200);
-                            selectOpts.setVisibility(View.GONE);
+                            selActs.setBarVisible(false);
                         } else
                             Toast.makeText(CONTEXT, R.string.popup_delete_fail, Toast.LENGTH_SHORT).show();
                     }));
             });
             if (backLog.adapter instanceof SearchAdapter && VS.contentAdapter.selected > -1) {
-                selectOpts.setVisibility(View.VISIBLE);
-                for (HierarchyItemModel him : (List<? extends HierarchyItemModel>) backLog.adapter.list)
-                    if (him.isSelected() && him.bd instanceof Reference) {
-                        tglEnabled(edit, false);
-                        return;
-                    }
-                if (VS.contentAdapter.selected > 1) tglEnabled(edit, false);
+                selActs.setBarVisible(true);
+                selActs.render(VS.contentAdapter.selected, VS.contentAdapter.ref,
+                    !backLog.path.isEmpty());
             }
         }, "select options setter").start();
 
@@ -407,7 +324,7 @@ public class MainFragment extends Fragment
         VS.pasteData = new ViewState.PasteData(ref, VS.contentAdapter);
         Controller.toggleSelectBtn(false);
         pasteOpts.setVisibility(View.VISIBLE);
-        tglEnabled(paste, false);
+        selActs.setEnabled(SelectionActions.Action.PASTE, false);
         boolean search = VS.contentAdapter.search;
         for (HierarchyItemModel him : VS.contentAdapter.list)
             if (him.isSelected()) VS.pasteData.src.add(him);
@@ -496,7 +413,7 @@ public class MainFragment extends Fragment
      * @param change if an item has been clicked
      */
     private void setSelectOpts(boolean change) {
-        selectOpts.setVisibility(VS.contentAdapter.selected > -1 ? View.VISIBLE : View.GONE);
+        selActs.setBarVisible(VS.contentAdapter.selected > -1);
         setVisibleOpts();
         if (VS.contentAdapter.selected == -1 && !change) {
             VS.contentAdapter.ref = 0;
@@ -507,36 +424,11 @@ public class MainFragment extends Fragment
     }
 
     /**
-     * Controls the usability of the {@link #selectOpts} buttons.
+     * Controls the usability of the selection bar buttons by re-rendering it from state.
      */
     private void setVisibleOpts() {
         if (VS.contentAdapter == null) return;
-        boolean notObj = !backLog.path.isEmpty();
-        int selected = VS.contentAdapter.selected;
-        tglEnabled(delete, selected > 0);
-        tglEnabled(reference, selected > 0 && notObj && (VS.contentAdapter.ref < 2 && selected < 2
-            || VS.contentAdapter.ref < 1));
-        tglEnabled(cut, selected > 0 && notObj && VS.contentAdapter.ref < 1);
-        tglEnabled(edit, selected == 1 && VS.contentAdapter.ref < 1);
-    }
-
-    /**
-     * Toggles the usability of the given button.
-     */
-    private void tglEnabled(TextView tv, boolean enabled) {
-        if (tv.isEnabled() == enabled) return;
-        if (tv == reference)
-            tv.setCompoundDrawables(null, enabled ? icReference : icReference_disabled, null, null);
-        else if (tv == cut)
-            tv.setCompoundDrawables(null, enabled ? icCut : icCut_disabled, null, null);
-        else if (tv == edit)
-            tv.setCompoundDrawables(null, enabled ? icEdit : icEdit_disabled, null, null);
-        else if (tv == delete)
-            tv.setCompoundDrawables(null, enabled ? icDelete : icDelete_disabled, null, null);
-        else if (tv == paste)
-            tv.setCompoundDrawables(null, enabled ? icPaste : icPaste_disabled, null, null);
-        tv.setTextColor(enabled ? 0xFFFFFFFF : 0x66FFFFFF);
-        tv.setEnabled(enabled);
+        selActs.render(VS.contentAdapter.selected, VS.contentAdapter.ref, !backLog.path.isEmpty());
     }
 
     @Override
@@ -636,7 +528,7 @@ public class MainFragment extends Fragment
                         if (source.bd instanceof Container)
                             for (BasicData currentParent : backLog.path)
                                 if (currentParent == source.bd) {
-                                    tglEnabled(paste, false);
+                                    selActs.setEnabled(SelectionActions.Action.PASTE, false);
                                     break test;
                                 }
                         boolean match;
@@ -648,11 +540,11 @@ public class MainFragment extends Fragment
                                     break;
                                 }
                             if (!match) {
-                                tglEnabled(paste, true);
+                                selActs.setEnabled(SelectionActions.Action.PASTE, true);
                                 break test;
                             }
                         }
-                        tglEnabled(paste, false);
+                        selActs.setEnabled(SelectionActions.Action.PASTE, false);
                     }
                 } else {
                     boolean match;
@@ -670,11 +562,11 @@ public class MainFragment extends Fragment
                                     break;
                                 }
                         if (!match) {
-                            tglEnabled(paste, true);
+                            selActs.setEnabled(SelectionActions.Action.PASTE, true);
                             break test;
                         }
                     }
-                    tglEnabled(paste, false);
+                    selActs.setEnabled(SelectionActions.Action.PASTE, false);
                 }
             } else {
                 for (BasicData parent : backLog.path) {
@@ -682,17 +574,17 @@ public class MainFragment extends Fragment
                     for (HierarchyItemModel source : VS.pasteData.src) {
                         try {
                             if (parent == source.bd.getThis()) {
-                                tglEnabled(paste, false);
+                                selActs.setEnabled(SelectionActions.Action.PASTE, false);
                                 break test;
                             }
                         } catch (IllegalArgumentException ex) {
                         }
                     }
                 }
-                tglEnabled(paste, true);
+                selActs.setEnabled(SelectionActions.Action.PASTE, true);
             }
         }
-        //else tglEnabled(paste, false);
+        //else selActs.setEnabled(SelectionActions.Action.PASTE, false);
         Controller.setMenuRes(VS.menuRes = bd instanceof MainChapter
             ? R.menu.more_mch : R.menu.more_container);
         if (VS.pasteData == null) Controller.toggleSelectBtn(true);
@@ -789,10 +681,11 @@ public class MainFragment extends Fragment
         new Thread(() -> {
             int itemId = item.getItemId();
             if (itemId == R.id.more_new_mch) {
-                activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.new_mch), (x, cp) -> {
-                    cp.npLayout.setVisibility(View.GONE);
-                    cp.ok.setOnClickListener(v -> {
-                        String name = cp.et_name.getText().toString();
+                activity.runOnUiThread(() -> {
+                    CreatorPopup cp = new CreatorPopup(getString(R.string.new_mch), null,
+                        0, 0, CreatorContent.SIMPLE);
+                    cp.setOkListener(() -> {
+                        String name = cp.getName();
                         if (name.isEmpty()) return;
                         try {
                             ContainerFile.isCorrect(name);
@@ -804,28 +697,29 @@ public class MainFragment extends Fragment
                             return;
                         }
                         backLog.adapter.addItem(new HierarchyItemModel(new MainChapter(
-                            new Data(name, null).addDesc(cp.et_desc.getText().toString()
+                            new Data(name, null).addDesc(cp.getDesc()
                                 .replace("\\t", "\t"))), null, backLog.adapter.list.size() + 1));
                         cp.dismiss();
                     });
-                    return null;
-                }));
+                });
             } else if (itemId == R.id.more_new_container) {
-                activity.runOnUiThread(() -> new CreatorPopup(getString(R.string.new_chapter), (li, cp) -> {
-                    cp.ok.setOnClickListener(v -> {
-                        String name = cp.et_name.getText().toString();
+                int pos = VS.contentAdapter.list.size() + 1;
+                activity.runOnUiThread(() -> {
+                    CreatorPopup cp = new CreatorPopup(getString(R.string.new_chapter), null,
+                        pos, pos, new CreatorContent.Chapter(false));
+                    cp.setOkListener(() -> {
+                        String name = cp.getName();
                         if (name.isEmpty()) return;
                         Container par = backLog.path.get(-1);
                         try {
                             Data d = new Data(name, (MainChapter) backLog.path.get(0))
-                                .addDesc(cp.et_desc.getText().toString().replace("\\t", "\t"))
+                                .addDesc(cp.getDesc().replace("\\t", "\t"))
                                 .addPar(par);
-                            Container ch = ((CheckBox) cp.view.findViewById(R.id.chapter_file))
-                                .isChecked() ? SaveChapter.mkElement(d) : new Chapter(d);
-                            int pos = cp.np.getValue();
-                            backLog.adapter.addItem(pos - 1,
-                                new HierarchyItemModel(ch, par, pos));
-                            par.putChild(backLog.path.get(-2), ch, pos - 1);
+                            Container ch = cp.isChapterFile()
+                                ? SaveChapter.mkElement(d) : new Chapter(d);
+                            backLog.adapter.addItem(cp.getPosition() - 1,
+                                new HierarchyItemModel(ch, par, cp.getPosition()));
+                            par.putChild(backLog.path.get(-2), ch, cp.getPosition() - 1);
                             cp.dismiss();
                         } catch (IllegalArgumentException iae) {
                             if (!iae.getMessage().contains("Name can't"))
@@ -834,33 +728,19 @@ public class MainFragment extends Fragment
                                 .react(iae.getMessage().contains("longer"));
                         }
                     });
-                    return li.inflate(R.layout.new_chapter, null);
-                }));
-            } else if (itemId == R.id.more_new_word || itemId == R.id.more_new_picture) {
-                boolean word = itemId == R.id.more_new_word;
-                boolean pic = !word;
-                activity.runOnUiThread(() -> new CreatorPopup(getString(
-                    pic ? R.string.new_picture : R.string.new_word), new Includer() {
-
-                    AbstractPopupRecyclerAdapter content;
-
-                    @Override
-                    public View onInclude(LayoutInflater li, CreatorPopup cp) {
-                        LinearLayout ll = (LinearLayout) li.inflate(R.layout.new_twosided, null);
-                        if (content == null)
-                            content = pic ? new ImagePopupRecyclerAdapter(null, cp)
-                                : new TranslatePopupRecyclerAdapter(null, cp);
-                        Runnable onClick = content.onClick(ll);
-                        cp.ok.setOnClickListener(v -> {
-                            onClick.run();
-                            if (content.toRemove != null) return;
-                            backLog.adapter.notifyDataSetChanged();
-                            CurrentData.save(backLog.path);
-                            cp.dismiss();
-                        });
-                        return ll;
-                    }
-                }));
+                });
+            } else if (itemId == R.id.more_new_word) {
+                int pos = VS.contentAdapter.list.size() + 1;
+                activity.runOnUiThread(() -> {
+                    CreatorPopup cp = new CreatorPopup(getString(R.string.new_word), null,
+                        pos, pos, new CreatorContent.Word(Collections.emptyList()));
+                    cp.setOkListener(() -> {
+                        if (!applyWord(cp, null)) return;
+                        backLog.adapter.notifyDataSetChanged();
+                        CurrentData.save(backLog.path);
+                        cp.dismiss();
+                    });
+                });
             } else if (itemId == R.id.sort_alpha_AZ) {
                 sort(1, true);
             } else if (itemId == R.id.sort_alpha_ZA) {
@@ -879,6 +759,8 @@ public class MainFragment extends Fragment
                 openSchFile.launch(new String[]{"*/*"});
             } else if (itemId == R.id.more_import_word) {
                 openWordFile.launch(new String[]{"text/plain"});
+            } else if (itemId == R.id.more_import_word_mch) {
+                openWordMchFile.launch(new String[]{"text/plain"});
             } else if (itemId == R.id.more_export_word) {
                 createWordFile.launch(backLog.path.get(-1).getName() + ".txt");
             } else if (itemId == R.id.more_import_mch) {
@@ -957,6 +839,55 @@ public class MainFragment extends Fragment
     }
 
     /**
+     * A word file (.txt) containing exactly one subject was picked on the main screen.
+     * The whole file is parsed by the default {@link SimpleReader} with a new
+     * {@link MainChapter} as the container, so the subject's name is taken from
+     * the file's name (without the suffix) and every top-level chapter/word lands
+     * directly inside it.
+     */
+    private void onWordMchFilePicked(Uri uri) {
+        new Thread(() -> {
+            UriPath file = new UriPath(uri, false);
+            String name = file.getName();
+            if (name == null || name.isEmpty()) name = "subject";
+            else {
+                int dot = name.lastIndexOf('.');
+                if (dot > 0) name = name.substring(0, dot);
+            }
+            boolean exists = false;
+            for (MainChapter mch : MainChapter.ELEMENTS)
+                if (mch.getName().equalsIgnoreCase(name)) { exists = true; break; }
+            if (exists) {
+                String msg = getString(R.string.fail_import_mch_word_exists) + name;
+                activity.runOnUiThread(() -> makeText(CONTEXT, msg, Toast.LENGTH_LONG).show());
+                return;
+            }
+            try {
+                ContainerFile.isCorrect(name);
+            } catch (IllegalArgumentException iae) {
+                return;
+            }
+            MainChapter mch = new MainChapter(new Data(name, null));
+            try {
+                SimpleReader content = new SimpleReader(file.load(), mch, null);
+                mch.save(false);
+                es.rv.post(() -> {
+                    if (backLog.adapter instanceof HierarchyAdapter ha)
+                        ha.addItem(new HierarchyItemModel(mch, null, ha.list.size() + 1));
+                });
+                defaultReacts.get(SimpleReader.class + ":success").react(content.result);
+                defaultReacts.get("MChLoaded").react();
+            } catch (IllegalArgumentException iae) {
+                mch.destroy(null);
+            } catch (Exception e) {
+                mch.destroy(null);
+                defaultReacts.get(ContainerFile.class + ":load")
+                    .react(e, file, name);
+            }
+        }, "MFrag mch word import").start();
+    }
+
+    /**
      * A target location was picked for exporting a word list. Runs on a background thread,
      * as the original onActivityResult() did.
      */
@@ -981,11 +912,55 @@ public class MainFragment extends Fragment
     }
 
     /**
-     * A picture was picked with the photo picker for a new/edit Picture.
+     * Applies the word editor results (name, description, translations) to the model.
+     * Mirrors the previous translations-adapter save behaviour.
+     *
+     * @param him the edited word's item model, or {@code null} when creating a new word
+     * @return {@code false} when the input is incomplete and nothing should be committed
      */
-    private void onImagePicked(Uri uri) {
-        defaultReacts.get("NotifyNewImage")
-            .react(new UriPath(uri, false));
+    private boolean applyWord(CreatorPopup cp, HierarchyItemModel him) {
+        String name = cp.getName();
+        List<TranslationRow> rows = cp.getTranslations();
+        if (name.isEmpty() || rows.isEmpty()) return false;
+        MainChapter mch = (MainChapter) backLog.path.get(0);
+        Container parent = him != null ? him.parent : backLog.path.get(-1);
+        LinkedList<Data> translates = new LinkedList<>();
+        for (TranslationRow row : rows) {
+            String[] trls = SimpleReader.nameResolver(row.getName());
+            if (trls[0].isEmpty()) return false;
+            String[] trlDescs = SimpleReader.nameResolver(row.getDesc());
+            if (him == null) {
+                for (int i = 0; i < trls.length; i++)
+                    translates.add(new Data(trls[i], mch).addDesc(i < trlDescs.length
+                        ? trlDescs[i].replace("\\t", "\t") : null).addPar(parent));
+            } else if (row.getSource() != null && trls.length == 1) {
+                row.getSource().putDesc(parent, trlDescs[0]);
+                row.getSource().setName(parent, trls[0]);
+            } else {
+                for (int i = 0; i < trls.length; i++)
+                    Word.mkTranslate(new Data(trls[i], mch).addDesc(i < trlDescs.length
+                        ? trlDescs[i] : null).addPar(parent), (Word) him.bd);
+            }
+        }
+        if (him == null) {
+            String[] names = SimpleReader.nameResolver(name);
+            String[] descs = SimpleReader.nameResolver(cp.getDesc());
+            Data d = new Data(null, mch).addPar(parent);
+            int pos = cp.getPosition();
+            for (int i = 0; i < names.length; i++) {
+                d.name = names[i];
+                d.description = i < descs.length ? descs[i].replace("\\t", "\t") : null;
+                Word w = Word.mkElement(d, translates);
+                backLog.adapter.addItem(pos + i - 1, new HierarchyItemModel(w, parent, pos + i));
+                parent.putChild(backLog.path.get(-2), w, pos + i - 1);
+            }
+        } else {
+            for (Word w : cp.getRemovedTranslations())
+                ((Word) him.bd).removeChild(parent, w);
+            him.bd.putDesc(parent, cp.getDesc().replace("\\t", "\t"));
+            him.bd = him.bd.setName(parent, name);
+        }
+        return true;
     }
 
     /**

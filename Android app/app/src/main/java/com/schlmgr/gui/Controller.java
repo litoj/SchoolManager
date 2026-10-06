@@ -8,15 +8,16 @@ import android.widget.ImageView;
 import android.widget.PopupMenu.OnMenuItemClickListener;
 
 import com.schlmgr.R;
+import androidx.activity.ComponentActivity;
+
 import com.schlmgr.gui.activity.MainActivity;
-import com.schlmgr.gui.activity.PopupCareActivity;
 
 import java.util.LinkedList;
 import java.util.List;
 
 public class Controller {
 	public static MainActivity activity;
-	public static PopupCareActivity currentActivity;
+	public static ComponentActivity currentActivity;
 	public static Runnable defaultBack;
 	public static float dp;
 	public static Context CONTEXT;
@@ -39,6 +40,7 @@ public class Controller {
 	public Runnable onBackPressed = () -> defaultBack.run();
 	public ImageView moreButton;
 	public ImageView selectButton;
+	private boolean selectVisible;
 	public final List<Runnable> popupRepaint = new LinkedList<>();
 
 	private boolean taken = false;
@@ -94,25 +96,45 @@ public class Controller {
 		}
 	}
 
+	/**
+	 * Shows or hides the 'more options' button. The buttons may not exist yet when
+	 * this is called (the main fragment inflates during setContentView, before the
+	 * activity wires its action bar views), so the desired state is remembered in
+	 * {@link #menuRes} and applied once the views exist (see {@link #applyBarState()}).
+	 */
 	public static void setMenuRes(int newMenuResource) {
-		control.moreButton.setVisibility((control.menuRes = newMenuResource) == 0 ? View.GONE : View.VISIBLE);
+		control.menuRes = newMenuResource;
+		if (control.moreButton != null)
+			control.moreButton.setVisibility(newMenuResource == 0 ? View.GONE : View.VISIBLE);
 	}
 
 	public static void toggleSelectBtn(boolean visible) {
-		control.selectButton.setVisibility(visible ? View.VISIBLE : View.GONE);
+		control.selectVisible = visible;
+		if (control.selectButton != null)
+			control.selectButton.setVisibility(visible ? View.VISIBLE : View.GONE);
+	}
+
+	/**
+	 * Applies the remembered 'more'/'select' button visibility to the action bar views.
+	 * Called by MainActivity right after it obtains the views, so that requests made
+	 * during fragment inflation (before the views existed) take effect.
+	 */
+	public static void applyBarState() {
+		setMenuRes(control.menuRes);
+		toggleSelectBtn(control.selectVisible);
 	}
 
 	public static String translate(Class type) {
-		if (type == objects.MainChapter.class)
+		if (type == com.schlmgr.gui.engine.objects.MainChapter.class)
 			return activity.getString(R.string.hierarchy_mch);
-		if (type == objects.SaveChapter.class
-				|| type == objects.Chapter.class)
+		if (type == com.schlmgr.gui.engine.objects.SaveChapter.class
+				|| type == com.schlmgr.gui.engine.objects.Chapter.class)
 			return activity.getString(R.string.hierarchy_ch);
-		if (type == objects.Reference.class)
+		if (type == com.schlmgr.gui.engine.objects.Reference.class)
 			return activity.getString(R.string.hierarchy_ref);
-		if (type == objects.Word.class)
+		if (type == com.schlmgr.gui.engine.objects.Word.class)
 			return activity.getString(R.string.hierarchy_word);
-		if (type == objects.Picture.class)
+		if (type == com.schlmgr.gui.engine.objects.Picture.class)
 			return activity.getString(R.string.hierarchy_picture);
 		return type.getName();
 	}

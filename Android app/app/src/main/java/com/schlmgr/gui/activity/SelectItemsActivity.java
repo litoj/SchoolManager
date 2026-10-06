@@ -25,13 +25,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 
-import objects.MainChapter;
-import objects.Picture;
-import objects.Reference;
-import objects.Word;
-import objects.templates.BasicData;
-import objects.templates.Container;
-import objects.templates.TwoSided;
+import com.schlmgr.gui.engine.objects.MainChapter;
+import com.schlmgr.gui.engine.objects.Picture;
+import com.schlmgr.gui.engine.objects.Reference;
+import com.schlmgr.gui.engine.objects.Word;
+import com.schlmgr.gui.engine.objects.templates.BasicData;
+import com.schlmgr.gui.engine.objects.templates.Container;
+import com.schlmgr.gui.engine.objects.templates.TwoSided;
 
 import static com.schlmgr.gui.Controller.dp;
 import static com.schlmgr.gui.fragments.TestFragment.list;
@@ -105,7 +105,8 @@ public class SelectItemsActivity extends PopupCareActivity
 						}
 					}
 				}
-				runOnUiThread(TestFragment.adapter::notifyDataSetChanged);
+				// The list is a Compose SnapshotStateList now, so these background-thread
+				// removals recompose the test setup screen directly.
 			}, "TFrag test item control")).start();
 			finish();
 		});

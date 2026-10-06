@@ -38,13 +38,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import objects.Picture;
-import objects.Reference;
-import objects.Word;
-import objects.templates.BasicData;
-import objects.templates.Container;
-import objects.templates.TwoSided;
-import testing.NameReader;
+import com.schlmgr.gui.engine.objects.Picture;
+import com.schlmgr.gui.engine.objects.Reference;
+import com.schlmgr.gui.engine.objects.Word;
+import com.schlmgr.gui.engine.objects.templates.BasicData;
+import com.schlmgr.gui.engine.objects.templates.Container;
+import com.schlmgr.gui.engine.objects.templates.TwoSided;
+import com.schlmgr.gui.engine.testing.NameReader;
 
 /**
  * This class contains all data that are identical for both {@link com.schlmgr.gui.fragments.MainFragment}

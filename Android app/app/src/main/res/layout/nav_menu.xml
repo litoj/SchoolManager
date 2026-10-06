@@ -12,13 +12,16 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- fitsSystemWindows removed: with edge-to-edge (decor not fitting system windows)
+         the insets are consumed by the AppBarLayout before reaching this sibling, so
+         the drawer was clipped by the status bar. MainActivity applies the insets
+         explicitly via EdgeToEdge.apply(nav_menu, true) instead. -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/nav_menu"
         android:layout_width="250dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:background="?attr/colorPrimaryDark"
-        android:fitsSystemWindows="true"
         app:headerLayout="@layout/menu_header"
         app:itemIconTint="?attr/colorPrimary"
         app:itemTextColor="?attr/colorPrimary"

@@ -32,8 +32,8 @@ import com.schlmgr.gui.popup.FullPicture;
 import java.io.File;
 import java.util.Objects;
 
-import IOSystem.Formatter;
-import objects.templates.ContainerFile;
+import com.schlmgr.gui.engine.IOSystem.Formatter;
+import com.schlmgr.gui.engine.objects.templates.ContainerFile;
 
 public class MainActivity extends PopupCareActivity {
 
@@ -55,6 +55,11 @@ public class MainActivity extends PopupCareActivity {
 		// The top (status bar) inset is handled by the AppBarLayout itself
 		// (fitsSystemWindows), so only the remaining insets are padded here.
 		EdgeToEdge.apply(findViewById(R.id.include), false);
+		// The drawer's NavigationView can't rely on fitsSystemWindows here: in
+		// edge-to-edge mode the insets are consumed by the AppBarLayout sibling before
+		// reaching it (dispatch order), so the drawer was clipped by the status bar.
+		// Apply the system bar insets to it explicitly, including the top.
+		EdgeToEdge.apply(findViewById(R.id.nav_menu), true);
 		setSupportActionBar(findViewById(R.id.bar));
 		(c.moreButton = findViewById(R.id.bar_more)).setOnClickListener(v -> {
 			if (c.menuRes == 0) return;
@@ -64,7 +69,10 @@ public class MainActivity extends PopupCareActivity {
 			pm.show();
 		});
 		(c.selectButton = findViewById(R.id.bar_select)).setOnClickListener(
-				c.currentControl);
+				v -> c.currentControl.onClick(v));
+		// The main fragment inflated during setContentView above and may already have
+		// requested a menu/select button state while the views did not exist yet.
+		Controller.applyBarState();
 		// Passing each menu ID as a set of Ids because each
 		// menu should be considered as top level destinations.
 		mAppBarConfiguration = new AppBarConfiguration.Builder(R.id.menu_objects,

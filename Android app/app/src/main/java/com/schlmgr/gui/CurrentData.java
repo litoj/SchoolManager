@@ -10,7 +10,7 @@ import com.schlmgr.gui.list.HierarchyAdapter;
 import com.schlmgr.gui.list.ImageAdapter;
 import com.schlmgr.gui.list.OpenListAdapter;
 import com.schlmgr.gui.list.SearchAdapter;
-import com.schlmgr.gui.popup.TextPopup;
+import com.schlmgr.gui.popup.CrashReportPopup;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -18,18 +18,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import IOSystem.Formatter;
-import IOSystem.Formatter.Data;
-import IOSystem.Formatter.IOSystem.GeneralPath;
-import objects.MainChapter;
-import objects.Picture;
-import objects.templates.BasicData;
-import objects.templates.Container;
-import objects.templates.ContainerFile;
+import com.schlmgr.gui.engine.IOSystem.Formatter;
+import com.schlmgr.gui.engine.IOSystem.Formatter.Data;
+import com.schlmgr.gui.engine.IOSystem.Formatter.IOSystem.GeneralPath;
+import com.schlmgr.gui.engine.objects.MainChapter;
+import com.schlmgr.gui.engine.objects.Picture;
+import com.schlmgr.gui.engine.objects.templates.BasicData;
+import com.schlmgr.gui.engine.objects.templates.Container;
+import com.schlmgr.gui.engine.objects.templates.ContainerFile;
 
-import static IOSystem.Formatter.getIOSystem;
-import static com.schlmgr.gui.AndroidIOSystem.getFirstCause;
-import static com.schlmgr.gui.Controller.activity;
+import static com.schlmgr.gui.engine.IOSystem.Formatter.getIOSystem;
 
 public class CurrentData {
 
@@ -146,17 +144,8 @@ public class CurrentData {
 	private static final LinkedList<MainChapter> toLoad = new LinkedList<>();
 
 	public static void finishLoad() {
-		Object uE = Formatter.getSetting("uncaughtException");
-		if (uE != null) {
-			new TextPopup(activity.getString(R.string.exception_handler)
-					+ getFirstCause((Throwable) ((Object[]) uE)[0]), (String) ((Object[]) uE)[1]) {
-				@Override
-				public void dismiss(boolean forever) {
-					super.dismiss(forever);
-					if (forever) Formatter.removeSetting("uncaughtException");
-				}
-			};
-		}
+		String crash = AndroidIOSystem.getCrashReport();
+		if (crash != null) new CrashReportPopup(crash);
 		synchronized (toLoad) {
 			boolean thread = false;
 			for (MainChapter mch : toLoad) mch.load(thread = !thread);
@@ -201,7 +190,7 @@ public class CurrentData {
 			if (importedMchs == null) {
 				importedMchs = new HashSet<>();
 				backLog.onePath.add(0);
-				String imds = (String) Formatter.getSetting("importedMchDirs");
+				String imds = AppSettings.getString("importedMchDirs");
 				if (imds != null) for (String s : imds.split(";"))
 					try {
 						importedMchs.add(getIOSystem().createGeneralPath(s));
@@ -216,7 +205,7 @@ public class CurrentData {
 		}
 
 		private static void save() {
-			if (importedMchs.isEmpty()) Formatter.removeSetting("importedMchDirs");
+			if (importedMchs.isEmpty()) AppSettings.remove("importedMchDirs");
 			else {
 				StringBuilder sb = new StringBuilder();
 				boolean first = true;
@@ -225,7 +214,7 @@ public class CurrentData {
 					else sb.append(';');
 					sb.append(f.getOriginalName());
 				}
-				Formatter.putSetting("importedMchDirs", sb.toString());
+				AppSettings.set("importedMchDirs", sb.toString());
 			}
 		}
 

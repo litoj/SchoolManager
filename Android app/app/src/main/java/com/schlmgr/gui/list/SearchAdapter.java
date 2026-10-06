@@ -16,7 +16,7 @@ import com.schlmgr.gui.popup.TextPopup;
 
 import java.util.List;
 
-import objects.Reference;
+import com.schlmgr.gui.engine.objects.Reference;
 
 import static com.schlmgr.gui.activity.MainActivity.ic_check_empty;
 import static com.schlmgr.gui.activity.MainActivity.ic_check_filled;

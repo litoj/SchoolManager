@@ -4,6 +4,7 @@
     <string name="action_full_text">Celý Text</string>
     <string name="action_settings">Nastavení</string>
     <string name="action_sw_success">" zapsáno úspěšně"</string>
+    <string name="about_text">Tento program byl vyvinut, aby pomohl lidem se školními předměty, zvláště s cizími jazyky a biologií.\n\nPro další pomoc mě kontaktujte na litos@tuta.io</string>
     <string name="add_picture">Přidat obrázek</string>
     <string name="add_word">Přidat překlad</string>
     <string name="answers">Správné odpovědi</string>
@@ -43,6 +44,7 @@
     <string name="fail_save">Neúspěšné ukládání souboru:</string>
     <string name="fail_save_src">"během ukládání prvku: "</string>
     <string name="fail_sr_msg">"Špatná syntax na řádku: "</string>
+    <string name="fail_import_mch_word_exists">"Import zrušen, předmět již existuje: "</string>
     <string name="fail_type">", typ: "</string>
     <string name="help">Nápověda</string>
     <string name="help_create">Vytváření položek</string>
@@ -78,6 +80,10 @@
         \nPro import vyberte z více možností \'Importovat předmět\'.
         \nPo nalezení složky předmětu, můžete zvolit i více složek najednou, klikněte na tlačítko \'Importovat\'.
         \nOpětovně je odstraníte pomocí červeného křížku napravo od importovaného předmětu.</string>
+    <string name="help_extra_import_mch_word">Import předmětu ze souboru</string>
+    <string name="help_extra_import_mch_word_how">Předmět lze vytvořit ze souboru se slovíčky, na hlavní obrazovce zvolte v menu pro více možností \'Importovat soubor s předměty\'.
+        \nNový předmět se pojmenuje podle zvoleného souboru a jeho obsah se zpracuje stejně jako při importu slovíček (kapitoly a slovíčka), pouze na nejvyšší úrovni předmětu.
+        \nPokud předmět se stejným názvem již existuje, nic se neimportuje.</string>
     <string name="help_extra_naming">Způsoby pojmenovávání</string>
     <string name="help_extra_naming_how">Tato aplikace umožňuje pojmenovávat slovíčka a další položky specifickým způsobem, díky kterému máte při testu více možností, jak odpovědět.
         \nK dosažení se používá těchto znaků: /()
@@ -201,7 +207,7 @@
     <string name="hierarchy_ref">Odkaz</string>
     <string name="hierarchy_sch_file">Soubor kapitoly</string>
     <string name="hierarchy_word">Slovíčko</string>
-    <string name="choose_pos">Vyberte pozici položky</string>
+    <string name="position">Pozice</string>
     <string name="image_choose_capture">Kamera</string>
     <string name="image_choose_gallery">Galerie</string>
     <string name="import_mch">Importovat předmět"</string>
@@ -221,6 +227,7 @@
     <string name="more_import">Importovat</string>
     <string name="more_import_sch">Přidat kapitolu ze souboru</string>
     <string name="more_import_word">Importovat soubor se slovíčky</string>
+    <string name="more_import_word_mch">Importovat soubor s předměty</string>
     <string name="more_new">Nový</string>
     <string name="more_sf_reval_mch">Přepočítat úspěšnost</string>
     <string name="more_sf_revaluate">Přepočítat úspěšnost této kapitoly</string>
@@ -247,7 +254,6 @@
     <string name="setts_him_allflip">Přeložit všechna slovíčka každým kliknutím</string>
     <string name="setts_him_flipped">Automaticky překládat slovíčka</string>
     <string name="setts_him_parse">Zobrazovat názvy položek ve zpracované formě</string>
-    <string name="setts_choose_pos">Vybírat pořadí položky</string>
     <string name="setts_interface">Rozhraní</string>
     <string name="setts_show_desc">Zobrazovat poznámky přímo</string>
     <string name="setts_test">Přednastavení testů</string>

@@ -6,15 +6,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import IOSystem.Formatter;
-import objects.MainChapter;
-import objects.Picture;
-import objects.Reference;
-import objects.Word;
-import objects.templates.BasicData;
-import objects.templates.Container;
-import objects.templates.TwoSided;
-import testing.NameReader;
+import com.schlmgr.gui.AppSettings;
+import com.schlmgr.gui.engine.objects.MainChapter;
+import com.schlmgr.gui.engine.objects.Picture;
+import com.schlmgr.gui.engine.objects.Reference;
+import com.schlmgr.gui.engine.objects.Word;
+import com.schlmgr.gui.engine.objects.templates.BasicData;
+import com.schlmgr.gui.engine.objects.templates.Container;
+import com.schlmgr.gui.engine.objects.templates.TwoSided;
+import com.schlmgr.gui.engine.testing.NameReader;
 
 public class HierarchyItemModel {
 
@@ -37,19 +37,19 @@ public class HierarchyItemModel {
 	public static boolean flipAllOnClick;
 
 	public static void setShowDesc(boolean yes) {
-		Formatter.putSetting("doShowDesc", show_desc = yes);
+		AppSettings.set("doShowDesc", show_desc = yes);
 	}
 
 	public static void setParse(boolean yes) {
-		Formatter.putSetting("parseNames", parse = yes);
+		AppSettings.set("parseNames", parse = yes);
 	}
 
 	public static void setDefFlip(boolean yes) {
-		Formatter.putSetting("flipWord", defFlip = yes);
+		AppSettings.set("flipWord", defFlip = yes);
 	}
 
 	public static void setFlipAllOnClick(boolean on) {
-		Formatter.putSetting("flipAllOnClick", flipAllOnClick = on);
+		AppSettings.set("flipAllOnClick", flipAllOnClick = on);
 	}
 
 	public boolean flipped;
@@ -95,11 +95,18 @@ public class HierarchyItemModel {
 	protected String translates() {
 		StringBuilder desc = new StringBuilder();
 		StringBuilder trls = new StringBuilder();
+		List<BasicData> withDesc = new ArrayList<>();
 		for (BasicData trl : ((Word) bd).getChildren(parent)) {
 			trls.append('\n').append(nameParser(trl.getName()));
-			if (!trl.getDesc(parent).isEmpty())
-				desc.append('\n').append(trl.getName()).append(':')
-						.append(' ').append(trl.getDesc(parent));
+			if (!trl.getDesc(parent).isEmpty()) withDesc.add(trl);
+		}
+		// Show the owning translate's name only when its description
+		// would otherwise be ambiguous among multiple descriptions.
+		boolean showNames = withDesc.size() > 1;
+		for (BasicData trl : withDesc) {
+			desc.append('\n');
+			if (showNames) desc.append(trl.getName()).append(": ");
+			desc.append(trl.getDesc(parent));
 		}
 		info = desc.length() > 0 ? desc.substring(1) : "";
 		return trls.substring(1);

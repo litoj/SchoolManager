@@ -10,8 +10,8 @@ import com.schlmgr.gui.UriPath;
 import java.io.IOException;
 import java.util.LinkedList;
 
-import IOSystem.Formatter.IOSystem.GeneralPath;
-import objects.Picture;
+import com.schlmgr.gui.engine.IOSystem.Formatter.IOSystem.GeneralPath;
+import com.schlmgr.gui.engine.objects.Picture;
 
 import static com.schlmgr.gui.Controller.dp;
 
