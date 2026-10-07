@@ -1,9 +1,13 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+    <!-- Base application theme. DayNight: the system dark setting selects
+         values-night/colors.xml, which every screen reads its colours from. -->
+    <style name="AppTheme" parent="Theme.AppCompat.DayNight.DarkActionBar">
         <!-- Customize your theme here. -->
-        <item name="android:forceDarkAllowed" tools:targetApi="q">true</item>
+        <!-- Force dark stays off: the night palette owns these colours already,
+             and force dark would darken them a second time (that is what made
+             the body text unreadable and left the header green untouched). -->
+        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
         <item name="colorPrimary">@color/colorPrimaryFg</item>
         <item name="colorPrimaryDark">@color/colorPrimaryBg</item>
         <item name="android:textColor">@color/colorPrimaryFg</item>
@@ -14,9 +18,17 @@
     <style name="AppTheme.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
-        <item name="android:statusBarColor">#3a8010</item>
+        <item name="android:statusBarColor">@color/colorHeaderSoft</item>
+        <!-- The status bar icons carry the header's foreground, so they flip with it:
+             white on the darkened band here, dark on the lightened one at night. -->
+        <item name="android:windowLightStatusBar">@bool/darkStatusBarIcons</item>
     </style>
 
-    <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+    <!-- The bar's chrome follows the on-header colour: the drawer arrow takes its
+         colour from ?attr/colorControlNormal (through drawerArrowStyle), so the
+         app-bar title and both bar icons flip together with the header. -->
+    <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="colorControlNormal">@color/colorOnHeader</item>
+    </style>
 
 </resources>
