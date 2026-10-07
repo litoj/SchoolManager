@@ -7,22 +7,22 @@
 
     <fragment
         android:id="@+id/menu_objects"
-        android:name="com.schlmgr.gui.fragments.MainFragment"
+        android:name="cz.litoj.schlmgr.gui.fragments.MainFragment"
         android:label="@string/menu_objects"
         tools:layout="@layout/fragment_main" />
 
     <fragment
         android:id="@+id/test"
-        android:name="com.schlmgr.gui.fragments.TestFragment"
+        android:name="cz.litoj.schlmgr.gui.fragments.TestFragment"
         android:label="Test" />
 
     <fragment
         android:id="@+id/menu_options"
-        android:name="com.schlmgr.gui.fragments.SettingsFragment"
+        android:name="cz.litoj.schlmgr.gui.fragments.SettingsFragment"
         android:label="@string/menu_settings"
         tools:layout="@layout/fragment_settings" />
 
     <fragment
         android:id="@+id/menu_about"
-        android:name="com.schlmgr.gui.fragments.AboutFragment" />
+        android:name="cz.litoj.schlmgr.gui.fragments.AboutFragment" />
 </navigation>

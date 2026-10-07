@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.schlmgr"
+    namespace = "cz.litoj.schlmgr"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.schlmgr"
+        applicationId = "cz.litoj.schlmgr"
         minSdk = 30
         targetSdk = 37
         versionCode = 65
