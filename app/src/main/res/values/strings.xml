@@ -1,113 +1,81 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="action_chooser_file">Choose file</string>
-    <string name="action_chooser_dir">Choose dir</string>
     <string name="action_full_text">Full Text</string>
-    <string name="action_settings">Settings</string>
     <string name="action_sw_success">" written with success"</string>
     <string name="about_text">This program was developed to help people with school subjects, especially with foreign languages and biology.\n\nFor any further help contact me at litos@tuta.io</string>
-    <string name="add_picture">Add picture</string>
     <string name="add_word">Add translate</string>
-    <string name="answers">Correct answers</string>
     <string name="app_name" translatable="false">School Manager</string>
     <string name="cancel">Cancel</string>
-    <string name="chapter_file">Save content into it\'s own file</string>
-    <string name="choose_dir">Directory successfully changed.</string>
     <string name="continue_delete">Do you really want to delete the selected items?</string>
     <string name="cut">Cut</string>
     <string name="data_child_count">"Elements: %1$d"</string>
     <string name="data_children_sf">"Elements: %1$d, Success rate: %2$d%3$s"</string>
     <string name="data_search_time">"Elements: %1$d;\tTime: %2$dms"</string>
     <string name="data_desc">Description</string>
-    <string name="data_file">Separated file</string>
-    <string name="data_image">Image</string>
     <string name="data_name">Name</string>
     <string name="data_translate">Translation</string>
     <string name="data_translations">Translations</string>
     <string name="delete">Delete</string>
-    <string name="dir_import">Import subjects</string>
-    <string name="dir_set_subjdir">Set source</string>
+    <string name="dir_import">Import subject</string>
     <string name="done">Done</string>
     <string name="edit">Edit</string>
     <string name="exception_handler">"An unexpected failure occurred in the last session.
         \nPlease copy the information about this error and send it to the creator.
         \nCause: "</string>
-    <string name="exception_warning">An error happened, please restart the app</string>
-    <string name="fail_cf_name_length">Name can\'t be longer than 150 characters!</string>
-    <string name="fail_cf_name_typo">Name can\'t contain /|\:"?*§$[]</string>
-    <string name="fail_find">Failed to find path:</string>
-    <string name="fail_formatter">Setting default path.</string>
     <string name="fail_load">Failed to load file:</string>
     <string name="fail_load_src">"while loading data of: "</string>
     <string name="fail_no_objects">No objects of this type were found</string>
-    <string name="fail_parent">"parent: "</string>
-    <string name="fail_permission_write">"Storage access was necessary to use this dir: "</string>
-    <string name="fail_ref_msg">"Unknown reference: "</string>
     <string name="fail_save">Failed to save file:</string>
     <string name="fail_save_src">"while saving data of: "</string>
-    <string name="fail_sr_msg">Wrong syntax in line:</string>
     <string name="fail_import_mch_word_exists">"Import cancelled, subject already exists: "</string>
+    <string name="fail_reference_chapter">"A chapter cannot be a reference"</string>
     <string name="fail_type">", of type: "</string>
     <string name="help">Help</string>
     <string name="help_create">Items creation</string>
     <string name="help_create_ch">Chapters</string>
     <string name="help_create_ch_how">Chapters are created from the \'more\' menu.
-        \nThey have only the basic information as well, but in addition to that, they have an option to have their own file, where all items inside them will be saved (used for quicker load when there are many items stored, e. g. 100 words).</string>
-    <string name="help_create_how">All items created from the \'more\' menu (all except References) in the top right corner have two columns for name of the new item and for its description (optional).
+        \nThey have only the basic information described above.</string>
+    <string name="help_create_how">All items created from the \'more\' menu in the top right corner have two columns for name of the new item and for its description (optional).
         \nThe description of the item can be multiline.
         \nAfter you are done with these two colums, there can be more stuff for each different type of item.
-        \nWhen you are done with all that information, click \'OK\' to create the item, or whenever you want to cancel the action click \'Cancel\' or click outside the window to exit the dialog.</string>
+        \nWhen you are done with all that information, click \'OK\' to create the item, or click \'Cancel\' to exit the dialog. A click outside the window closes the dialog too, but only when nothing was changed.</string>
     <string name="help_create_mch">Subjects</string>
     <string name="help_create_mch_how">Subjects are created from the \'more\' menu.
-        \nThey have just the basic information described above.
-        \nDirectory of the created subject will be called after the specified name, therefore the name can contain only file usable characters.</string>
-    <string name="help_create_pic">Pictures</string>
-    <string name="help_create_pic_how">Pictures are created from the \'more\' menu.
-        \nOther than the basic information they contain an \'Add image\' button, which brings up an image chooser.
-        \nAfter selecting an image to add, there will be added an image item consisting of its name and the image itself.
-        \nIn decision to remove any image, click on the red cross on the right of the name of that image.</string>
-    <string name="help_create_ref">References</string>
-    <string name="help_create_ref_how">References are created using \'Reference\' button in selecting mode.
-        \nAfter selecting items to reference click the \'Reference\' button, then find the chapter you want to put it in and click the \'Paste\' button.
-        \nThese objects can\'t be edited, only removed, but they refer to any other type of item except Subjects and References.</string>
+        \nThey have just the basic information described above.</string>
+    <string name="help_create_note">Notes</string>
+    <string name="help_create_note_how">Notes are created from the \'more\' menu.
+        \nThey carry only the basic information described above — a name and a description — and serve for any text that is not a word, like a grammar rule.</string>
     <string name="help_create_word">Words</string>
     <string name="help_create_word_how">Words are created from the \'more\' menu.
-        \nOther than the basic information they contain an \'Add translate\' button, which adds a translate item bellow.
+        \nOther than the basic information they contain an add icon below the fields, which adds a translate item.
         \nTranslates consist of name and optional description.
-        \nIn decision to remove any translate, click on the red cross on the right of the specified translate.</string>
+        \nTo remove a translate, click on the cancel icon on the right of the specified translate.</string>
     <string name="help_extra">More useful functions</string>
     <string name="help_extra_how">This application has some more functions that can sometimes help. Here is the list and explanation of them.</string>
     <string name="help_extra_import_mch">Subjects import</string>
-    <string name="help_extra_import_mch_how">If you want to use some external subject folders, this is the way to go.
-        \nFor external subjects import select more options and than \'Import subject\'.
-        \nYou can select multiple subject folders at a time.
-        \nAfter selecting desired subject folders, click \'Import\'.
-        \nRemove them from the list by tapping on the red button on the right side.</string>
+    <string name="help_extra_import_mch_how">A subject folder of the old app version can be imported on the subjects screen: pick \'Import subject\' in the \'more\' menu.
+        \nA subject with the same name is not imported twice.</string>
     <string name="help_extra_import_mch_word">Subject import from a file</string>
-    <string name="help_extra_import_mch_word_how">A subject can be created from a words file, select \'Import subjects file\' in the more options menu on the main screen.
-        \nThe new subject is named after the picked file and its content is parsed exactly like the words import (chapters and words), only at the top level of the subject.
-        \nIf a subject with the same name already exists, nothing is imported.</string>
+    <string name="help_extra_import_mch_word_how">A subject can be created from a words file: on the subjects screen pick \'Import file\' in the \'more\' menu.
+        \nThe new subject is named after the picked file and its content is parsed exactly like the words import (chapters and words), only at the top level of the subject.</string>
     <string name="help_extra_naming">Naming convention</string>
     <string name="help_extra_naming_how">If you have similar names of certain words, and they have identical translations, combine them using these: /().
         \nSlash character signals two different options ending by a whitespace, an interpunction character or a bracket.
         \nExamples:
         \nI/They come = \'I come\' or \'They come\'
         \n(I go)/(He goes). = \'I go.\' or \'He goes\'.</string>
-    <string name="help_extra_sch_import">File chapter import</string>
-    <string name="help_extra_sch_import_how">File chapters can be added using \'Add chapter from file\' button found in the more options menu.
-        \nSelect the file of the desired chapter, written in JSON format, and it will be added into the currently opened location of a subject.
-        \nAny pictures or file chapters included in the loaded file have to be copied manually.
-        \nIt is highly recommended not to import subject files.</string>
     <string name="help_extra_words_export">Words exporting</string>
-    <string name="help_extra_words_export_how">Export words by opening a chapter which content you want to export and select \'Export words\' option in the more options menu.          Than just select the file you want to add the current word content in.          The exported words can be imported again without loss.</string>
+    <string name="help_extra_words_export_how">Select the containers to export and pick an option in the \'Export\' submenu of the \'more\' menu (the export options appear while rows are selected).
+        \nThe word file is compact and carries only the structure of the vocabulary; the JSON file is a complete replica of the subject, success rates included.
+        \nBoth formats can be imported again without loss.</string>
     <string name="help_extra_words_import">Words importing</string>
-    <string name="help_extra_words_import_how">You can import words from a file, it can be also structured in a simpler hierarchy. The file can contain chapters and words.
+    <string name="help_extra_words_import_how">Words are imported through \'Import file\' in the \'more\' menu — inside a container they land in it, on the subjects screen they create a new subject. The import detects the file itself: a name ending in \'.json\' or \'.hjson\' is a subject tree, anything else is a word list. The word file can be structured in a simpler hierarchy: it can contain chapters and words.
         \nDescription to individual items can be written directly behind the item in format like \'[description]\'.
         \nWords and translates can be separated using \';\', \'=\', or \'→\'.
         \nWords with same translate are separated by a backward slash \'\\\'.
-        \nChapters begin on a separate line in the following format \'chapter name [optional description] {\', end them with a single \'}\' on a separate line. For saving the chapter into an etra file, use \'§\' directly before \'{\'.
+        \nChapters begin on a separate line in the following format \'chapter name [optional description] {\', end them with a single \'}\' on a separate line.
         \nEvery item should be written on a new line, spacing and indentation between them is ignored - meant only for better readability.
         \nPossible format example:
-        \n\nchapter-in-file 1 §{
+        \n\nchapter-in-file 1 {
         \n\tword 1;translate 1
         \n\tword 2=translate 2
         \n\tsubchapter name [subchapter description] {
@@ -119,7 +87,7 @@
         \n}</string>
     <string name="help_search">Searching</string>
     <string name="help_search_how">Searching is enabled in all chapters and subjects.
-        \nTyped text is kept in the search field even when it\'s not visible.
+        \nIn a search list, a click on a found chapter opens its container.
         \nThere are various methods for searching, the search engine accepts naming syntax.</string>
     <string name="help_search_regex">Regex syntax</string>
     <string name="help_search_regex_char_class">"Char Class\n[abc]\n[^abc]\n[a-zA-Z]\n[a-d[m-p]]\n[a-z&amp;&amp;[def]]\n[a-z&amp;&amp;[^bc]]\n[a-z&amp;&amp;[^m-p]]"</string>
@@ -136,12 +104,12 @@
     <string name="help_search_regex_quant">"Regex\nX?\nX+\nX*\nX{n}\nX{n,}\nX{y,z}"</string>
     <string name="help_search_regex_quant_desc">"Description\nX occurs once or not at all\nX occurs once or more times\nX occurs zero or more times\nX occurs n times only\nX occurs n or more times\nX occurs at least y times but less than z times"</string>
     <string name="help_search_types">Search variants</string>
-    <string name="help_search_types_how">This application has more search methods aside from simple text.
+    <!-- the text shows literal % signs, which are not format specifiers -->
+    <string name="help_search_types_how" formatted="false">This application has more search methods aside from simple text.
         \nThe prefix syntax has 3 levels and is initiated by \'\\\' char followed by 0-3 modifiers and comparing value, the levels are:
         \n1. Level: desired type
         \n\tW - must be a word
         \n\tT - must be a translate
-        \n\tP - must be a picture
         \n\tC - must be a chapter
         \n2. Level: what is compared
         \n\tS - amount of successes
@@ -168,98 +136,70 @@
         \n\t\\C\\K72\t- all chapters with name containing \'k72\'</string>
     <string name="help_select">Editing</string>
     <string name="help_select_delete">Permanently deletes the selected items after accepting the delete-check dialog.</string>
-    <string name="help_select_edit">Only one item can be edited at a time, that item can not be a reference. A window with parameters of the selected item pops up. The style of the editing window is same when creating that type of item.</string>
+    <string name="help_select_edit">Only one item can be edited at a time. A window with parameters of the selected item pops up. The style of the editing window is same as when creating that type of item.</string>
     <string name="help_select_how">All created objects can be modified in some way.
-        \nThere are two ways to get into select mode.
-        \n\t1. Long-pressing an item brings up the bottom sheet with possible actions. Long-press also toggles the item selection state as well as tapping the checkbox showing that state.
-        \n\t2. Tapping on the \'select\' button in the top right corner (pencil icon) also brings up the bottom options sheet. Repeated clicking selects all items of the list or (if all items are selected) exits the selection mode.</string>
-    <string name="help_select_move">Cuts all selected items and shows the paste sheet (cancel and paste buttons). After opening the desired directory click \'Paste\'.</string>
-    <string name="help_select_ref">While in search list a click opens the path where the item is in. Otherwise shows the paste sheet (cancel and paste buttons). After opening the desired directory click \'Paste\' to create all references for the selected items.</string>
-    <string name="help_subjdir">Select subjects directory</string>
-    <string name="help_subjdir_how">Find the directory where you want to have all school subjects.
-        \nThen select that directory by a long-click or check it and than click \'Set source\'.
-        \nNow this directory will be the primary source of subjects and all created subjects will be saved into that directory.
-        \nIf you want to return to the current subjects dir select the \'Go to current directory\' option in the more menu.</string>
+        \nA long-press on an item starts the select mode: the item becomes selected and the bottom sheet with possible actions shows. A tap on the checkbox of a row toggles its selection too.
+        \nKeep the finger pressed and move it over the list to select the range of items it crosses.
+        \nWhile items are selected, the search button in the top right corner becomes the select-all toggle: it selects all items of the list, or (if all items are selected) exits the selection mode. The back key also exits the selection mode.</string>
+    <string name="help_select_move">Cuts all selected items and shows the paste sheet (cancel and paste buttons). After you open the target chapter, click \'Paste\'.</string>
     <string name="help_test">Tests</string>
-    <string name="help_test_how">There are two test types - words and pictures.
-        \nYou can choose the test\'s length, number of tested items and test type.
+    <string name="help_test_how">The test asks for the words of the chosen sources.
+        \nYou can choose the test\'s length and number of tested items.
+        \nThe switch on the test screen turns the direction around: the translations are shown and the word is answered, or the other way.
         \nThe test can only contain items from one subject.</string>
     <string name="help_test_results">Test results</string>
     <string name="help_test_results_how">After the time is up or you finished the test a window with the test\'s success rate and all tested items.
-        \nEvery item shows its hint, correct answer and your answer.</string>
+        \nEvery item shows the word with its valid translations, how many times it was tested, its success rate (successful/total) and your answer.</string>
     <string name="help_test_run">Test progress</string>
     <string name="help_test_run_how">After pressing the button \'Start\' the test is started and the remaining time can be seen in the top.
         \nWhen you are done with the test click \'Done\' to submit the test.
         \nWhenever you decide to abolish the test press twice the back button.</string>
     <string name="help_test_select">Selecting items for the test</string>
     <string name="help_test_select_how">The variety of items to create the test from can be added to using the \'Add source\' button.
-        \nThen a item chooser pops up, where you can repeatedly select items for the test (but only from on one subject).</string>
+        \nThen a item chooser pops up, where you can repeatedly select items for the test (but only from on one subject).
+        \nA test can also be prepared straight from the explorer: select the rows to test and tap \'Test\' on the selection bar.</string>
     <string name="hierarchy_ch">Chapter</string>
-    <string name="hierarchy_mch">Subject</string>
-    <string name="hierarchy_picture">Picture</string>
-    <string name="hierarchy_ref">Reference</string>
-    <string name="hierarchy_sch_file">Chapter file</string>
     <string name="hierarchy_word">Word</string>
-    <string name="position">Position</string>
-    <string name="image_choose_capture">Camera</string>
-    <string name="image_choose_gallery">Gallery</string>
-    <string name="import_mch">Import subject</string>
+    <string name="hierarchy_note">Note</string>
     <string name="loaded">Loaded:</string>
     <string name="loaded_chaps">Chapters</string>
     <string name="menu_about">About</string>
-    <string name="menu_category">"Category"</string>
-    <string name="menu_choose_dir">Choose source</string>
-    <string name="menu_load">Load subject</string>
     <string name="menu_objects">Subjects</string>
     <string name="menu_settings">Options</string>
-    <string name="menu_word_import">Add words</string>
-    <string name="more_clean">Clean database</string>
-    <string name="more_content">Content</string>
     <string name="more_export">Export</string>
-    <string name="more_export_word">Export word file</string>
-    <string name="more_import">Import</string>
-    <string name="more_import_sch">Add chapter from file</string>
-    <string name="more_import_word">Import word file</string>
-    <string name="more_import_word_mch">Import subjects file</string>
+    <string name="more_reference">Reference</string>
+    <string name="more_export_word">Word file (no statistics)</string>
+    <string name="more_import_file">Import file</string>
+    <string name="more_export_json">JSON file (success rates included)</string>
+    <string name="more_flip">Flip words and translations</string>
+    <string name="json_export_ext">.hjson</string>
+    <string name="json_import_types">application/hjson</string>
     <string name="more_new">New</string>
-    <string name="more_sf_reval_mch">Recount success rate</string>
-    <string name="more_sf_revaluate">Recount success rate of this chapter</string>
     <string name="new_chapter">New chapter</string>
     <string name="new_mch">New subject</string>
-    <string name="new_picture">New picture</string>
     <string name="new_word">New word</string>
-    <string name="number">%1$d</string>
+    <string name="new_note">New note</string>
+    <string name="note_copied">Copied</string>
     <string name="objects_cancel">Cancel</string>
     <string name="paste">Paste</string>
     <string name="pattern_err">Invalid regex syntax:</string>
     <string name="popup_copy">Copy</string>
-    <string name="popup_delete_fail">Deletion failed</string>
+    <string name="popup_copy_failed">Copying to the clipboard failed</string>
+    <string name="popup_copy_truncated">[the copy was truncated — the text is too long for the clipboard]</string>
     <string name="position_number">%1$d.</string>
     <string name="press_exit">Press again to exit</string>
     <string name="search">Input Keyword</string>
     <string name="select">Select</string>
     <string name="select_all">Select all</string>
-    <string name="select_dir_import">Import</string>
-    <string name="select_dir_src">Source</string>
-    <string name="select_ref">Reference</string>
-    <string name="select_share">Share</string>
-    <string name="selected">Selected</string>
+    <string name="select_test">Test</string>
     <string name="setts_him_allflip">Translate all words on every click</string>
     <string name="setts_him_flipped">Translate words automatically</string>
     <string name="setts_him_parse">Display item names parsed</string>
     <string name="setts_interface">Interface</string>
     <string name="setts_show_desc">Show description directly</string>
-    <string name="setts_test">Test preset</string>
     <string name="setts_test_amount">Default tested amount</string>
     <string name="setts_test_clever">Make tests by success rate</string>
     <string name="setts_test_time">Default time per item</string>
-    <string name="setts_test_type">Default test type – pictures</string>
-    <string name="setts_theme">Theme</string>
-    <string name="setts_theme_bg">Background color</string>
-    <string name="setts_theme_dark">Dark</string>
-    <string name="setts_theme_fg">Text color</string>
-    <string name="setts_theme_head">Header color</string>
-    <string name="setts_theme_main">Main colors</string>
     <string name="setts_word_splitter">Sequence splitting words from translates when exporting</string>
     <string name="sort">Sort</string>
     <string name="sort_alpha_AZ">alphabet ▼</string>
@@ -270,15 +210,10 @@
     <string name="sort_sf_01">success ▼</string>
     <string name="sort_sf_10">success ▲</string>
     <string name="start">Start</string>
-    <string name="storage_external">External storage</string>
-    <string name="storage_internal">Internal storage</string>
-    <string name="storage_usbotg">External USB storage</string>
-    <string name="subject_not_found">"Subject folder wasn't found: "</string>
     <string name="success_rate">"Success rate: %1$s%%"</string>
     <string name="test_add">Add source</string>
+    <string name="test_reverse">Reverse test direction</string>
     <string name="test_size">Tested amount</string>
     <string name="test_time">Duration (s)</string>
-    <string name="test_type">Type</string>
     <string name="time_left">%1$ds</string>
-    <string name="versions">Versions</string>
 </resources>

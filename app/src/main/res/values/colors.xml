@@ -1,6 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Light palette. values-night/colors.xml overrides the entries whose
+         night value differs; an entry missing there is the same in both. -->
     <color name="colorPrimaryFg">#DD000000</color>
     <color name="colorPrimaryBg">#FFFFFF</color>
     <color name="colorPrimaryHeader">#559915</color>
+
+    <!-- colorPrimaryHeader mixed with 15% of the colour OPPOSITE to the one on it,
+         so the band always stands apart from the foreground that shares it. Two green
+         banners use it - the band behind the status bar icons, and the light end of
+         the drawer's banner. The status bar icons are the header's own foreground
+         (white here, dark at night), so the band goes darker than the header here and
+         lighter than it at night. See @bool/darkStatusBarIcons. -->
+    <color name="colorHeaderSoft">#FF488212</color>
+
+    <!-- The explorer palette, carried over from the former XML layouts
+         (item_hierarchy/item_search: rows, explorer: chrome,
+         fragment_main/activity_select_item: action strips, search_back: field).
+         These are the single colour source for the Compose explorer — the only
+         colour it computes itself is the success-ratio background of the
+         position cell. -->
+    <color name="colorPositionText">#FF000000</color>
+    <color name="colorDescText">#FF008800</color>
+    <color name="colorRowDivider">#44888888</color>
+    <color name="colorStripDivider">#FF888888</color>
+    <color name="colorOnHeader">#FFFFFFFF</color>
+    <!-- Enabled label of the bottom action strips. Kept apart from colorOnHeader:
+         those strips sit on the grey colorActionBar wash, not on the green header,
+         so their labels stay light when the on-header color turns dark. -->
+    <color name="colorActionText">#FFFFFFFF</color>
+    <color name="colorActionTextDisabled">#66FFFFFF</color>
+    <color name="colorActionBar">#88000000</color>
+    <color name="colorSearchField">#FFFFFFFF</color>
+    <color name="colorSearchBorder">#FF111111</color>
+    <color name="colorSearchHint">#FFE6E6E6</color>
+    <color name="colorSearchText">#FF000000</color>
+
+    <!-- Shared component colors, sourced by every screen (values kept from the
+         Compose screens they color). Only icon drawables and the TestActivity
+         timer flash may carry colors that do not come from this file. -->
+    <color name="colorControlLine">#88888888</color>
+    <color name="colorSectionHeader">#28888888</color>
+    <color name="colorSettingsDivider">#38888888</color>
+    <color name="colorSourceDivider">#58888888</color>
+    <color name="colorGroupBackground">#55888888</color>
+    <color name="colorSubBackground">#22888888</color>
+    <color name="colorFailure">#FFAA0000</color>
+    <color name="colorScrim">#90000000</color>
 </resources>

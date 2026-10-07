@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".gui.activity.MainActivity">
+    tools:context=".ui.activity.MainActivity">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
@@ -22,13 +22,15 @@
                 android:id="@+id/bar"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="1" />
+                android:layout_weight="1"
+                app:titleTextColor="@color/colorOnHeader" />
 
             <ImageView
                 android:id="@+id/bar_select"
                 android:layout_width="50dp"
                 android:layout_height="55dp"
-                android:background="@drawable/ic_select"
+                android:background="@drawable/ic_search"
+                android:backgroundTint="@color/colorOnHeader"
                 android:scaleX="0.65"
                 android:scaleY="0.55" />
 
@@ -37,6 +39,7 @@
                 android:layout_width="50dp"
                 android:layout_height="55dp"
                 android:background="@drawable/ic_more"
+                android:backgroundTint="@color/colorOnHeader"
                 android:scaleX="0.65"
                 android:scaleY="0.55" />
         </LinearLayout>

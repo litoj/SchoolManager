@@ -1,32 +1,38 @@
 [versions]
-agp = "9.3.3"
+agp = "9.4.1"
 activity = "1.13.0"
 appcompat = "1.8.0"
 # Material is pinned to the project's original version per request.
 # Bump to the latest stable only if 1.1.0 fails to build on the new toolchain.
 material = "1.1.0"
-constraintlayout = "2.2.2"
 navigation = "2.10.2"
-recyclerview = "1.4.0"
 documentfile = "1.1.0"
-# Must match the Kotlin version AGP 9.3.3's built-in Kotlin uses (KGP 2.2.10).
+# Must match the Kotlin version AGP's built-in Kotlin uses (KGP 2.2.10).
 kotlin = "2.2.10"
+# KSP 2.3.x is decoupled from the Kotlin version; 2.3.x supports AGP 9 built-in Kotlin.
+ksp = "2.3.12"
+room = "2.8.5"
+coroutines = "1.11.0"
 composeBom = "2026.09.00"
 fragment = "1.8.9"
+lifecycle = "2.11.0"
 junit = "4.13.2"
 mockito = "5.24.0"
+hjson = "3.1.0"
+# The JVM Android runtime of the database unit tests (see ItemFlipTest).
+robolectric = "4.15.1"
 
 [libraries]
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity" }
 google-material = { group = "com.google.android.material", name = "material", version.ref = "material" }
-androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 androidx-navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment", version.ref = "navigation" }
 androidx-navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version.ref = "navigation" }
-androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
 androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version.ref = "documentfile" }
 androidx-fragment-ktx = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "fragment" }
+androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
@@ -35,7 +41,14 @@ androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "u
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockito" }
+hjson = { group = "org.hjson", name = "hjson", version.ref = "hjson" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

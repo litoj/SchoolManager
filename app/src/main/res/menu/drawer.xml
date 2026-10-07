@@ -8,7 +8,7 @@
             android:title="@string/menu_objects" />
         <item
             android:id="@+id/test"
-            android:icon="@drawable/ic_test"
+            android:icon="@drawable/ic_test_black"
             android:title="Test" />
         <item
             android:id="@+id/menu_options"

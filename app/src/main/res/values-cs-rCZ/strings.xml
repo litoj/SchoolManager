@@ -1,89 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="action_chooser_file">Vyberte soubor</string>
     <string name="action_full_text">Celý Text</string>
-    <string name="action_settings">Nastavení</string>
     <string name="action_sw_success">" zapsáno úspěšně"</string>
     <string name="about_text">Tento program byl vyvinut, aby pomohl lidem se školními předměty, zvláště s cizími jazyky a biologií.\n\nPro další pomoc mě kontaktujte na litos@tuta.io</string>
-    <string name="add_picture">Přidat obrázek</string>
     <string name="add_word">Přidat překlad</string>
-    <string name="answers">Správné odpovědi</string>
     <string name="cancel">Zrušit</string>
-    <string name="chapter_file">Ukládat obsah do vlastního soboru</string>
-    <string name="choose_dir">Složka úspěšně změněna.</string>
     <string name="continue_delete">Opravdu chcete odstranit vybrané položky?</string>
     <string name="cut">Vyjmout</string>
     <string name="data_child_count">"Položek: %1$d"</string>
     <string name="data_children_sf">"Položek: %1$d, Úspěšnost: %2$d%3$s"</string>
     <string name="data_search_time">"Položek: %1$d;\tČas: %2$dms"</string>
     <string name="data_desc">Popisek</string>
-    <string name="data_file">Vlastní soubor</string>
-    <string name="data_image">Obrázek</string>
     <string name="data_name">Název</string>
     <string name="data_translate">Překlad</string>
     <string name="data_translations">Překlady</string>
     <string name="delete">Odstranit</string>
-    <string name="dir_import">Importovat předměty</string>
-    <string name="dir_set_subjdir">Nastavit zdroj</string>
+    <string name="dir_import">Importovat předmět</string>
     <string name="done">Hotovo</string>
     <string name="edit">Upravit</string>
     <string name="exception_handler">"Při posledním chodu nastala neočekávaná chyba.
         \nProsím zkopírujte informace o chybě a zašlete je tvůrci.
         \nDůvod: "</string>
-    <string name="exception_warning">Nastala chyba, prosím restartujte aplikaci</string>
-    <string name="fail_cf_name_length">Název nemůže být delší než 150 znaků!</string>
-    <string name="fail_cf_name_typo">Název nemůže obsahovat /|\:"?*§$[]</string>
-    <string name="fail_find">Nebyla nalezena cesta:</string>
-    <string name="fail_formatter">Nastavuje se výchozí cesta.</string>
     <string name="fail_load">Neúspěšné načítání souboru:</string>
     <string name="fail_load_src">"během načítání prvku: "</string>
     <string name="fail_no_objects">Žádné objekty tohoto typu nebyly nalezeny</string>
-    <string name="fail_parent">"rodič: "</string>
-    <string name="fail_permission_write">"Přístup k uložišti byl nezbytný pro načtení této složky: "</string>
-    <string name="fail_ref_msg">"Odkaz nenalezen: "</string>
     <string name="fail_save">Neúspěšné ukládání souboru:</string>
     <string name="fail_save_src">"během ukládání prvku: "</string>
-    <string name="fail_sr_msg">"Špatná syntax na řádku: "</string>
     <string name="fail_import_mch_word_exists">"Import zrušen, předmět již existuje: "</string>
+    <string name="fail_reference_chapter">"Kapitola nemůže být zástupcem"</string>
     <string name="fail_type">", typ: "</string>
     <string name="help">Nápověda</string>
     <string name="help_create">Vytváření položek</string>
     <string name="help_create_ch">Kapitoly</string>
     <string name="help_create_ch_how">Kapitoly se vytvářejí pomocí menu \'více\'.
-        \nTaké obsahují pouze základní informace, ale navíc obsahují možnost mít vlastní soubor, do kterého se bude ukládat veškerý jejich obsah (používáno pro urychlení načítání velkých kapitol obsahujících např. 100 slovíček).</string>
-    <string name="help_create_how">Všechny položky vytvářené z menu \'více\' (všechny až na Odkazy) mají dva základní parametry k vyplnění.
+        \nTaké obsahují pouze základní informace výše uvedené.</string>
+    <string name="help_create_how">Všechny položky vytvářené z menu \'více\' mají dva základní parametry k vyplnění.
         \nPrvním je název vytvářené položky (povinný).\nDruhým jsou poznámky k dané položce (volitelné, mohou mít více řádků).
         \nDále mohou dialogy obsahovat další doplňující parametry specifické pro různé typy vytvářených položek.
-        \nPo vyplnění všech potřebných informací klikněte na tlačítko \'OK\' pro vytvoření položky, nebo můžete vytváření kdykoli ukončit kliknutím na tlačítko \'Zrušit\' nebo kliknutím mimo okno.</string>
+        \nPo vyplnění všech potřebných informací klikněte na tlačítko \'OK\' pro vytvoření položky, nebo můžete vytváření kdykoli ukončit kliknutím na tlačítko \'Zrušit\'. Kliknutím mimo okno dialog také zavřete, ale pouze dokud nebyla provedena žádná změna.</string>
     <string name="help_create_mch">Předměty</string>
     <string name="help_create_mch_how">Předměty se vytvářejí pomocí menu \'více\'.
-        \nObsahují pouze základní informace výše uvedené.
-        \nSložka vytvářeného předmětu má stejný název, jako předmět, proto mohou názvy předmětů obsahovat pouze znaky použitelné v názvech souborů.</string>
-    <string name="help_create_pic">Obrázky</string>
-    <string name="help_create_pic_how">Obrázky se vytvářejí pomocí menu \'více\'.
-        \nKromě základních informací obsahují tlačítko \'Přidat obrázek\', které spustí dialog na výběru obrázku.
-        \nPo zvolení obrázku se pod tímto tlačítkem zobrazí název zvoleného obrázku a obrázek samotný.
-        \nU zvolených obrázků není možné vytvářet popisek.\nPokud se rozhodnete libovolný z obrázků odstranit, klikněte na červený křížek vpravo od názvu obrázku.</string>
-    <string name="help_create_ref">Zástupci</string>
-    <string name="help_create_ref_how">Zástupci se vytvářejí pomocí tlačítka \'Zástupce\' ve výběrovém zobrazení.
-        \nPo vybrání položek k odkázání klikněte na tlačítko \'Zástupce\', následně si najděte kapitolu, do které chcete zástupce vytvořit, otevřete ji a klikněte na tlačítko \'Vložit\'.
-        \nTyto objekty lze pouze odstranit, odkazují na jiné objekty, vyjma Předmětů a Zástupců.</string>
+        \nObsahují pouze základní informace výše uvedené.</string>
+    <string name="help_create_note">Poznámky</string>
+    <string name="help_create_note_how">Poznámky se vytvářejí pomocí menu \'více\'.
+        \nObsahují pouze základní informace výše uvedené — název a popis — a slouží pro text, který není slovíčkem, například pravidlo gramatiky.</string>
     <string name="help_create_word">Slovíčka</string>
     <string name="help_create_word_how">Slovíčka se vytvářejí pomocí menu \'více\'.
-        \nKromě základních informací obsahují tlačítko \'Přidat překlad\', které vytvoří pole se základními parametry určené pro definování překladu.
+        \nKromě základních informací obsahují ikonu přidání pod poli, která vytvoří pole se základními parametry určené pro definování překladu.
         \nPřeklad má opět svůj název a možnost vlastních poznámek.
-        \nPokud se rozhodnete libovolný z překladů odstranit, klikněte na červený křížek vpravo od překladu.</string>
+        \nPokud se rozhodnete libovolný z překladů odstranit, klikněte na ikonu zrušení vpravo od překladu.</string>
     <string name="help_extra">Další užitečné funkce</string>
     <string name="help_extra_how">Tento program obsahuje pár dalších zajímavých funkcí, zde je jejich přehled.</string>
     <string name="help_extra_import_mch">Import předmětů</string>
-    <string name="help_extra_import_mch_how">Kromě hlavní složky s předměty lze používat i předměty z jiných míst, aniž by bylo třeba měnit hlavní zdroj.
-        \nPro import vyberte z více možností \'Importovat předmět\'.
-        \nPo nalezení složky předmětu, můžete zvolit i více složek najednou, klikněte na tlačítko \'Importovat\'.
-        \nOpětovně je odstraníte pomocí červeného křížku napravo od importovaného předmětu.</string>
+    <string name="help_extra_import_mch_how">Složku s předmětem staré verze aplikace lze importovat na obrazovce předmětů: zvolte \'Importovat předmět\' v menu \'více\'.
+        \nPředmět se stejným názvem se neimportuje dvakrát.</string>
     <string name="help_extra_import_mch_word">Import předmětu ze souboru</string>
-    <string name="help_extra_import_mch_word_how">Předmět lze vytvořit ze souboru se slovíčky, na hlavní obrazovce zvolte v menu pro více možností \'Importovat soubor s předměty\'.
-        \nNový předmět se pojmenuje podle zvoleného souboru a jeho obsah se zpracuje stejně jako při importu slovíček (kapitoly a slovíčka), pouze na nejvyšší úrovni předmětu.
-        \nPokud předmět se stejným názvem již existuje, nic se neimportuje.</string>
+    <string name="help_extra_import_mch_word_how">Předmět lze vytvořit ze souboru se slovíčky: na obrazovce předmětů zvolte \'Importovat soubor\' v menu \'více\'.
+        \nNový předmět se pojmenuje podle zvoleného souboru a jeho obsah se zpracuje stejně jako při importu slovíček (kapitoly a slovíčka), pouze na nejvyšší úrovni předmětu.</string>
     <string name="help_extra_naming">Způsoby pojmenovávání</string>
     <string name="help_extra_naming_how">Tato aplikace umožňuje pojmenovávat slovíčka a další položky specifickým způsobem, díky kterému máte při testu více možností, jak odpovědět.
         \nK dosažení se používá těchto znaků: /()
@@ -91,25 +64,19 @@
         \nPříklady:
         \noni/ony jdou = \'oni jdou\', nebo \'ony jdou\'
         \n(Já jdu)/(Ty jdeš). = \'Já jdu.\', nebo \'Ty jdeš.\'</string>
-    <string name="help_extra_sch_import">Import souborových kapitol</string>
-    <string name="help_extra_sch_import_how">Kapitoly, které se ukládají do vlastního souboru, lze přidat do jakékoli jiné kapitoly vybráním \'Přidat kapitolu ze souboru\' v menu pro více možností.
-        \nNásledně vyberte soubor, ve kterém je daná kapitola uložena ve formátu JSON.
-        \nPokud zvolená kapitola obsahuje obrázky, či jiné kapitoly se souborem, je potřeba je dokopírovat ručně.
-        \nJe vysoce doporučeno nepřidávat soubory předmětů.</string>
     <string name="help_extra_words_export">Export slovíček</string>
-    <string name="help_extra_words_export_how">Pro export slovíček otevřete kapitolu/předmět, které chcete exportovat a následně vyberte v menu možnost \'Exportovat slovíčka\'.
-        \nPoté vyberte soubor, do kterého chcete připsat zvolenou kapitolu a její slovíčkový obsah.
-        \nExportovaná slovíčka lze zpětně importovat bez ztráty obsahu.</string>
+    <string name="help_extra_words_export_how">Vyberte kontejnery k exportu a zvolte možnost v podmenu \'Exportovat\' v menu \'více\' (možnosti exportu se zobrazí, jsou-li vybrány položky).
+        \nSoubor se slovíčky je kompaktní a nese pouze strukturu slovní zásoby; soubor JSON je úplná kopie předmětu včetně úspěšnosti.
+        \nOba formáty lze zpětně importovat bez ztráty obsahu.</string>
     <string name="help_extra_words_import">Import slovíček</string>
-    <string name="help_extra_words_import_how">Slovíčka lze do předmětu hromadně přidat pomocí souboru, který vyberete po kliknutí na možnost \'Importovat slovíčka\' v menu pro více možností.
-        \nSoubor může obsahovat kapitoly a slovíčka.
+    <string name="help_extra_words_import_how">Slovíčka se importují pomocí \'Importovat soubor\' v menu \'více\' — uvnitř kontejneru se přidají do něj, na obrazovce předmětů vytvoří nový předmět. Typ souboru se pozná automaticky: název končící \'.json\' nebo \'.hjson\' je strom předmětu, ostatní soubory jsou slovíčka. Soubor může obsahovat kapitoly a slovíčka.
         \nPoznámky k položkám pište ve tvaru \'\\[poznámky k položce\\]\'.
         \nSlovíčka a jejich překlady oddělte pomocí \';\', \'=\', nebo \'→\'.
         \nPro zápis více slovíček se stejným překladem (a naopak) oddělte slovíčka zpětným lomítkem \\.
-        \nKapitoly začínají řádkem ve tvaru \'název kapitoly [případné poznámky] {\', kapitolu ukončíte pomocí \'}\' na samostatném řádku. Přímo před otevřenou závorku můžete přidat \'§\' pro uložení kapitoly do vlastního souboru.
+        \nKapitoly začínají řádkem ve tvaru \'název kapitoly [případné poznámky] {\', kapitolu ukončíte pomocí \'}\' na samostatném řádku.
         \nKaždou položku pište na nový řádek, odsazení a mezery mezi jednotlivými položkami jsou libovolné.
         \nMožný příkladný formát:
-        \n\nkapitola v souboru §{
+        \n\nkapitola v souboru 1 {
         \n\tslovíčko 1;překlad 1
         \n\tslovíčko 2=překlad 2
         \n\tnázev podkapitoly [poznámky k podkapitole] {
@@ -121,7 +88,7 @@
         \n}</string>
     <string name="help_search">Vyhledávání</string>
     <string name="help_search_how">Vyhledávání je umožňěno ve všech kapitolách a předmětech.
-        \nVyhledaný obsah zůstává v textovém poli i po vyhledání, jen není viditelný.
+        \nVe výsledcích vyhledávání otevře kliknutí na nalezenou kapitolu její kontejner.
         \nVyhledávat lze pomocí různých metod, vyhledávání také podporuje pojmenovávací syntaxi.</string>
     <string name="help_search_regex">Syntax regulérních výrazů</string>
     <string name="help_search_regex_char_class">"Char Class\n[abc]\n[^abc]\n[a-zA-Z]\n[a-d[m-p]]\n[a-z&amp;&amp;[def]]\n[a-z&amp;&amp;[^bc]]\n[a-z&amp;&amp;[^m-p]]"</string>
@@ -138,12 +105,12 @@
     <string name="help_search_regex_how_3">Meta-znaky Regexu
         \nMeta-Charaktery regulérních výrazů fungují jako zkratky.</string>
     <string name="help_search_types">Varianty vyhledávání</string>
-    <string name="help_search_types_how">V této aplikaci lze kromě běžného vyhledávání hledat pomocí prefixu.
+    <!-- the text shows literal % signs, which are not format specifiers -->
+    <string name="help_search_types_how" formatted="false">V této aplikaci lze kromě běžného vyhledávání hledat pomocí prefixu.
         \nPrefixová syntaxe má 3 úrovně, začíná znakem \'\\\' a pak následují určující znaky, seznam urovní zde:
         \n1. Úroveň: hledaný typ
         \n\tW - musí být hlavní slovo
         \n\tT - musí být překlad slova
-        \n\tP - musí být obrázek
         \n\tC - musí být kapitola
         \n2. Úroveň: co se porovnává
         \n\tS - počet úspěchů
@@ -170,29 +137,22 @@
         \n\t\\C\\K72\t- všechny kapitoly se jménem obsahujícím \'k72\'</string>
     <string name="help_select">Upravování</string>
     <string name="help_select_delete">Po potvrzení odstraňovacího dialogu nenávratně smaže všechny vybrané položky.</string>
-    <string name="help_select_edit">Upravovat lze vždy pouze jednu položku, pokud položka není zástupcem, zobrazí se okno s parametry zvolené položky.
+    <string name="help_select_edit">Upravovat lze vždy pouze jednu položku, zobrazí se okno s parametry zvolené položky.
         \nZobrazené okno je stejné, jako při vytváření nové položky.
         \nPo dokončení úprav položky klikněte na tlačítko \'OK\' pro uložení změn.</string>
     <string name="help_select_how">Všechny vytvořené objekty je možné nějak změnit.
-        \nDo výběrového zobrazení se lze dostat více způsoby.
-        \n\t1. Dlouhým stiskem jedné z položek se zobrazí dolní lišta s možnými akcemi. Dlouhé kliknutí také mění stav výběru dané položky, stejně jako checkbox, který tento stav zobrazuje.
-        \n\t2. Zmáčknutím tlačítka výběru v pravém horním rohu (ikona tužky) se zobrazí lišta s výběrem možných akcí. Při opětovném kliknutí na tlačítko výběru se vyberou všechny položky v seznamu, nebo, pokud již jsou všechny položky vybrány, se výběrové zobrazení vypne.
+        \nDlouhým stiskem položky se zapne výběrové zobrazení: položka se vybere a zobrazí se dolní lišta s možnými akcemi. Kliknutí na checkbox řádku také mění stav výběru dané položky.
+        \nDržením prstu a jeho pohybem po seznamu vyberete rozsah položek, které prst protne.
+        \nPokud jsou některé položky vybrány, tlačítko vyhledávání v pravém horním rohu se změní na přepínač výběru všeho: vybere všechny položky v seznamu, nebo, pokud již jsou všechny vybrány, výběrové zobrazení vypne. Výběrové zobrazení vypne i tlačítko \'zpět\'.
         \nNíže je uveden seznam možných akcí.</string>
-    <string name="help_select_move">Vyjme všechny vybrané položky ze seznamu a zobrazí vkládací lištu (možnosti zrušit a vložit). Po otevření složky zvolené pro přemístění položek stiskněte tlačítko \'Vložit\'.</string>
-    <string name="help_select_ref">Při vyhledávacím seznamu otevře cestu ke zvolené položce.
-        \nJinak zobrazí vládací lištu (možnosti zrušit a vložit). Po otevření složky zvolené pro zástupce položek stiskněte tlačítko \'Vložit\'.</string>
-    <string name="help_subjdir">Výběr složky na předměty</string>
-    <string name="help_subjdir_how">Najděte si složku, ve které chcete mít uložené školní předměty.
-        \nPotom danou složku vyberte dlouhým kliknutím nebo zaškrtnutím a zvolte možnost \'Nastavit zdroj\'.
-        \nSložka bude používána jako hlavní zdroj předmětů.
-        \nPro vrácení do původní složky zvolte \'Jít do aktuální složky\' v menu s více možnostmi, pro nastavení původní složky pro předměty zvolte možnost \'Obnovit na výchozí složku\'.</string>
+    <string name="help_select_move">Vyjme všechny vybrané položky ze seznamu a zobrazí vkládací lištu (možnosti zrušit a vložit). Po otevření cílové kapitoly stiskněte tlačítko \'Vložit\'.</string>
     <string name="help_test">Testy</string>
-    <string name="help_test_how">Testy jsou dvojího druhu - slovíčka a obrázky.
+    <string name="help_test_how">Test se ptá na slovíčka ze zvolených zdrojů.
         \nU testů si můžete zvolit jejich délku a počet položek, které budete v testu muset vyplnit.
-        \nTestu může být tvořen buď pouze slovíčky, nebo pouze obrázky, typ testu lze zvolit tlačítkem v pravém horním rohu.
+        \nPřepínač na obrazovce testu obrátí směr: zobrazí se překlady a odpovídá se slovíčkem, nebo naopak.
         \nTest musí tvořit položky pouze z jednoho předmětu.</string>
     <string name="help_test_results">Výsledky testu</string>
-    <string name="help_test_results_how">Po uplynutí času na test nebo kliknutím na tlačítko \'Hotovo\' se test ukončí a zobrazí se okno s úspěšností testu a pod záhlavím seznam s položkami testu, správnými odpověďmi a vašimi odpověďmi.</string>
+    <string name="help_test_results_how">Po uplynutí času na test nebo kliknutím na tlačítko \'Hotovo\' se test ukončí a zobrazí se okno s úspěšností testu a pod záhlavím seznam s položkami testu. U každé položky se zobrazí slovo s překlady, počet jeho testování, úspěšnost (úspěšné/celkem) a vaše odpověď.</string>
     <string name="help_test_run">Průběh testu</string>
     <string name="help_test_run_how">Po započetí testu se bude v horní liště zobrazovat čas do konce testu.
         \nPři posledních 30s budete upozorněni.
@@ -200,73 +160,50 @@
         \nTest můžete kdykoli v průběhu zrušit šipkou \'zpět\'.</string>
     <string name="help_test_select">Výběr položek do testu</string>
     <string name="help_test_select_how">Soubor položek, ze kterých se vytvoří test se vybírá tlačítkem \'Přidat zdroj\'.
-        \nPo stisknutí se otevře prohlížeč předmětů, ve kterém můžete opakovaně vybrat položky do testu (pouze z jednoho předmětu).</string>
+        \nPo stisknutí se otevře prohlížeč předmětů, ve kterém můžete opakovaně vybrat položky do testu (pouze z jednoho předmětu).
+        \nTest lze připravit i přímo z průzkumníku: vyberte položky k otestování a klepněte na \'Test\' na liště výběru.</string>
     <string name="hierarchy_ch">Kapitola</string>
-    <string name="hierarchy_mch">Předmět</string>
-    <string name="hierarchy_picture">Obrázek</string>
-    <string name="hierarchy_ref">Odkaz</string>
-    <string name="hierarchy_sch_file">Soubor kapitoly</string>
     <string name="hierarchy_word">Slovíčko</string>
-    <string name="position">Pozice</string>
-    <string name="image_choose_capture">Kamera</string>
-    <string name="image_choose_gallery">Galerie</string>
-    <string name="import_mch">Importovat předmět"</string>
+    <string name="hierarchy_note">Poznámka</string>
     <string name="loaded">"Načteno: "</string>
     <string name="loaded_chaps">Kapitol</string>
     <string name="menu_about">O programu</string>
-    <string name="menu_category">Kategorie</string>
-    <string name="menu_choose_dir">Vybrat zdroj</string>
-    <string name="menu_load">Načíst předmět</string>
     <string name="menu_objects">Předměty</string>
     <string name="menu_settings">Nastavení</string>
-    <string name="menu_word_import">Vložit slovíčka</string>
-    <string name="more_clean">Vyčistit databázi</string>
-    <string name="more_content">Obsah</string>
     <string name="more_export">Exportovat</string>
-    <string name="more_export_word">Exportovat soubor se slovíčky</string>
-    <string name="more_import">Importovat</string>
-    <string name="more_import_sch">Přidat kapitolu ze souboru</string>
-    <string name="more_import_word">Importovat soubor se slovíčky</string>
-    <string name="more_import_word_mch">Importovat soubor s předměty</string>
+    <string name="more_reference">Zástupce</string>
+    <string name="more_export_word">Soubor se slovíčky (bez statistik)</string>
+    <string name="more_import_file">Importovat soubor</string>
+    <string name="more_export_json">Soubor JSON (včetně úspěšnosti)</string>
+    <string name="more_flip">Obrátit slova a překlady</string>
+    <string name="json_export_ext">.hjson</string>
+    <string name="json_import_types">application/hjson</string>
     <string name="more_new">Nový</string>
-    <string name="more_sf_reval_mch">Přepočítat úspěšnost</string>
-    <string name="more_sf_revaluate">Přepočítat úspěšnost této kapitoly</string>
     <string name="new_chapter">Nová kapitola</string>
     <string name="new_mch">Nový předmět</string>
-    <string name="new_picture">Nový obrázek</string>
     <string name="new_word">Nové slovíčko</string>
+    <string name="new_note">Nová poznámka</string>
+    <string name="note_copied">Zkopírováno</string>
     <string name="objects_cancel">Storno</string>
     <string name="paste">Vložit</string>
     <string name="pattern_err">Špatná syntax regexu:</string>
     <string name="popup_copy">Kopírovat</string>
-    <string name="popup_delete_fail">Odstranění neúspěšné</string>
+    <string name="popup_copy_failed">Kopírování do schránky se nezdařilo</string>
+    <string name="popup_copy_truncated">[kopie byla zkrácena — text je pro schránku příliš dlouhý]</string>
     <string name="position_number">%1$d.</string>
-    <string name="number">%1$d</string>
     <string name="press_exit">Stiskněte ještě jednou pro ukončení</string>
     <string name="search">Zadat klíčové slovo</string>
     <string name="select">Zvolit</string>
     <string name="select_all">Vybrat vše</string>
-    <string name="select_dir_import">Import</string>
-    <string name="select_dir_src">Zdroj</string>
-    <string name="select_ref">Zástupce</string>
-    <string name="select_share">Sdílet</string>
-    <string name="selected">Vybráno</string>
+    <string name="select_test">Test</string>
     <string name="setts_him_allflip">Přeložit všechna slovíčka každým kliknutím</string>
     <string name="setts_him_flipped">Automaticky překládat slovíčka</string>
     <string name="setts_him_parse">Zobrazovat názvy položek ve zpracované formě</string>
     <string name="setts_interface">Rozhraní</string>
     <string name="setts_show_desc">Zobrazovat poznámky přímo</string>
-    <string name="setts_test">Přednastavení testů</string>
     <string name="setts_test_amount">Výchozí počet položek v testu</string>
     <string name="setts_test_clever">Vytváření testů podle úspěšnosti</string>
     <string name="setts_test_time">Výchozí čas na položku</string>
-    <string name="setts_test_type">Výchozí typ testu – obrázky</string>
-    <string name="setts_theme">Motiv</string>
-    <string name="setts_theme_bg">Barva pozadí</string>
-    <string name="setts_theme_dark">Tmavý</string>
-    <string name="setts_theme_fg">Barva textu</string>
-    <string name="setts_theme_head">Barva záhlaví</string>
-    <string name="setts_theme_main">Hlavní barvy</string>
     <string name="setts_word_splitter">Sekvence dělící slova od překladů při exportu</string>
     <string name="sort">Seřadit</string>
     <string name="sort_alpha_AZ">abecedně ▼</string>
@@ -277,16 +214,10 @@
     <string name="sort_sf_01">úspěšností ▼</string>
     <string name="sort_sf_10">úspěšností ▲</string>
     <string name="start">Začít</string>
-    <string name="storage_external">Externí uložiště</string>
-    <string name="storage_internal">Interní uložiště</string>
-    <string name="storage_usbotg">Externí uložiště USB</string>
-    <string name="subject_not_found">"Složka předmětu nebyla nalezena: "</string>
     <string name="success_rate">"Úspěšnost: %1$s%%"</string>
     <string name="test_add">Přidat zdroj</string>
+    <string name="test_reverse">Opačný směr testu</string>
     <string name="test_size">Testované množství</string>
     <string name="test_time">Délka testu (s)</string>
-    <string name="test_type">Druh testu</string>
     <string name="time_left">%1$ds</string>
-    <string name="versions">Verze</string>
-    <string name="action_chooser_dir">Vyberte složku</string>
 </resources>

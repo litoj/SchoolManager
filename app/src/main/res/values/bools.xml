@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Status bar icon colour, the header's own foreground: white here, dark at
+         night. Feeds android:windowLightStatusBar, which asks for dark icons.
+         Split out because the theme style must not be re-declared per palette just
+         to flip this one item. -->
+    <bool name="darkStatusBarIcons">false</bool>
+</resources>
