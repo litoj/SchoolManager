@@ -4,6 +4,7 @@
     <string name="about_text">This program was developed to help people with school subjects, especially with foreign languages and biology.\n\nFor any further help contact me at litos@tuta.io</string>
     <string name="add_word">Add translate</string>
     <string name="app_name" translatable="false">School Manager</string>
+    <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
     <string name="continue_delete">Do you really want to delete the selected items?</string>
     <string name="cut">Cut</string>
@@ -13,9 +14,8 @@
     <string name="data_desc">Description</string>
     <string name="data_name">Name</string>
     <string name="data_translate">Translation</string>
-    <string name="data_translations">Translations</string>
     <string name="delete">Delete</string>
-    <string name="dir_import">Import subject</string>
+    <string name="dir_import">Legacy subject folder</string>
     <string name="done">Done</string>
     <string name="edit">Edit</string>
     <string name="exception_handler">"An unexpected failure occurred in the last session.
@@ -26,9 +26,11 @@
     <string name="fail_no_objects">No objects of this type were found</string>
     <string name="fail_save">Failed to save file:</string>
     <string name="fail_save_src">"while saving data of: "</string>
-    <string name="fail_import_mch_word_exists">"Import cancelled, subject already exists: "</string>
     <string name="fail_paste_inside">"An item cannot be placed inside itself or into its own content."</string>
     <string name="fail_paste_present">"The pasted items are already in the target."</string>
+    <string name="fail_paste_target">"There is no open container to paste into."</string>
+    <string name="fail_paste_other_subject">"Items cannot be moved into another subject."</string>
+    <string name="fail_kind_file">file:</string>
     <string name="fail_type">", of type: "</string>
     <plurals name="stat_words">
         <item quantity="one">%1$d word</item>
@@ -43,6 +45,12 @@
     <string name="progress_channel">File operations</string>
     <string name="progress_import">"Importing: "</string>
     <string name="progress_export">"Exporting: "</string>
+    <string name="progress_delete">"Deleting: "</string>
+    <string name="progress_count">%1$d / %2$d</string>
+    <plurals name="progress_items">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
     <string name="help">Help</string>
     <string name="help_create">Items creation</string>
     <string name="help_create_ch">Chapters</string>
@@ -65,11 +73,11 @@
         \nTo remove a translate, click on the cancel icon on the right of the specified translate.</string>
     <string name="help_extra">More useful functions</string>
     <string name="help_extra_how">This application has some more functions that can sometimes help. Here is the list and explanation of them.</string>
-    <string name="help_extra_import_mch">Subjects import</string>
-    <string name="help_extra_import_mch_how">A subject folder of the old app version can be imported on the subjects screen: pick \'Import subject\' in the \'more\' menu.
+    <string name="help_extra_import_mch">Legacy subjects import</string>
+    <string name="help_extra_import_mch_how">A subject folder of the old app version can be imported on the subjects screen: pick \'Legacy subject folder\' in the \'Import\' submenu of the \'more\' menu.
         \nA subject with the same name is not imported twice.</string>
     <string name="help_extra_import_mch_word">Subject import from a file</string>
-    <string name="help_extra_import_mch_word_how">A subject can be created from a words file: on the subjects screen pick \'Import file\' in the \'more\' menu.
+    <string name="help_extra_import_mch_word_how">A subject can be created from a words file: on the subjects screen pick \'File\' in the \'Import\' submenu of the \'more\' menu.
         \nThe new subject is named after the picked file and its content is parsed exactly like the words import (chapters and words), only at the top level of the subject.</string>
     <string name="help_extra_naming">Naming convention</string>
     <string name="help_extra_naming_how">If you have similar names of certain words, and they have identical translations, combine them using these: /().
@@ -78,11 +86,11 @@
         \nI/They come = \'I come\' or \'They come\'
         \n(I go)/(He goes). = \'I go.\' or \'He goes\'.</string>
     <string name="help_extra_words_export">Words exporting</string>
-    <string name="help_extra_words_export_how">Select the containers to export and pick an option in the \'Export\' submenu of the \'more\' menu (the export options appear while rows are selected).
+    <string name="help_extra_words_export_how">Pick an option in the \'Export\' submenu of the \'more\' menu: selected rows are exported, and with nothing selected the whole open container (every subject on the subjects screen).
         \nThe word file is compact and carries only the structure of the vocabulary; the JSON file is a complete replica of the subject, success rates included.
         \nBoth formats can be imported again without loss.</string>
     <string name="help_extra_words_import">Words importing</string>
-    <string name="help_extra_words_import_how">Words are imported through \'Import file\' in the \'more\' menu — inside a container they land in it, on the subjects screen they create a new subject. The import detects the file itself: a name ending in \'.json\' or \'.hjson\' is a subject tree, anything else is a word list. The word file can be structured in a simpler hierarchy: it can contain chapters and words.
+    <string name="help_extra_words_import_how">Words are imported through the \'more\' menu — inside a container pick \'Import\', on the subjects screen pick \'File\' in the \'Import\' submenu; inside a container they land in it, on the subjects screen they create a new subject. The import detects the file itself: a name ending in \'.json\' or \'.hjson\' is a subject tree, anything else is a word list. The word file can be structured in a simpler hierarchy: it can contain chapters and words.
         \nDescription to individual items can be written directly behind the item in format like \'[description]\'.
         \nWords and translates can be separated using \';\', \'=\', or \'→\'.
         \nWords with same translate are separated by a backward slash \'\\\'.
@@ -150,11 +158,13 @@
         \n\t\\C\\K72\t- all chapters with name containing \'k72\'</string>
     <string name="help_select">Editing</string>
     <string name="help_select_delete">Permanently deletes the selected items after accepting the delete-check dialog.</string>
-    <string name="help_select_edit">Only one item can be edited at a time. A window with parameters of the selected item pops up. The style of the editing window is same as when creating that type of item.</string>
+    <string name="help_select_edit">Only one item can be edited at a time. A window with parameters of the selected item pops up. The style of the editing window is same as when creating that type of item.
+        \nClick the \'OK\' button to save the changes when done editing.</string>
     <string name="help_select_how">All created objects can be modified in some way.
         \nA long-press on an item starts the select mode: the item becomes selected and the bottom sheet with possible actions shows. A tap on the checkbox of a row toggles its selection too.
         \nKeep the finger pressed and move it over the list to select the range of items it crosses.
-        \nWhile items are selected, the search button in the top right corner becomes the select-all toggle: it selects all items of the list, or (if all items are selected) exits the selection mode. The back key also exits the selection mode.</string>
+        \nWhile items are selected, the search button in the top right corner becomes the select-all toggle: it selects all items of the list, or (if all items are selected) exits the selection mode. The back key also exits the selection mode.
+        \nThe list of possible actions follows below.</string>
     <string name="help_select_move">Cuts all selected items and shows the paste sheet (cancel and paste buttons). After you open the target chapter, click \'Paste\'.</string>
     <string name="help_test">Tests</string>
     <string name="help_test_how">The test asks for the words of the chosen sources.
@@ -167,6 +177,8 @@
     <string name="help_test_run">Test progress</string>
     <string name="help_test_run_how">After pressing the button \'Start\' the test is started and the remaining time can be seen in the top.
         \nWhen you are done with the test click \'Done\' to submit the test.
+        \nYou are alerted in the last 30 seconds.
+        \nEach item has a field for the name/translation to fill in.
         \nWhenever you decide to abolish the test press twice the back button.</string>
     <string name="help_test_select">Selecting items for the test</string>
     <string name="help_test_select_how">The variety of items to create the test from can be added to using the \'Add source\' button.
@@ -175,16 +187,25 @@
     <string name="hierarchy_ch">Chapter</string>
     <string name="hierarchy_word">Word</string>
     <string name="hierarchy_note">Note</string>
+    <string name="menu_label">Menu</string>
     <string name="menu_about">About</string>
     <string name="menu_objects">Subjects</string>
     <string name="menu_settings">Options</string>
     <string name="more_export">Export</string>
-    <string name="more_reference">Reference</string>
+    <string name="more_reference">Create reference</string>
+    <string name="reference_fork">References that follow the new word</string>
     <string name="ref_source_pick">Choose the source of the reference:</string>
     <string name="more_export_word">Word file (no statistics)</string>
-    <string name="more_import_file">Import file</string>
+    <string name="more_import">Import</string>
+    <string name="more_import_file">File</string>
     <string name="more_export_json">JSON file (success rates included)</string>
     <string name="more_flip">Flip words and translations</string>
+    <string name="more_go_to">Go to location</string>
+    <string name="flip_conflict_view">View List</string>
+    <plurals name="flip_conflicts">
+        <item quantity="one">Flip cancelled: %1$d word also lives in another chapter.</item>
+        <item quantity="other">Flip cancelled: %1$d words also live in other chapters.</item>
+    </plurals>
     <string name="json_export_ext">.hjson</string>
     <string name="json_import_types">application/hjson</string>
     <string name="more_new">New</string>
@@ -195,7 +216,7 @@
     <string name="note_copied">Copied</string>
     <string name="objects_cancel">Cancel</string>
     <string name="paste">Paste</string>
-    <string name="pattern_err">Invalid regex syntax:</string>
+    <string name="pattern_err">"Invalid regex syntax:\n%1$s"</string>
     <string name="popup_copy">Copy</string>
     <string name="popup_copy_failed">Copying to the clipboard failed</string>
     <string name="popup_copy_truncated">[the copy was truncated — the text is too long for the clipboard]</string>
@@ -221,9 +242,12 @@
     <string name="sort_length_10">name length ▲</string>
     <string name="sort_sf_01">success ▼</string>
     <string name="sort_sf_10">success ▲</string>
+    <string name="sort_priority">priority</string>
     <string name="start">Start</string>
     <string name="success_rate">"Success rate: %1$s%%"</string>
     <string name="test_add">Add source</string>
+    <string name="test_one_subject">Test sources must come from one subject.</string>
+    <string name="test_one_subject_of">Test sources must come from one subject (%s).</string>
     <string name="test_reverse">Reverse test direction</string>
     <string name="test_size">Tested amount</string>
     <string name="test_time">Duration (s)</string>

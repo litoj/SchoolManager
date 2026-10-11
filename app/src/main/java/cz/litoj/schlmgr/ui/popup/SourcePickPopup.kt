@@ -18,13 +18,13 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.db.DbItem
+import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.ui.component.HairlineDivider
 
 /**
- * The source picker of a referenced row that lives in several containers: one
- * button per source, labeled with its whole chain (the subject first, the
- * source container last). Picking one hands the chain to [onPick] — the host
- * navigates the explorer there.
+ * The source picker of a referenced row living in several containers.
+ * - one button per source, labeled with its whole chain.
+ * - picking hands the chain to [onPick].
  */
 class SourcePickPopup(
 	private val paths: List<List<DbItem>>,
@@ -43,7 +43,7 @@ class SourcePickPopup(
 				Modifier.padding(5.dp),
 				style = TextStyle(fontSize = 20.sp, color = TextColor),
 			)
-			PopupDivider()
+			HairlineDivider()
 			Column(
 				Modifier
 					.heightIn(max = 400.dp)

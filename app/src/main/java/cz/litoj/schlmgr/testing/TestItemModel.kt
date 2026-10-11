@@ -1,39 +1,33 @@
 package cz.litoj.schlmgr.testing
 
-import cz.litoj.schlmgr.db.DbItem
-import cz.litoj.schlmgr.db.ItemRepository
+import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.data.ItemRepository
 
 /**
- * One answered item of a test run — the DB port of the former
- * `ui/test/TestItemModel.java`.
- *
- * Unlike [TestEntry] (which only describes the tested word), this model carries
- * the run's per-item results: the typed [answer], whether it was [correct], and
- * the word's success stats re-read after grading, so the results popup shows the
- * state including the just-finished test.
+ * One answered item of a test run — the tested word ([TestEntry]) plus the
+ * run's per-item results — typed [answer], [correct], stats re-read after
+ * grading so the results popup shows the just-finished state.
  */
 class TestItemModel(val entry: TestEntry) {
 
 	/**
-	 * The translations shown as the test hint — fixed for the whole run (equal to
-	 * what `TestEngine.getTested` returns for this item's index).
+	 * The translations shown as the test hint — fixed for the whole run.
 	 */
 	val translations: List<DbItem> = entry.translations()
 
 	var correct = false
 
-	/** The answer the user typed for this item. */
 	var answer = ""
 
 	/**
-	 * The tested word's row — replaced by [refreshSf] after grading, because the
-	 * entry's snapshot (and its sf columns) predates the test.
+	 * The tested word's row — replaced by [refreshStats] after grading, because the
+	 * entry's snapshot (and its tested count and ratio) predates the test.
 	 */
 	var word: DbItem = entry.word
 		private set
 
-	/** Re-reads the word so its sf columns include the just-recorded answer. */
-	fun refreshSf() {
+	/** Re-reads the word so its tested count and ratio include the just-recorded answer. */
+	fun refreshStats() {
 		ItemRepository.get(entry.word.id)?.let { word = it }
 	}
 

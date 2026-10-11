@@ -1,0 +1,47 @@
+{"class": "objects.SaveChapter", "name": "12.9.", "cdrn": [
+	{"class": "objects.Word", "name": "die Pfanne", "cdrn": [
+		{"name": "pánev"}
+	]},
+	{"class": "objects.Word", "name": "das Sieb", "cdrn": [
+		{"name": "síto"}
+	]},
+	{"class": "objects.Word", "name": "die Zweibeln schneiden", "cdrn": [
+		{"name": "krájet cibule"}
+	]},
+	{"class": "objects.Word", "name": "das Gemüse waschen", "cdrn": [
+		{"name": "umývat zeleninu"}
+	]},
+	{"class": "objects.Word", "name": "der Topf", "cdrn": [
+		{"name": "hrnec"}
+	]},
+	{"class": "objects.Word", "name": "das Messer", "cdrn": [
+		{"name": "nůž"}
+	]},
+	{"class": "objects.Word", "name": "die Teilnehmer begrüßen", "cdrn": [
+		{"name": "přivítat účastníky"}
+	]},
+	{"class": "objects.Word", "name": "das Kochbuch", "cdrn": [
+		{"name": "kuchařka"}
+	]},
+	{"class": "objects.Word", "name": "das Gericht", "cdrn": [
+		{"name": "pokrm"}
+	]},
+	{"class": "objects.Word", "name": "Möchtest du das probieren?", "cdrn": [
+		{"name": "Chceš to ochutnat?"}
+	]},
+	{"class": "objects.Word", "name": "Das ist lecker.", "cdrn": [
+		{"name": "To je chutné."}
+	]},
+	{"class": "objects.Word", "name": "mit meinem Bruder", "cdrn": [
+		{"name": "s mým bratrem"}
+	]},
+	{"class": "objects.Word", "name": "bei seiner Schwester", "cdrn": [
+		{"name": "u jeho sestry"}
+	]},
+	{"class": "objects.Word", "name": "Rezepte aus den Kochbüchern", "cdrn": [
+		{"name": "recepty z kuchařek"}
+	]},
+	{"class": "objects.Word", "name": "in deiner Küche", "cdrn": [
+		{"name": "ve tvé kuchyni"}
+	]}
+]}

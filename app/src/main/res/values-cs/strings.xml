@@ -4,6 +4,7 @@
     <string name="action_sw_success">" zapsáno úspěšně"</string>
     <string name="about_text">Tento program byl vyvinut, aby pomohl lidem se školními předměty, zvláště s cizími jazyky a biologií.\n\nPro další pomoc mě kontaktujte na litos@tuta.io</string>
     <string name="add_word">Přidat překlad</string>
+    <string name="ok">OK</string>
     <string name="cancel">Zrušit</string>
     <string name="continue_delete">Opravdu chcete odstranit vybrané položky?</string>
     <string name="cut">Vyjmout</string>
@@ -13,9 +14,8 @@
     <string name="data_desc">Popisek</string>
     <string name="data_name">Název</string>
     <string name="data_translate">Překlad</string>
-    <string name="data_translations">Překlady</string>
     <string name="delete">Odstranit</string>
-    <string name="dir_import">Importovat předmět</string>
+    <string name="dir_import">Stará složka předmětu</string>
     <string name="done">Hotovo</string>
     <string name="edit">Upravit</string>
     <string name="exception_handler">"Při posledním chodu nastala neočekávaná chyba.
@@ -26,9 +26,11 @@
     <string name="fail_no_objects">Žádné objekty tohoto typu nebyly nalezeny</string>
     <string name="fail_save">Neúspěšné ukládání souboru:</string>
     <string name="fail_save_src">"během ukládání prvku: "</string>
-    <string name="fail_import_mch_word_exists">"Import zrušen, předmět již existuje: "</string>
     <string name="fail_paste_inside">"Položku nelze vložit do ní samotné ani do jejího obsahu."</string>
     <string name="fail_paste_present">"Vkládané položky už jsou v cíli."</string>
+    <string name="fail_paste_target">"Není otevřený žádný kontejner, do kterého by se vkládalo."</string>
+    <string name="fail_paste_other_subject">"Položky nelze přesouvat do jiného předmětu."</string>
+    <string name="fail_kind_file">soubor:</string>
     <string name="fail_type">", typ: "</string>
     <plurals name="stat_words">
         <item quantity="one">%1$d slovo</item>
@@ -47,6 +49,14 @@
     <string name="progress_channel">Operace se soubory</string>
     <string name="progress_import">"Importuji: "</string>
     <string name="progress_export">"Exportuji: "</string>
+    <string name="progress_delete">"Mazu: "</string>
+    <string name="progress_count">%1$d / %2$d</string>
+    <plurals name="progress_items">
+        <item quantity="one">%1$d položka</item>
+        <item quantity="few">%1$d položky</item>
+        <item quantity="many">%1$d položek</item>
+        <item quantity="other">%1$d položek</item>
+    </plurals>
     <string name="help">Nápověda</string>
     <string name="help_create">Vytváření položek</string>
     <string name="help_create_ch">Kapitoly</string>
@@ -69,11 +79,11 @@
         \nPokud se rozhodnete libovolný z překladů odstranit, klikněte na ikonu zrušení vpravo od překladu.</string>
     <string name="help_extra">Další užitečné funkce</string>
     <string name="help_extra_how">Tento program obsahuje pár dalších zajímavých funkcí, zde je jejich přehled.</string>
-    <string name="help_extra_import_mch">Import předmětů</string>
-    <string name="help_extra_import_mch_how">Složku s předmětem staré verze aplikace lze importovat na obrazovce předmětů: zvolte \'Importovat předmět\' v menu \'více\'.
+    <string name="help_extra_import_mch">Import starých předmětů</string>
+    <string name="help_extra_import_mch_how">Složku s předmětem staré verze aplikace lze importovat na obrazovce předmětů: zvolte \'Stará složka předmětu\' v podmenu \'Import\' v menu \'více\'.
         \nPředmět se stejným názvem se neimportuje dvakrát.</string>
     <string name="help_extra_import_mch_word">Import předmětu ze souboru</string>
-    <string name="help_extra_import_mch_word_how">Předmět lze vytvořit ze souboru se slovíčky: na obrazovce předmětů zvolte \'Importovat soubor\' v menu \'více\'.
+    <string name="help_extra_import_mch_word_how">Předmět lze vytvořit ze souboru se slovíčky: na obrazovce předmětů zvolte \'Soubor\' v podmenu \'Import\' v menu \'více\'.
         \nNový předmět se pojmenuje podle zvoleného souboru a jeho obsah se zpracuje stejně jako při importu slovíček (kapitoly a slovíčka), pouze na nejvyšší úrovni předmětu.</string>
     <string name="help_extra_naming">Způsoby pojmenovávání</string>
     <string name="help_extra_naming_how">Tato aplikace umožňuje pojmenovávat slovíčka a další položky specifickým způsobem, díky kterému máte při testu více možností, jak odpovědět.
@@ -83,11 +93,11 @@
         \noni/ony jdou = \'oni jdou\', nebo \'ony jdou\'
         \n(Já jdu)/(Ty jdeš). = \'Já jdu.\', nebo \'Ty jdeš.\'</string>
     <string name="help_extra_words_export">Export slovíček</string>
-    <string name="help_extra_words_export_how">Vyberte kontejnery k exportu a zvolte možnost v podmenu \'Exportovat\' v menu \'více\' (možnosti exportu se zobrazí, jsou-li vybrány položky).
+    <string name="help_extra_words_export_how">Zvolte možnost v podmenu \'Exportovat\' v menu \'více\': vybrané položky se vyexportují, a bez výběru celý otevřený kontejner (na obrazovce předmětů všechny předměty).
         \nSoubor se slovíčky je kompaktní a nese pouze strukturu slovní zásoby; soubor JSON je úplná kopie předmětu včetně úspěšnosti.
         \nOba formáty lze zpětně importovat bez ztráty obsahu.</string>
     <string name="help_extra_words_import">Import slovíček</string>
-    <string name="help_extra_words_import_how">Slovíčka se importují pomocí \'Importovat soubor\' v menu \'více\' — uvnitř kontejneru se přidají do něj, na obrazovce předmětů vytvoří nový předmět. Typ souboru se pozná automaticky: název končící \'.json\' nebo \'.hjson\' je strom předmětu, ostatní soubory jsou slovíčka. Soubor může obsahovat kapitoly a slovíčka.
+    <string name="help_extra_words_import_how">Slovíčka se importují přes menu \'více\' — uvnitř kontejneru zvolte \'Import\', na obrazovce předmětů \'Soubor\' v podmenu \'Import\'; uvnitř kontejneru se přidají do něj, na obrazovce předmětů vytvoří nový předmět. Typ souboru se pozná automaticky: název končící \'.json\' nebo \'.hjson\' je strom předmětu, ostatní soubory jsou slovíčka. Soubor může obsahovat kapitoly a slovíčka.
         \nPoznámky k položkám pište ve tvaru \'\\[poznámky k položce\\]\'.
         \nSlovíčka a jejich překlady oddělte pomocí \';\', \'=\', nebo \'→\'.
         \nPro zápis více slovíček se stejným překladem (a naopak) oddělte slovíčka zpětným lomítkem \\.
@@ -173,9 +183,10 @@
     <string name="help_test_results_how">Po uplynutí času na test nebo kliknutím na tlačítko \'Hotovo\' se test ukončí a zobrazí se okno s úspěšností testu a pod záhlavím seznam s položkami testu. U každé položky se zobrazí slovo s překlady, počet jeho testování, úspěšnost (úspěšné/celkem) a vaše odpověď.</string>
     <string name="help_test_run">Průběh testu</string>
     <string name="help_test_run_how">Po započetí testu se bude v horní liště zobrazovat čas do konce testu.
+        \nPo dokončení testu klikněte na tlačítko \'Hotovo\'.
         \nPři posledních 30s budete upozorněni.
         \nU každé položky je políčko určené pro doplnění názvu/překladu.
-        \nTest můžete kdykoli v průběhu zrušit šipkou \'zpět\'.</string>
+        \nTest můžete kdykoli v průběhu zrušit dvojitým stiskem šipky \'zpět\'.</string>
     <string name="help_test_select">Výběr položek do testu</string>
     <string name="help_test_select_how">Soubor položek, ze kterých se vytvoří test se vybírá tlačítkem \'Přidat zdroj\'.
         \nPo stisknutí se otevře prohlížeč předmětů, ve kterém můžete opakovaně vybrat položky do testu (pouze z jednoho předmětu).
@@ -183,16 +194,27 @@
     <string name="hierarchy_ch">Kapitola</string>
     <string name="hierarchy_word">Slovíčko</string>
     <string name="hierarchy_note">Poznámka</string>
+    <string name="menu_label">Menu</string>
     <string name="menu_about">O programu</string>
     <string name="menu_objects">Předměty</string>
     <string name="menu_settings">Nastavení</string>
     <string name="more_export">Exportovat</string>
-    <string name="more_reference">Zástupce</string>
+    <string name="more_reference">Vytvořit zástupce</string>
+    <string name="reference_fork">Zástupci, kteří budou odkazovat na nové slovo</string>
     <string name="ref_source_pick">Zvolte zdroj zástupce:</string>
     <string name="more_export_word">Soubor se slovíčky (bez statistik)</string>
-    <string name="more_import_file">Importovat soubor</string>
+    <string name="more_import">Import</string>
+    <string name="more_import_file">Soubor</string>
     <string name="more_export_json">Soubor JSON (včetně úspěšnosti)</string>
     <string name="more_flip">Obrátit slova a překlady</string>
+    <string name="more_go_to">Přejít na umístění</string>
+    <string name="flip_conflict_view">Zobrazit seznam</string>
+    <plurals name="flip_conflicts">
+        <item quantity="one">Obrácení zrušeno: %1$d slovíčko je i v jiné kapitole.</item>
+        <item quantity="few">Obrácení zrušeno: %1$d slovíčka jsou i v jiných kapitolách.</item>
+        <item quantity="many">Obrácení zrušeno: %1$d slovíček je i v jiných kapitolách.</item>
+        <item quantity="other">Obrácení zrušeno: %1$d slovíček je i v jiných kapitolách.</item>
+    </plurals>
     <string name="json_export_ext">.hjson</string>
     <string name="json_import_types">application/hjson</string>
     <string name="more_new">Nový</string>
@@ -203,7 +225,7 @@
     <string name="note_copied">Zkopírováno</string>
     <string name="objects_cancel">Storno</string>
     <string name="paste">Vložit</string>
-    <string name="pattern_err">Špatná syntax regexu:</string>
+    <string name="pattern_err">"Špatná syntax regexu:\n%1$s"</string>
     <string name="popup_copy">Kopírovat</string>
     <string name="popup_copy_failed">Kopírování do schránky se nezdařilo</string>
     <string name="popup_copy_truncated">[kopie byla zkrácena — text je pro schránku příliš dlouhý]</string>
@@ -229,9 +251,12 @@
     <string name="sort_length_10">délkou názvu ▲</string>
     <string name="sort_sf_01">úspěšností ▼</string>
     <string name="sort_sf_10">úspěšností ▲</string>
+    <string name="sort_priority">priorita</string>
     <string name="start">Začít</string>
     <string name="success_rate">"Úspěšnost: %1$s%%"</string>
     <string name="test_add">Přidat zdroj</string>
+    <string name="test_one_subject">Zdroje testu musí pocházet z jednoho předmětu.</string>
+    <string name="test_one_subject_of">Zdroje testu musí pocházet z jednoho předmětu (%s).</string>
     <string name="test_reverse">Opačný směr testu</string>
     <string name="test_size">Testované množství</string>
     <string name="test_time">Délka testu (s)</string>

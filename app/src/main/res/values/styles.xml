@@ -1,34 +1,14 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
 
-    <!-- Base application theme. DayNight: the system dark setting selects
-         values-night/colors.xml, which every screen reads its colours from. -->
-    <style name="AppTheme" parent="Theme.AppCompat.DayNight.DarkActionBar">
-        <!-- Customize your theme here. -->
-        <!-- Force dark stays off: the night palette owns these colours already,
-             and force dark would darken them a second time (that is what made
-             the body text unreadable and left the header green untouched). -->
-        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
-        <item name="colorPrimary">@color/colorPrimaryFg</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryBg</item>
-        <item name="android:textColor">@color/colorPrimaryFg</item>
-        <item name="background">@color/colorPrimaryBg</item>
-        <item name="colorAccent">@color/colorPrimaryHeader</item>
-    </style>
-
-    <style name="AppTheme.NoActionBar">
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
-        <item name="android:statusBarColor">@color/colorHeaderSoft</item>
-        <!-- The status bar icons carry the header's foreground, so they flip with it:
-             white on the darkened band here, dark on the lightened one at night. -->
+    <!-- The window chrome of the Compose-only app: a plain Material NoActionBar
+         base, the status band (the primary green darkened — see colorStatusBar)
+         carrying white icons in both palettes, and the platform's default window
+         background (the light/dark Material defaults the old appcompat theme also
+         showed). Everything on screen is Compose. Force dark stays off: the night
+         palette owns the colours, and force dark would darken them a second time. -->
+    <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:forceDarkAllowed">false</item>
+        <item name="android:statusBarColor">@color/colorStatusBar</item>
         <item name="android:windowLightStatusBar">@bool/darkStatusBarIcons</item>
     </style>
-
-    <!-- The bar's chrome follows the on-header colour: the drawer arrow takes its
-         colour from ?attr/colorControlNormal (through drawerArrowStyle), so the
-         app-bar title and both bar icons flip together with the header. -->
-    <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
-        <item name="colorControlNormal">@color/colorOnHeader</item>
-    </style>
-
 </resources>

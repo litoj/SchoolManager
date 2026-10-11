@@ -13,15 +13,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.ui.component.HairlineDivider
 
 /**
- * A confirmation dialog with Cancel and OK buttons; OK runs the given action on a
- * background thread (named after the message), Cancel only dismisses.
+ * OK reports through [onOk] on the caller's thread (the owner decides
+ * where the action runs). Cancel only dismisses.
  */
-class ContinuePopup(private val msg: String, onClick: Runnable) : DialogSpec {
+class ContinuePopup(private val onOk: () -> Unit) : DialogSpec {
 
-	private val onContinue = Thread(onClick, "onContinuePopup: \"$msg\"")
-	private var started = false
+	private var fired = false
 
 	init {
 		Dialogs.show(this)
@@ -31,20 +31,20 @@ class ContinuePopup(private val msg: String, onClick: Runnable) : DialogSpec {
 	override fun Content() {
 		PopupCard {
 			Text(
-				msg,
+				stringResource(R.string.continue_delete),
 				Modifier.padding(5.dp),
 				style = TextStyle(fontSize = 20.sp, color = TextColor),
 			)
-			PopupDivider()
+			HairlineDivider()
 			Row(Modifier.fillMaxWidth().height(50.dp)) {
 				PopupButton(stringResource(R.string.cancel), Modifier.weight(1f)) { Dialogs.dismiss(this@ContinuePopup) }
 				VerticalButtonSeparator()
-				PopupButton("OK", Modifier.weight(1f)) {
+				PopupButton(stringResource(R.string.ok), Modifier.weight(1f)) {
 					Dialogs.dismiss(this@ContinuePopup)
-					// one shot: a double-tap would start the thread twice
-					if (!started) {
-						started = true
-						onContinue.start()
+					// one shot — a double-tap must not confirm twice
+					if (!fired) {
+						fired = true
+						onOk()
 					}
 				}
 			}

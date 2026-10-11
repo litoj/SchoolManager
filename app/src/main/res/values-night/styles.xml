@@ -1,0 +1,9 @@
+<resources>
+
+    <!-- The night variant of the window chrome — see values/styles.xml. -->
+    <style name="AppTheme" parent="android:Theme.Material.NoActionBar">
+        <item name="android:forceDarkAllowed">false</item>
+        <item name="android:statusBarColor">@color/colorStatusBar</item>
+        <item name="android:windowLightStatusBar">@bool/darkStatusBarIcons</item>
+    </style>
+</resources>

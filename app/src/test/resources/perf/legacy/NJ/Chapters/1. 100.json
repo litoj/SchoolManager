@@ -1,0 +1,264 @@
+{"class": "objects.SaveChapter", "name": "1. 100", "cdrn": [
+	{"class": "objects.Chapter", "name": "11.9.", "cdrn": [
+		{"class": "objects.Word", "name": "Auf Bild A sehe ich", "cdrn": [
+			{"name": "Na obrázku A vidím"}
+		]},
+		{"class": "objects.Word", "name": "Auf dem ersten Bild gibt es", "cdrn": [
+			{"name": "Na prvním obrázku je"}
+		]},
+		{"class": "objects.Word", "name": "der Imbissstand", "cdrn": [
+			{"name": "stánek rychlého občerstvení"}
+		]},
+		{"class": "objects.Word", "name": "das Tablett", "cdrn": [
+			{"name": "tác"}
+		]},
+		{"class": "objects.Word", "name": "Das riecht echt gut.", "cdrn": [
+			{"name": "To voní fakt dobře."}
+		]},
+		{"class": "objects.Word", "name": "Kartoffeln schälen", "cdrn": [
+			{"name": "loupat/škrabat brambory"}
+		]},
+		{"class": "objects.Word", "name": "den Tisch decken", "cdrn": [
+			{"name": "prostřít stůl"}
+		]},
+		{"class": "objects.Word", "name": "Ich habe gleich einen Termin.", "cdrn": [
+			{"name": "Mám hned schůzku."}
+		]},
+		{"class": "objects.Word", "name": "einmal in Monat", "cdrn": [
+			{"name": "jednou měsíčně"}
+		]},
+		{"class": "objects.Word", "name": "jeden Tag kochen", "cdrn": [
+			{"name": "každý den vařit"}
+		]},
+		{"class": "objects.Word", "name": "meistens", "cdrn": [
+			{"name": "většinou"}
+		]},
+		{"class": "objects.Word", "name": "die Kantine", "cdrn": [
+			{"name": "jídelna"}
+		]},
+		{"class": "objects.Word", "name": "die Currywurst", "cdrn": [
+			{"name": "Kašpárek"}
+		]},
+		{"class": "objects.Word", "name": "das Tischdecken", "cdrn": [
+			{"name": "prostírání na stůl"}
+		]}
+	]},
+	{"class": "objects.SaveChapter", "name": "12.9."},
+	{"class": "objects.Chapter", "name": "14.9.", "cdrn": [
+		{"class": "objects.Word", "name": "Ich habe Lust auf das Fleisch dort.", "cdrn": [
+			{"name": "Mám chuť na to maso támhle."}
+		]},
+		{"class": "objects.Word", "name": "Macht dir der Kurs Spaß?", "cdrn": [
+			{"name": "Baví tě ten kurz?"}
+		]},
+		{"class": "objects.Word", "name": "Isst du nie Fisch?", "cdrn": [
+			{"name": "Nikdy nejíš ryby?"}
+		]},
+		{"class": "objects.Word", "name": "Wir gehen nachher dort aus?", "cdrn": [
+			{"name": "Jdeme tam potom?"}
+		]},
+		{"class": "objects.Word", "name": "Es sieht komisch aus.", "cdrn": [
+			{"name": "To vypadá divně."}
+		]},
+		{"class": "objects.Word", "name": "süß", "cdrn": [
+			{"name": "sladký"}
+		]},
+		{"class": "objects.Word", "name": "sauer", "cdrn": [
+			{"name": "kyselý"}
+		]},
+		{"class": "objects.Word", "name": "scharf", "cdrn": [
+			{"name": "ostrý"},
+			{"name": "pálivý"}
+		]},
+		{"class": "objects.Word", "name": "fett", "cdrn": [
+			{"name": "mastný"}
+		]},
+		{"class": "objects.Word", "name": "salzig", "cdrn": [
+			{"name": "slaný"}
+		]},
+		{"class": "objects.Word", "name": "bitter", "cdrn": [
+			{"name": "hořký"}
+		]},
+		{"class": "objects.Word", "name": "das Schweinefleisch", "cdrn": [
+			{"name": "vepřové"}
+		]},
+		{"class": "objects.Word", "name": "das Rindfleisch", "cdrn": [
+			{"name": "hovězí"}
+		]},
+		{"class": "objects.Word", "name": "die Beilage", "cdrn": [
+			{"name": "příloha"}
+		]},
+		{"class": "objects.Word", "name": "beliebt", "cdrn": [
+			{"name": "oblíbený"}
+		]},
+		{"class": "objects.Word", "name": "die Döner-Bude", "cdrn": [
+			{"name": "kebabárna"}
+		]},
+		{"class": "objects.Word", "name": "Brot zum Frühstück essen", "cdrn": [
+			{"name": "jíst chléb k snídani"}
+		]},
+		{"class": "objects.Word", "name": "das Vollkornbrot", "cdrn": [
+			{"name": "celozrnný chléb"}
+		]},
+		{"class": "objects.Word", "name": "die Brezel", "cdrn": [
+			{"name": "preclík"}
+		]},
+		{"class": "objects.Word", "name": "das Öl", "cdrn": [
+			{"name": "olej"}
+		]},
+		{"class": "objects.Word", "name": "verschiedene Brotsorten", "cdrn": [
+			{"name": "různé druhy chleba"}
+		]}
+	]},
+	{"class": "objects.Chapter", "name": "18.9.", "cdrn": [
+		{"class": "objects.Word", "name": "der/das Sandwich", "cdrn": [
+			{"name": "sendvič"}
+		]},
+		{"class": "objects.Word", "name": "der Schokoriegel", "cdrn": [
+			{"name": "čokoládová tyčinka"}
+		]},
+		{"class": "objects.Word", "name": "der Keks", "cdrn": [
+			{"name": "sušenka"}
+		]},
+		{"class": "objects.Word", "name": "der Kakao", "cdrn": [
+			{"name": "kakao"}
+		]},
+		{"class": "objects.Word", "name": "der Pfirsich", "cdrn": [
+			{"name": "broskev"}
+		]},
+		{"class": "objects.Word", "name": "die Erdbeere", "cdrn": [
+			{"name": "jahoda"}
+		]},
+		{"class": "objects.Word", "name": "die Preiselbeere", "cdrn": [
+			{"name": "brusinka"}
+		]},
+		{"class": "objects.Word", "name": "die Himbeere", "cdrn": [
+			{"name": "malina"}
+		]},
+		{"class": "objects.Word", "name": "die Johannisbeere", "cdrn": [
+			{"name": "rybíz"}
+		]},
+		{"class": "objects.Word", "name": "die Wurst", "cdrn": [
+			{"name": "uzenina"}
+		]},
+		{"class": "objects.Word", "name": "das Wurstchen", "cdrn": [
+			{"name": "párek"}
+		]},
+		{"class": "objects.Word", "name": "das Hühnerfleisch", "cdrn": [
+			{"name": "kuřecí"}
+		]},
+		{"class": "objects.Word", "name": "die Salzkartoffeln", "cdrn": [
+			{"name": "vařené brambory"}
+		]},
+		{"class": "objects.Word", "name": "die Rühreier", "cdrn": [
+			{"name": "míchaná vajíčka"}
+		]},
+		{"class": "objects.Word", "name": "das Spiegelei", "cdrn": [
+			{"name": "volské oko"}
+		]},
+		{"class": "objects.Word", "name": "der Pilz", "cdrn": [
+			{"name": "hřib"},
+			{"name": "houba"}
+		]},
+		{"class": "objects.Word", "name": "die Erbsen", "cdrn": [
+			{"name": "hrášek"}
+		]},
+		{"class": "objects.Word", "name": "die Meeresfrüchten", "cdrn": [
+			{"name": "mořské plody"}
+		]}
+	]},
+	{"class": "objects.Chapter", "name": "21.9.", "cdrn": [
+		{"class": "objects.Word", "name": "Der Topf liegt auf dem Tisch.", "cdrn": [
+			{"name": "Hrnec leží na stole."}
+		]},
+		{"class": "objects.Word", "name": "Neben den Tellern steht die Gläser.", "cdrn": [
+			{"name": "Vedle talířů stojí skleničky."}
+		]},
+		{"class": "objects.Word", "name": "Sehen Sie sich die Fotos an.", "cdrn": [
+			{"name": "Podívejte se na ty fotky."}
+		]},
+		{"class": "objects.Word", "name": "Was ist hier los?", "cdrn": [
+			{"name": "Co se tady děje?"}
+		]},
+		{"class": "objects.Word", "name": "Ich muss mich schnell umziehen.", "cdrn": [
+			{"name": "Musím se rychle převléknout."}
+		]},
+		{"class": "objects.Word", "name": "Freust du dich schon?", "cdrn": [
+			{"name": "Už se tešíš?"}
+		]},
+		{"class": "objects.Word", "name": "Er beeilt sich so?", "cdrn": [
+			{"name": "On tak pospíchá?"}
+		]},
+		{"class": "objects.Word", "name": "Wir ärgern uns nicht oft?", "cdrn": [
+			{"name": "Nerozčilujeme se často?"}
+		]},
+		{"class": "objects.Word", "name": "Setzt euch aufs Sofa.", "cdrn": [
+			{"name": "Sedněte si na pohovku."}
+		]},
+		{"class": "objects.Word", "name": "Sie regen sich immer auf.", "cdrn": [
+			{"name": "Pořád se rozčilují."}
+		]},
+		{"class": "objects.Word", "name": "Na, alles klar bei dir?", "cdrn": [
+			{"name": "Čau, jak je?"}
+		]},
+		{"class": "objects.Word", "name": "nix/nichts", "cdrn": [
+			{"name": "nic"}
+		]},
+		{"class": "objects.Word", "name": "Kopf hoch.", "cdrn": [
+			{"name": "Hlavu vzhůru."}
+		]},
+		{"class": "objects.Word", "name": "sich langweilen", "cdrn": [
+			{"name": "nudit se"}
+		]},
+		{"class": "objects.Word", "name": "sich treffen", "cdrn": [
+			{"name": "potkat se"}
+		]},
+		{"class": "objects.Word", "name": "die Bohnen", "cdrn": [
+			{"name": "fazole"}
+		]},
+		{"class": "objects.Word", "name": "den Fernseher anmachen", "cdrn": [
+			{"name": "zapnout televizi"}
+		]},
+		{"class": "objects.Word", "name": "Ich bin schon unterwegs.", "cdrn": [
+			{"name": "Už jsem na cestě."}
+		]},
+		{"class": "objects.Word", "name": "Er schaut auf die Uhr.", "cdrn": [
+			{"name": "Dívá se na hodinky."}
+		]}
+	]},
+	{"class": "objects.Chapter", "name": "25.9.", "cdrn": [
+		{"class": "objects.Word", "name": "Hast du schon Geschirr gespült?", "cdrn": [
+			{"name": "Už jsi umyl nádobí?"}
+		]},
+		{"class": "objects.Word", "name": "Ich putze dreimal pro Woche.", "cdrn": [
+			{"name": "Čistím třikrát týdně."}
+		]},
+		{"class": "objects.Word", "name": "Ich habe mich ausgeruht.", "cdrn": [
+			{"name": "Odpočinul jsem si."}
+		]},
+		{"class": "objects.Word", "name": "Sie hat noch nicht eingekauft.", "cdrn": [
+			{"name": "Ješte nenakoupila."}
+		]},
+		{"class": "objects.Word", "name": "Hast du den Film schon gesehen?", "cdrn": [
+			{"name": "Už jsi viděl ten film?"}
+		]},
+		{"class": "objects.Word", "name": "Warum hast du dich nicht gemeldet?", "cdrn": [
+			{"name": "Proč jsi se neozval?"}
+		]},
+		{"class": "objects.Word", "name": "wahrscheinlich", "cdrn": [
+			{"name": "pravděpodobně"}
+		]},
+		{"class": "objects.Word", "name": "eigentlich", "cdrn": [
+			{"name": "vlastně"}
+		]},
+		{"class": "objects.Word", "name": "Er hat mich zum Essen eingeladen.", "cdrn": [
+			{"name": "Pozval mě na jídlo."}
+		]},
+		{"class": "objects.Word", "name": "Wir haben das Zimmer schnell aufgeräumt.", "cdrn": [
+			{"name": "Pokoj jsme rychle uklidili."}
+		]},
+		{"class": "objects.Word", "name": "mit der Straßenbahn fahren", "cdrn": [
+			{"name": "jet tramvají"}
+		]}
+	]}
+]}

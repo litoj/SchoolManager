@@ -17,64 +17,52 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.ui.viewmodel.InfoBar
 
-/** The breadcrumb strip's theme green header (`colorPrimaryHeader`) via [ExplorerColors]. */
 private val HeaderGreen @Composable get() = ExplorerColors.header
 
-/** The breadcrumb label color (legacy `btn.setTextColor(0xFFFFFFFF)`). */
 private val CrumbColor @Composable get() = ExplorerColors.onHeader
 
-/** The info-strip body color — matches the app's default body text. */
 private val InfoColor @Composable get() = ExplorerColors.body
 
 /**
- * The explorer's top chrome = the legacy `explorer.xml` header block: the breadcrumb
- * strip and the info strip, stacked vertically. Fully stateless — every value comes
- * from the parameters and every action is a callback, so both hosts (browse + picker)
- * drive it from their `ExplorerScreenState`.
- *
- * @param breadcrumbs one label per `BackLog.path` entry (empty at the subjects root).
- * @param onBreadcrumbClick invoked with a tapped crumb's index (legacy `addPathButton`).
- * @param infoText the info-strip text (`data_children_sf` / `data_child_count` / `data_search_time`).
- * @param isInfoExpanded whether the (expandable) strip currently shows its full height.
- * @param onInfoClick toggles expansion (legacy info `OnClickListener`). Ignored unless expandable.
+ * The explorer's top chrome — the breadcrumb strip and the info strip,
+ * stacked. Stateless, both hosts drive it from their state.
  */
 @Composable
 fun ExplorerTopBar(
 	breadcrumbs: List<String>,
 	onBreadcrumbClick: (Int) -> Unit,
-	infoText: String,
+	info: InfoBar?,
 	isInfoExpanded: Boolean,
 	onInfoClick: () -> Unit,
 	modifier: Modifier = Modifier,
 ) {
 	Column(modifier.fillMaxWidth()) {
 		Breadcrumbs(breadcrumbs, onBreadcrumbClick)
-		InfoStrip(infoText, isInfoExpanded, onInfoClick)
-		// the 0.6dp #888 divider that separated the info strip from the list
-		Box(Modifier.fillMaxWidth().height(0.6.dp).background(ExplorerColors.stripDivider))
+		InfoStrip(info, isInfoExpanded, onInfoClick)
+		HairlineDivider()
 	}
 }
 
-/**
- * The legacy `explorer_path_handler` HorizontalScrollView + `explorer_path` row:
- * white 17sp buttons separated by `ic_bread_crumbs` chevrons, auto-scrolled to the end.
- */
 @Composable
 private fun Breadcrumbs(breadcrumbs: List<String>, onClick: (Int) -> Unit) {
 	val scroll = rememberScrollState()
-	// legacy `hsv.post { hsv.fullScroll(FOCUS_RIGHT) }` — keep the newest crumb visible
-	LaunchedEffect(breadcrumbs.size) { scroll.animateScrollTo(scroll.maxValue) }
+	// keep the newest crumb visible. Keyed on the list, not its size — a
+	// same-length change (a sibling switch, a crumb rename) still scrolls
+	// the longer crumb into view.
+	LaunchedEffect(breadcrumbs) { scroll.animateScrollTo(scroll.maxValue) }
 	Row(
 		Modifier
 			.fillMaxWidth()
@@ -94,9 +82,9 @@ private fun Breadcrumbs(breadcrumbs: List<String>, onClick: (Int) -> Unit) {
 					.padding(horizontal = 4.dp),
 			)
 			if (index < breadcrumbs.size - 1) {
-				// the legacy chevron view was scaled x2.4; scaled content stays centered here
-				// the tint carries the palette: the drawable's own fill is a fixed grey,
-				// which would read the same in both palettes
+				// scaled content stays centered. The tint carries the palette — the
+				// drawable's own fill is a fixed grey, which would read the same in
+				// both palettes
 				Image(
 					painterResource(R.drawable.ic_bread_crumbs),
 					contentDescription = null,
@@ -108,28 +96,33 @@ private fun Breadcrumbs(breadcrumbs: List<String>, onClick: (Int) -> Unit) {
 }
 
 /**
- * The legacy `explorer_info_handler` ScrollView + `explorer_info` TextView: the
- * children/success-rate/description readout. Collapsed it is 18dp (1 line) or 36dp
- * (2 lines); when the text takes 3+ lines it becomes clickable and expands to
- * wrap-content.
- *
- * The line count is the laid-out one: the legacy `height(String)` counted '\n'
- * characters, so a long description — one newline but many wrapped lines — stayed
- * stuck at the collapsed 2-line height with its remainder unreadable off-screen.
- * The strip therefore reads the laid-out line count from its own text.
+ * The info strip — reads the laid-out line count, so a wrapped
+ * description expands too. Counting '\n' would stick it at the 2-line
+ * height, hiding the rest.
  */
 @Composable
 private fun InfoStrip(
-	text: String,
+	info: InfoBar?,
 	isExpanded: Boolean,
 	onClick: () -> Unit,
 ) {
-	// The laid-out line count of the current text; the wrapper Box always gives
+	// The strip resolves the display text from the semantics — the resource
+	// formatting (the description line riding the percent sign) belongs here.
+	val text = when (info) {
+		null -> ""
+		is InfoBar.Root -> stringResource(R.string.data_child_count, info.count)
+		is InfoBar.Children -> stringResource(
+			R.string.data_children_sf, info.count, info.ratio,
+			if (info.description.isEmpty()) "%" else "%\n" + info.description,
+		)
+		is InfoBar.Search -> stringResource(R.string.data_search_time, info.count, info.elapsedMs)
+	}
+	// The laid-out line count of the current text. The wrapper Box always gives
 	// the text its full width, so the count is stable whatever the strip height.
-	var lines by remember { mutableStateOf(1) }
+	var lines by remember { mutableIntStateOf(1) }
 	val expandable = lines > 2
 	val scroll = rememberScrollState()
-	// legacy `infoScroll.post { infoScroll.fullScroll(FOCUS_UP) }` — keep the top visible
+	// keep the top visible
 	LaunchedEffect(text) { scroll.scrollTo(0) }
 	Box(
 		Modifier
@@ -150,9 +143,3 @@ private fun InfoStrip(
 		)
 	}
 }
-
-/**
- * The 40dp search strip of the legacy `explorer.xml` was removed: the one search
- * field of the app lives in the shell's app bar (MainActivity's toolbar), shared by
- * every explorer host, so the explorer chrome holds no search UI of its own.
- */

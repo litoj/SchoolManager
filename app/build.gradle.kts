@@ -1,5 +1,10 @@
 import java.io.FileInputStream
 import java.util.Properties
+import org.gradle.api.tasks.testing.TestDescriptor
+import org.gradle.api.tasks.testing.TestListener
+import org.gradle.api.tasks.testing.TestResult
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 
 plugins {
     alias(libs.plugins.android.application)
@@ -15,8 +20,8 @@ android {
         applicationId = "cz.litoj.schlmgr"
         minSdk = 30
         targetSdk = 37
-        versionCode = 65
-        versionName = "2.0.0"
+        versionCode = 66
+        versionName = "2.0.1"
         signingConfig = signingConfigs.getByName("debug")
     }
 
@@ -85,6 +90,12 @@ android {
             isIncludeAndroidResources = true
         }
     }
+
+    lint {
+        // The CI gate only runs lint, so report the CI severity locally: a
+        // warning here is what fails the gate, not just an error.
+        warningsAsErrors = true
+    }
 }
 
 java {
@@ -93,21 +104,49 @@ java {
     }
 }
 
+// The unit test runs report to the shell: every failed test with its full
+// exception, every class one summary line, the whole run one total line —
+// the XML results stay an IDE artifact, not the only place to read the
+// outcome from.
+tasks.withType<Test>().configureEach {
+    testLogging {
+        events(TestLogEvent.FAILED, TestLogEvent.SKIPPED)
+        exceptionFormat = TestExceptionFormat.FULL
+        showCauses = true
+        showStackTraces = true
+    }
+    addTestListener(object : TestListener {
+        override fun beforeSuite(suite: TestDescriptor) {}
+        override fun beforeTest(testDescriptor: TestDescriptor) {}
+        override fun afterTest(testDescriptor: TestDescriptor, result: TestResult) {}
+        override fun afterSuite(suite: TestDescriptor, result: TestResult) {
+            // a class suite: one line; the run's root: the total; a framework's
+            // own aggregate suite between them stays silent
+            when {
+                suite.className != null ->
+                    println("${suite.className}: ${result.testCount} tests, " +
+                        "${result.failedTestCount} failed, ${result.skippedTestCount} skipped, " +
+                        "${result.endTime - result.startTime} ms")
+                suite.parent == null ->
+                    println("Total: ${result.testCount} tests, ${result.failedTestCount} failed, " +
+                        "${result.skippedTestCount} skipped")
+            }
+        }
+    })
+}
+
 dependencies {
-    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.activity.compose)
-    implementation(libs.google.material)
-    implementation(libs.androidx.navigation.fragment)
-    implementation(libs.androidx.navigation.ui)
+    implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.documentfile)
-    implementation(libs.androidx.fragment.ktx)
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material)
+    implementation(libs.androidx.compose.material.icons)
     implementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -120,6 +159,20 @@ dependencies {
     implementation(libs.hjson)
 
     testImplementation(libs.junit)
-    testImplementation(libs.mockito.core)
     testImplementation(libs.robolectric)
+
+    // The component tests drive real gestures on a composed list (Robolectric hosts
+    // the activity the rule needs, so the manifest artifact is a debug dependency).
+    testImplementation(composeBom)
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+// The app is Material 2 throughout — material 3 only ever arrives transitively
+// (the debug ui-tooling pulls it in). Dropping it keeps the classpath honest and
+// keeps the material2/material3 mixing lint check from firing on the tooling's
+// own dependency (a plain dependency exclude does not survive the artifact's
+// android variant).
+configurations.configureEach {
+    exclude(group = "androidx.compose.material3", module = "material3")
 }

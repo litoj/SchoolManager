@@ -1,18 +1,16 @@
 package cz.litoj.schlmgr.testing
 
-import cz.litoj.schlmgr.db.DbItem
-import cz.litoj.schlmgr.db.ItemKind
-import cz.litoj.schlmgr.db.ItemRepository
-import cz.litoj.schlmgr.db.dao.WordDao
-import cz.litoj.schlmgr.db.ratio
-import cz.litoj.schlmgr.db.sfCount
+import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.data.db.ItemKind
+import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.data.WordNames
+import cz.litoj.schlmgr.data.db.ratio
+import cz.litoj.schlmgr.data.db.testedCount
 import java.util.Collections
-import java.util.Random
 
 /**
- * Creates and manages a word test — the port of the engine's `Test` class onto
- * database rows. All state (source, answered flags, timer) lives for one run;
- * use [setTested] to prepare a run from a source list.
+ * Creates and manages a word test. All run state (source, answered flags,
+ * timer) lives for one run — use [setTested] to prepare it.
  */
 class TestEngine {
 
@@ -25,28 +23,27 @@ class TestEngine {
 	/**
 	 * Prepares everything for the next test.
 	 *
-	 * @param amount  the amount of objects to be randomly picked for the test or
-	 *                -1 if all of the words are supposed to be used
-	 * @param doOnSec action to be done every second of the test, last call on time out
-	 * @param timeSec time given per item in test
-	 * @param source  list of paths to the tested objects. Don't include the subject root.
+	 * @param amount how many entries to use — -1 or more than [source] uses all of it.
+	 *   Clever mode picks by urgency, otherwise randomly.
+	 * @param doOnSec tick callback, null for none
+	 * @param timeSec seconds one item takes
+	 * @param source the candidate entries
 	 */
 	fun setTested(amount: Int, doOnSec: Timer?, timeSec: Int, source: List<TestEntry>) {
-		// the legacy else-if chain: only an explicit amount validates the rest
-		val useAmount = if (amount == -1 || amount > source.size) source.size
-		else {
-			require(amount >= 1) { "Amount of tested elements must be >= 1!" }
-			require(timeSec >= 1) { "Time given for an item must be >= 1 s!" }
-			require(source.size >= 2) { "The source' size must be > 1!" }
-			amount
-		}
+		// -1 uses the whole source — anything below 1 is invalid
+		require(amount == -1 || amount >= 1) { "Amount of tested elements must be >= 1!" }
+		require(timeSec >= 1) { "Time given for an item must be >= 1 s!" }
+		// an amount that covers the whole source uses all of it (a
+		// single-entry source included)
+		val useAmount = if (amount == -1 || amount >= source.size) source.size else amount
 		this.source = if (isClever) cleverTest(source, useAmount) else rndTest(source.toMutableList(), useAmount)
-		time = timeSec * useAmount
+		// a huge per-item time must not overflow the run into a negative
+		time = (timeSec.toLong() * useAmount).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
 		this.doOnSec = doOnSec
 		answered = BooleanArray(this.source.size)
 	}
 
-	/** Starts the test. */
+	/** Starts the countdown on a worker thread, ticking [doOnSec] each second — stop via [stopTest]. */
 	fun startTest() {
 		timerThread = Thread({
 			try {
@@ -63,40 +60,38 @@ class TestEngine {
 
 	/**
 	 * Stops the countdown before its natural end — the run is over (see
-	 * [cz.litoj.schlmgr.ui.activity.TestActivity.reset]). Without it the
-	 * thread lingers for up to one tick past the end, still holding the
-	 * abandoned activity's callback.
+	 * [cz.litoj.schlmgr.ui.activity.TestActivity.reset]).
+	 * - without it the thread lingers up to one tick past the end, holding
+	 *   the abandoned activity's callback.
 	 */
 	fun stopTest() {
 		timerThread?.interrupt()
 	}
 
 	/**
-	 * Tests if the user answered correctly.
+	 * Tests if the user answered correctly — a null or empty answer always fails.
+	 * - the caller hands the item's translations (the run's model already
+	 *   holds them) — no per-answer database round trip.
 	 *
-	 * @param index  index of the answered object
-	 * @param answer the answer of the user
-	 * @return `true` if the answer matches the tested word in the current
+	 * @return `true` when the answer matches the tested word in the current
 	 * direction — the word's name (or a word linked to its translations) by
-	 * default, one of its translations when [isReversed] is on — otherwise
-	 * `false`
+	 * default, one of its translations when [isReversed] is on.
 	 */
-	fun isAnswer(index: Int, answer: String?): Boolean {
-		require(index < source.size) { "Outside of tested size: $index out of ${source.size - 1}" }
+	fun isAnswer(index: Int, answer: String?, translations: List<DbItem>): Boolean {
+		require(index in 0 until source.size) { "Outside of tested size: $index out of ${source.size - 1}" }
 		require(!answered[index]) { "Can't answer more than once, only one attempt allowed!" }
 		answered[index] = true
 		val entry = source[index]
-		val translations = entry.translations()
 		var correct = matchesAnswer(entry.word, translations, answer)
 		if (!correct && !isReversed && !answer.isNullOrEmpty()) {
 			// the answer may name any word linked to every translation of
 			// the tested word (the reverse direction of the word→translation links)
-			for (trl in translations) {
+			for (translation in translations) {
 				correct = false
-				for (parentId in ItemRepository.parentIds(trl.id)) {
+				for (parentId in ItemRepository.parentIds(translation.id)) {
 					val parent = ItemRepository.get(parentId) ?: continue
 					if (parent.type != ItemKind.WORD) continue
-					if (WordDao.parseVariants(parent.name).any { it == answer }) {
+					if (WordNames.parseVariants(parent.name).any { it == answer }) {
 						correct = true
 						break
 					}
@@ -104,33 +99,25 @@ class TestEngine {
 				if (!correct) break
 			}
 		}
-		// the test updates the whole hierarchy with the result: the chapter
-		// path (the word included) gets the plain result, the translations
+		// the test updates the word and every container holding it — plain
+		// ancestors only, a reference never counts — and the translations
 		// only the knowledge the answer demonstrated
-		ItemRepository.bumpSf(entry.path.map { it.id }, correct)
+		ItemRepository.bumpWordCounters(entry.word.id, correct)
 		bumpTranslations(translations, answer, correct)
 		return correct
 	}
 
 	/**
-	 * Records the answer on the word's translations: the ones the answer
-	 * demonstrated knowledge of on success (see [creditedTranslations]), all of
-	 * them on a fail — the answer then named no correct translation.
+	 * Records the answer on the word's translations — the ones the answer
+	 * demonstrated knowledge of on success (see [creditedTranslations]), and
+	 * all of them on a fail (the answer then named no correct translation).
 	 */
 	private fun bumpTranslations(translations: List<DbItem>, answer: String?, correct: Boolean) {
-		if (correct) ItemRepository.bumpSf(creditedTranslations(translations, answer).map { it.id }, true)
-		else ItemRepository.bumpSf(translations.map { it.id }, false)
+		if (correct) ItemRepository.bumpCounters(creditedTranslations(translations, answer).map { it.id }, true)
+		else ItemRepository.bumpCounters(translations.map { it.id }, false)
 	}
 
-	/**
-	 * Gives the translations for the picked testing objects.
-	 *
-	 * @param index index of the tested word which translations you want to get
-	 * @return the word's translations
-	 */
-	fun getTested(index: Int): List<DbItem> =
-		if (index >= source.size) emptyList() else source[index].translations()
-
+	/** The run's tested entries, as a defensive copy. */
 	fun getTestSrc(): List<TestEntry> = ArrayList(source)
 
 	companion object {
@@ -148,59 +135,51 @@ class TestEngine {
 		private const val UNTESTED_BELT = 100 / RATIO_BELT
 
 		/**
-		 * Expresses how much the given word needs to be retested. Computed as the word's
-		 * failure rate (split into belts of [RATIO_BELT] percents) minus the amount
-		 * of times the word was already tested, so the more tests were run on a word,
-		 * the further it slips back in the test queue. This way even words answered
-		 * correctly on the first try eventually resurface.
-		 *
-		 * @return the urgency value, higher means the word should be tested sooner
+		 * How much the word needs a retest — failure rate (in [RATIO_BELT]-wide
+		 * belts) minus testedness.
+		 * - tested words slip back, so even first-try-correct words resurface.
+		 * - higher = test sooner.
 		 */
 		@JvmStatic
 		fun urgency(word: DbItem): Int {
-			val rat = word.ratio
-			return (if (rat < 0) UNTESTED_BELT else (100 - rat) / RATIO_BELT) - word.sfCount
+			val ratio = word.ratio
+			return (if (ratio < 0) UNTESTED_BELT else (100 - ratio) / RATIO_BELT) - word.testedCount
 		}
 
 		/**
-		 * Picks the [amount] most urgent words from the source. All words as urgent
-		 * as the last word still needed are included and then trimmed randomly, so
-		 * equally urgent words take turns. Always returns exactly [amount] words
-		 * (as long as `amount <= source.size`), regardless of how the words'
-		 * urgencies are distributed.
+		 * Picks the [amount] most urgent entries. Ties at the cut share turns via
+		 * random trim, and exactly [amount] entries are returned when
+		 * `amount <= source.size`.
 		 */
 		@JvmStatic
 		fun cleverTest(source: List<TestEntry>, amount: Int): List<TestEntry> {
+			// an empty source (or nothing picked) selects nothing
+			if (source.isEmpty() || amount == 0) return emptyList()
+			// a public entry point — the caller's amount is not trusted to fit
+			val take = amount.coerceAtMost(source.size)
 			val sorted = ArrayList(source)
 			sorted.sortWith { a, b -> urgency(b.word).compareTo(urgency(a.word)) }
-			val cut = urgency(sorted[amount - 1].word)
-			var end = amount
+			val cut = urgency(sorted[take - 1].word)
+			var end = take
 			while (end < sorted.size && urgency(sorted[end].word) == cut) end++
-			return rndTest(ArrayList(sorted.subList(0, end)), amount)
+			return rndTest(ArrayList(sorted.subList(0, end)), take)
 		}
 
+		/** Random subset in random order — [source] is trimmed and shuffled in place. */
 		@JvmStatic
 		fun rndTest(source: MutableList<TestEntry>, amount: Int): MutableList<TestEntry> {
-			val rnd = Random()
-			for (i in source.size downTo amount + 1)
-				source.removeAt(rnd.nextInt(source.size))
 			Collections.shuffle(source)
+			// the shuffle made every prefix an equally likely subset
+			while (source.size > amount) source.removeAt(source.size - 1)
 			return source
 		}
 
 		/**
-		 * Converts the selected sources into the tested entries: a selected word
-		 * is tested directly, a selected chapter is expanded into the words under
-		 * it (recursively). Each item becomes at most one entry — a word linked
-		 * under sibling chapters (the reference model) is one word, not one per
-		 * container that reaches it. The former engine reference resolution is
-		 * gone — in the link model an item simply appears under each of its
-		 * parents.
+		 * Selected rows into tested entries.
+		 * - words directly, chapters expanded — each word at most one entry.
 		 *
-		 * @param sources the selected rows, each with its container chain
-		 * (root first, the selected row last)
-		 * @param children the container-children lookup, the repository by
-		 * default — a fake tree in tests
+		 * @param sources selected rows with container chains (root first)
+		 * @param children container-children lookup (a fake tree in tests)
 		 */
 		@JvmStatic
 		@JvmOverloads
@@ -208,15 +187,15 @@ class TestEngine {
 			sources: List<List<DbItem>>,
 			children: (Int) -> List<DbItem> = ItemRepository::children,
 		): List<TestEntry> {
-			val ret = ArrayList<TestEntry>()
+			val entries = ArrayList<TestEntry>()
 			val visited = HashSet<Int>()
 			for (path in sources) {
 				val last = path.last()
 				if (last.type == ItemKind.WORD) {
-					if (visited.add(last.id)) ret.add(TestEntry(last, path))
-				} else if (last.type == ItemKind.CHAPTER) convertContent(path, children, visited, ret)
+					if (visited.add(last.id)) entries.add(TestEntry(last, path))
+				} else if (last.type == ItemKind.CHAPTER) convertContent(path, children, visited, entries)
 			}
-			return ret
+			return entries
 		}
 
 		private fun convertContent(
@@ -235,12 +214,15 @@ class TestEngine {
 			}
 		}
 
-		/** Default time for one item in a test. */
-		private var defaultTime = 18
+		/** The default seconds per item a fresh program state carries. */
+		const val DEFAULT_TIME_SECONDS = 18
+
+		private var defaultTime = DEFAULT_TIME_SECONDS
 
 		@JvmStatic
 		fun getDefaultTime(): Int = defaultTime
 
+		/** Sets the default seconds per item — [newTime] must be >= 1. */
 		@JvmStatic
 		fun setDefaultTime(newTime: Int) {
 			require(newTime >= 1) { "Duration of a test must be >= 1 s!" }
@@ -261,18 +243,14 @@ class TestEngine {
 		@JvmStatic
 		var isReversed = false
 
-		/** The amount of items in a test. */
+		/** Item count per test — -1 or more than the source uses all of it. */
 		@JvmStatic
 		var amount = 10
 
 		/**
-		 * Whether [answer] names the tested [word] in the current direction: the
-		 * word's own name by default, one of its [translations] when [isReversed]
-		 * is on. The `/()` variants of every compared name count as answers too.
-		 *
-		 * This is the side-independent part of the per-run `isAnswer` matching; the
-		 * linked-word fallback of the default direction needs the database and
-		 * stays there.
+		 * Whether [answer] names the tested word in the current direction (word name
+		 * normally, one of [translations] when [isReversed]). `/()` variants count
+		 * too, and null or empty never matches.
 		 */
 		@JvmStatic
 		fun matchesAnswer(word: DbItem, translations: List<DbItem>, answer: String?): Boolean {
@@ -282,16 +260,15 @@ class TestEngine {
 		}
 
 		/**
-		 * The translations of an item that a correct [answer] demonstrated
-		 * knowledge of: the one it named in a reversed test, the whole shown
-		 * prompt in the normal direction.
+		 * Translations a correct [answer] demonstrated knowledge of — the one it
+		 * named when reversed, the whole shown prompt normally.
 		 */
 		@JvmStatic
 		fun creditedTranslations(translations: List<DbItem>, answer: String?): List<DbItem> =
 			if (isReversed) translations.filter { matchesName(it.name, answer ?: "") } else translations
 
-		/** Whether [answer] equals [name] or one of its `/()` variants. */
+		/** Whether the answer equals the name or one of its `/()` variants. */
 		private fun matchesName(name: String, answer: String): Boolean =
-			answer == name || WordDao.parseVariants(name).any { it == answer }
+			answer == name || WordNames.parseVariants(name).any { it == answer }
 	}
 }
