@@ -1,49 +1,36 @@
 package cz.litoj.schlmgr.ui.popup
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.background
+import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.input.KeyboardActionHandler
-import androidx.compose.foundation.text.input.TextFieldLineLimits
-import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -53,417 +40,364 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.db.DbItem
+import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.ui.component.BareTextFieldStyle
+import cz.litoj.schlmgr.ui.component.HairlineDivider
+import cz.litoj.schlmgr.ui.component.WideTextField
+import cz.litoj.schlmgr.ui.viewmodel.CreatorResult
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
+import cz.litoj.schlmgr.ui.viewmodel.TranslationRow
+import cz.litoj.schlmgr.ui.viewmodel.TranslationValue
 
 /**
- * Describes the type-specific part of the [CreatorPopup] — everything besides the shared
- * header, name and description fields.
- *
- * Only words have one: the translations editor. The former chapter variant (the
- * file-chapter checkbox) is gone with the engine's `SaveChapter` — every chapter is a
- * database chapter now, edited with name + description + position alone.
+ * Type-specific popup content — only words have any, the translations
+ * editor. Chapters and notes edit the shared fields alone.
  */
 sealed class CreatorContent {
 
-    /** Name + description only: subjects, chapters and notes. */
-    object Simple : CreatorContent()
+	object Simple : CreatorContent()
 
-    /** A word: offers the translations editor. */
-    class Word(val initial: List<TranslationRow>) : CreatorContent()
-
-    companion object {
-        /** Java-friendly access to [Simple] (avoids `Simple.INSTANCE`). */
-        @JvmField
-        val SIMPLE: CreatorContent = Simple
-    }
+	class Word(val initial: List<TranslationRow>) : CreatorContent()
 }
 
 /**
- * One editable translation row of the word editor.
+ * The item creation/edit popup — creation and editing share the fields. Order
+ * changes by dragging in the list and new items append, so placement is the
+ * database's business — there is no position picker.
  *
- * @param source the existing translation ([DbItem]) being edited, or `null` for a newly
- * added one
- */
-@Stable
-class TranslationRow(name: String, desc: String, val source: DbItem?) {
-
-    val id: Long = nextId++
-
-    var name by mutableStateOf(name)
-    var desc by mutableStateOf(desc)
-
-    private companion object {
-        var nextId = 0L
-    }
-}
-
-/**
- * The item creation/edit screen, rendered through the shared dialog host
- * (dimming, outside-click dirty-guard and back handling preserved).
- *
- * Creation and editing share the same fields: name, description and the
- * type-specific editor. Items are reordered by dragging them in the list, so
- * there is no position picker.
- *
- * Tapping the empty space outside the card only closes the dialog when nothing was
- * changed (see [canDismissByOutsideTouch]).
- *
- * @param header the dialog title (e.g. "New chapter" / "Edit")
- * @param edited the item row being edited, or `null` when creating a new one
- * @param insertPosition 1-based slot the created item is inserted at (the list
- *   end by default); never read when [edited] is not `null`
- * @param content the type-specific editor
+ * The OK listener returns the commit verdict only — the popup closes itself
+ * on acceptance, except an Enter commit of a new word, which resets the
+ * editor for the next one instead (see [onTranslationNameEnter]).
  */
 class CreatorPopup(
-    private val header: String,
-    val edited: ItemRow?,
-    insertPosition: Int,
-    private val content: CreatorContent,
+	private val kind: Kind,
+	val edited: ItemRow?,
+	private val content: CreatorContent,
 ) : DialogSpec {
 
-    private var okListener: Runnable? = null
-    private var cancelListener: Runnable? = null
+	/** What the popup does — the header text follows from it at display. */
+	enum class Kind { EDIT, NEW_SUBJECT, NEW_CHAPTER, NEW_NOTE, NEW_WORD }
 
-    // Exposed publicly so the call sites read them as name/desc/insert position.
-    var name by mutableStateOf(edited?.item?.name ?: "")
-    var desc by mutableStateOf(edited?.item?.description ?: "")
-    var position by mutableIntStateOf(insertPosition)
+	private var okListener: ((CreatorResult) -> Boolean)? = null
 
-    val translations: SnapshotStateList<TranslationRow> =
-        ((content as? CreatorContent.Word)?.initial
-            ?: emptyList()).toMutableStateList()
-            // A new word always starts with one empty translation ready to type into.
-            .apply { if (isEmpty()) add(TranslationRow("", "", null)) }
+	// Exposed publicly so the call sites read them as name/description.
+	var name by mutableStateOf(edited?.item?.name ?: "")
+	var description by mutableStateOf(edited?.item?.description ?: "")
 
-    /** The existing translations whose rows were removed in the editor. */
-    val removedTranslations = mutableListOf<DbItem>()
+	val translations: SnapshotStateList<TranslationRow> =
+		((content as? CreatorContent.Word)?.initial
+			?: emptyList()).toMutableStateList()
+			// A new word always starts with one empty translation ready to type into.
+			.apply { if (isEmpty()) add(TranslationRow("", "", null)) }
 
-    // Snapshots taken at open time, used for the unsaved-changes guard.
-    private val initialName = name
-    private val initialDesc = desc
-    private val initialRows = translations.map { it.name to it.desc }
+	/** The existing translations whose rows were removed in the editor. */
+	val removedTranslations = mutableListOf<DbItem>()
 
-    init {
-        Dialogs.show(this)
-    }
+	// Snapshots of the last committed state, used for the unsaved-changes guard.
+	// Vars — an Enter commit of a new word re-baselines them (see [resetForNextWord]).
+	private var initialName = name
+	private var initialDescription = description
+	private var initialRows = translations.map { it.name to it.description }
 
-    /** `true` once the user has changed anything in this dialog. */
-    val isDirty: Boolean
-        get() = name != initialName || desc != initialDesc ||
-            removedTranslations.isNotEmpty() ||
-            translations.map { it.name to it.desc } != initialRows
+	init {
+		Dialogs.show(this)
+	}
 
-    override fun canDismissByOutsideTouch(): Boolean = !isDirty
+	val isDirty: Boolean
+		get() = name != initialName || description != initialDescription ||
+			removedTranslations.isNotEmpty() ||
+			translations.map { it.name to it.description } != initialRows
 
-    /** Focus handles for each translation row's name field, keyed by [TranslationRow.id]. */
-    private val nameFieldFocus = mutableStateMapOf<Long, FocusRequester>()
+	override fun canDismissByOutsideTouch(): Boolean = !isDirty
 
-    /** Set when a row was just appended and should grab focus once composed. */
-    private var pendingFocusId by mutableStateOf<Long?>(null)
+	private val nameFieldFocus = mutableStateMapOf<Long, FocusRequester>()
 
-    /**
-     * Moves focus to the name field of the translation after [fromIndex] (the main word
-     * name field passes `-1`), appending a fresh row when currently on the last one.
-     */
-    private fun focusNextTranslation(fromIndex: Int) {
-        val next = translations.getOrNull(fromIndex + 1)
-        if (next != null) {
-            val focused =
-                runCatching { nameFieldFocus[next.id]?.requestFocus() }.isSuccess
-            if (!focused) pendingFocusId = next.id
-        } else {
-            val row = TranslationRow("", "", null)
-            translations.add(row)
-            pendingFocusId = row.id
-        }
-    }
+	private var pendingFocusId by mutableStateOf<Long?>(null)
 
-    fun setOkListener(listener: Runnable) {
-        okListener = listener
-    }
+	private val nameFocus = FocusRequester()
 
-    fun dismiss() = Dialogs.dismiss(this)
+	/**
+	 * Enter in the word's name — the first translation follows; a fresh row is
+	 * added when the editor holds none (its last one was deleted).
+	 */
+	@VisibleForTesting
+	internal fun onWordNameEnter() {
+		val id = translations.firstOrNull()?.id
+			?: TranslationRow("", "", null).also(translations::add).id
+		focusTranslation(id)
+	}
 
-    @Composable
-    override fun Content() = CreatorPopupScreen()
+	/**
+	 * Enter in a translation's name — the next row follows, the last one
+	 * confirms instead (see [notifyOk]).
+	 */
+	@VisibleForTesting
+	internal fun onTranslationNameEnter(index: Int) {
+		val next = translations.getOrNull(index + 1)
+		if (next != null) focusTranslation(next.id) else notifyOk(fromEnter = true)
+	}
 
-    @Composable
-    private fun CreatorPopupScreen() {
-        // Popup colors mirror the app theme (res/values/colors.xml) instead of being
-        // hard-coded here, so a theme change only needs to touch the resource file.
-        val cardColor = colorResource(R.color.colorPrimaryBg)
-        val textColor = colorResource(R.color.colorPrimaryFg)
-        val dividerColor = colorResource(R.color.colorControlLine)
+	/** Moves the keyboard to a translation's name field, deferred until the row is composed. */
+	private fun focusTranslation(id: Long) {
+		val focused = runCatching { nameFieldFocus[id]?.requestFocus() }.isSuccess
+		if (!focused) pendingFocusId = id
+	}
 
-        // Outside-dismiss (the dirty-guarded scrim tap) and the keyboard inset
-        // handling both live in the shared dialog host.
-        Box(Modifier.fillMaxSize()) {
-            Column(
-                Modifier
-                    .padding(25.dp)
-                    .fillMaxWidth()
-                    .background(cardColor)
-            ) {
-                // Fixed header: title, divider, name and description are always visible.
-                Text(
-                    header,
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(top = 5.dp),
-                    style = TextStyle(fontSize = 25.sp, color = textColor),
-                    textAlign = TextAlign.Center
-                )
-                ThinDivider(0.7.dp, dividerColor)
-                // Enter in the word name jumps to the first translation's name (or adds one).
-                BorderedTextField(
-                    name,
-                    { name = it },
-                    R.string.data_name,
-                    textColor,
-                    singleLine = true,
-                    onImeAction = {
-                        if (content is CreatorContent.Word) focusNextTranslation(
-                            -1
-                        )
-                    }
-                )
-                BorderedTextField(desc, { desc = it }, R.string.data_desc, textColor)
-                // Variable middle: the type-specific editor scroll when it
-                // outgrows the (keyboard-resized) window, so the header and the Cancel/OK bar
-                // below always stay visible.
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .weight(1f, fill = false)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    when (content) {
-                        is CreatorContent.Word -> WordEditor(
-                            textColor,
-                            dividerColor
-                        )
+	/** Sets the commit verdict — `false` keeps the popup open; on acceptance the popup closes itself. */
+	fun setOkListener(listener: (CreatorResult) -> Boolean) {
+		okListener = listener
+	}
 
-                        else -> Unit
-                    }
-                }
-                ThinDivider(0.7.dp, dividerColor)
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                ) {
-                    PopupTextButton(
-                        stringResource(R.string.cancel),
-                        textColor
-                    ) { notifyCancel() }
-                    Box(
-                        Modifier
-                            .width(0.5.dp)
-                            .padding(vertical = 10.dp)
-                            .fillMaxHeight()
-                            .background(dividerColor)
-                    )
-                    PopupTextButton("OK", textColor) { notifyOk() }
-                }
-            }
-        }
-    }
+	fun result() = CreatorResult(
+		name = name,
+		description = description,
+		translations = translations.map { TranslationValue(it.name, it.description, it.source) },
+		removedTranslations = removedTranslations.toList(),
+	)
 
-    @Composable
-    private fun WordEditor(textColor: Color, dividerColor: Color) {
-        // Not a LazyColumn: the enclosing middle section already scrolls, and nesting
-        // same-direction scrollables would let the inner one steal the drags.
-        Column(Modifier.fillMaxWidth()) {
-            translations.forEach { row ->
-                TranslationRowEditor(row, textColor, dividerColor)
-            }
-            // Just the centered add icon — no label, no separator above it.
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .clickable { translations.add(TranslationRow("", "", null)) }
-                    .padding(vertical = 2.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painterResource(R.drawable.ic_add),
-                    contentDescription = stringResource(R.string.add_word),
-                    tint = Color.Unspecified,
-                )
-            }
-        }
-    }
+	fun dismiss() = Dialogs.dismiss(this)
 
-    @Composable
-    private fun TranslationRowEditor(
-        row: TranslationRow,
-        textColor: Color,
-        dividerColor: Color
-    ) {
-        // Focus handle for this row's name field, used by the Enter-chain.
-        val nameFocus = remember(row.id) { FocusRequester() }
-        nameFieldFocus[row.id] = nameFocus
-        // Keyed on pendingFocusId as well so that re-targeting an already-composed row
-        // re-runs the effect and actually moves focus there (otherwise IME-Next falls
-        // through to the description field). Newly appended rows are focused as soon as
-        // they are composed.
-        LaunchedEffect(row.id, pendingFocusId) {
-            if (pendingFocusId == row.id) {
-                pendingFocusId = null
-                runCatching { nameFocus.requestFocus() }
-            }
-        }
-        // Same layout as the main frame: the row's start padding aligns the bordered
-        // fields' left edge with the main fields, and the delete icon keeps the same
-        // margin from the card's right edge so it doesn't hug the popup.
-        Column(Modifier.fillMaxWidth()) {
-            ThinDivider(0.6.dp, dividerColor)
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(
-                    Modifier
-                        .weight(1f)
-                        .padding(top = 5.dp)
-                ) {
-                    BorderedTextField(
-                        row.name,
-                        { row.name = it },
-                        R.string.data_translate,
-                        textColor,
-                        singleLine = true,
-                        onImeAction = { focusNextTranslation(translations.indexOf(row)) },
-                        focusRequester = nameFocus,
-                        horizontalPadding = 0.dp,
-                    )
-                    BorderedTextField(
-                        row.desc,
-                        { row.desc = it },
-                        R.string.data_desc,
-                        textColor,
-                        horizontalPadding = 0.dp
-                    )
-                }
-                Icon(
-                    painterResource(R.drawable.ic_cancel_round),
-                    contentDescription = null,
-                    tint = Color.Unspecified,
-                    modifier = Modifier
-                        .padding(start = 12.5.dp)
-                        .size(30.dp)
-                        .clickable {
-                            row.source?.let { removedTranslations.add(it) }
-                            translations.remove(row)
-                        }
-                )
-            }
-            Spacer(Modifier.height(5.dp))
-        }
-    }
+	/**
+	 * Clears the editor for the next word of an Enter-driven run — the popup
+	 * stays open, the keyboard moves to the name field.
+	 */
+	private fun resetForNextWord() {
+		name = ""
+		description = ""
+		translations.clear()
+		translations.add(TranslationRow("", "", null))
+		removedTranslations.clear()
+		// the dropped rows' focus handles are dead — drop them with the rows
+		nameFieldFocus.clear()
+		// the guard starts over against the fresh state
+		initialName = name
+		initialDescription = description
+		initialRows = translations.map { it.name to it.description }
+		// the field is composed whenever the chain can fire — catching keeps
+		// the reset safe outside composition (the unit tests)
+		runCatching { nameFocus.requestFocus() }
+	}
 
-    /**
-     * The bordered text field replicating the old `outline_gray` drawable: a thin gray
-     * border with inner padding, a hint shown when empty, no floating label.
-     */
-    @Composable
-    private fun BorderedTextField(
-        value: String,
-        onValueChange: (String) -> Unit,
-        @StringRes label: Int,
-        textColor: Color,
-        singleLine: Boolean = false,
-        onImeAction: (() -> Unit)? = null,
-        focusRequester: FocusRequester? = null,
-        horizontalPadding: androidx.compose.ui.unit.Dp = 20.dp,
-    ) {
-        val fontSize = 17.sp
-        val style = TextStyle(fontSize = fontSize, color = textColor)
-        val state = rememberTextFieldState(value)
-        if (state.text.toString() != value) state.setTextAndPlaceCursorAtEnd(
-            value
-        )
-        LaunchedEffect(state) {
-            snapshotFlow { state.text.toString() }.collect(onValueChange)
-        }
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = horizontalPadding, vertical = 5.dp)
-                .border(0.8.dp, colorResource(R.color.colorControlLine))
-                .padding(5.dp)
-        ) {
-            if (state.text.isEmpty()) {
-                Text(
-                    stringResource(label),
-                    style = style.copy(color = textColor.copy(alpha = 0.5f)),
-                )
-            }
-            BasicTextField(
-                state = state,
-                lineLimits = if (singleLine) TextFieldLineLimits.SingleLine
-                else TextFieldLineLimits.Default,
-                textStyle = style,
-                cursorBrush = SolidColor(textColor),
-                keyboardOptions = KeyboardOptions(
-                    imeAction =
-                        if (onImeAction != null) ImeAction.Next else ImeAction.Default
-                ),
-                // NOTE: give the non-null action a name — inside the SAM lambda the
-                // implicit `it` is `performDefaultAction`, so the naive `let { …{ it() } }`
-                // would just run the default focus move (landing on the description field)
-                // instead of our Enter chain. Covers both the soft Next key and hardware
-                // Enter (single-line fields route Enter here).
-                onKeyboardAction = onImeAction?.let { action ->
-                    KeyboardActionHandler { action() }
-                },
-                modifier = (if (focusRequester != null) Modifier.focusRequester(
-                    focusRequester
-                )
-                else Modifier).fillMaxWidth()
-            )
-        }
-    }
+	@Composable
+	override fun Content() = CreatorPopupScreen()
 
-    @Composable
-    private fun RowScope.PopupTextButton(
-        text: String,
-        textColor: Color,
-        onClick: () -> Unit
-    ) {
-        Box(
-            Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .clickable(onClick = onClick),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(text, style = TextStyle(fontSize = 18.sp, color = textColor))
-        }
-    }
+	@Composable
+	private fun CreatorPopupScreen() {
+		// Popup colors mirror the app theme (res/values/colors.xml) instead of being
+		// hard-coded here, so a theme change only needs to touch the resource file.
+		val textColor = colorResource(R.color.colorPrimaryFg)
 
-    @Composable
-    private fun ThinDivider(
-        thickness: androidx.compose.ui.unit.Dp,
-        color: Color,
-    ) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(thickness)
-                .background(color)
-        )
-    }
+		// Outside-dismiss (the dirty-guarded scrim tap) and the keyboard inset
+		// handling both live in the shared dialog host.
+		PopupCard {
+			// Fixed header — title, divider, name and description are always visible.
+			Text(
+				stringResource(kind.headerRes),
+				Modifier
+					.fillMaxWidth()
+					.padding(top = 5.dp),
+				style = TextStyle(fontSize = 25.sp, color = textColor),
+				textAlign = TextAlign.Center
+			)
+			HairlineDivider()
+			// Enter in the word name jumps to the first translation's name. The
+			// other kinds have no next field — no ImeAction offered.
+			BorderedTextField(
+				name,
+				{ name = it },
+				R.string.data_name,
+				textColor,
+				singleLine = true,
+				onImeAction = if (content is CreatorContent.Word) {
+					{ onWordNameEnter() }
+				} else null,
+				focusRequester = nameFocus,
+			)
+			BorderedTextField(description, { description = it }, R.string.data_desc, textColor)
+			// Variable middle — the type-specific editor scroll when it
+			// outgrows the (keyboard-resized) window, so the header and the Cancel/OK bar
+			// below always stay visible.
+			Column(
+				Modifier
+					.fillMaxWidth()
+					.weight(1f, fill = false)
+					.verticalScroll(rememberScrollState())
+			) {
+				when (content) {
+					is CreatorContent.Word -> WordEditor(textColor)
 
-    private fun notifyCancel() {
-        cancelListener?.run()
-        dismiss()
-    }
+					else -> Unit
+				}
+			}
+			HairlineDivider()
+			Row(
+				Modifier
+					.fillMaxWidth()
+					.height(50.dp)
+			) {
+				PopupButton(
+					stringResource(R.string.cancel),
+					Modifier.weight(1f)
+				) { dismiss() }
+				VerticalButtonSeparator()
+				PopupButton(stringResource(R.string.ok), Modifier.weight(1f)) { notifyOk() }
+			}
+		}
+	}
 
-    private fun notifyOk() {
-        okListener?.run()
-    }
+	@Composable
+	private fun WordEditor(textColor: Color) {
+		// Not a LazyColumn — the enclosing middle section already scrolls, and nesting
+		// same-direction scrollables would let the inner one steal the drags.
+		Column(Modifier.fillMaxWidth()) {
+			translations.forEach { row ->
+				TranslationRowEditor(row, textColor)
+			}
+			// Just the centered add icon — no label, no separator above it.
+			Box(
+				Modifier
+					.fillMaxWidth()
+					.clickable { translations.add(TranslationRow("", "", null)) }
+					.padding(vertical = 2.dp),
+				contentAlignment = Alignment.Center,
+			) {
+				Icon(
+					painterResource(R.drawable.ic_add),
+					contentDescription = stringResource(R.string.add_word),
+					tint = Color.Unspecified,
+				)
+			}
+		}
+	}
+
+	@Composable
+	private fun TranslationRowEditor(
+		row: TranslationRow,
+		textColor: Color,
+	) {
+		// Focus handle for this row's name field, used by the Enter-chain.
+		val nameFocus = remember(row.id) { FocusRequester() }
+		// registered post-composition — an abandoned recomposition leaves
+		// no stale entry behind
+		SideEffect { nameFieldFocus[row.id] = nameFocus }
+		// Keyed on pendingFocusId as well so that re-targeting an already-composed row
+		// re-runs the effect and actually moves focus there (otherwise IME-Next falls
+		// through to the description field). Newly appended rows are focused as soon as
+		// they are composed.
+		LaunchedEffect(row.id, pendingFocusId) {
+			if (pendingFocusId == row.id) {
+				pendingFocusId = null
+				runCatching { nameFocus.requestFocus() }
+			}
+		}
+		// Same layout as the main frame — the row's start padding aligns the bordered
+		// fields' left edge with the main fields, and the delete icon keeps the same
+		// margin from the card's right edge so it doesn't hug the popup.
+		Column(Modifier.fillMaxWidth()) {
+			HairlineDivider()
+			Row(
+				Modifier
+					.fillMaxWidth()
+					.padding(start = 20.dp, end = 20.dp),
+				verticalAlignment = Alignment.CenterVertically
+			) {
+				Column(
+					Modifier
+						.weight(1f)
+						.padding(top = 5.dp)
+				) {
+					BorderedTextField(
+						row.name,
+						{ row.name = it },
+						R.string.data_translate,
+						textColor,
+						singleLine = true,
+						onImeAction = { onTranslationNameEnter(translations.indexOf(row)) },
+						// the last row's Enter confirms — the key reads Done, not Next
+						imeAction = if (translations.lastOrNull() == row) ImeAction.Done else ImeAction.Next,
+						focusRequester = nameFocus,
+						horizontalPadding = 0.dp,
+					)
+					BorderedTextField(
+						row.description,
+						{ row.description = it },
+						R.string.data_desc,
+						textColor,
+						horizontalPadding = 0.dp
+					)
+				}
+				Icon(
+					painterResource(R.drawable.ic_cancel_round),
+					contentDescription = null,
+					tint = Color.Unspecified,
+					modifier = Modifier
+						.padding(start = 12.5.dp)
+						.size(30.dp)
+						.clickable {
+							row.source?.let { removedTranslations.add(it) }
+							translations.remove(row)
+							// the row's focus handle is dead — drop it with the row
+							nameFieldFocus.remove(row.id)
+						}
+				)
+			}
+			Spacer(Modifier.height(5.dp))
+		}
+	}
+
+	@Composable
+	private fun BorderedTextField(
+		value: String,
+		onValueChange: (String) -> Unit,
+		@StringRes label: Int,
+		textColor: Color,
+		singleLine: Boolean = false,
+		onImeAction: (() -> Unit)? = null,
+		imeAction: ImeAction? = null,
+		focusRequester: FocusRequester? = null,
+		horizontalPadding: androidx.compose.ui.unit.Dp = 20.dp,
+	) {
+		Box(
+			Modifier
+				.fillMaxWidth()
+				.padding(horizontal = horizontalPadding, vertical = 5.dp)
+				.border(0.8.dp, colorResource(R.color.colorControlLine))
+				.padding(5.dp)
+		) {
+			WideTextField(
+				value = value,
+				onValueChange = onValueChange,
+				fontSize = 17.sp,
+				style = BareTextFieldStyle(textColor = textColor, cursorColor = textColor, underline = false),
+				focusRequester = focusRequester,
+				imeAction = imeAction
+					?: if (onImeAction != null) ImeAction.Next else ImeAction.Default,
+				hint = stringResource(label),
+				singleLine = singleLine,
+				onImeAction = onImeAction,
+			)
+		}
+	}
+
+	@VisibleForTesting
+	internal fun notifyOk(fromEnter: Boolean = false) {
+		// one shot per ACCEPTED commit — a double-tap must not commit twice,
+		// but a refused one (the popup stays open) must leave the door open
+		val listener = okListener ?: return
+		if (!listener(result())) return
+		if (fromEnter && kind == Kind.NEW_WORD) resetForNextWord()
+		else {
+			okListener = null
+			dismiss()
+		}
+	}
 }
+
+private val CreatorPopup.Kind.headerRes: Int
+	get() = when (this) {
+		CreatorPopup.Kind.EDIT -> R.string.edit
+		CreatorPopup.Kind.NEW_SUBJECT -> R.string.new_mch
+		CreatorPopup.Kind.NEW_CHAPTER -> R.string.new_chapter
+		CreatorPopup.Kind.NEW_NOTE -> R.string.new_note
+		CreatorPopup.Kind.NEW_WORD -> R.string.new_word
+	}

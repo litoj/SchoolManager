@@ -14,6 +14,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.unit.dp
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -21,52 +22,31 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 /**
- * What a long-press followed by a drag does on the explorer list. The list derives it
- * from its state: a selected list (or the picker) selects the dragged-over range, a
- * plain browsing list inside a container reorders, anything else ignores the drag.
+ * What a long-press followed by a drag does on the explorer list.
+ * - a selected list (or the picker) selects the dragged-over range.
+ * - a plain browsing list inside a container reorders.
+ * - anything else ignores the drag.
  */
 internal enum class ListDragMode { None, Select, Reorder }
 
-/**
- * The row a long-press landed on and the drag mode the press started in, until (and
- * if) the gesture proves to be a drag. The row's `combinedClickable` reports the press
- * here; the list-level drag detector reads it. A plain holder, not Compose state: the
- * press must not trigger a recomposition.
- */
-internal class PendingLongPress {
-	var index: Int = -1
-	var mode: ListDragMode = ListDragMode.None
-}
+internal data class RowGeometry(val index: Int, val offset: Int, val size: Int)
 
 /**
- * The single drag handler for the explorer list — the long-press-and-drag half only.
- * Taps and the long-press action itself stay with each row's `combinedClickable`; this
- * detector only extends an already-fired long-press into a drag. One detector on the
- * whole `LazyColumn` (never one per row: a row's long-press would consume the event the
- * drag detector needs) maps the finger to a row through [LazyListState.layoutInfo] and:
- *
- * - [ListDragMode.Select] selects the range from the pressed row to the finger,
- * - [ListDragMode.Reorder] moves the pressed row onto the finger's row as it crosses,
- *   and reports the final order through [onReorderDrop],
- * - [ListDragMode.None] consumes the drag without an effect.
- *
- * The mode is the one snapshotted at the long-press ([PendingLongPress.mode]), so the
- * selection change the press itself makes cannot flip a reorder into a select.
- *
- * The events are read in the `Initial` pass and consumed there while dragging, so the
- * list's own scroll never starts under the finger. Near the top/bottom edge an
- * auto-scroll loop keeps moving the list while the finger is held there.
- *
- * @param pending the row waiting on a long-press and its snapshotted mode
- * @param onSelectRange reports every drag-select step (anchor row, finger row)
- * @param onSelectEnd reports the end of a drag-select, after the last step
- * @param onReorderMove reports every live reorder step
- * @param onReorderDrop reports the end of a reorder drag
+ * The list's long-press-and-drag handler.
+ * - Select drags the covered range, Reorder moves the pressed row,
+ *   None consumes.
+ * - mode snapshotted at the long-press, events in the `Initial` pass
+ *   with edge auto-scroll.
+ * - a structural list change mid-drag (a background reload landing)
+ *   invalidates the claimed row indexes — the drop never fires.
+ * - the content step keys the claim, so a selection remap or the drag's
+ *   own reorder keeps the indexes valid.
  */
 @Composable
-internal fun rememberListDragModifier(
+internal fun Modifier.rememberListDragModifier(
 	listState: LazyListState,
-	pending: PendingLongPress,
+	contentStep: Int,
+	pending: LongPressDragHandler,
 	onSelectRange: (Int, Int) -> Unit,
 	onSelectEnd: () -> Unit,
 	onReorderMove: (Int, Int) -> Unit,
@@ -76,58 +56,82 @@ internal fun rememberListDragModifier(
 	val currentSelectEnd by rememberUpdatedState(onSelectEnd)
 	val currentReorder by rememberUpdatedState(onReorderMove)
 	val currentDrop by rememberUpdatedState(onReorderDrop)
+	// compared against the claim — a moved step means the list changed
+	// structurally since the drag started
+	val currentStep by rememberUpdatedState(contentStep)
 	val scope = rememberCoroutineScope()
 	val slop = LocalViewConfiguration.current.touchSlop
 	val edge = with(LocalDensity.current) { EdgeZone.toPx() }
 	val speed = with(LocalDensity.current) { ScrollStep.toPx() }
 
-	return Modifier.pointerInput(listState) {
+	return this.pointerInput(listState, edge, speed, slop) {
 		awaitEachGesture {
 			val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
 			var dragging = false
 			var mode = ListDragMode.None
 			var dragIndex = -1
-			var pointerY = down.position.y
+			var reported = false
+			// the content step the drag's indexes belong to — a mismatch stops
+			// every step and the drop
+			var claimedStep = -1
+			// Shared with the auto-scroll loop, so the access stays atomic.
+			val pointerY = AtomicReference(down.position.y)
 			var autoScroll: Job? = null
 
-			fun applyDrag(y: Float) {
-				val target = indexAtY(listState, y) ?: return
-				when (mode) {
-					ListDragMode.Select -> currentSelect(dragIndex, target)
-					ListDragMode.Reorder -> if (target != dragIndex) {
-						currentReorder(dragIndex, target)
-						// the list already moved the row; follow its new slot
-						dragIndex = target
-					}
-					ListDragMode.None -> {}
+			fun stillValid() = claimedStep == currentStep
+
+			fun stepSelect(y: Float) {
+				if (!stillValid()) return
+				indexAtY(listState, y, edge)?.let {
+					currentSelect(dragIndex, it)
+					reported = true
+				}
+			}
+
+			fun stepReorder(y: Float) {
+				if (!stillValid()) return
+				val target = indexAtY(listState, y, edge) ?: return
+				if (target != dragIndex) {
+					// A reorder re-anchors the scroll on the first row, so put it back.
+					val first = listState.firstVisibleItemIndex
+					val offset = listState.firstVisibleItemScrollOffset
+					currentReorder(dragIndex, target)
+					reported = true
+					// the list already moved the row, so follow its new slot
+					dragIndex = target
+					listState.requestScrollToItem(first, offset)
 				}
 			}
 
 			while (true) {
 				val event = awaitPointerEvent(PointerEventPass.Initial)
-				val change = event.changes.firstOrNull { it.id == down.id } ?: break
+				// Another finger's event carries no change for the tracked one — skip it.
+				val change = event.changes.firstOrNull { it.id == down.id } ?: continue
 				if (!change.pressed) break
-				pointerY = change.position.y
+				pointerY.set(change.position.y)
 				if (!dragging) {
-					if (pending.index >= 0 && abs(change.position.y - down.position.y) > slop) {
+					if (pending.isArmed && abs(change.position.y - down.position.y) > slop) {
 						dragging = true
-						mode = pending.mode
-						dragIndex = pending.index
-						pending.index = -1
+						val (anchor, claimedMode) = pending.claim() ?: break
+						mode = claimedMode
+						dragIndex = anchor
+						claimedStep = currentStep
 						change.consume()
 						if (mode != ListDragMode.None) {
 							autoScroll = scope.launch {
 								while (isActive) {
+									val y = pointerY.get()
 									val h = listState.layoutInfo.viewportSize.height.toFloat()
-									val dy = when {
-										pointerY < edge -> -speed
-										pointerY > h - edge -> speed
-										else -> 0f
-									}
+									val dy = scrollStep(y, h, edge, speed)
 									if (dy != 0f) {
 										listState.scrollBy(dy)
-										applyDrag(pointerY)
+										// the slots moved under the finger — step again
+										if (mode == ListDragMode.Reorder) stepReorder(y)
+										else if (mode == ListDragMode.Select) stepSelect(y)
 									}
+									// scrollBy applies the step at once and does not park the
+									// coroutine, so the loop must wait out the frame itself —
+									// without this it spins the main thread and locks the app.
 									delay(FrameMillis)
 								}
 							}
@@ -135,22 +139,54 @@ internal fun rememberListDragModifier(
 					}
 				} else {
 					change.consume()
-					applyDrag(pointerY)
+					when (mode) {
+						ListDragMode.Select -> stepSelect(pointerY.get())
+						ListDragMode.Reorder -> stepReorder(pointerY.get())
+						ListDragMode.None -> {}
+					}
 				}
 			}
 
 			autoScroll?.cancel()
-			pending.index = -1
-			pending.mode = ListDragMode.None
-			if (dragging && mode == ListDragMode.Select) currentSelectEnd()
-			if (dragging && mode == ListDragMode.Reorder) currentDrop()
+			pending.reset()
+			if (reported && stillValid()) {
+				when (mode) {
+					ListDragMode.Select -> currentSelectEnd()
+					ListDragMode.Reorder -> currentDrop()
+					ListDragMode.None -> {}
+				}
+			}
 		}
 	}
 }
 
-/** The row index at viewport-relative [y]; clamps to the first/last visible row. */
-private fun indexAtY(listState: LazyListState, y: Float): Int? {
-	val visible = listState.layoutInfo.visibleItemsInfo
+/**
+ * The row index at a viewport-relative y in px — see the pure mapping below.
+ *
+ * @return row index, or null between rows and under a short list
+ */
+internal fun indexAtY(listState: LazyListState, y: Float, edgeZone: Float): Int? {
+	val info = listState.layoutInfo
+	return indexAtY(
+		info.visibleItemsInfo.map { RowGeometry(it.index, it.offset, it.size) },
+		y,
+		info.viewportSize.height.toFloat(),
+		edgeZone,
+	)
+}
+
+/**
+ * The pure finger-to-row mapping behind [indexAtY]: the row spanning `y`.
+ * - above the viewport it is the first row — below the list, the last row
+ *   only within the bottom edge zone (empty space and row gaps map to null).
+ * - kept free of [LazyListState], so it is unit-testable without a list.
+ */
+internal fun indexAtY(
+	visible: List<RowGeometry>,
+	y: Float,
+	viewportHeight: Float,
+	edgeZone: Float,
+): Int? {
 	if (visible.isEmpty()) return null
 	for (item in visible) {
 		if (y >= item.offset && y < item.offset + item.size) return item.index
@@ -158,15 +194,36 @@ private fun indexAtY(listState: LazyListState, y: Float): Int? {
 	val first = visible.first()
 	val last = visible.last()
 	return when {
-		y < first.offset -> first.index
-		y >= last.offset + last.size -> last.index
+		y < 0f || y < first.offset -> first.index
+		y > viewportHeight - edgeZone -> last.index
 		else -> null
 	}
 }
 
-/** How close to an edge the finger must be before the list auto-scrolls. */
+/**
+ * The auto-scroll step in px per frame for a finger at `y`.
+ * - zero away from either edge, growing with depth into the edge zone
+ *   up to a max step at the very edge. Upward steps are negative.
+ * - on a viewport shorter than both zones the nearer edge wins, ties
+ *   scroll up. Free of [LazyListState], so it is unit-testable.
+ */
+internal fun scrollStep(y: Float, viewportHeight: Float, edgeZone: Float, maxStep: Float): Float {
+	val topActive = y < edgeZone
+	val bottomActive = y > viewportHeight - edgeZone
+	val useTop = when {
+		topActive && bottomActive -> y <= viewportHeight / 2f
+		topActive -> true
+		bottomActive -> false
+		else -> return 0f
+	}
+	val depth = if (useTop) (edgeZone - y) / edgeZone
+		else (y - (viewportHeight - edgeZone)) / edgeZone
+	val step = maxStep * depth.coerceIn(0f, 1f)
+	return if (useTop) -step else step
+}
+
 private val EdgeZone = 48.dp
-/** Auto-scroll distance per frame. */
-private val ScrollStep = 12.dp
-/** ~60 fps. */
+/** The auto-scroll step at the very edge. Inside [EdgeZone] it ramps up to this. */
+private val ScrollStep = 8.dp
+/** How long the auto-scroll loop waits between steps — one step per frame at 60 Hz. */
 private const val FrameMillis = 16L

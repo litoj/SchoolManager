@@ -7,12 +7,12 @@
     <color name="colorPrimaryHeader">#559915</color>
 
     <!-- colorPrimaryHeader mixed with 15% of the colour OPPOSITE to the one on it,
-         so the band always stands apart from the foreground that shares it. Two green
-         banners use it - the band behind the status bar icons, and the light end of
-         the drawer's banner. The status bar icons are the header's own foreground
-         (white here, dark at night), so the band goes darker than the header here and
-         lighter than it at night. See @bool/darkStatusBarIcons. -->
+         the light end of the drawer's banner. -->
     <color name="colorHeaderSoft">#FF488212</color>
+
+    <!-- The band behind the status bar icons: the primary green darkened, so the white
+         icons read on it. See @bool/darkStatusBarIcons. -->
+    <color name="colorStatusBar">#FF488212</color>
 
     <!-- The explorer palette, carried over from the former XML layouts
          (item_hierarchy/item_search: rows, explorer: chrome,
@@ -22,7 +22,7 @@
          position cell. -->
     <color name="colorPositionText">#FF000000</color>
     <color name="colorDescText">#FF008800</color>
-    <color name="colorRowDivider">#44888888</color>
+    <color name="colorDivider">#44888888</color>
     <color name="colorStripDivider">#FF888888</color>
     <color name="colorOnHeader">#FFFFFFFF</color>
     <!-- Enabled label of the bottom action strips. Kept apart from colorOnHeader:
@@ -31,20 +31,26 @@
     <color name="colorActionText">#FFFFFFFF</color>
     <color name="colorActionTextDisabled">#66FFFFFF</color>
     <color name="colorActionBar">#88000000</color>
-    <color name="colorSearchField">#FFFFFFFF</color>
-    <color name="colorSearchBorder">#FF111111</color>
     <color name="colorSearchHint">#FFE6E6E6</color>
-    <color name="colorSearchText">#FF000000</color>
 
     <!-- Shared component colors, sourced by every screen (values kept from the
          Compose screens they color). Only icon drawables and the TestActivity
          timer flash may carry colors that do not come from this file. -->
     <color name="colorControlLine">#88888888</color>
     <color name="colorSectionHeader">#28888888</color>
-    <color name="colorSettingsDivider">#38888888</color>
-    <color name="colorSourceDivider">#58888888</color>
     <color name="colorGroupBackground">#55888888</color>
     <color name="colorSubBackground">#22888888</color>
     <color name="colorFailure">#FFAA0000</color>
     <color name="colorScrim">#90000000</color>
+    <!-- The NavigationView's checked-row highlight was the framework's
+         colorControlHighlight: 12% black here, 20% white at night. One alpha of
+         colorPrimaryFg cannot follow it — it drifts in one of the two palettes. -->
+    <color name="colorHighlight">#1F000000</color>
+    <!-- The selected row's highlight: the primary green over the row background
+         at 25%. Selection is the row's own background — no trailing checkbox, so
+         the layout never shifts when a selection starts or ends. -->
+    <color name="colorSelectedRow">#40559915</color>
+    <!-- The old PopupMenu floated on the platform's floating background
+         (background_floating_material_light/dark), not on colorPrimaryBg. -->
+    <color name="colorMenuBackground">#FFFAFAFA</color>
 </resources>

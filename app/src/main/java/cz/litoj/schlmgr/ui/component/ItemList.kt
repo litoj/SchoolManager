@@ -1,120 +1,147 @@
 package cz.litoj.schlmgr.ui.component
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.db.DbItem
-import cz.litoj.schlmgr.db.ItemKind
+import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
+import cz.litoj.schlmgr.ui.viewmodel.ItemListState
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
+import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
+import cz.litoj.schlmgr.ui.viewmodel.RowKind
 
 /**
- * Display state of the explorer item list — replaces the visibility/ratio/selection
- * bookkeeping scattered across the legacy `SearchAdapter` fields.
- *
- * @property items rows to render, in order.
- * @property maxPosition the largest position in [items] — the position column
- *   width follows it. Maintained by the owning view model (recomputed on a
- *   reload, grown per added row), so a streaming update never rescans the list.
- * @property showDesc the global "show descriptions inline" setting
- *   (`ItemRow.showDesc`); when off, descriptions hide behind the info icon.
- * @property pickerMode the host is the item-picker activity
- *   (`SelectItemsFragment`): every row shows its checkbox, and descriptions/info
- *   icons stay hidden — exactly what the old adapter did when `selectActivity` was set.
- * @property selectionActive selection mode is on in a browsing host (the legacy
- *   `selected > -1`): checkboxes appear, descriptions and info keep their normal rules.
- * @property variant which legacy row layout the list replaces.
- */
-data class ItemListState(
-	val items: List<ItemUiModel> = emptyList(),
-	val maxPosition: Int = 1,
-	val showDesc: Boolean = false,
-	val pickerMode: Boolean = false,
-	val selectionActive: Boolean = false,
-	val variant: ExplorerRowVariant = ExplorerRowVariant.Browse,
-)
-
-/**
- * User-intent callbacks for the explorer list. Defaults let previews and partial
- * hosts provide only what they need; each carries the affected row's [ItemUiModel],
- * whose [ItemUiModel.payload] reaches the backing [ItemRow] when required.
+ * User-intent callbacks for the explorer list.
+ * - defaults let previews and partial hosts provide only what they need.
+ * - the row callbacks carry the affected [ItemUiModel], whose
+ *   [ItemUiModel.payload] reaches the backing [ItemRow] when required.
+ * - the drag/select ones carry indexes or nothing.
  */
 class ItemListCallbacks(
-	/** Tap on a row: open a container / flip a word (dispatch is the host's concern). */
+	/** A tap on a row opens a container / flips a word (dispatch is the screen's concern). */
 	val onItemClick: (ItemUiModel) -> Unit = {},
-	/** Long-press on a row: toggle selection / jump to the search hit's directory. */
+	/**
+	 * A long-press on a row starts (or toggles) its selection — the search
+	 * hit's directory jump lives in the more menu.
+	 */
 	val onItemLongClick: (ItemUiModel) -> Unit = {},
-	/** Selection checkbox toggled. */
-	val onCheck: (ItemUiModel, Boolean) -> Unit = { _, _ -> },
 	/** Info icon tapped — hosts traditionally open the text popup with the description. */
 	val onInfo: (ItemUiModel) -> Unit = {},
-	/** Reference icon tapped — the host navigates to the referenced row's source. */
+	/** Reference icon tapped — the screen navigates to the referenced row's source. */
 	val onReference: (ItemUiModel) -> Unit = {},
-	/** A drag-select covered the rows `[from]`..`[to]` (0-based, inclusive). */
+	/** A drag-select covered the rows `from..to` (0-based, inclusive). */
 	val onSelectRange: (Int, Int) -> Unit = { _, _ -> },
 	/** A drag-select ended — its selection becomes the new baseline. */
 	val onSelectEnd: () -> Unit = {},
-	/** A reorder drag moved the row at `[from]` onto `[to]` (live, not yet saved). */
+	/** A reorder drag moved the row at `from` onto `to` (live, not yet saved). */
 	val onReorderMove: (Int, Int) -> Unit = { _, _ -> },
 	/** A reorder drag ended — persist the current row order. */
 	val onReorderDrop: () -> Unit = {},
 )
 
 /**
- * The explorer item list — the Compose replacement of the explorer's `RecyclerView`
- * plus its `SearchAdapter`/`HierarchyAdapter`. Renders one keyed [Item] per entry of
- * [ItemListState.items]; trailing action visibility is derived from the state flags,
- * reproducing the legacy binding rules:
- *
- * - checkbox — [ItemListState.pickerMode] or [ItemListState.selectionActive],
- * - info icon — not [ItemListState.pickerMode], descriptions hidden
- *   (`!showDesc`), and the item actually has one,
- * - reference icon — not [ItemListState.pickerMode] and the row is referenced
- *   here while still living elsewhere (the jump to its source is a browsing
- *   action, so the picker never offers it).
+ * The long-press-to-drag handoff, owned by [ItemList]. The long-press
+ * arms a mode ([arm]), the drag claims it ([claim]), the gesture end
+ * clears it ([reset]).
+ * - a plain holder, not Compose state — no step recomposes.
+ */
+internal class LongPressDragHandler {
+	private var index: Int = -1
+	private var mode: ListDragMode = ListDragMode.None
+
+	val isArmed: Boolean get() = index >= 0
+
+	fun arm(index: Int, mode: ListDragMode) {
+		this.index = index
+		this.mode = mode
+	}
+
+	/**
+	 * Takes the waiting arm for a drag (clears the pending index, returns the row
+	 * and its snapshotted mode), or `null` when no press is waiting.
+	 */
+	fun claim(): Pair<Int, ListDragMode>? {
+		if (index < 0) return null
+		val claimed = index to mode
+		index = -1
+		return claimed
+	}
+
+	fun reset() {
+		index = -1
+		mode = ListDragMode.None
+	}
+}
+
+/**
+ * The drag a long-press starts on this list.
+ * - a selected list, the picker or a search-result list drags a selection
+ *   (a result list has no container order to change).
+ * - a plain reorderable container drags an order. Anything else drags nothing.
+ */
+internal fun listDragMode(
+	pickerMode: Boolean,
+	selectionActive: Boolean,
+	searchList: Boolean,
+	reorderable: Boolean,
+): ListDragMode = when {
+	pickerMode || selectionActive || searchList -> ListDragMode.Select
+	reorderable -> ListDragMode.Reorder
+	else -> ListDragMode.None
+}
+
+/**
+ * One keyed [Item] per row. The selection is the row's own background.
+ * - info icon — not picker, descriptions hidden, item has one.
+ * - reference icon — not picker, row lives elsewhere too.
  */
 @Composable
 fun ItemList(
 	state: ItemListState,
 	callbacks: ItemListCallbacks,
 	modifier: Modifier = Modifier,
-	listState: LazyListState = rememberLazyListState(),
-	/** The host can persist a manual order: a long-press-drag then reorders instead of selecting. */
+	/** The screen can persist a manual order — a long-press-drag then reorders instead of selecting. */
 	reorderable: Boolean = false,
 ) {
+	val listState = rememberLazyListState()
 	// The state's maxPosition decides the one width every position cell takes, so
-	// the numbers of all rows line up; the view model maintains it per change
+	// the numbers of all rows line up. The view model maintains it per change
 	// (never by rescanning the items here), and it is measured once, not per row.
 	val positionWidth = positionColumnWidth(
 		state.maxPosition,
 		state.variant,
 	)
-	val haptics = LocalHapticFeedback.current
-	val pending = remember { PendingLongPress() }
-	// A selected list (or the picker) drags a selection; a plain container drags an order.
-	val dragMode = when {
-		state.pickerMode || state.selectionActive -> ListDragMode.Select
-		reorderable -> ListDragMode.Reorder
-		else -> ListDragMode.None
-	}
-	val dragModifier = rememberListDragModifier(
+	val pending = remember { LongPressDragHandler() }
+	// a structural change moves the rows — an arm from the stale layout would
+	// act on the wrong ones. Keyed on the content step — the press's own
+	// selection remap keeps the arm it just set
+	LaunchedEffect(state.contentStep) { pending.reset() }
+	val dragMode = listDragMode(
+		state.pickerMode,
+		state.selectionActive,
+		state.variant == ExplorerRowVariant.Search,
+		reorderable,
+	)
+	val dragModifier = Modifier.rememberListDragModifier(
 		listState = listState,
+		contentStep = state.contentStep,
 		pending = pending,
 		onSelectRange = callbacks.onSelectRange,
 		onSelectEnd = callbacks.onSelectEnd,
@@ -125,34 +152,34 @@ fun ItemList(
 		itemsIndexed(
 			state.items,
 			key = { _, item -> item.key },
-			contentType = { _, _ -> "explorer_item" },
+			// recycling pools per row kind — a reused composition keeps its
+			// type icon instead of re-resolving another kind's resource
+			contentType = { _, item -> item.kind },
 		) { index, item ->
 			Item(
 				item = item,
 				onClick = { callbacks.onItemClick(item) },
 				// The press acts at once (a selection starts immediately) and snapshots the
-				// drag mode; [rememberListDragModifier] only turns the same press into a drag.
+				// drag mode. [rememberListDragModifier] turns the same press into a drag.
 				onLongClick = {
-					haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-					pending.index = index
-					pending.mode = dragMode
+					// the haptic rides on combinedClickable's own long-press
+					pending.arm(index, dragMode)
 					callbacks.onItemLongClick(item)
 				},
-				descVisible = state.showDesc && !state.pickerMode,
+				descVisible = ItemRow.showDesc && !state.pickerMode,
 				variant = state.variant,
 				positionWidth = positionWidth,
-				// The resize animates the row's height, so the rows shifted by it
-				// follow frame by frame instead of snapping to the new offset —
-				// animateItem alone covers only moves, not sibling-resize shifts.
-				// The clip sits outside the animation: the content lays out at its
-				// final size at once and Compose draws it beyond the node's bounds,
-				// so without it the new lines appear instantly over the next row.
-				modifier = Modifier.animateItem().clipToBounds().animateContentSize(),
-				infoAction = if (!state.pickerMode && !state.showDesc && item.desc.isNotEmpty()) {
+				// Every row, the dragged one included, keeps the placement spring — a reorder
+				// moves rows between slots and the spring slides them there, so the dragged
+				// row is seen changing its place in the list. The size spring grows the box
+				// of a row whose height changed, and the layout derives the offsets below it
+				// from the box — down to a row entering at the edge, which no placement
+				// animation can move.
+				modifier = Modifier
+					.animateItem(placementSpec = RowPlacementSpec)
+					.animateContentSize(animationSpec = RowSizeSpec),
+				infoAction = if (!state.pickerMode && !ItemRow.showDesc && item.description.isNotEmpty()) {
 					{ InfoActionIcon { callbacks.onInfo(item) } }
-				} else null,
-				checkAction = if (state.pickerMode || state.selectionActive) {
-					{ CheckActionIcon(item.selected) { callbacks.onCheck(item, !item.selected) } }
 				} else null,
 				referenceAction = if (!state.pickerMode && item.hasSource) {
 					{ ReferenceActionIcon { callbacks.onReference(item) } }
@@ -162,25 +189,31 @@ fun ItemList(
 	}
 }
 
-/** `ic_desc_popup` action — opens the item's description (the `MessagePopup` trigger). */
+/**
+ * The rows' move springs, quick and without a bounce — not the stock
+ * `StiffnessMediumLow` glide that `animateItem`/`animateContentSize`
+ * default to.
+ */
+private val RowPlacementSpec = spring<IntOffset>(
+	stiffness = Spring.StiffnessMedium,
+	dampingRatio = 1f,
+)
+
+private val RowSizeSpec = spring<IntSize>(
+	stiffness = Spring.StiffnessMedium,
+	dampingRatio = 1f,
+)
+
 @Composable
 internal fun InfoActionIcon(onClick: () -> Unit) {
 	ActionIcon(R.drawable.ic_desc_popup, onClick)
 }
 
-/** `ic_ref` action — jumps to the referenced row's original source. */
 @Composable
 internal fun ReferenceActionIcon(onClick: () -> Unit) {
 	ActionIcon(R.drawable.ic_ref, onClick)
 }
 
-/** The simulated checkbox (drawable swap) used by selection mode. */
-@Composable
-internal fun CheckActionIcon(checked: Boolean, onClick: () -> Unit) {
-	ActionIcon(if (checked) R.drawable.ic_check_box_filled else R.drawable.ic_check_box_empty, onClick)
-}
-
-/** A tappable 30dp trailing action icon — the legacy `ImageView` with its own click listener. */
 @Composable
 private fun ActionIcon(res: Int, onClick: () -> Unit) {
 	Image(
@@ -192,32 +225,27 @@ private fun ActionIcon(res: Int, onClick: () -> Unit) {
 	)
 }
 
-@Preview(showBackground = true, backgroundColor = 0xFFFFFF, name = "Mixed explorer list")
 @Composable
 private fun ItemListPreview() {
-	// Renders read [ItemUiModel] only; the payload just has to exist. A word row
-	// with flipping off is the one [ItemRow] that builds without the database.
-	val payload = ItemRow(DbItem(name = "preview", description = "", type = ItemKind.WORD), null, 0, false)
+	// Previews render [ItemUiModel] only and never reach the backing row, so the
+	// payload stays at its default (`null`).
 	val items = listOf(
-		ItemUiModel("s1", 1, "Mathematics", "school subject", R.drawable.ic_subject,
-			64, isReference = false, isWord = false, flipped = false,
-			selected = false, payload = payload),
-		ItemUiModel("s2", 2, "Imported subject", "", R.drawable.ic_subject,
-			50, isReference = false, isWord = false, flipped = false,
-			selected = false, payload = payload),
-		ItemUiModel("c1", 3, "Integrals", "", R.drawable.ic_chapter,
-			-1, isReference = false, isWord = false, flipped = false,
-			selected = false, payload = payload),
-		ItemUiModel("w1", 4, "das Haus", "podstatné jméno", R.drawable.ic_word,
-			100, isReference = false, isWord = true, flipped = false,
-			selected = true, payload = payload),
-		ItemUiModel("r1", 5, "see: Algebra", "", R.drawable.ic_ref,
-			-1, isReference = true, isWord = false, flipped = false,
-			selected = false, payload = payload),
+		ItemUiModel("s1", 1, "Mathematics", "school subject", RowKind.SUBJECT,
+			64, isReference = false, selected = false),
+		ItemUiModel("s2", 2, "Imported subject", "", RowKind.SUBJECT,
+			50, isReference = false, selected = false),
+		ItemUiModel("c1", 3, "Integrals", "", RowKind.CHAPTER,
+			-1, isReference = false, selected = false),
+		ItemUiModel("w1", 4, "das Haus", "podstatné jméno", RowKind.WORD,
+			100, isReference = false, selected = true),
+		ItemUiModel("r1", 5, "see: Algebra", "", RowKind.WORD,
+			-1, isReference = true, selected = false),
 	)
 	Column(Modifier.fillMaxSize()) {
+		// descriptions stay on the live setting's default — a preview must
+		// not mutate process-global state other previews read
 		ItemList(
-			ItemListState(items = items, maxPosition = items.size, showDesc = true),
+			ItemListState(items = items, maxPosition = items.size),
 			ItemListCallbacks(),
 			modifier = Modifier.weight(1f),
 		)

@@ -1,5 +1,6 @@
 package cz.litoj.schlmgr.ui.popup
 
+import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -21,18 +22,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 /**
- * One dialog of the app: a state holder rendered by [DialogHost] as a Compose
- * [Dialog] — its own window, above everything of the hosting activity, exactly
- * like the former `PopupWindow` shell. The object survives rotation (only the
- * window is recreated by recomposition), so the editing state of e.g. the item
- * creator stays intact with no repaint hooks.
+ * One dialog of the app — a state holder rendered by [DialogHost] as a Compose
+ * [Dialog] — its own window above the hosting activity.
+ * - survives rotation (only the window re-creates), so editor state stays
+ *   intact with no repaint hooks.
  */
 interface DialogSpec {
 
 	/**
-	 * Whether a tap on the dimmed area outside the card may close this dialog.
-	 * Dialogs guarding unsaved changes override this and return `false` while the
-	 * user has made any changes. The back key always closes.
+	 * Whether an outside tap on the dimmed area may close this dialog.
+	 * - unsaved-changes guards return `false` once edited.
+	 * - the back key always closes.
 	 */
 	fun canDismissByOutsideTouch(): Boolean = true
 
@@ -47,27 +47,21 @@ interface DialogSpec {
 }
 
 /**
- * The app's dialog stack: the process-wide replacement of the former
- * `AbstractPopup.showed` window list. The state is observable, so every
- * activity composing a [DialogHost] renders the same dialogs — whichever one
- * is resumed shows them on top, and a dialog triggered by an activity that
- * then finishes (the test results) simply renders on the next one. Rotation
- * needs no repaint machinery: the stack survives, recomposition re-renders.
+ * The app's dialog stack — the process-wide dialog list as observable state.
+ * - every activity composing a [DialogHost] renders the same dialogs.
+ *   Rotation needs no repaint machinery (the stack survives, recomposition
+ *   re-renders).
  */
 object Dialogs {
 
 	private val _stack = MutableStateFlow<List<DialogSpec>>(emptyList())
 	val stack: StateFlow<List<DialogSpec>> = _stack.asStateFlow()
 
-	/** Whether any dialog is on screen. */
-	val isActive: Boolean get() = _stack.value.isNotEmpty()
-
-	/** Whether a dialog of the class [T] is on the stack (a restarted screen guards its own popup). */
 	inline fun <reified T : DialogSpec> isShowing(): Boolean = stack.value.any { it is T }
 
 	/**
-	 * Shows the dialog on top of the stack. Safe to call from any thread —
-	 * the flow update is atomic and recomposition runs on the main thread.
+	 * Shows the dialog on top of the stack, from any thread (the flow
+	 * update is atomic).
 	 */
 	fun show(spec: DialogSpec) {
 		_stack.update { it + spec }
@@ -75,39 +69,39 @@ object Dialogs {
 
 	/** Removes the dialog from the stack and notifies it (see [DialogSpec.onDismissed]). */
 	fun dismiss(spec: DialogSpec) {
-		var wasPresent = false
-		_stack.update { stack ->
-			if (spec in stack) {
-				wasPresent = true
-				stack - spec
-			} else stack
+		// The removal decision reads the pre-update value, never a side effect of an
+		// update lambda (which may re-run under contention) — CAS retries until it wins.
+		while (true) {
+			val current = _stack.value
+			if (spec !in current) return
+			if (_stack.compareAndSet(current, current - spec)) {
+				spec.onDismissed()
+				return
+			}
 		}
-		if (wasPresent) spec.onDismissed()
 	}
 
-	/** Removes every dialog from the stack, top first. */
+	/** Removes every dialog from the stack, top first — tests only. */
+	@VisibleForTesting
 	fun clear() {
-		var old: List<DialogSpec> = emptyList()
-		_stack.update { stack ->
-			old = stack
-			emptyList()
+		while (true) {
+			val current = _stack.value
+			if (current.isEmpty()) return
+			if (_stack.compareAndSet(current, emptyList())) {
+				current.asReversed().forEach { it.onDismissed() }
+				return
+			}
 		}
-		old.asReversed().forEach { it.onDismissed() }
 	}
 }
 
 /**
- * Renders the [Dialogs.stack]. Composed at the root of every activity: the
- * dialogs render in their own windows, above the whole activity, no matter
- * which fragment or view tree the host sits in.
- *
- * The scrim handles the outside tap through [DialogSpec.canDismissByOutsideTouch]
- * (the unsaved-changes guard); the back key closes through the dialog window's
- * own dismiss-on-back, reported to [Dialog]'s `onDismissRequest`.
+ * Renders the [Dialogs.stack] in its own windows above the activity. The scrim
+ * handles outside taps, the dialog window handles back.
  */
 @Composable
 fun DialogHost() {
-	// Deliberately not lifecycle-aware: a dialog opened before the app goes to
+	// Deliberately not lifecycle-aware — a dialog opened before the app goes to
 	// the background must stay on screen when it comes back.
 	val stack by Dialogs.stack.collectAsState()
 	stack.forEach { spec ->

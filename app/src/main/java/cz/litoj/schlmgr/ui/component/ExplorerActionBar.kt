@@ -23,36 +23,26 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 
-/** The action strip backdrop — the legacy `#8000` overlay (a grey wash, not green). */
 private val BarColor @Composable get() = ExplorerColors.actionBar
 
-/** Enabled label / disabled label (`#6FFF`). The enabled one is the strip's own
- *  light colour, not [ExplorerColors.onHeader]: this strip's backdrop is the grey
- *  wash above, which stays dark in the night palette. */
 private val TextEnabled @Composable get() = ExplorerColors.actionText
 private val TextDisabled @Composable get() = ExplorerColors.actionTextDisabled
 
-/**
- * One bottom-strip action: an icon over a label, mirroring the legacy `drawableTop`
- * `TextView` buttons. [enabled] swaps both the label color and the icon's disabled
- * variant and gates the click — exactly the legacy `setEnabled`.
- */
 private class Action(
 	@field:DrawableRes @param:DrawableRes val iconEnabled: Int,
-	@field:DrawableRes @param:DrawableRes val iconDisabled: Int,
 	@field:StringRes @param:StringRes val label: Int,
 	val onClick: () -> Unit,
+	@field:DrawableRes @param:DrawableRes val iconDisabled: Int = iconEnabled,
 )
 
 /**
- * The legacy `objects_select` strip (browse + picker share its 60dp `#8000` look):
- * test / cut / edit / delete.
+ * The bottom-strip selection actions — test / cut / edit / delete.
+ * - the strip renders only while rows are selected, so test/cut/delete stay
+ *   enabled. Edit follows [editEnabled] (the single-target rule).
  */
 @Composable
 fun SelectionActionBar(
-	cutEnabled: Boolean,
 	editEnabled: Boolean,
-	deleteEnabled: Boolean,
 	onTest: () -> Unit,
 	onCut: () -> Unit,
 	onEdit: () -> Unit,
@@ -61,45 +51,47 @@ fun SelectionActionBar(
 ) {
 	ActionStrip(modifier) {
 		ActionButton(
-			Action(R.drawable.ic_test, R.drawable.ic_test, R.string.select_test, onTest),
+			Action(R.drawable.ic_test, R.string.select_test, onTest),
 			true,
 		)
 		ActionButton(
-			Action(R.drawable.ic_cut, R.drawable.ic_cut_disabled, R.string.cut, onCut),
-			cutEnabled,
+			Action(R.drawable.ic_cut, R.string.cut, onCut),
+			true,
 		)
 		ActionButton(
-			Action(R.drawable.ic_edit, R.drawable.ic_edit_disabled, R.string.edit, onEdit),
+			Action(R.drawable.ic_edit, R.string.edit, onEdit, R.drawable.ic_edit_disabled),
 			editEnabled,
 		)
 		ActionButton(
-			Action(R.drawable.ic_delete, R.drawable.ic_delete_disabled, R.string.delete, onDelete),
-			deleteEnabled,
+			Action(R.drawable.ic_delete, R.string.delete, onDelete),
+			true,
 		)
 	}
 }
 
-/** The legacy `objects_paster` strip: cancel / paste. */
+/**
+ * The bottom-strip paste actions — cancel / paste. Always enabled — arming
+ * the paste clears the selection first, so no state can ever disable it.
+ */
 @Composable
 fun PasteActionBar(
-	pasteEnabled: Boolean,
 	onCancel: () -> Unit,
 	onPaste: () -> Unit,
 	modifier: Modifier = Modifier,
 ) {
 	ActionStrip(modifier) {
 		ActionButton(
-			Action(R.drawable.ic_cancel, R.drawable.ic_cancel, R.string.objects_cancel, onCancel),
+			Action(R.drawable.ic_cancel, R.string.objects_cancel, onCancel),
 			true,
 		)
 		ActionButton(
-			Action(R.drawable.ic_paste, R.drawable.ic_paste_disabled, R.string.paste, onPaste),
-			pasteEnabled,
+			Action(R.drawable.ic_paste, R.string.paste, onPaste),
+			true,
 		)
 	}
 }
 
-/** The legacy picker strip (`activity_select_item`): cancel / select-all / select. */
+/** The picker strip — cancel / select-all / select. */
 @Composable
 fun PickerActionBar(
 	selectEnabled: Boolean,
@@ -110,21 +102,20 @@ fun PickerActionBar(
 ) {
 	ActionStrip(modifier) {
 		ActionButton(
-			Action(R.drawable.ic_cancel, R.drawable.ic_cancel, R.string.objects_cancel, onCancel),
+			Action(R.drawable.ic_cancel, R.string.objects_cancel, onCancel),
 			true,
 		)
 		ActionButton(
-			Action(R.drawable.ic_check_all, R.drawable.ic_check_all, R.string.select_all, onSelectAll),
+			Action(R.drawable.ic_check_all, R.string.select_all, onSelectAll),
 			true,
 		)
 		ActionButton(
-			Action(R.drawable.ic_check, R.drawable.ic_check_disabled, R.string.select, onSelect),
+			Action(R.drawable.ic_check, R.string.select, onSelect, R.drawable.ic_check_disabled),
 			selectEnabled,
 		)
 	}
 }
 
-/** The shared 60dp `#8000` row container. */
 @Composable
 private fun ActionStrip(
 	modifier: Modifier = Modifier,
@@ -140,8 +131,7 @@ private fun ActionStrip(
 }
 
 /**
- * One icon-over-label button (a weighted legacy `TextView` with `drawableTop`). When
- * [enabled] is `false` the label dims to `#6FFF` and the click is disabled.
+ * One icon-over-label button — `enabled` false dims the label and disables the click.
  */
 @Composable
 private fun RowScope.ActionButton(action: Action, enabled: Boolean) {

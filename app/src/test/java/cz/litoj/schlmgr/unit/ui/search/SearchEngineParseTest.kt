@@ -1,0 +1,132 @@
+package cz.litoj.schlmgr.unit.ui.search
+
+import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.data.db.ItemKind
+import cz.litoj.schlmgr.ui.search.SearchEngine
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+/**
+ * Unit tests of [SearchEngine]'s query parsing — the grammar is fixed, so these
+ * pin it, including the empty query.
+ */
+class SearchEngineParseTest {
+
+	/** Runs [query] over one item per name and returns the matching names, in order. */
+	private fun hits(query: String, vararg names: String): List<String> {
+		val engine = SearchEngine(query)
+		val matched = ArrayList<String>()
+		for ((i, name) in names.withIndex()) {
+			// distinct ids — the engine dedups emitted hits by row id
+			engine.correct(DbItem(id = i + 1, name = name, description = "", type = ItemKind.CHAPTER), emptyList()) { bd, _ ->
+				matched.add(bd.name)
+			}
+		}
+		return matched
+	}
+
+	@Test
+	fun emptyQueryMatchesEverything() {
+		assertEquals(listOf("alpha", "beta"), hits("", "alpha", "beta"))
+	}
+
+	@Test
+	fun plainQueryIsCaseInsensitiveContains() {
+		assertEquals(listOf("das Haus"), hits("HAUS", "das Haus", "die Schule"))
+	}
+
+	@Test
+	fun theSearchMatchesEachParsedVariantOfAName() {
+		// the queries are no substrings of the raw name — only the parsed
+		// variant can match (the display parses the same way)
+		assertEquals(listOf("(I/You smile.)"), hits("I smile.", "(I/You smile.)", "die Schule"))
+		assertEquals(listOf("(I/You smile.)"), hits("You smile.", "(I/You smile.)", "die Schule"))
+		// the whole raw name matches too
+		assertEquals(listOf("(I/You smile.)"), hits("(I/You smile.)", "(I/You smile.)", "die Schule"))
+	}
+
+	@Test
+	fun startsWithPrefix() {
+		assertEquals(listOf("Schule"), hits("\\sSchule", "Schule", "die Schule"))
+	}
+
+	@Test
+	fun typePrefixFiltersWords() {
+		val engine = SearchEngine("\\WHaus")
+		val word = DbItem(name = "Haus", description = "", type = ItemKind.WORD)
+		val chapter = DbItem(name = "Haus", description = "", type = ItemKind.CHAPTER)
+		assertEquals(true, engine.correct(word, emptyList()) { _, _ -> })
+		assertEquals(false, engine.correct(chapter, emptyList()) { _, _ -> })
+	}
+
+	@Test
+	fun numericPrefixComparesTestCounts() {
+		val tested = DbItem(
+			name = "w", description = "", type = ItemKind.WORD,
+			passedTests = 1, failedTests = 1,
+		)
+		assertEquals(true, SearchEngine("\\WN>1").correct(tested, emptyList()) { _, _ -> })
+		assertEquals(false, SearchEngine("\\WN>2").correct(tested, emptyList()) { _, _ -> })
+	}
+
+	@Test
+	fun descriptionPrefixMatchesDescription() {
+		val engine = SearchEngine("\\Dnote")
+		val item = DbItem(name = "w", description = "a note", type = ItemKind.WORD)
+		assertEquals(true, engine.correct(item, emptyList()) { _, _ -> })
+	}
+
+	@Test
+	fun badRegexAbortsTheRunAndReportsTheError() {
+		val engine = SearchEngine("\\r[")
+		assertFalse("the run is invalid", engine.valid)
+		assertTrue("the failure is reported", engine.regexError?.isNotEmpty() == true)
+		val item = DbItem(name = "x", description = "", type = ItemKind.CHAPTER)
+		assertEquals(false, engine.correct(item, emptyList()) { _, _ -> })
+	}
+
+	@Test
+	fun numericOperationWithoutASourceComparesAgainstZero() {
+		// a missing source compares zero against the count
+		val word = DbItem(name = "w", description = "", type = ItemKind.WORD)
+		assertEquals("0 > 5 is false", false, SearchEngine("\\W>5").correct(word, emptyList()) { _, _ -> })
+		assertEquals("0 < 5 is true", true, SearchEngine("\\W<5").correct(word, emptyList()) { _, _ -> })
+		assertEquals("0 = 0 is true", true, SearchEngine("\\W=0").correct(word, emptyList()) { _, _ -> })
+	}
+
+	@Test
+	fun numericSourcesAndOperations() {
+		val word = DbItem(
+			name = "w", description = "", type = ItemKind.WORD,
+			passedTests = 2, failedTests = 3,
+		)
+		assertEquals(true, SearchEngine("\\WS=2").correct(word, emptyList()) { _, _ -> })
+		assertEquals(true, SearchEngine("\\WF>2").correct(word, emptyList()) { _, _ -> })
+		assertEquals(false, SearchEngine("\\WR>50").correct(word, emptyList()) { _, _ -> })
+	}
+
+	@Test
+	fun descriptionMatchesOnlyNonEmptyAndCarriesTheType() {
+		val word = DbItem(name = "w", description = "a note", type = ItemKind.WORD)
+		val empty = DbItem(name = "e", description = "", type = ItemKind.WORD)
+		val chapter = DbItem(name = "c", description = "a note", type = ItemKind.CHAPTER)
+		val engine = SearchEngine("\\WDnote")
+		assertEquals(true, engine.correct(word, emptyList()) { _, _ -> })
+		assertEquals("an empty description never matches", false, engine.correct(empty, emptyList()) { _, _ -> })
+		assertEquals("the type prefix applies to the description search too",
+			false, engine.correct(chapter, emptyList()) { _, _ -> })
+	}
+
+	@Test
+	fun prefixOnlyQueriesMatchEverythingOfTheKind() {
+		val word = DbItem(name = "w", description = "", type = ItemKind.WORD)
+		val chapter = DbItem(name = "c", description = "", type = ItemKind.CHAPTER)
+		for (query in listOf("\\W", "\\WS")) {
+			val engine = SearchEngine(query)
+			assertEquals(true, engine.correct(word, emptyList()) { _, _ -> })
+			assertEquals(false, engine.correct(chapter, emptyList()) { _, _ -> })
+		}
+	}
+}

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Checks that do not fit this project; every other check stays on. -->
+<lint>
+    <!-- Dependency and toolchain versions are pinned deliberately: a bump is a
+         separate change with its own testing, not a lint finding. -->
+    <issue id="NewerVersionAvailable" severity="ignore" />
+    <issue id="AndroidGradlePluginVersion" severity="ignore" />
+</lint>

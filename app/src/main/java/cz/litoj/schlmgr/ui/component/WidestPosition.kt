@@ -1,12 +1,9 @@
 package cz.litoj.schlmgr.ui.component
 
 /**
- * The position in `1..[maxPosition]` whose text takes the most horizontal space under
- * [digitWidth], a pixel width per digit 0–9. The largest position is not always the
- * widest: digits have different widths, so a wide low digit can outrun the maximum,
- * and a short number of wide digits can outrun a long one of narrow digits. Picking
- * the widest reachable combination from the digit widths avoids walking the whole
- * list. Among equally wide positions the largest is returned.
+ * The position in `1..maxPosition` with the widest text (digit widths differ,
+ * so the longest number is not always the widest).
+ * - chosen without walking the list. Ties go to the larger position.
  */
 internal fun widestPosition(maxPosition: Int, digitWidth: (Int) -> Int): Int {
 	val max = maxPosition.coerceAtLeast(1)
@@ -20,7 +17,7 @@ internal fun widestPosition(maxPosition: Int, digitWidth: (Int) -> Int): Int {
 	var best = max
 	var bestWidth = digits.sumOf { digitWidth(it - '0') }
 
-	// Keeps the widest candidate seen so far; the larger number wins a width tie.
+	// Keeps the widest candidate seen so far — the larger number wins a width tie.
 	fun consider(candidate: Int, width: Int) {
 		if (width > bestWidth || (width == bestWidth && candidate > best)) {
 			bestWidth = width
@@ -28,7 +25,7 @@ internal fun widestPosition(maxPosition: Int, digitWidth: (Int) -> Int): Int {
 		}
 	}
 
-	// A shorter number can still be the widest: a narrow 1 lets 999 outrun 1000.
+	// A shorter number can still be the widest — a narrow 1 lets 999 outrun 1000.
 	for (length in 1 until count) {
 		consider(
 			("$lead" + "$rest".repeat(length - 1)).toInt(),
@@ -36,7 +33,7 @@ internal fun widestPosition(maxPosition: Int, digitWidth: (Int) -> Int): Int {
 		)
 	}
 
-	// Same-length numbers below max: keep max's prefix, dip below its digit once,
+	// Same-length numbers below max — keep max's prefix, dip below its digit once,
 	// then take the widest digits freely.
 	var prefixWidth = 0
 	for (i in 0 until count) {
@@ -54,7 +51,6 @@ internal fun widestPosition(maxPosition: Int, digitWidth: (Int) -> Int): Int {
 	return best
 }
 
-/** The digit of [range] with the widest glyph under [digitWidth]; the larger digit wins a tie. */
 private fun widestDigit(range: IntRange, digitWidth: (Int) -> Int): Int {
 	var best = range.first
 	var bestWidth = digitWidth(best)

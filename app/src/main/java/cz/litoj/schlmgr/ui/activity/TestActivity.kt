@@ -6,27 +6,37 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
+import androidx.lifecycle.lifecycleScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.SnackbarHost
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,35 +49,51 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.ui.component.BareTextField
-import cz.litoj.schlmgr.ui.fragment.TestFragment
+import cz.litoj.schlmgr.ui.component.HairlineDivider
+import cz.litoj.schlmgr.ui.component.WideTextField
+import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestItemModel
 import cz.litoj.schlmgr.ui.popup.DialogHost
 import cz.litoj.schlmgr.ui.popup.TestResultsPopup
+import cz.litoj.schlmgr.ui.screen.test.TestSetupState
+import cz.litoj.schlmgr.ui.shell.messageSnackbarHost
 
 
 /**
- * The running test: a countdown header, the list of items to answer (words) and
- * the Done button that submits the answers and shows the results popup.
- *
- * A plain Compose [ComponentActivity] — the surviving test state (the [TestEngine], its
- * items and the typed answers) lives in the companion, so it survives rotation and
- * the double-back-press exit the same way the old statics did.
+ * The running test — a countdown header, the words to answer, and the Done
+ * button (submits the answers, shows the results popup). A plain Compose
+ * [ComponentActivity] — the surviving test state lives in the companion,
+ * so it survives rotation (the double-back-press exit resets it).
  */
 class TestActivity : ComponentActivity() {
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
-		enableEdgeToEdge()
-		showUserMessages()
+		// the navigation bar stays black under edge-to-edge
+		enableEdgeToEdge(navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.BLACK))
 		if (test == null) startTest()
 		setContent {
+			val snackbar = messageSnackbarHost()
+			Box(Modifier.fillMaxSize()) {
+				TestScreen()
+				// the transient user messages, above the tested words
+				SnackbarHost(
+					hostState = snackbar,
+					// like the shell's host — without the insets the bar rests on the
+					// raw window bottom, under the navigation buttons and keyboard
+					modifier = Modifier
+						.align(Alignment.BottomCenter)
+						.navigationBarsPadding()
+						.imePadding(),
+				)
+			}
 			DialogHost()
-			TestScreen()
 		}
 	}
 
@@ -76,22 +102,32 @@ class TestActivity : ComponentActivity() {
 		// Double-back-press to exit. A showing dialog takes the back key itself
 		// (its own focused window), so it never reaches this handler.
 		BackHandler {
-			if (System.currentTimeMillis() - backTime > 3_000) {
+			if (System.currentTimeMillis() - backTime > ExplorerViewModel.EXIT_WINDOW_MS) {
 				backTime = System.currentTimeMillis()
 				Toast.makeText(applicationContext, R.string.press_exit, Toast.LENGTH_SHORT).show()
 			} else reset()
 		}
-		Column(Modifier.fillMaxSize().systemBarsPadding()) {
+		// imePadding — edge-to-edge never resizes the window for the keyboard.
+		// Without it the keyboard overlays the lower words and the Done button
+		Column(Modifier.fillMaxSize().systemBarsPadding().imePadding()) {
 			TimerHeader()
-			// The items to answer, then the Done button as the list's last item — it
-			// sits below the tested words and is reached by scrolling, so it never
-			// takes height from them. One focus handle per answer row, so the
-			// keyboard's Next key can walk the chain (CreatorPopup uses the same
-			// pattern for its translation rows).
+			// The items to answer, then the Done button as the list's last item:
+			// - it sits below the tested words, so it never takes height from them.
+			// - one focus handle per answer row, so the keyboard's Next key walks
+			//   the chain. A row not yet composed is scrolled to and focused on arrival.
 			val answerFocus = remember { HashMap<Int, FocusRequester>() }
-			LazyColumn(Modifier.weight(1f).fillMaxSize()) {
-				itemsIndexed(list) { index, item ->
-					WordTestRow(item, index, answerFocus, index == list.lastIndex)
+			val listState = rememberLazyListState()
+			var pendingAnswer by remember { mutableIntStateOf(-1) }
+			LazyColumn(Modifier.weight(1f).fillMaxSize(), state = listState) {
+				itemsIndexed(list, key = { i, _ -> i }) { index, item ->
+					LaunchedEffect(index, pendingAnswer) {
+						if (pendingAnswer == index) {
+							pendingAnswer = -1
+							runCatching { answerFocus[index]?.requestFocus() }
+						}
+					}
+					WordTestRow(item, index, answerFocus, index == list.lastIndex,
+						listState, { pendingAnswer = it })
 				}
 				item {
 					// Primary (header-green) background, white text, 5dp rounded corners.
@@ -116,7 +152,7 @@ class TestActivity : ComponentActivity() {
 		}
 	}
 
-	/** The countdown banner; blinks red/white for the last 30 seconds (as before). */
+	/** The countdown banner — blinks dark red/light gray for the last 30 seconds (as before). */
 	@Composable
 	private fun TimerHeader() {
 		val sl = secondsLeft
@@ -130,7 +166,7 @@ class TestActivity : ComponentActivity() {
 			style = TextStyle(
 				fontSize = 40.sp,
 				color = when {
-					// normal: white on the green header; <=30s: the timer flash
+					// white on the green header — the timer flash takes over at <=30s
 					sl > 30 -> colorResource(R.color.colorOnHeader)
 					sl % 2 == 0 -> TimerRed
 					else -> Color(0xFFDDDDDD)
@@ -144,9 +180,10 @@ class TestActivity : ComponentActivity() {
 	private fun WordTestRow(
 		item: TestItemModel, index: Int,
 		answerFocus: HashMap<Int, FocusRequester>, isLast: Boolean,
+		listState: LazyListState, setPendingAnswer: (Int) -> Unit,
 	) {
 		Column(Modifier.fillMaxWidth()) {
-			// The prompt: the translations by default, the word itself in the reversed
+			// The prompt — the translations by default, the word itself in the reversed
 			// direction. Both are parsed like the explorer rows.
 			Column(Modifier.fillMaxWidth().padding(5.dp)) {
 				val prompt = if (TestEngine.isReversed) ItemRow.nameParser(item.word.name)
@@ -158,44 +195,53 @@ class TestActivity : ComponentActivity() {
 						color = colorResource(R.color.colorPrimaryFg),
 					),
 				)
-				AnswerField(index, R.string.data_translate, answerFocus, isLast)
+				AnswerField(index, R.string.data_translate, answerFocus, isLast,
+					listState, setPendingAnswer)
 			}
 			// Edge-to-edge (outside the content padding) so it reads as a clear
-			// line between items; same style as the TestFragment source list.
+			// line between items, same style as the setup screen's source list.
 			// The last row has none, so the list does not end in a line above
 			// the Done button.
-			if (!isLast) Spacer(
-				Modifier
-					.fillMaxWidth()
-					.padding(top = 2.dp)
-					.height(0.6.dp)
-					.background(colorResource(R.color.colorSourceDivider))
-			)
+			if (!isLast) HairlineDivider(Modifier.padding(top = 2.dp))
 		}
 	}
 
+	/** One answer field — `isLast` hides the keyboard on submit instead of advancing focus. */
 	@Composable
 	private fun AnswerField(
 		index: Int, hintRes: Int,
 		answerFocus: HashMap<Int, FocusRequester>, isLast: Boolean,
+		listState: LazyListState, setPendingAnswer: (Int) -> Unit,
 	) {
-		// Same size as the hint text above it (the old rows used 15sp).
+		// same size as the hint text above it
 		val focusRequester = remember(index) { answerFocus.getOrPut(index) { FocusRequester() } }
 		val keyboard = LocalSoftwareKeyboardController.current
-		BareTextField(
+		val scope = rememberCoroutineScope()
+		WideTextField(
 			value = answers[index] ?: "",
 			onValueChange = { answers[index] = it },
 			fontSize = 15.sp,
 			hint = stringResource(hintRes),
-			// Full width and a touch-sized height, so tapping anywhere on the field area
-			// focuses it; the keyboard action walks to the next answer, and on the last
-			// one just hides the keyboard (grading stays on the Done button below).
-			fillWidth = true,
+			// The whole field area takes taps and focus. The keyboard action
+			// walks to the next answer, and on the last one just hides the
+			// keyboard (grading stays on the Done button below).
 			focusRequester = focusRequester,
 			imeAction = if (isLast) ImeAction.Done else ImeAction.Next,
 			onImeAction = {
 				if (isLast) keyboard?.hide()
-				else answerFocus[index + 1]?.requestFocus()
+				else {
+					// a detached requester (its row left the viewport) throws — the
+					// scroll fallback takes over then
+					val next = answerFocus[index + 1]
+					val landed = next != null && runCatching { next.requestFocus() }.isSuccess
+					if (!landed) {
+						// the next row is beyond the viewport (or its requester went
+						// stale) — scroll to it, the pending index focuses it once
+						// composed
+						setPendingAnswer(index + 1)
+						scope.launch { listState.animateScrollToItem(index + 1) }
+					}
+				}
 			},
 			modifier = Modifier
 				.fillMaxWidth()
@@ -203,53 +249,93 @@ class TestActivity : ComponentActivity() {
 		)
 	}
 
+	/**
+	 * Builds and starts the run. The blocking half (the source walk and the
+	 * per-word model reads) runs off the main thread — the state lands and
+	 * the countdown starts once it does, and only while this activity is
+	 * alive, so a rotation or an exit during the walk drops the landing (the
+	 * recreated activity walks again, the exited one leaves nothing behind).
+	 */
 	private fun startTest() {
-		val newTest = TestEngine()
-		// The picked sources are container chains (root first, the selected item last)
-		// — TestEngine.convertAll turns a selected word into a direct entry and a
-		// selected chapter into its words.
-		val src = TestEngine.convertAll(TestFragment.list)
-		if (src.isEmpty()) {
-			Toast.makeText(applicationContext, R.string.fail_no_objects, Toast.LENGTH_SHORT).show()
-			finish()
-			return
-		}
-		newTest.setTested(
-			TestFragment.amountText.toIntOrNull() ?: TestEngine.amount,
-			{ sl ->
-				if (test == null) return@setTested false
+		// an empty or below-1 field falls back to the engine's setting
+		val amount = (TestSetupState.amountText.toIntOrNull() ?: 0)
+			.takeIf { it >= 1 } ?: TestEngine.amount
+		val timeSec = (TestSetupState.timeText.toIntOrNull() ?: 0)
+			.takeIf { it >= 1 } ?: TestEngine.getDefaultTime()
+		lifecycleScope.launch(Dispatchers.IO) {
+			// The picked sources are container chains (root first, the selected
+			// item last) — TestEngine.convertAll turns a selected word into a
+			// direct entry and a selected chapter into its words.
+			val src = TestEngine.convertAll(TestSetupState.list)
+			if (src.isEmpty()) {
 				runOnUiThread {
-					if (sl > 0) secondsLeft = sl
-					else onSubmit()
+					Toast.makeText(applicationContext, R.string.fail_no_objects, Toast.LENGTH_SHORT).show()
+					finish()
 				}
-				true
-			},
-			TestFragment.timeText.toIntOrNull() ?: TestEngine.getDefaultTime(),
-			src,
-		)
-		for (entry in newTest.getTestSrc()) list.add(TestItemModel(entry))
-		test = newTest
-		newTest.startTest()
+				return@launch
+			}
+			val newTest = TestEngine()
+			newTest.setTested(
+				amount,
+				{ sl ->
+					if (test == null) return@setTested false
+					runOnUiThread {
+						if (sl > 0) secondsLeft = sl
+						else onSubmit()
+					}
+					true
+				},
+				timeSec,
+				src,
+			)
+			val models = newTest.getTestSrc().map { TestItemModel(it) }
+			runOnUiThread {
+				if (isFinishing || isDestroyed) return@runOnUiThread
+				// a rotation during grading skipped reset() — start from empty
+				list.clear()
+				answers.clear()
+				list.addAll(models)
+				test = newTest
+				newTest.startTest()
+			}
+		}
 	}
 
+	/**
+	 * Grades the run and shows the results. The per-item checks and stat
+	 * re-reads run off the main thread — the popup follows once they land.
+	 */
 	private fun onSubmit() {
 		val current = test ?: return
-		var success = 0
-		list.forEachIndexed { index, tim ->
-			val text = answers[index] ?: ""
-			val correct = current.isAnswer(index, text)
-			if (correct) success++
-			tim.correct = correct
-			tim.answer = text
-			// the engine wrote the answer's sf updates itself — re-read for the results
-			tim.refreshSf()
+		// the run is over for the engine — a second submit or a late timer
+		// tick finds nothing to grade
+		test = null
+		current.stopTest()
+		val typed = answers.toMap()
+		// snapshot on main — the io grading must not iterate the live list
+		// (a back-press exit during grading clears it here)
+		val items = list.toList()
+		lifecycleScope.launch(Dispatchers.IO) {
+			var success = 0
+			items.forEachIndexed { index, tim ->
+				val text = typed[index] ?: ""
+				val correct = current.isAnswer(index, text, tim.translations)
+				if (correct) success++
+				tim.correct = correct
+				tim.answer = text
+				// the engine wrote the answer's counter updates itself — re-read for the results
+				tim.refreshStats()
+			}
+			runOnUiThread {
+				if (isFinishing || isDestroyed) return@runOnUiThread
+				TestResultsPopup(items, success * 100f / items.size)
+				reset()
+			}
 		}
-		TestResultsPopup(list, success * 100f / list.size)
-		reset()
 	}
 
 	private fun reset() {
-		// the run is over: stop the countdown outright instead of letting the
+		// the run is over — stop the countdown outright instead of letting the
 		// thread exit on its next tick (up to a second later, still holding
 		// this activity's callback)
 		test?.stopTest()
@@ -257,21 +343,26 @@ class TestActivity : ComponentActivity() {
 		secondsLeft = 0
 		answers.clear()
 		list.clear()
-		// The selected sources (TestFragment.list) and the picker's backLog survive:
-		// finishing or leaving a test keeps them, so another test on the same sources
-		// can start right away. They are still cleared on a fresh entry into the setup
-		// tab (TestFragment.onCreateView), and re-adding from the picker dedups against
-		// the kept entries.
+		// a quick re-entry must get its own first-press hint, not the
+		// leftover window of this exit
+		backTime = 0
+		// The selected sources and the picker's browsing position survive, so
+		// another test on the same sources can start right away. A fresh entry
+		// into the setup screen still clears them — re-adding dedups against them
 		finish()
 	}
 
 	companion object {
 		private var backTime = 0L
 
+		// the timer thread reads it — the flag must be visible across threads
+		@Volatile
 		private var test: TestEngine? = null
-		private val list = ArrayList<TestItemModel>()
 
-		/** The typed answers, keyed by item index (survives scrolling; was the View cache). */
+		// Snapshot state, like answers
+		private val list = mutableStateListOf<TestItemModel>()
+
+		/** The typed answers, keyed by item index (survives scrolling). */
 		private val answers = mutableStateMapOf<Int, String>()
 
 		private var secondsLeft by mutableIntStateOf(0)

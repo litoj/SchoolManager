@@ -3,7 +3,6 @@ package cz.litoj.schlmgr.ui.popup
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -24,31 +24,32 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.db.ratio
-import cz.litoj.schlmgr.db.sfCount
+import cz.litoj.schlmgr.data.db.ratio
+import cz.litoj.schlmgr.data.db.testedCount
 import cz.litoj.schlmgr.testing.TestItemModel
-import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.ui.component.HairlineDivider
 import cz.litoj.schlmgr.ui.component.Item
 import cz.litoj.schlmgr.ui.component.positionColumnWidth
-import cz.litoj.schlmgr.ui.component.ExplorerRowVariant
+import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
-import cz.litoj.schlmgr.ui.component.ItemUiModel
+import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
+import cz.litoj.schlmgr.ui.viewmodel.RowKind
 
 /**
- * The post-test results: success percentage and every item rendered like an
- * explorer word row — the word's translations in place of the description, its
- * appearance count in place of the position number, the typed answer under them
- * and the word's success rate (`successful/total`) at the row's end.
+ * Post-test results — the success percentage and one explorer-style row
+ * per tested item.
+ * - translations replace the description. The tested count replaces the
+ *   position.
+ * - the typed answer below, `passed/total` at the row's end.
+ *
+ * @param success success percentage 0–100 (not a fraction)
  */
-class TestResultsPopup(items: ArrayList<TestItemModel>, success: Float) : DialogSpec {
+class TestResultsPopup(items: List<TestItemModel>, private val success: Float) : DialogSpec {
 
-	/** One result and its prebuilt explorer-row model (the rows never change). */
 	private class ResultRow(val item: TestItemModel, val model: ItemUiModel)
 
-	@Suppress("UNCHECKED_CAST")
-	private val rows: List<ResultRow> =
-		(items.clone() as List<TestItemModel>).map { ResultRow(it, toModel(it)) }
-	private val successText = GlobalDependencies.appContext.getString(R.string.success_rate, success.toString())
+	// built eagerly — reset() clears the tested list right after this constructor
+	private val rows: List<ResultRow> = items.map { ResultRow(it, toModel(it)) }
 
 	init {
 		Dialogs.show(this)
@@ -56,7 +57,8 @@ class TestResultsPopup(items: ArrayList<TestItemModel>, success: Float) : Dialog
 
 	@Composable
 	override fun Content() {
-		// One width for every count cell: the widest count shown — the rows render at
+		val successText = stringResource(R.string.success_rate, success.toString())
+		// One width for every count cell (the widest count shown), so the rows render at
 		// the browse number size, and the widest count can lie below the largest one.
 		val positionWidth = positionColumnWidth(
 			rows.maxOfOrNull { it.model.position } ?: 1,
@@ -77,12 +79,7 @@ class TestResultsPopup(items: ArrayList<TestItemModel>, success: Float) : Dialog
 					style = TextStyle(fontSize = 25.sp, color = colorResource(R.color.colorPrimaryFg)),
 					textAlign = TextAlign.Center,
 				)
-				Spacer(
-					Modifier
-						.fillMaxWidth()
-						.height(0.7.dp)
-						.background(colorResource(R.color.colorStripDivider))
-				)
+				HairlineDivider()
 				LazyColumn(Modifier.weight(1f)) {
 					items(rows) { row -> WordResultRow(row, positionWidth) }
 				}
@@ -100,7 +97,7 @@ class TestResultsPopup(items: ArrayList<TestItemModel>, success: Float) : Dialog
 					.padding(bottom = 10.dp)
 					.height(30.dp),
 			) {
-				Text("OK", style = TextStyle(fontSize = 15.sp))
+				Text(stringResource(R.string.ok), style = TextStyle(fontSize = 15.sp))
 			}
 		}
 	}
@@ -125,25 +122,22 @@ class TestResultsPopup(items: ArrayList<TestItemModel>, success: Float) : Dialog
 			},
 			trailing = {
 				Text(
-					"${row.item.word.passedTests}/${row.item.word.sfCount}",
+					"${row.item.word.passedTests}/${row.item.word.testedCount}",
 					style = TextStyle(fontSize = 15.sp, color = colorResource(R.color.colorPrimaryFg)),
 				)
 			},
 		)
 	}
 
-	/** The explorer-row model of one result: the word as a plain, unflipped word row. */
+	/** The explorer-row model of one result — the word as a plain, unflipped word row. */
 	private fun toModel(item: TestItemModel) = ItemUiModel(
 		key = item,
-		position = item.word.sfCount,
+		position = item.word.testedCount,
 		name = ItemRow.nameParser(item.word.name),
-		desc = item.translations.joinToString("\n") { ItemRow.nameParser(it.name) },
-		iconRes = R.drawable.ic_word,
+		description = item.translations.joinToString("\n") { ItemRow.nameParser(it.name) },
+		kind = RowKind.WORD,
 		ratio = item.word.ratio,
 		isReference = false,
-		isWord = true,
-		flipped = false,
 		selected = false,
-		payload = ItemRow(item.word, null, 0, false),
 	)
 }

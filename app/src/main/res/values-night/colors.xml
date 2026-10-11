@@ -13,9 +13,11 @@
     <color name="colorPrimaryFg">#DDFFFFFF</color>
     <color name="colorPrimaryBg">#FF1E1E1E</color>
     <color name="colorPrimaryHeader">#FF6EB31F</color>
-    <!-- Lighter than the header, the opposite way round from the light palette: the
-         status bar icons and the drawer banner text are dark here. -->
+    <!-- The drawer banner's light end (see values/colors.xml). -->
     <color name="colorHeaderSoft">#FF84BE41</color>
+    <!-- The dark status band here too — the night primary green darkened, the way the
+         light band darkens the light primary. White icons read on both. -->
+    <color name="colorStatusBar">#FF4F8016</color>
 
     <color name="colorOnHeader">#DD000000</color>
     <color name="colorPositionText">#FFFFFFFF</color>
@@ -28,4 +30,7 @@
     <color name="colorSearchHint">#B3000000</color>
 
     <color name="colorFailure">#FFFF5252</color>
+    <color name="colorHighlight">#33FFFFFF</color>
+    <color name="colorSelectedRow">#406EB31F</color>
+    <color name="colorMenuBackground">#FF303030</color>
 </resources>

@@ -1,0 +1,50 @@
+# Unit tests and lint on every commit.
+name: Test
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+permissions:
+  contents: read
+
+# A newer commit makes the run queued for the same branch pointless.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # app/build.gradle.kts pins the toolchain to 21 and nothing provisions
+      # toolchains, so the job has to bring that JDK itself.
+      - uses: actions/setup-java@v6
+        with:
+          distribution: liberica
+          java-version: '21'
+
+      # Restores the dependency and build caches; org.gradle.caching is already on.
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Unit tests
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
+
+      # Release too: it is the only variant that sees the minified and shrunk build.
+      - name: Lint
+        run: ./gradlew :app:lintDebug :app:lintRelease --stacktrace
+
+      - name: Upload reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reports-${{ github.run_number }}
+          path: |
+            app/build/reports/
+            app/build/test-results/
+          if-no-files-found: ignore

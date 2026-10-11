@@ -6,44 +6,36 @@ import androidx.compose.ui.res.colorResource
 import cz.litoj.schlmgr.R
 
 /**
- * The explorer's color scheme, pulled from the app theme ([colors.xml]) so the
- * Compose screens follow the same palette the XML layouts defined — no
- * hard-coded values in composables. The only color the explorer computes
- * itself is the success-ratio background of the position cell
- * ([successRatioBackground]).
+ * The explorer's color scheme, pulled from the app theme (`colors.xml`) so
+ * the Compose screens follow the XML palette. [successRatioBackground] is
+ * the one computed color.
  */
 object ExplorerColors {
-	/** Header green — the breadcrumb strip and accents (`colorPrimaryHeader`). */
+	/** Header green — the breadcrumb strip and accents. */
 	val header: Color @Composable get() = colorResource(R.color.colorPrimaryHeader)
 
-	/** Body text color matching the app's foreground (`colorPrimaryFg`). */
+	/** Body text uses the foreground color so it stays readable on the background surface. */
 	val body: Color @Composable get() = colorResource(R.color.colorPrimaryFg)
-
-	/** Background surface (`colorPrimaryBg`), used by the list and bottom bars. */
-	val surface: Color @Composable get() = colorResource(R.color.colorPrimaryBg)
 
 	/** Label color on the green header — breadcrumbs and enabled action labels. */
 	val onHeader: Color @Composable get() = colorResource(R.color.colorOnHeader)
 
-	/** The position number (`item_pos` text, `#000000` in the legacy layouts). */
+	/** Position numbers carry their own color so they stand out from body text in the cell. */
 	val positionText: Color @Composable get() = colorResource(R.color.colorPositionText)
 
-	/** The green item-description line (legacy `#080`). */
-	val desc: Color @Composable get() = colorResource(R.color.colorDescText)
+	/** Descriptions are secondary info, so they use a distinct green rather than body color. */
+	val description: Color @Composable get() = colorResource(R.color.colorDescText)
 
-	/** The 1px row separator (legacy `#4888`). */
-	val rowDivider: Color @Composable get() = colorResource(R.color.colorRowDivider)
-
-	/** The divider under the info strip (legacy `#888`). */
-	val stripDivider: Color @Composable get() = colorResource(R.color.colorStripDivider)
-
-	/** The bottom action-strip backdrop (legacy `#8000`). */
+	/** The action strip has its own grey wash so it never flips with the green header bar. */
 	val actionBar: Color @Composable get() = colorResource(R.color.colorActionBar)
 
-	/** Enabled action label of those strips; their backdrop is the grey wash above,
+	/** Enabled action label of those strips — their backdrop is the grey wash above,
 	 *  not the green header, so it does not flip with [onHeader]. */
 	val actionText: Color @Composable get() = colorResource(R.color.colorActionText)
 
-	/** Disabled action label (legacy `#6FFF`). */
+	/** Disabled action labels need lower contrast so enabled actions remain the focus. */
 	val actionTextDisabled: Color @Composable get() = colorResource(R.color.colorActionTextDisabled)
+
+	/** The selected row's highlight is subtle green so selection is visible without hiding the ratio tint. */
+	val selectedRow: Color @Composable get() = colorResource(R.color.colorSelectedRow)
 }

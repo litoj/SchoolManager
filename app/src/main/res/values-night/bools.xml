@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- See values/bools.xml: the header foreground is dark in this palette. -->
-    <bool name="darkStatusBarIcons">true</bool>
+    <!-- See values/bools.xml: the icons stay white in this palette too — the night band
+         is dark enough for them. -->
+    <bool name="darkStatusBarIcons">false</bool>
 </resources>

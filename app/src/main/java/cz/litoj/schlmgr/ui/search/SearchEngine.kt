@@ -1,134 +1,103 @@
 package cz.litoj.schlmgr.ui.search
 
-import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.db.DbItem
-import cz.litoj.schlmgr.db.ItemKind
-import cz.litoj.schlmgr.db.dao.WordDao
-import cz.litoj.schlmgr.db.ratio
-import cz.litoj.schlmgr.db.sfCount
-import cz.litoj.schlmgr.app.GlobalDependencies
-import cz.litoj.schlmgr.app.Startup
-import java.util.concurrent.ConcurrentHashMap
+import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.data.db.ItemKind
+import cz.litoj.schlmgr.data.WordNames
+import cz.litoj.schlmgr.data.db.ratio
+import cz.litoj.schlmgr.data.db.testedCount
 import java.util.regex.Pattern
 
 /**
- * Pure query-parsing + matching engine ported out of the legacy
- * `ExplorerStuff.SearchControl.SearchEngine` inner class. It contains **no**
- * View, adapter, thread-spawning, or `BackLog` knowledge — the owning
- * ExplorerViewModel preloads the searched content ([SearchIndex]) and consumes
- * the hits; everything else (the prefix grammar, the word-translate fallback,
- * the visited/found sets) is reproduced here byte-for-byte.
- *
- * ### Query grammar (unchanged from the legacy `resolver:` block)
- * An optional leading `\` prefix enables structured search; without it the whole
- * query is a case-insensitive *contains* match on the item's name and its
- * [WordDao.parseVariants] fallbacks:
- * ```
- * \ [W|T|C]? [D|S|F|N|R]? OP TAIL
- * ```
- * - `W`/`T` — main-word / translate-only, `C` — any chapter; otherwise no type
- *   filter.
- * - `D` — match against the description, `S`/`F` — success/fail counts,
- *   `N` — times tested, `R` — ratio; otherwise the name (+parseVariants fallbacks).
- * - `OP` is `>` `<` `=` (numeric, `TAIL` parsed as an `Int`, unparseable → −10)
- *   or `r` `s` `e` `c` `\` (regex / startsWith / endsWith / contains /
- *   case-insensitive-contains). Anything else is a case-insensitive *contains*
- *   of the text from `OP` on. A bad regex shows the legacy
- *   [R.string.pattern_err] snackbar and aborts the run ([valid] is `false`).
- *
- * The engine itself spawns no threads and touches no Views; a run filters the
- * preloaded [SearchIndex] synchronously on the caller's thread. The shared
- * mutable state ([visited]/[found]) stays thread-safe for aborts from other
- * threads ([active] is checked during the walk).
+ * Pure query-parsing + matching engine — no Views, threads or history.
+ * - matches against a preloaded [SearchIndex], synchronously on the caller
+ *   thread. A superseded run aborts via [active].
+ * - a leading `\` selects structured search: `[W|T|C]? [D|S|F|N|R]? OP TAIL`
+ *   (type, value source, op) — see the `resolve` cases below.
  */
 class SearchEngine(query: String) {
 
-	/** `false` when [query] had a bad `\ … r` regex (legacy `return`ed from the ctor). */
+	/** `false` when [query] had a bad `\ … r` regex. */
 	var valid = true
 		private set
 
-	/** All items already reported (legacy `set`; dedups the emitted results) — by row id. */
-	private val found = ConcurrentHashMap.newKeySet<Int>()
-
 	/**
-	 * Containers already walked this run (legacy `visited`). An item placed in
-	 * more containers appears under each of them — the walk enters its subtree
-	 * once (first parent wins) so shared chapters aren't re-matched repeatedly.
+	 * The regex failure detail when [valid] is `false` (the exception message
+	 * of the failed compile), `null` otherwise. The engine shows nothing
+	 * itself — the caller turns this into the user-facing message.
 	 */
-	private val visited = ConcurrentHashMap.newKeySet<Int>()
+	var regexError: String? = null
+		private set
+
+	/** All items already reported — dedups the emitted results, by row id. */
+	private val found = HashSet<Int>()
 
 	/**
-	 * Live-run flag. The legacy `search()` loop checked
-	 * `backLog.adapter instanceof SearchAdapter` on every item and abandoned the
-	 * whole walk the moment the user navigated away / started a new search —
-	 * this is that check, decoupled from the adapter. The view model sets it
-	 * `false` when the current search stops being the displayed one.
+	 * Containers already walked this run. An item placed in more containers
+	 * is emitted under the first container walked only — [correct] dedups by
+	 * row id — and the subtree of a shared chapter is walked once.
+	 */
+	private val visited = HashSet<Int>()
+
+	/**
+	 * Live-run flag — the walk abandons itself the moment the user navigates
+	 * away or starts a new search. The view model lowers it when the search
+	 * stops displaying.
 	 */
 	@Volatile
 	var active = true
 
-	// --- the legacy matching primitives -------------------------------------------------
+	// ------------------------------------------------------------ matchers
 	private fun interface Correct {
-		fun verify(bd: DbItem): Boolean
+		fun verify(item: DbItem): Boolean
 	}
 
 	private fun interface SFManipulation {
-		fun value(bd: DbItem): Int
+		fun value(item: DbItem): Int
 	}
 
 	private fun interface StringFinder {
 		fun verify(str: String): Boolean
 	}
 
-	/** The compare text set up by the prefix resolver (legacy `comp` field). */
-	private var comp: String = ""
+	/** Prefix resolver's compare text. */
+	private var compareText: String = ""
 
-	/** The final comparator the legacy ctor assembled into `correct`. */
-	private val correct: Correct = resolve(query)
+	private val matcher: Correct = resolve(query)
 
 	/**
-	 * Whole legacy ctor body up to `backLog.add(...)`. Uses labeled returns in place of
-	 * the Java `break resolver;` / `return;` (bad-regex): the local `emptyCompare()` is
-	 * the `comp = ""; break resolver;` early-exit, factored out so it can be `return`ed.
+	 * Resolves the query into a matcher — an optional type prefix (`\W`,
+	 * `\T`, `\C`), an optional value-source prefix (`D`, `S`, `F`, `N`,
+	 * `R`), then the operation selector with its tail as the compare text.
+	 * `emptyCompare()` is the early exit for a prefix-only query.
 	 */
 	private fun resolve(query: String): Correct {
-		var cor1: Correct? = Correct { _ -> true }
-		var cor2: Correct? = null
+		var kind: Correct = Correct { _ -> true }
+		var numeric: Correct? = null
 		var sfm: SFManipulation? = null
-		var strCor: StringFinder? = StringFinder { name -> name.lowercase().contains(comp) }
+		var strCor: StringFinder = StringFinder { name -> name.lowercase().contains(compareText) }
 		var start = 0
-		var desc = false
+		var searchDescription = false
 
-		// The two `comp = ""; break resolver;` early-exits of the Java labelled block.
 		fun emptyCompare(): Correct {
-			comp = ""
-			val c1 = cor1
-			val sc = strCor
-			return Correct { bd ->
-				if (c1 != null && !c1.verify(bd)) return@Correct false
-				if (sc!!.verify(bd.name)) return@Correct true
-				for (name in WordDao.parseVariants(bd.name)) if (sc.verify(name)) return@Correct true
-				false
-			}
+			compareText = ""
+			return nameMatcher(kind, strCor)
 		}
 
-		// `query[0]` on an empty query was the empty-search crash; an empty query
-		// simply matches everything (`comp` stays empty).
+		// an empty query simply matches everything (`compareText` stays empty)
 		if (query.isNotEmpty() && query[start] == '\\' && query.length > 1) {
 			when (query[++start]) { // select the type of searched object
-				'W' -> cor1 = Correct { bd -> bd.type == ItemKind.WORD }
-				'T' -> cor1 = Correct { bd -> bd.type == ItemKind.TRANSLATION }
-				'C' -> cor1 = Correct { bd -> bd.type == ItemKind.CHAPTER }
+				'W' -> kind = Correct { item -> item.type == ItemKind.WORD }
+				'T' -> kind = Correct { item -> item.type == ItemKind.TRANSLATION }
+				'C' -> kind = Correct { item -> item.type == ItemKind.CHAPTER }
 				else -> start-- // no type selection prefix found
 			}
 			if (start + 1 >= query.length) return emptyCompare()
 			when (query[++start]) { // select the source of comparing
-				'D' -> desc = true // the tested value is the object's description
-				// for selection by success rate
-				'S' -> sfm = SFManipulation { bd -> bd.passedTests }
-				'F' -> sfm = SFManipulation { bd -> bd.failedTests }
-				'N' -> sfm = SFManipulation { bd -> bd.sfCount }
-				'R' -> sfm = SFManipulation { bd -> bd.ratio }
+				'D' -> searchDescription = true // the tested value is the object's description
+				'S' -> sfm = SFManipulation { item -> item.passedTests }
+				'F' -> sfm = SFManipulation { item -> item.failedTests }
+				'N' -> sfm = SFManipulation { item -> item.testedCount }
+				'R' -> sfm = SFManipulation { item -> item.ratio }
 				else -> start-- // the tested value is the name of the object
 			}
 			if (start + 1 >= query.length) return emptyCompare()
@@ -137,89 +106,74 @@ class SearchEngine(query: String) {
 			} catch (nfe: NumberFormatException) {
 				-10
 			}
-			val copyOC = cor1
-			val copySFM = sfm
-			comp = query.substring(start + 2)
+			compareText = query.substring(start + 2)
 			when (query[start + 1]) { // the main select operation prefix selector
 				// number operations
-				'>' -> cor2 = if (copyOC == null)
-					Correct { bd -> copySFM!!.value(bd) > count }
-				else Correct { bd -> copyOC.verify(bd) && copySFM!!.value(bd) > count }
-				'<' -> cor2 = if (copyOC == null)
-					Correct { bd -> copySFM!!.value(bd) < count }
-				else Correct { bd -> copyOC.verify(bd) && copySFM!!.value(bd) < count }
-				'=' -> cor2 = if (copyOC == null)
-					Correct { bd -> copySFM!!.value(bd) == count }
-				else Correct { bd -> copyOC.verify(bd) && copySFM!!.value(bd) == count }
+				'>' -> numeric = numberCompare(sfm, count) { a, b -> a > b }
+				'<' -> numeric = numberCompare(sfm, count) { a, b -> a < b }
+				'=' -> numeric = numberCompare(sfm, count) { a, b -> a == b }
 				// text operations
 				'r' -> { // if the object's name (or description) matches given regex
 					val p: Pattern = try {
-						Pattern.compile(comp)
+						Pattern.compile(compareText)
 					} catch (e: Exception) {
-						val msg = GlobalDependencies.appContext.getString(R.string.pattern_err) +
-							'\n' + e.message
-						Startup.showMsg(msg, msg)
 						valid = false
-						return Correct { _ -> false } // legacy `return;` — aborts the run
+						regexError = e.message
+						return Correct { _ -> false }
 					}
 					strCor = StringFinder { name -> p.matcher(name).matches() }
 				}
-				's' -> strCor = StringFinder { name -> name.startsWith(comp) }
-				'e' -> strCor = StringFinder { name -> name.endsWith(comp) }
-				'c' -> strCor = StringFinder { name -> name.contains(comp) }
-				'\\' -> comp = comp.lowercase() // must contain the written text, ignores case
-				else -> comp = query.lowercase().substring(start + 1)
+				's' -> strCor = StringFinder { name -> name.startsWith(compareText) }
+				'e' -> strCor = StringFinder { name -> name.endsWith(compareText) }
+				'c' -> strCor = StringFinder { name -> name.contains(compareText) }
+				'\\' -> compareText = compareText.lowercase() // must contain the written text, ignores case
+				else -> compareText = query.lowercase().substring(start + 1)
 			}
-		} else comp = query.lowercase()
+		} else compareText = query.lowercase()
 
-		// constructs the final search comparator
-		val copyC1 = cor1
-		val copyC2 = cor2
-		val copySC = strCor
-		return if (sfm != null && copyC2 != null)
-			Correct { bd -> copyC1!!.verify(bd) && copyC2.verify(bd) }
-		else if (desc) Correct { bd ->
-			if (copyC1 != null && !copyC1.verify(bd)) return@Correct false
-			val d = bd.description
-			d.isNotEmpty() && copySC!!.verify(d)
+		val finalNumeric = numeric
+		return if (finalNumeric != null)
+			Correct { item -> kind.verify(item) && finalNumeric.verify(item) }
+		else if (searchDescription) Correct { item ->
+			if (!kind.verify(item)) return@Correct false
+			val d = item.description
+			d.isNotEmpty() && strCor.verify(d)
 		}
-		else Correct { bd ->
-			if (copyC1 != null && !copyC1.verify(bd)) return@Correct false
-			if (copySC!!.verify(bd.name)) return@Correct true
-			for (name in WordDao.parseVariants(bd.name)) if (copySC.verify(name)) return@Correct true
-			false
-		}
+		else nameMatcher(kind, strCor)
+	}
+
+	private fun numberCompare(
+		sfm: SFManipulation?, count: Int, test: (Int, Int) -> Boolean,
+	): Correct {
+		val source = sfm ?: SFManipulation { _ -> 0 }
+		return Correct { item -> test(source.value(item), count) }
+	}
+
+	/** Matches an item's name, then each parsed variant of it. */
+	private fun nameMatcher(kind: Correct, sc: StringFinder): Correct = Correct { item ->
+		if (!kind.verify(item)) return@Correct false
+		if (sc.verify(item.name)) return@Correct true
+		for (name in WordNames.parseVariants(item.name)) if (sc.verify(name)) return@Correct true
+		false
 	}
 
 	/**
-	 * The per-item validation the legacy `correct(bd, path)` performed: applies the
-	 * comparator and, on a (new) match, emits the item exactly once. `path` is the
-	 * container chain owning [bd] (last element = its direct parent); the callback
-	 * receives a defensive copy, as the legacy code did for its `rv.post` closure.
+	 * Validates one item and emits it once on a new match.
 	 *
-	 * @return whether [bd] matched (regardless of whether it had been emitted before).
+	 * @param path container chain, direct parent last
+	 * @param onMatch called once per new match with a copy of `path`
+	 * @return whether the item matched, even if already emitted
 	 */
-	fun correct(bd: DbItem, path: List<DbItem>, onMatch: (DbItem, List<DbItem>) -> Unit): Boolean {
-		val yes = correct.verify(bd)
-		if (yes && found.add(bd.id)) onMatch(bd, ArrayList(path))
+	fun correct(item: DbItem, path: List<DbItem>, onMatch: (DbItem, List<DbItem>) -> Unit): Boolean {
+		val yes = matcher.verify(item)
+		if (yes && found.add(item.id)) onMatch(item, ArrayList(path))
 		return yes
 	}
 
 	/**
-	 * Searches the whole content of the currently opened container: [basePath]
-	 * is its container chain (root first, the opened container last) and [index]
-	 * the preloaded subgraph below it. Faithful port of the legacy `search(...)`
-	 * walk, with the data sourcing changed from per-chapter database queries to
-	 * the preloaded [SearchIndex]:
+	 * Searches the whole content of the currently opened container.
 	 *
-	 * - the `backLog.adapter instanceof SearchAdapter` early-abort stays [active],
-	 * - the legacy thread fan-out is gone — filtering the in-memory index needs
-	 *   no workers, so the run is a plain loop,
-	 * - the legacy `Reference` deref walk is gone: in the link model an item simply
-	 *   appears under each of its parents, so [visited] (by item id) keeps every shared
-	 *   chapter's subtree from being walked twice. The word-translate fallback is
-	 *   verbatim: a word that itself didn't match is still found through any of its
-	 *   translations (its children in the index).
+	 * @param basePath container chain, root first, opened container last
 	 */
 	fun search(
 		index: SearchIndex,
@@ -248,6 +202,7 @@ class SearchEngine(query: String) {
 					walk(index, index.childrenOf(item.id), list, onMatch)
 				}
 				ItemKind.WORD -> if (!foundIt)
+					// a word that did not match is retried through its translations
 					for (trl in index.childrenOf(item.id))
 						correct(trl, path, onMatch)
 				else -> {}

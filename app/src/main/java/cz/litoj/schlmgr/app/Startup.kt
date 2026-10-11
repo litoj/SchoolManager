@@ -1,30 +1,46 @@
 package cz.litoj.schlmgr.app
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
+import androidx.core.content.edit
 import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.db.ItemRepository
-import cz.litoj.schlmgr.db.io.WordListWriter
+import cz.litoj.schlmgr.data.db.ItemDatabase
+import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.data.wordlist.WordListWriter
 import cz.litoj.schlmgr.testing.TestEngine
-import cz.litoj.schlmgr.ui.viewmodel.ItemRow
-import java.io.File
 import java.util.IdentityHashMap
 
 /**
- * App startup and user messaging — the successor of the former engine's
- * `AndroidIOSystem` platform layer. Called once from [cz.litoj.schlmgr.ui.activity.MainActivity].
+ * App startup and user messaging — called from
+ * [cz.litoj.schlmgr.ui.activity.MainActivity] each time it is created.
  */
 object Startup {
 
 	@JvmStatic
 	fun init(context: Context) {
+		// every activity creation runs this — only the first builds the
+		// process-wide state (a rotation must not leak another database)
+		if (ItemRepository.initialized) return
 		GlobalDependencies.appContext = context.applicationContext
-		ItemRepository.init(context)
-		// before any read: the invisible root every subject hangs under
+		// the app layer owns the database build — the repository stays a
+		// pure data gateway with no Android context
+		ItemRepository.init(ItemDatabase.newInstance(context.applicationContext))
+		// before any read — the invisible root every subject hangs under
 		ItemRepository.ensureRoot()
-		Thread.setDefaultUncaughtExceptionHandler { t, e -> onUncaught(t, e) }
+		installCrashHandler()
 		applyStoredOptions()
 		recordAppVersion()
+	}
+
+	/**
+	 * Installs the process-wide crash sink (see [onUncaught]) without calling
+	 * the platform handler. This one owns report and exit, so delegating would
+	 * double-report and double-kill.
+	 */
+	@SuppressLint("DefaultUncaughtExceptionDelegation")
+	private fun installCrashHandler() {
+		Thread.setDefaultUncaughtExceptionHandler { t, e -> onUncaught(t, e) }
 	}
 
 	/**
@@ -33,23 +49,17 @@ object Startup {
 	 * until the user changes a setting.
 	 */
 	private fun applyStoredOptions() {
-		ItemRow.defFlip = AppSettings.getBool("flipWord", true)
-		ItemRow.flipAllOnClick = AppSettings.getBool("flipAllOnClick", false)
-		ItemRow.parse = AppSettings.getBool("parseNames", true)
-		ItemRow.showDesc = AppSettings.getBool("doShowDesc", false)
 		TestEngine.amount = AppSettings.getInt("testAmount", 10)
-		TestEngine.setDefaultTime(AppSettings.getInt("defaultTestTime", 18))
+		TestEngine.setDefaultTime(AppSettings.getInt("defaultTestTime", TestEngine.DEFAULT_TIME_SECONDS))
 		TestEngine.isClever = AppSettings.getBool("isClever", true)
 		TestEngine.isReversed = AppSettings.getBool("reverseTest", false)
-		WordListWriter.setWordSplitter(AppSettings.getString("exportWordSplit", ";"))
+		WordListWriter.setWordTranslationSplitter(AppSettings.getString("exportWordSplit", "="))
 	}
 
 	/**
-	 * The compatibility checker: tracks the app version the user last ran, so
-	 * a future format change can hang its migration on the comparison. The
-	 * package rename cut off every earlier lineage — every install of this
-	 * package starts fresh — so recording the current version is the only
-	 * check that remains.
+	 * The compatibility checker — tracks the last-run app version, so a future
+	 * format change can hang its migration on the comparison.
+	 * - recording the current version is the only check.
 	 */
 	private fun recordAppVersion() {
 		val stored = AppSettings.getInt("version", 0)
@@ -69,90 +79,86 @@ object Startup {
 	// ------------------------------------------------------------ crash handling
 
 	/**
-	 * The stored report's hard cap: a StackOverflowError (a recursive back
-	 * dispatch once did this) fills tens of thousands of frames, and the
-	 * multi-megabyte report then broke everything that moved it through binder
-	 * (the clipboard copy in the report popup). A few hundred KB keeps the
-	 * report readable and under the ~1 MB binder limit.
+	 * The stored report's hard cap — a StackOverflowError fills tens of
+	 * thousands of frames, and the multi-megabyte report then breaks
+	 * everything moving it through binder (e.g. the popup's clipboard copy).
+	 * A few hundred KB keeps the report readable and under the ~1 MB limit.
 	 */
 	private const val MAX_REPORT_CHARS = 256 * 1024
 
 	/**
-	 * The process-wide uncaught-exception sink. It must never throw and must
-	 * persist the report synchronously: the prefs write uses `commit()` (not
-	 * `apply()`) and finishes before the process dies, so the next launch
-	 * reliably finds it and shows the [CrashReportPopup]. The legacy version
-	 * read the (possibly dead) activity, posted a toast it then killed with
-	 * `System.exit(0)` and could lose the async write — this one touches only
-	 * the application context and the synchronous store.
+	 * The process-wide uncaught-exception sink. Must never throw and must
+	 * persist synchronously (`commit()`, not `apply()`), so the next launch
+	 * reliably finds the report and shows it.
 	 */
 	private fun onUncaught(t: Thread, e: Throwable) {
 		try {
-			// the trace's head is where the error started — the tail (a deep
-			// recursion repeating itself) is what gets cut by the cap
-			val fullMsg = boundReport("$t\n${Log.getStackTraceString(e)}")
+			// the trace's head is where the error started — the cap cuts only the tail.
+			// Building the trace can itself fail — the message alone is still a report
+			val fullMsg = runCatching { boundReport("$t\n${Log.getStackTraceString(e)}") }
+				.getOrElse { "${e.toString()}\n[the trace was lost: ${it.message}]" }
 			val report = GlobalDependencies.appContext.getString(R.string.exception_handler) +
 				(getFirstCause(e) ?: e.toString()) + "\n\n$fullMsg"
-			GlobalDependencies.appContext.getSharedPreferences("settings", Context.MODE_PRIVATE).edit()
-				.putString("uncaughtException", report)
-				.commit()
+			AppSettings.setNow("uncaughtException", report)
 			if (isDebugBuild()) Log.e("Unexpected failure", fullMsg)
 		} catch (_: Throwable) {
 			// the handler itself must stay inert — the kill below still ends the process
 		} finally {
-			// killProcess (not exit(0) alone): a plain clean-exit code can leave the
+			// killProcess (not exit(0) alone) — a plain clean-exit code can leave the
 			// activity record half-launched, which showed as a dead white screen
 			android.os.Process.killProcess(android.os.Process.myPid())
 			System.exit(10)
 		}
 	}
 
-	/** Keeps the report under [MAX_REPORT_CHARS], cutting the trace's tail. */
+	/** Keeps the report under the cap, cutting the trace's tail. */
 	@JvmStatic
 	fun boundReport(msg: String): String =
 		if (msg.length <= MAX_REPORT_CHARS) msg
 		else msg.substring(0, MAX_REPORT_CHARS) + "\n[truncated]"
 
-	/**
-	 * @return the crash report of an unexpected failure from a previous session,
-	 * or `null` when there is none
-	 */
+	/** Stored crash report from the previous run, or `null` when there is none. */
 	@JvmStatic
 	fun getCrashReport(): String? =
-		GlobalDependencies.appContext.getSharedPreferences("settings", Context.MODE_PRIVATE)
-			.getString("uncaughtException", null)
+		AppSettings.getString("uncaughtException")
 
+	/** Message of the chain's innermost cause, or `null` when it has none. */
 	@JvmStatic
 	fun getFirstCause(e: Throwable): String? {
-		// a cause chain can be cyclic (an exception wrapping one of its
-		// ancestors) — the seen-set ends the walk instead of looping forever
+		// a cyclic chain ends at the deepest distinct node — the seen-set
+		// stops the walk where it starts repeating
 		val seen = IdentityHashMap<Throwable, Unit>()
+		var deepest = e
 		var t = e
 		while (seen.put(t, Unit) == null) {
-			t = t.cause ?: return t.message
+			deepest = t
+			t = t.cause ?: return deepest.message
 		}
-		return t.message
+		return deepest.message
 	}
 
 	// ------------------------------------------------------------ messaging
 
-	/**
-	 * Reports one transient user message: a snackbar with a full-text popup
-	 * action — the former `defaultReacts` messaging surface. Safe to call
-	 * from any thread; whichever activity is started shows it.
-	 */
+	/** Reports one transient user message (see [GlobalDependencies.UiMessage.Text]). Safe from any thread. */
 	@JvmStatic
-	fun showMsg(msg: String, fullMsg: String) {
-		GlobalDependencies.messages.tryEmit(GlobalDependencies.UiMessage(msg, fullMsg))
+	@JvmOverloads
+	fun showMsg(msg: String, fullMsg: String, actionLabel: String? = null) {
+		GlobalDependencies.messages.tryEmit(GlobalDependencies.UiMessage.Text(msg, fullMsg, actionLabel))
 	}
 
-	/** Word-list parse failure — the former `SimpleReader:fail` reaction. */
+	/** Reports one transient user notice by meaning — the display picks the text. */
+	@JvmStatic
+	fun showNotice(notice: UiNotice) {
+		GlobalDependencies.messages.tryEmit(GlobalDependencies.UiMessage.Notice(notice))
+	}
+
+	/** Word-list parse failure — [msg] is both snackbar line and popup body. */
 	@JvmStatic
 	fun onParseFail(msg: String) = showMsg(msg, msg)
 
 	/**
-	 * Import result — the former `SimpleReader:success` reaction: the word and
-	 * chapter statistics of what landed in the database.
+	 * Import result — the word and chapter statistics of what landed in the
+	 * database.
 	 */
 	@JvmStatic
 	fun onImportSuccess(words: Int, chapters: Int) {
@@ -161,13 +167,13 @@ object Startup {
 	}
 
 	/**
-	 * Export result — the former `SimpleWriter:success` reaction: the word and
-	 * chapter statistics of what was written, and where the file landed.
+	 * Export result — the word and chapter statistics of what was written, and
+	 * where the file landed (the picked target's display name).
 	 */
 	@JvmStatic
 	fun onExportSuccess(path: String, words: Int, chapters: Int) {
 		val msg = stats(R.string.stat_exported, words, chapters) + '\n' +
-			visibleInternalPath(path) + GlobalDependencies.appContext.getString(R.string.action_sw_success)
+			path + GlobalDependencies.appContext.getString(R.string.action_sw_success)
 		showMsg(msg, msg)
 	}
 
@@ -180,42 +186,33 @@ object Startup {
 			res.getQuantityString(R.plurals.stat_chapters, chapters, chapters))
 	}
 
-	/** Legacy file read failure — the former `ContainerFile:load` reaction. */
+	/** File read failure — the caller skips the failing document. */
 	@JvmStatic
 	fun onLoadFail(e: Exception, name: String) {
 		val ctx = GlobalDependencies.appContext
-		val msg = ctx.getString(R.string.fail_load) + '\n' + name + '\n' +
-			ctx.getString(R.string.fail_load_src) + name +
-			ctx.getString(R.string.fail_type) + "file:\n"
-		showMsg(
-			msg + getFirstCause(e),
-			msg + e.message + '\n' + Log.getStackTraceString(e)
-		)
+		val msg = failMessage(ctx, name, R.string.fail_load, R.string.fail_load_src)
+		showFail(e, msg)
 	}
 
-	/** Legacy file write failure — the former `ContainerFile:save` reaction. */
+	/** File write failure — the caller skips its success report. */
 	@JvmStatic
 	fun onSaveFail(e: Exception, name: String) {
 		val ctx = GlobalDependencies.appContext
-		val msg = ctx.getString(R.string.fail_save) + '\n' + name + '\n' +
-			ctx.getString(R.string.fail_save_src) + name +
-			ctx.getString(R.string.fail_type) + "file:\n"
+		val msg = failMessage(ctx, name, R.string.fail_save, R.string.fail_save_src)
+		showFail(e, msg)
+	}
+
+	/** The two-line failure banner — what failed, then which file and why. */
+	private fun failMessage(ctx: Context, name: String, head: Int, src: Int): String =
+		ctx.getString(head) + '\n' + name + '\n' +
+			ctx.getString(src) + name +
+			ctx.getString(R.string.fail_type) + ctx.getString(R.string.fail_kind_file) + '\n'
+
+	private fun showFail(e: Exception, msg: String) {
 		showMsg(
-			msg + getFirstCause(e),
-			msg + e.message + '\n' + Log.getStackTraceString(e)
+			msg + (getFirstCause(e) ?: e.toString()),
+			msg + (e.message ?: "") + '\n' + Log.getStackTraceString(e)
 		)
 	}
 
-	// ------------------------------------------------------------ helpers
-
-	/** The default legacy subjects directory: `<external files>/School objects`. */
-	@JvmStatic
-	val defaultSubjectsDir: File
-		get() = File(GlobalDependencies.appContext.getExternalFilesDir(null), "School objects")
-
-	@JvmStatic
-	fun visibleInternalPath(path: String): String {
-		val defDir = defaultSubjectsDir.absolutePath
-		return if (!path.contains(defDir)) path else path.substring(defDir.length)
-	}
 }
