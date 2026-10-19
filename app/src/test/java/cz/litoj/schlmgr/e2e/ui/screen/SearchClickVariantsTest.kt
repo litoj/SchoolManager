@@ -1,0 +1,137 @@
+package cz.litoj.schlmgr.e2e.ui.screen
+
+import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.room.Room
+import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.data.db.ItemDatabase
+import cz.litoj.schlmgr.ui.screen.picker.PickerScreen
+import cz.litoj.schlmgr.ui.screen.picker.PickerViewModel
+import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
+import cz.litoj.schlmgr.ui.screen.subjects.SubjectsScreen
+import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
+import cz.litoj.schlmgr.ui.viewmodel.ItemRow
+import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
+import cz.litoj.schlmgr.ui.viewmodel.SearchUi
+import kotlinx.coroutines.Dispatchers
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
+
+/**
+ * The search-click variants across the screens — the picker's results, the
+ * closed field's results and the flip-all setting all keep the search on a
+ * word toggle: the row flips in place, the list never reloads.
+ */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
+class SearchClickVariantsTest {
+
+	@get:Rule
+	val rule = createComposeRule()
+
+	private lateinit var db: ItemDatabase
+
+	/** The flip-all static must leave with the test — later classes read it. */
+	private val flipAllWas = ItemRow.flipAllOnClick
+
+	@Before
+	fun setUp() {
+		db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
+			.allowMainThreadQueries()
+			.build()
+		ItemRepository.initForTest(db)
+		ItemRepository.ensureRoot()
+		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
+		val a = ItemRepository.createSubject("A", null)
+		val c1 = ItemRepository.createChapter(a.id, "c1", null)
+		ItemRepository.createWord(c1.id, "xyz", null, listOf("t1" to null))
+	}
+
+	@After
+	fun tearDown() {
+		ItemRow.flipAllOnClick = flipAllWas
+		// the picker's saved position is process-wide — leave the root for the next class
+		PickerViewModel.resetSavedHistory()
+		db.close()
+	}
+
+	@Test
+	fun `picker - clicking a word of the results keeps the search`() {
+		val model = PickerViewModel(Dispatchers.Unconfined)
+		rule.setContent { PickerScreen(model, {}) }
+		rule.waitForIdle()
+		rule.onNodeWithText("A").performClick()
+		rule.waitForIdle()
+		rule.runOnIdle { model.openSearchField() }
+		rule.runOnIdle { model.onQuerySubmit("xy") }
+		rule.waitForIdle()
+		rule.onNodeWithText("xyz").assertExists()
+		rule.onNodeWithText("xyz").performClick()
+		rule.waitForIdle()
+		rule.runOnIdle {
+			assertEquals(SearchUi.TYPING, model.state.value.searchUi)
+			assertEquals(ExplorerRowVariant.Search, model.listState.value.variant)
+			assertTrue(model.items().isNotEmpty())
+		}
+	}
+
+	@Test
+	fun `closed field - clicking a word of the results keeps the search`() {
+		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		rule.setContent { SubjectsScreen(model, {}, {}, {}) }
+		rule.waitForIdle()
+		rule.onNodeWithText("A").performClick()
+		rule.waitForIdle()
+		rule.runOnIdle { model.openSearchField() }
+		rule.runOnIdle { model.onQuerySubmit("xy") }
+		rule.waitForIdle()
+		rule.runOnIdle { model.closeSearchField() }
+		rule.waitForIdle()
+		rule.onNodeWithText("xyz").assertExists()
+		rule.onNodeWithText("xyz").performClick()
+		rule.waitForIdle()
+		rule.runOnIdle {
+			assertEquals(SearchUi.RESULTS, model.state.value.searchUi)
+			assertEquals(ExplorerRowVariant.Search, model.listState.value.variant)
+			assertTrue(model.items().isNotEmpty())
+		}
+	}
+
+	@Test
+	fun `flip-all - clicking a word of the results keeps the search`() {
+		ItemRow.flipAllOnClick = true
+		// one more matching word — a single-row flip must not satisfy the assertion
+		val a = ItemRepository.subjects().single()
+		val c1 = ItemRepository.children(a.id).single()
+		ItemRepository.createWord(c1.id, "xy2", null, listOf("t2" to null))
+		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		rule.setContent { SubjectsScreen(model, {}, {}, {}) }
+		rule.waitForIdle()
+		rule.onNodeWithText("A").performClick()
+		rule.waitForIdle()
+		rule.runOnIdle { model.openSearchField() }
+		rule.runOnIdle { model.onQuerySubmit("xy") }
+		rule.waitForIdle()
+		rule.onNodeWithText("xyz").assertExists()
+
+		rule.onNodeWithText("xyz").performClick()
+		rule.waitForIdle()
+		rule.runOnIdle {
+			assertEquals(SearchUi.TYPING, model.state.value.searchUi)
+			assertEquals(ExplorerRowVariant.Search, model.listState.value.variant)
+			assertEquals("both hits flipped in place — the whole word block flipped",
+				listOf("t1", "t2"), model.items().map { it.toShow })
+			assertTrue(model.items().all { it.flipped })
+		}
+	}
+}

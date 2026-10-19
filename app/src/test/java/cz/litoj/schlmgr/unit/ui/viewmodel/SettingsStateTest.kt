@@ -1,6 +1,6 @@
-package cz.litoj.schlmgr.unit.ui.screen.settings
+package cz.litoj.schlmgr.unit.ui.viewmodel
 
-import cz.litoj.schlmgr.ui.screen.settings.SettingsState
+import cz.litoj.schlmgr.ui.viewmodel.SettingsState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

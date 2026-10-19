@@ -16,8 +16,7 @@ import cz.litoj.schlmgr.ui.popup.MessagePopup
 /**
  * Renders [GlobalDependencies.messages] as snackbars — the short text with a
  * 'full text' action opening the [MessagePopup] dialog.
- * - composed by every activity — a worker-thread report shows on whichever
- *   screen is in the foreground (the flow delivers only while collected).
+	 * - composed by every activity — a worker-thread report shows on whichever screen is in the foreground (the flow delivers only while collected).
  */
 @Composable
 fun messageSnackbarHost(): SnackbarHostState {

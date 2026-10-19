@@ -17,8 +17,7 @@ import org.robolectric.annotation.Config
 
 /**
  * The graph deletion behind [ItemRepository.remove] on a real in-memory database:
- * - a subject wider than SQLite's 999 host parameters per statement deletes
- *   fine — the walk and the cleanup handle one row at a time.
+ * - a subject wider than SQLite's 999 parameter cap deletes fine — the walk handles one row at a time.
  * - an item shared by several parents survives the deletion of all but one of them.
  * - a removed word's tests leave its chapter's stored counters with it.
  */

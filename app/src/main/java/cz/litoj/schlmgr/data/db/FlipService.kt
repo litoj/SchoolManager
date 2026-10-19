@@ -46,9 +46,8 @@ internal object FlipService {
 	}
 
 	suspend fun flipIds(dao: ItemDao, wordDao: WordDao, ids: List<Int>, rootId: Int) {
-		// gather first, flip second. A chapter's word set must come from the
-		// pre-flip state — an earlier flip's products would flip right back,
-		// and a word selected beside its chapter would flip twice
+		// gather first, flip second.
+		// A chapter's word set must come from the pre-flip state — an earlier flip's products would flip right back, and a word selected beside its chapter would flip twice.
 		val targets = LinkedHashSet<DbItem>()
 		for (id in ids) {
 			val item = dao.get(id) ?: continue

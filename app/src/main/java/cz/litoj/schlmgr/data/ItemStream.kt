@@ -6,8 +6,20 @@ import cz.litoj.schlmgr.data.db.DbItem
  * A `null` parent anchors to the import target or the exported container.
  *
  * The import's indexes key on the instance, never value equality.
+ *
+ * A reference child carries its target's plain-home path ([refPath]).
+ * Names run from the exported root down, the target's name last.
+ *
+ * The exporter writes it as a reference entry instead of the row content.
+ * A `null` path means plain content — or the save loses the row.
  */
-class StreamItem(val item: DbItem, val parent: StreamItem?)
+class StreamItem(val item: DbItem, val parent: StreamItem?, val refPath: List<String>? = null)
+
+/**
+ * One child of a walked row on the export side — the row plus, for a
+ * reference link, the [StreamItem.refPath] of the same shape.
+ */
+class StreamChild(val row: DbItem, val refPath: List<String>? = null)
 
 /**
  * A link from [parent] to the [targetName] item under [path] — container
@@ -21,8 +33,8 @@ class StreamReference(
 
 /**
  * A parsed import source:
- * - [StreamItem]s in pre-order (parents before children), plus the
- *   references to resolve after saving.
+ * - [StreamItem]s in pre-order (parents before children).
+ * - references to resolve after saving.
  * - implemented per file format in `cz.litoj.schlmgr.data`.
  */
 interface DataImporter {

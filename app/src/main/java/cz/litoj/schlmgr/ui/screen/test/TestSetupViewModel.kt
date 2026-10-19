@@ -11,8 +11,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
  * The test setup screen's logic — amount/duration answers, the reverse
  * switch, the fresh-entry decision and the two navigation steps (start
  * test, open the source picker).
- * - answers and sources live in [TestSetupState]. This view model is
- *   the screen's only writer to them.
+	 * - answers and sources live in [TestSetupState]. This view model is the screen's only writer to them.
  */
 class TestSetupViewModel : ViewModel() {
 
@@ -49,10 +48,7 @@ class TestSetupViewModel : ViewModel() {
 	 * genuine fresh entry resets the setup.
 	 */
 	fun onEntered() {
-		val fromPicker = TestSetupState.openedPicker
-		TestSetupState.openedPicker = false
-		val fromSelection = TestSetupState.openedWithSelection
-		TestSetupState.openedWithSelection = false
+		val (fromPicker, fromSelection) = TestSetupState.consumeEntryMarks()
 		if (!fromPicker && !fromSelection) TestSetupState.reset()
 	}
 
@@ -89,7 +85,7 @@ class TestSetupViewModel : ViewModel() {
 	fun openPicker() {
 		if (TestSetupState.hierarchyPicked()) return
 		// a picker return must keep the sources — declare the origin before navigating
-		TestSetupState.openedPicker = true
+		TestSetupState.markOpenedPicker()
 		_requests.trySend(Request.OpenPicker)
 	}
 

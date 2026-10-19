@@ -61,8 +61,8 @@ class TestEngine {
 	/**
 	 * Stops the countdown before its natural end — the run is over (see
 	 * [cz.litoj.schlmgr.ui.activity.TestActivity.reset]).
-	 * - without it the thread lingers up to one tick past the end, holding
-	 *   the abandoned activity's callback.
+	 * - without it the thread lingers up to one tick past the end.
+	 * - it holds the abandoned activity's callback.
 	 */
 	fun stopTest() {
 		timerThread?.interrupt()
@@ -70,8 +70,8 @@ class TestEngine {
 
 	/**
 	 * Tests if the user answered correctly — a null or empty answer always fails.
-	 * - the caller hands the item's translations (the run's model already
-	 *   holds them) — no per-answer database round trip.
+	 * - the caller hands the item's translations — the run's model already holds them.
+	 * - no per-answer database round trip.
 	 *
 	 * @return `true` when the answer matches the tested word in the current
 	 * direction — the word's name (or a word linked to its translations) by

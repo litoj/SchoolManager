@@ -308,8 +308,7 @@ class WordListReader private constructor(private val src: String, private val co
 /**
  * The word-list format as an import source — the parsed tree as a
  * [StreamItem] stream (see [DataImporter]).
- * - the text's top-level items become the stream's root items in file
- *   order — they land at the anchor as they are, no wrapper.
+ * - top-level items become root items in file order, no wrapper.
  */
 class WordListImporter(containerName: String, text: String) : DataImporter {
 	override val items: List<StreamItem>

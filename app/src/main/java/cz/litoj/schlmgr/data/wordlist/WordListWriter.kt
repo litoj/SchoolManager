@@ -7,15 +7,15 @@ import cz.litoj.schlmgr.data.StreamBuilder
 /**
  * Writes the word-list text from an item stream — the syntax [WordListReader]
  * parses.
- * - chapter roots become `Name { ... }` wrappers — a bare word or note
- *   root writes as its own top-level line.
- * - an interior `\` before an ordinary character, a leading `}`, or a
- *   newline has no encoding.
- * - an odd backslash run before a separator gains one on the first
- *   export (see [evenOutBackslashRuns]), then stays stable.
- * - the reader trims every name and description — a lone `\r` normalizes
- *   to `\n`, so leading or trailing whitespace is lost.
+ * - chapter roots become `Name { ... }` wrappers.
+ * - a bare word or note root writes as its own top-level line.
+ * - an interior `\` before an ordinary character has no encoding.
+ * - a leading `}` or a newline has no encoding.
+ * - an odd backslash run before a separator gains one on first export, then stays stable.
+ * - the reader trims every name and description.
+ * - a lone `\r` normalizes to `\n`, losing leading or trailing whitespace.
  * - a word or note with a blank name has no line — the write refuses it.
+ * - a reference link has no line — its content writes at the plain home only.
  */
 object WordListWriter {
 
@@ -94,6 +94,9 @@ object WordListWriter {
 		writeData(sb, item.item.name, item.item.description)
 		sb.append(" {\n")
 		for (child in childrenOf[item] ?: emptyList()) {
+			// a reference has no line of its own — its content sits at the
+			// plain home, which the walk already wrote
+			if (child.refPath != null) continue
 			when (child.item.type) {
 				ItemKind.WORD -> writeWordLine(sb, child, childrenOf, tabs + 1)
 				ItemKind.CHAPTER -> saveContent(sb, child, tabs + 1, childrenOf)

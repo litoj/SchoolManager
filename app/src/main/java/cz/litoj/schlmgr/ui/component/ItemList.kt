@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -26,12 +27,12 @@ import cz.litoj.schlmgr.ui.viewmodel.ItemListState
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
+import cz.litoj.schlmgr.ui.viewmodel.TranslationLine
 
 /**
  * User-intent callbacks for the explorer list.
  * - defaults let previews and partial hosts provide only what they need.
- * - the row callbacks carry the affected [ItemUiModel], whose
- *   [ItemUiModel.payload] reaches the backing [ItemRow] when required.
+	 * - the row callbacks carry the affected [ItemUiModel], whose [ItemUiModel.payload] reaches the backing [ItemRow] when required.
  * - the drag/select ones carry indexes or nothing.
  */
 class ItemListCallbacks(
@@ -46,14 +47,18 @@ class ItemListCallbacks(
 	val onInfo: (ItemUiModel) -> Unit = {},
 	/** Reference icon tapped — the screen navigates to the referenced row's source. */
 	val onReference: (ItemUiModel) -> Unit = {},
+	/** Info icon of a flipped row's inner line — its own description's popup. */
+	val onInnerInfo: (ItemUiModel, TranslationLine) -> Unit = { _, _ -> },
 	/** A drag-select covered the rows `from..to` (0-based, inclusive). */
 	val onSelectRange: (Int, Int) -> Unit = { _, _ -> },
 	/** A drag-select ended — its selection becomes the new baseline. */
 	val onSelectEnd: () -> Unit = {},
 	/** A reorder drag moved the row at `from` onto `to` (live, not yet saved). */
 	val onReorderMove: (Int, Int) -> Unit = { _, _ -> },
-	/** A reorder drag ended — persist the current row order. */
+	/** A reorder drag moved the row and ended — persist the current row order. A round trip back onto the row's own slot never fires it — the long-press's selection stays. */
 	val onReorderDrop: () -> Unit = {},
+	/** A pull down at the list's very top — the host opens its search field. */
+	val onTopPull: () -> Unit = {},
 )
 
 /**
@@ -119,8 +124,9 @@ fun ItemList(
 	modifier: Modifier = Modifier,
 	/** The screen can persist a manual order — a long-press-drag then reorders instead of selecting. */
 	reorderable: Boolean = false,
+	/** The owning screen's list state — kept so it can watch the scroll. */
+	listState: LazyListState = rememberLazyListState(),
 ) {
-	val listState = rememberLazyListState()
 	// The state's maxPosition decides the one width every position cell takes, so
 	// the numbers of all rows line up. The view model maintains it per change
 	// (never by rescanning the items here), and it is measured once, not per row.
@@ -148,7 +154,8 @@ fun ItemList(
 		onReorderMove = callbacks.onReorderMove,
 		onReorderDrop = callbacks.onReorderDrop,
 	)
-	LazyColumn(modifier.then(dragModifier), state = listState) {
+	val pullModifier = Modifier.rememberTopPullModifier(listState, callbacks.onTopPull)
+	LazyColumn(modifier.then(dragModifier).then(pullModifier), state = listState) {
 		itemsIndexed(
 			state.items,
 			key = { _, item -> item.key },
@@ -166,7 +173,7 @@ fun ItemList(
 					pending.arm(index, dragMode)
 					callbacks.onItemLongClick(item)
 				},
-				descVisible = ItemRow.showDesc && !state.pickerMode,
+				descVisible = !state.pickerMode,
 				variant = state.variant,
 				positionWidth = positionWidth,
 				// Every row, the dragged one included, keeps the placement spring — a reorder
@@ -178,11 +185,18 @@ fun ItemList(
 				modifier = Modifier
 					.animateItem(placementSpec = RowPlacementSpec)
 					.animateContentSize(animationSpec = RowSizeSpec),
-				infoAction = if (!state.pickerMode && !ItemRow.showDesc && item.description.isNotEmpty()) {
+				// A description over the limit collapses to its icon — the shorter
+				// ones render inline.
+				infoAction = if (!state.pickerMode && item.description.isNotEmpty() && !ItemRow.showsDescription(item.description)) {
 					{ InfoActionIcon { callbacks.onInfo(item) } }
 				} else null,
-				referenceAction = if (!state.pickerMode && item.hasSource) {
+				// References belong to the search view — a browse row lives in its
+				// home, so there is nothing to jump to.
+				referenceAction = if (!state.pickerMode && state.variant == ExplorerRowVariant.Search && item.hasSource) {
 					{ ReferenceActionIcon { callbacks.onReference(item) } }
+				} else null,
+				onInnerInfo = if (!state.pickerMode) {
+					{ line -> callbacks.onInnerInfo(item, line) }
 				} else null,
 			)
 		}

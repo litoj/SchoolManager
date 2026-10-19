@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -21,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.app.Startup
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.ui.component.HairlineDivider
 
@@ -39,10 +39,11 @@ open class MessagePopup(private val msg: String, private val copyText: String = 
 	@Composable
 	override fun Content() {
 		PopupCard {
-			// long texts scroll inside — the buttons stay fixed at the bottom
+			// long texts scroll inside — the buttons stay fixed at the bottom.
+			// The weight grows the area to the whole free screen height first.
 			Box(
 				Modifier
-					.heightIn(max = 400.dp)
+					.weight(1f, fill = false)
 					.verticalScroll(rememberScrollState())
 			) {
 				Text(
@@ -56,14 +57,14 @@ open class MessagePopup(private val msg: String, private val copyText: String = 
 				val truncationNote = stringResource(R.string.popup_copy_truncated)
 				val copyFailed = stringResource(R.string.popup_copy_failed)
 				PopupButton(stringResource(R.string.popup_copy), Modifier.weight(1f)) {
-					copyToClipboard(
-						GlobalDependencies.appContext,
-						// the clipboard UI's clip description — a snippet, not the
-						// content. The label rides in the same binder parcel
-						msg.take(CLIPBOARD_LABEL_CHARS),
-						capForClipboard(copyText, truncationNote),
-					) || GlobalDependencies.messages.tryEmit(
-						GlobalDependencies.UiMessage.Text(copyFailed, copyFailed))
+					// the copy failure rides the message bus — the popup never emits on it directly
+					if (!copyToClipboard(
+							GlobalDependencies.appContext,
+							// the clipboard UI's clip description — a snippet, not the
+							// content. The label rides in the same binder parcel
+							msg.take(CLIPBOARD_LABEL_CHARS),
+							capForClipboard(copyText, truncationNote),
+						)) Startup.showMsg(copyFailed, copyFailed)
 					Dialogs.dismiss(this@MessagePopup)
 				}
 				VerticalButtonSeparator()
@@ -84,8 +85,7 @@ open class MessagePopup(private val msg: String, private val copyText: String = 
 		/**
 		 * Cuts the text to one clipboard call's size — the binder throws above
 		 * its limit, which would kill the process.
-		 * - the overflow becomes the truncation note, so the copy is visibly
-		 *   partial — the popup body still shows all of it.
+		 * - the overflow becomes the truncation note — the popup body still shows all of it.
 		 */
 		internal fun capForClipboard(text: String, truncationNote: String): String {
 			if (text.length <= CLIPBOARD_CHAR_LIMIT) return text
@@ -96,8 +96,7 @@ open class MessagePopup(private val msg: String, private val copyText: String = 
 		/**
 		 * Puts text on the clipboard under a label — `false` when the service
 		 * rejects it.
-		 * - the clipboard is a binder service — over-limit data throws, so a
-		 *   clipboard failure never escapes.
+		 * - the clipboard is a binder service — over-limit data throws.
 		 */
 		internal fun copyToClipboard(context: Context, label: String, text: String): Boolean =
 			try {

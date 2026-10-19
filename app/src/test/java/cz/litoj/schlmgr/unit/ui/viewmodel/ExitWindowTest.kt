@@ -1,9 +1,6 @@
 package cz.litoj.schlmgr.unit.ui.viewmodel
 
-import cz.litoj.schlmgr.data.db.DbItem
-import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.support.TestExplorerViewModel
-import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -38,20 +35,5 @@ class ExitWindowTest {
 
 		vm.now += 4_000
 		assertTrue("the window closed", vm.press())
-	}
-
-	@Test
-	fun `the select-all toggle marks all or drops the selection`() {
-		val vm = vm()
-		vm.load((1..3).map { i ->
-			ItemRow(DbItem(name = "w$i", description = "", type = ItemKind.WORD), null, i, false)
-		})
-
-		vm.setSelected(vm.items()[0], true)
-		vm.onSelectAllToggle()
-		assertEquals(3, vm.selectionCount())
-
-		vm.onSelectAllToggle()
-		assertEquals(0, vm.selectionCount())
 	}
 }

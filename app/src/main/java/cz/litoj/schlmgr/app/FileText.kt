@@ -10,21 +10,12 @@ import java.io.OutputStream
 import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
 
-/**
- * Reports the amount that has flowed through one long file operation —
- * the bridge from [FileText]'s counting streams to the progress bar
- * ([FileProgress]).
- */
-fun interface Progress {
-	/** Reports more processed — bytes in the file phase, rows in the row phase. */
-	fun advance(amount: Int)
-}
 
 /**
  * The app's SAF text transport — whole documents as UTF-8, with byte counts
  * for a progress bar.
- * - pure platform I/O — no file format here. Codecs live behind
- *   `ItemRepository`, the UI hands documents and text across.
+	 * - pure platform I/O — no file format here.
+	 * - codecs live behind `ItemRepository`; the UI hands documents and text across.
  */
 object FileText {
 

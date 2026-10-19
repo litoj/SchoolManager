@@ -31,8 +31,7 @@ import cz.litoj.schlmgr.ui.component.HairlineDivider
  * Pre-fork reference picker, the items referencing the word, in no
  * particular order. Kept rows follow the new word, X-ed ones keep the
  * original.
- * - carries a pending decision — a scrim tap cannot drop it (the back
- *   key still can, like every dialog's).
+ * - carries a pending decision — a scrim tap cannot drop it (the back key still can).
  */
 class ReferencePopup(
 	references: List<DbItem>,

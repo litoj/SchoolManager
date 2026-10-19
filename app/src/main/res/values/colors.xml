@@ -11,7 +11,7 @@
     <color name="colorHeaderSoft">#FF488212</color>
 
     <!-- The band behind the status bar icons: the primary green darkened, so the white
-         icons read on it. See @bool/darkStatusBarIcons. -->
+         icons read on it. -->
     <color name="colorStatusBar">#FF488212</color>
 
     <!-- The explorer palette, carried over from the former XML layouts

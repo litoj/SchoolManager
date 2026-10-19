@@ -6,13 +6,21 @@ import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalViewConfiguration
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.Job
@@ -33,14 +41,11 @@ internal data class RowGeometry(val index: Int, val offset: Int, val size: Int)
 
 /**
  * The list's long-press-and-drag handler.
- * - Select drags the covered range, Reorder moves the pressed row,
- *   None consumes.
- * - mode snapshotted at the long-press, events in the `Initial` pass
- *   with edge auto-scroll.
- * - a structural list change mid-drag (a background reload landing)
- *   invalidates the claimed row indexes — the drop never fires.
- * - the content step keys the claim, so a selection remap or the drag's
- *   own reorder keeps the indexes valid.
+ * - Select drags the covered range; Reorder moves the pressed row; None consumes.
+ * - mode snapshotted at the long-press; events in the `Initial` pass use edge auto-scroll.
+ * - a structural list change mid-drag (a background reload landing) invalidates the claimed row indexes — the drop never fires.
+ * - the content step keys the claim, so a selection remap or the drag's own reorder keeps the indexes valid.
+ * - a reorder round trip — the row ends back at its own slot — never drops: the press reads as the selection the long-press started.
  */
 @Composable
 internal fun Modifier.rememberListDragModifier(
@@ -70,6 +75,8 @@ internal fun Modifier.rememberListDragModifier(
 			var dragging = false
 			var mode = ListDragMode.None
 			var dragIndex = -1
+			// the claimed slot — the drag's net move is measured against it
+			var anchorIndex = -1
 			var reported = false
 			// the content step the drag's indexes belong to — a mismatch stops
 			// every step and the drop
@@ -115,6 +122,7 @@ internal fun Modifier.rememberListDragModifier(
 						val (anchor, claimedMode) = pending.claim() ?: break
 						mode = claimedMode
 						dragIndex = anchor
+						anchorIndex = anchor
 						claimedStep = currentStep
 						change.consume()
 						if (mode != ListDragMode.None) {
@@ -152,11 +160,98 @@ internal fun Modifier.rememberListDragModifier(
 			if (reported && stillValid()) {
 				when (mode) {
 					ListDragMode.Select -> currentSelectEnd()
-					ListDragMode.Reorder -> currentDrop()
+					// a round trip back to the row's own slot is the
+					// long-press's selection intent, not a reorder — the drop
+					// (with its selection-ending persist) never fires
+					ListDragMode.Reorder -> if (dragIndex != anchorIndex) currentDrop()
 					ListDragMode.None -> {}
 				}
 			}
 		}
+	}
+}
+
+/**
+ * The list's pull-at-top handler.
+ * - a downward drag at the very top fires [onPull] once per gesture, past [TopPullThreshold].
+ * - only a gesture that began at the top counts — a scroll from mid-list that drags past the top never fires.
+ * - only the finger's own input counts — a fling or an auto-scroll never fires.
+ * - consumes nothing, so the scroll and the stretch stay untouched.
+ */
+@Composable
+internal fun Modifier.rememberTopPullModifier(
+	listState: LazyListState,
+	onPull: () -> Unit,
+): Modifier {
+	val currentPull by rememberUpdatedState(onPull)
+	val threshold = with(LocalDensity.current) { TopPullThreshold.toPx() }
+	// The gesture's start position decides whether a pull can count — the down
+	// lands before any scroll moves the list, so the position read there is
+	// the gesture's true start.
+	var beganAtTop by remember { mutableStateOf(!listState.canScrollBackward) }
+	return this
+		.pointerInput(listState) {
+			awaitEachGesture {
+				awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+				beganAtTop = !listState.canScrollBackward
+			}
+		}
+		.nestedScroll(
+		remember(threshold) {
+			object : NestedScrollConnection {
+				private val pull = TopPullAccumulator(threshold)
+
+				override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+					// UserInput covers the finger and the wheel — flings and programmatic scrolls never fire
+					val pullable = !listState.canScrollBackward && beganAtTop
+					if (pull.scroll(available.y, !pullable, source == NestedScrollSource.UserInput)) {
+						currentPull()
+					}
+					return Offset.Zero
+				}
+
+				override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+					pull.gestureEnded()
+					return Velocity.Zero
+				}
+			}
+		}
+	)
+}
+
+/**
+ * The pull-at-top arithmetic behind [rememberTopPullModifier], free of [LazyListState]
+ * so it stays unit-testable.
+ * - sums the pull-down distance while the list cannot scroll back — a pull-down arrives as a positive delta.
+ * - any scroll the other way, or room to scroll back, clears the pull.
+ * - fires once per gesture, at the threshold.
+ */
+internal class TopPullAccumulator(private val threshold: Float) {
+	private var pulled = 0f
+	private var fired = false
+
+	/**
+	 * One scroll delta — [canScrollBackward] is the list's own backward room,
+	 * [drag] marks the finger's own movement.
+	 * @return true when the pull crossed the threshold just now.
+	 */
+	fun scroll(deltaY: Float, canScrollBackward: Boolean, drag: Boolean): Boolean {
+		if (deltaY <= 0f || canScrollBackward) {
+			pulled = 0f
+			fired = false
+			return false
+		}
+		if (fired || !drag) return false
+		pulled += deltaY
+		if (pulled < threshold) return false
+		fired = true
+		return true
+	}
+
+	/** The gesture ended — the next pull starts from zero. */
+	fun gestureEnded() {
+		pulled = 0f
+		fired = false
 	}
 }
 
@@ -227,3 +322,5 @@ private val EdgeZone = 48.dp
 private val ScrollStep = 8.dp
 /** How long the auto-scroll loop waits between steps — one step per frame at 60 Hz. */
 private const val FrameMillis = 16L
+/** How far down the finger must pull at the very top before [rememberTopPullModifier] fires. */
+private val TopPullThreshold = 40.dp

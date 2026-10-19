@@ -18,9 +18,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 
-// The shared settings-style rows — the switch row and the number row the
-// settings and test-setup screens both render. One place, so the two screens
-// cannot drift apart in padding, font size or switch colours.
+// The shared settings-style rows — the switch row and the number row the settings and test-setup screens both render.
+// One place, so the two screens cannot drift apart in padding, font size or switch colours.
 
 
 /** A label with a trailing switch — the whole row toggles. */

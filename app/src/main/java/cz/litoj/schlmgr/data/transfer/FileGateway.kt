@@ -38,6 +38,25 @@ object FileGateway {
 		return if (dot > 0) pickedName.substring(0, dot) else pickedName
 	}
 
+	/**
+	 * The picked document's own shape — its first non-whitespace byte is `[` or `{`.
+	 * The tree JSON always starts there; a word list starts with a name.
+	 *
+	 * An unreadable document reads as a word list — the worker's own read reports the failure.
+	 */
+	fun startsAsJson(ctx: Context, uri: Uri): Boolean {
+		val stream = try {
+			ctx.contentResolver.openInputStream(uri)
+		} catch (e: Exception) {
+			return false
+		} ?: return false
+		return stream.use {
+			var byte = it.read()
+			while (byte != -1 && Character.isWhitespace(byte.toChar())) byte = it.read()
+			byte == '['.code || byte == '{'.code
+		}
+	}
+
 	fun importProgress(ctx: Context, labelRes: Int, uri: Uri): FileProgress {
 		val file = DocumentFile.fromSingleUri(ctx, uri)
 		val progress = FileProgress(ctx.getString(labelRes) + (file?.name ?: uri.toString()))

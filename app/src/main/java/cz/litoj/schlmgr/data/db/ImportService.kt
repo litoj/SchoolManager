@@ -5,6 +5,7 @@ import cz.litoj.schlmgr.data.db.dao.ItemDao
 import cz.litoj.schlmgr.data.DataImporter
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.StreamItem
+import cz.litoj.schlmgr.data.StreamReference
 
 /**
  * One import or subject-merge run.
@@ -48,7 +49,8 @@ internal object ImportService {
 			val children = childrenOf[entry] ?: emptyList()
 			if (children.any { it.type != ItemKind.TRANSLATION }) throw IllegalArgumentException(
 				"A word's children are its translations: '${entry.item.name}'")
-			if (children.none { it.name.isNotEmpty() }) throw IllegalArgumentException(
+			// a blank name carries no translation once trimmed
+			if (children.none { it.name.trim().isNotEmpty() }) throw IllegalArgumentException(
 				"A word without a translation: '${entry.item.name}' — make it a note instead")
 		}
 	}
@@ -66,24 +68,18 @@ internal object ImportService {
 			importer.onItem(entry)
 			val parent = entry.parent?.let(acc.saved::get) ?: anchorId
 			val row = when (entry.item.type) {
-				ItemKind.WORD -> {
-					acc.words++
-					ItemRepository.insertWord(session, InsertWordParams(parent, entry.item.name,
-						entry.item.description, emptyList(),
-						entry.item.passedTests, entry.item.failedTests))
-				}
+				ItemKind.WORD -> ItemRepository.insertWord(session, InsertWordParams(parent, entry.item.name,
+					entry.item.description, emptyList(),
+					entry.item.passedTests, entry.item.failedTests))
 				ItemKind.TRANSLATION -> ItemRepository.addTranslations(session, AddTranslationsParams(
 					session.subjectRootOf(parent) ?: parent, parent,
 					listOf(NewTranslation(entry.item.name, entry.item.description,
 						entry.item.passedTests, entry.item.failedTests)))).firstOrNull()
 					?: continue // an empty name adds no row
-				ItemKind.CHAPTER -> {
-					acc.chapters++
-					session.insertContainer(parent, entry.item)
-				}
-				// a note — saved like a container, counted as neither
+				// a chapter and a note both save as containers
 				else -> session.insertContainer(parent, entry.item)
 			}
+			acc.countRow(row.id, entry.item.type)
 			acc.saved[entry] = row.id
 			acc.indexSavedRow(parent, entry.item.name, row.id, entry.item.type)
 			if (entry.parent == null) acc.topLevel.add(row)
@@ -92,30 +88,39 @@ internal object ImportService {
 
 	/**
 	 * Reference phase, against saved rows.
-	 * - path names first root plus containers — target is named row under last.
+	 * - path names its own root plus the containers below.
+	 * - the target is the named row under the last.
+	 * - an empty path names a root itself.
+	 * - a path naming no saved root falls back to the first.
 	 * - unresolvable references skipped.
 	 */
 	private suspend fun resolveImportReferences(
 		session: ImportSession, importer: DataImporter, acc: ImportAccumulator,
 	) {
-		val rootRow = acc.topLevel.firstOrNull()?.id
 		for (ref in importer.references) {
 			val parentRow = acc.saved[ref.parent] ?: continue
-			var cur = rootRow ?: continue
-			var resolved = true
-			for (i in 1 until ref.path.size) {
-				val next = acc.chaptersByParent[cur]?.get(ref.path[i])
-				if (next == null) { resolved = false; break }
-				cur = next
-			}
-			if (!resolved) continue
-			val target = acc.rowsByParent[cur]?.get(ref.targetName) ?: continue
+			val target = resolveTargetRow(ref, acc) ?: continue
 			// File may name ancestor of own position — cycle pre-order walks cannot leave.
 			// Session graph knows pending links — database does not yet.
 			if (parentRow != target && !session.linked(parentRow, target) &&
 				!session.contains(target, parentRow))
 				session.addReference(parentRow, target)
 		}
+	}
+
+	/** The saved row a reference path names — `null` when no row matches. */
+	private fun resolveTargetRow(ref: StreamReference, acc: ImportAccumulator): Int? {
+		// an empty path names a root itself — the target is a top-level row
+		if (ref.path.isEmpty())
+			return acc.topLevel.firstOrNull { it.name == ref.targetName }?.id
+		// a multi-root file resolves through any of them — the export
+		// anchors each path at the target's own root
+		var cur = acc.topLevel.firstOrNull { it.name == ref.path.first() }?.id
+			?: acc.topLevel.firstOrNull()?.id ?: return null
+		for (i in 1 until ref.path.size) {
+			cur = acc.chaptersByParent[cur]?.get(ref.path[i]) ?: return null
+		}
+		return acc.rowsByParent[cur]?.get(ref.targetName)
 	}
 
 	/**

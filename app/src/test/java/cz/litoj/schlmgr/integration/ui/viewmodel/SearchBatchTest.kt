@@ -18,7 +18,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * Unit tests of the search-run batching ([SearchRun.drainBatches], driven
+ * Integration tests of the search-run batching ([SearchRun.drainBatches], driven
  * through the view model so the host wiring is covered too): a run longer
  * than [SearchRun.SEARCH_BATCH] streams in full batches plus a tail, keeping
  * every row in order with the running result count on the info strip. An
@@ -57,7 +57,7 @@ class SearchBatchTest {
 		assertEquals(expected, vm.listState.value.items.map { it.payload })
 		assertEquals(expected.size, vm.listState.value.maxPosition)
 		assertEquals("the running count reached the strip",
-			InfoBar.Search(expected.size, (vm.state.value.info as InfoBar.Search).elapsedMs),
+			InfoBar.Search(expected.size, (vm.state.value.info as InfoBar.Search).chapters),
 			vm.state.value.info)
 	}
 

@@ -20,7 +20,7 @@ internal class Selection(private val host: Host) {
 	private fun setRowSelected(item: ItemRow?, selected: Boolean) {
 		val row = item ?: return
 		if (row.selected == selected) return
-		row.selected = selected
+		row.select(selected)
 		dragSelect = null
 		host.remap()
 	}
@@ -45,7 +45,7 @@ internal class Selection(private val host: Host) {
 	}
 
 	fun selectAll(on: Boolean) {
-		host.models.forEach { it.selected = on }
+		host.models.forEach { it.select(on) }
 		dragSelect = null
 		host.remap()
 	}
@@ -57,9 +57,17 @@ internal class Selection(private val host: Host) {
 	}
 
 	fun clearSelection() {
-		host.models.forEach { it.selected = false }
+		host.models.forEach { it.select(false) }
 		dragSelect = null
 		host.remap()
+	}
+
+	/**
+	 * Drops the marks of rows outside the shown list — a restore loads them
+	 * fresh right after, so no remap runs here.
+	 */
+	fun discard(rows: List<ItemRow>) {
+		rows.forEach { it.select(false) }
 	}
 
 	/**
@@ -81,7 +89,7 @@ internal class Selection(private val host: Host) {
 		for (i in models.indices) {
 			val want = i in minOf(lo, hi)..maxOf(lo, hi) || (i < before.size && before[i])
 			if (models[i].selected != want) {
-				models[i].selected = want
+				models[i].select(want)
 				changed = true
 			}
 		}

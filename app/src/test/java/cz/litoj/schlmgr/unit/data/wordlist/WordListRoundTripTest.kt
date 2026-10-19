@@ -16,14 +16,16 @@ import org.junit.Test
  * Round-trip tests for the word-list format — what [WordListWriter] writes
  * must parse back into the same item stream ([WordListImporter]). Plain
  * stream items, no database.
- * - every word carries a translation — the format has no line for a
- *   translation-less word.
+ * - every word carries a translation — the format has no line for a translation-less word.
  */
 class WordListRoundTripTest {
 
+	/** The splitter must return to what it was — later classes read the default. */
+	private val splitterWas = WordListWriter.wordTranslationSplitter
+
 	@After
 	fun resetSplitter() {
-		WordListWriter.setWordTranslationSplitter("=")
+		WordListWriter.setWordTranslationSplitter(splitterWas)
 	}
 
 	/** Collects the stream while the tree is built — parent first, children after. */
@@ -55,7 +57,7 @@ class WordListRoundTripTest {
 		WordListImporter("root", WordListWriter.write(builder.items)).items
 
 	@Test
-	fun specialCharactersInNamesRoundTrip() {
+	fun `special characters in names round trip`() {
 		val b = StreamBuilder()
 		val subject = b.chapter("subject")
 		b.word("semi;colon", subject, "", "t" to "")
@@ -68,7 +70,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun variantSyntaxNamesRoundTrip() {
+	fun `variant-syntax names round trip`() {
 		val b = StreamBuilder()
 		// a `\` in a name is variant syntax, not a literal — it stays raw
 		b.word("word\\/syn\\(onym)", b.chapter("subject"), "", "trl" to "")
@@ -77,7 +79,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun descriptionsRoundTrip() {
+	fun `descriptions round trip`() {
 		val b = StreamBuilder()
 		val w = b.word("word", b.chapter("subject"), "ends with ] and [ inside")
 		b.add(StreamItem(DbItem(name = "trl", description = "back\\slash and \\] escape",
@@ -90,7 +92,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun multilineDescriptionRoundTrip() {
+	fun `a multiline description round trips`() {
 		val b = StreamBuilder()
 		b.word("word", b.chapter("subject"), "first line\nsecond line", "trl" to "")
 		assertEquals("first line\nsecond line",
@@ -98,7 +100,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun nestedChaptersRoundTrip() {
+	fun `nested chapters round trip`() {
 		val b = StreamBuilder()
 		val subject = b.chapter("subject", "subject description")
 		val ch = b.chapter("chapter", "chapter description", subject)
@@ -116,7 +118,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun multipleContainersRoundTrip() {
+	fun `multiple containers round trip`() {
 		val b = StreamBuilder()
 		val one = b.chapter("one")
 		val two = b.chapter("two")
@@ -128,7 +130,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun rootWordAndNoteLinesRoundTrip() {
+	fun `root word and note lines round trip`() {
 		val b = StreamBuilder()
 		b.word("bare word", null, "word description", "trl" to "trl description")
 		b.add(StreamItem(DbItem(name = "bare note", description = "note description",
@@ -146,7 +148,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun customSplitterRoundTrip() {
+	fun `a custom splitter round trips`() {
 		WordListWriter.setWordTranslationSplitter(";")
 		val b = StreamBuilder()
 		b.word("semi;colon", b.chapter("subject"), "", "trl" to "")
@@ -156,7 +158,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun aSplitterTheReaderCannotParseIsRefused() {
+	fun `a splitter the reader cannot parse is refused`() {
 		WordListWriter.setWordTranslationSplitter("=")
 		WordListWriter.setWordTranslationSplitter(":")
 		assertEquals("=", WordListWriter.wordTranslationSplitter)
@@ -165,7 +167,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun backslashAtNameEndRoundTrips() {
+	fun `a backslash at a name's end round trips`() {
 		val b = StreamBuilder()
 		b.word("ends\\", b.chapter("subject"), "", "a\\" to "", "b" to "")
 		val back = roundTrip(b)
@@ -183,7 +185,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun notesRoundTrip() {
+	fun `notes round trip`() {
 		val b = StreamBuilder()
 		val subject = b.chapter("subject")
 		b.add(StreamItem(DbItem(name = "note", description = "note description",
@@ -200,7 +202,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun noteLinesCarryExactlyOneName() {
+	fun `note lines carry exactly one name`() {
 		// a second separator on a note line is malformed
 		try {
 			WordListReader.parse("ch {\n=named=again\n}\n", "c")
@@ -218,7 +220,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun blankLinesKeepErrorPositions() {
+	fun `blank lines keep the error positions`() {
 		try {
 			WordListReader.parse("ch {\n\n\nword without separator\n}\n", "c")
 			fail("a word line without translations must fail the parse")
@@ -229,7 +231,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun crlfChapterOpenerParses() {
+	fun `a crlf chapter opener parses`() {
 		val root = WordListReader.parse("ch {\r\nword;t\r\n}\r\n", "c")
 		val ch = root.children.single()
 		assertEquals("ch", ch.name)
@@ -237,7 +239,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun crlfFilesKeepErrorPositions() {
+	fun `crlf files keep the error positions`() {
 		try {
 			WordListReader.parse("ch {\r\n\r\nword without separator\r\n}\r\n", "c")
 			fail("a word line without translations must fail the parse")
@@ -248,7 +250,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun loneCrIsALineEnding() {
+	fun `a lone cr is a line ending`() {
 		// a lone `\r` ends the line without eating the next character
 		val root = WordListReader.parse("ch {\rword;t\r}\r", "c")
 		val ch = root.children.single()
@@ -256,7 +258,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun aStrayClosingBraceAtTheRootFailsInsteadOfTruncating() {
+	fun `a stray closing brace at the root fails instead of truncating`() {
 		try {
 			WordListReader.parse("}\nword;t\n", "c")
 			fail("a stray brace at the root must fail the parse")
@@ -266,7 +268,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun anEmptyWordNameRefusesTheWrite() {
+	fun `an empty word name refuses the write`() {
 		// a bare splitter line would read back as a note (a silent kind
 		// change) or fail the parse
 		val word = StreamItem(DbItem(name = "", description = "", type = ItemKind.WORD), null)
@@ -280,7 +282,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun anEmptyNoteNameRefusesTheWrite() {
+	fun `an empty note name refuses the write`() {
 		val note = StreamItem(DbItem(name = "", description = "", type = ItemKind.NOTE), null)
 		try {
 			WordListWriter.write(listOf(note))
@@ -291,7 +293,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun aWhitespaceNameRefusesTheWrite() {
+	fun `a whitespace name refuses the write`() {
 		// the reader trims the line — a blank name would read back as a note
 		val word = StreamItem(DbItem(name = " ", description = "", type = ItemKind.WORD), null)
 		val trl = StreamItem(DbItem(name = "t", description = "", type = ItemKind.TRANSLATION), word)
@@ -304,7 +306,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun aWhitespacePieceAddsNothingAtTheLineEnd() {
+	fun `a whitespace piece adds nothing at the line end`() {
 		// `t\ ` splits the translations, the blank piece trims to no name —
 		// the word keeps its real translation alone
 		val root = WordListReader.parse("w;t\\ \n", "c")
@@ -312,7 +314,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun aWhitespaceWordPieceFailsTheParse() {
+	fun `a whitespace word piece fails the parse`() {
 		// `word\ ` splits, and the blank piece then meets the description —
 		// it must fail, not land a blank-named word the writers refuse
 		try {
@@ -324,7 +326,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun aLoneDividerInAChapterNameFailsInsteadOfTruncating() {
+	fun `a lone divider in a chapter name fails instead of truncating`() {
 		// `a\b {` splits into the name "a" and the pending text "b" — the
 		// chapter must not import as "a" with "b" silently lost
 		try {
@@ -336,7 +338,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun anInterleavedFileKeepsItsLineOrder() {
+	fun `an interleaved file keeps its line order`() {
 		// words, notes and chapters interleave in the file — the stream
 		// keeps that order, so the import's link positions match the file
 		val importer = WordListImporter("c", "ch {\nw1;t1\n= n1\nw2;t2\n}\n")
@@ -345,7 +347,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun anOddBackslashRunBeforeASeparatorStaysParseableAndStable() {
+	fun `an odd backslash run before a separator stays parseable and stable`() {
 		// a stored name with one backslash before an escaped separator has
 		// no exact encoding — the write evens the run (one backslash more),
 		// the file parses, and the next cycle writes the same text
@@ -364,7 +366,7 @@ class WordListRoundTripTest {
 	}
 
 	@Test
-	fun anEvenBackslashRunBeforeASeparatorRoundTripsExactly() {
+	fun `an even backslash run before a separator round trips exactly`() {
 		val word = StreamItem(DbItem(name = "a\\\\=", description = "", type = ItemKind.WORD), null)
 		val items = listOf(word,
 			StreamItem(DbItem(name = "t", description = "", type = ItemKind.TRANSLATION), word))

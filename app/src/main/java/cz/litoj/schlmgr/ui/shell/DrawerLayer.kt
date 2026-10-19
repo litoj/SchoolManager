@@ -38,8 +38,7 @@ private val ScrimColor = Color(0x99000000)
 /**
  * The app's modal drawer, drawn by the shell — content, full-screen close
  * scrim, 250dp panel.
- * - not M2's `ModalDrawer` — its gesture surface would eat the close taps
- *   under this transparent panel.
+	 * - not M2's `ModalDrawer` — its gesture surface would eat the close taps under this transparent panel.
  */
 @Composable
 fun DrawerLayer(

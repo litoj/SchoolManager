@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Status bar icon colour: white in BOTH palettes, on the darkened green band
-         (colorStatusBar). Feeds android:windowLightStatusBar, which asks for dark
-         icons, so the false below is what keeps them white. Split out because the
-         theme style must not be re-declared per palette just to flip this one item. -->
-    <bool name="darkStatusBarIcons">false</bool>
-</resources>

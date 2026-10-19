@@ -1,10 +1,17 @@
 # SchoolManager
-An Andriod application written in Java (Android Studio).
+An Android application written in Kotlin (Android Studio).
 
-Provides tests from given pictures or words all ordered in custom hierarchy with adaptable options.
-All hierarchy files are platform independant with an interface, which takes care of opening files on different systems and also adds default fail handlers used by the database system.
+Practices words, notes, chapters and subjects you order in a custom hierarchy, with adaptable test options.
+All hierarchy files import and export as word lists (`.txt`) or HJSON trees. File opening is Android-specific
+(DocumentFile / Uri), so the files move between devices only through the app's import and export.
 
-The Android application contains extensive help page within to help new users navigate through.
+The Android application contains an extensive help screen within to help new users navigate through.
+
+**Version:** 2.0.1 (build 66)
+**Min SDK:** 30 | **Target SDK:** 37 | **Compile SDK:** 37
+**Stack:** Kotlin, Jetpack Compose, Room, HJSON
+**Formats:** word list (`.txt`), HJSON tree JSON, legacy JSON subject directories
+**Distribution:** APK via GitHub releases (not Play Store)
 
 ![light](https://user-images.githubusercontent.com/54900518/181997907-ce79b962-0c7e-4ca6-a65d-45cf703a814e.jpg)
 ![dark](https://user-images.githubusercontent.com/54900518/181997917-ca3dfb37-f861-4998-8838-28e64146d80d.jpg)

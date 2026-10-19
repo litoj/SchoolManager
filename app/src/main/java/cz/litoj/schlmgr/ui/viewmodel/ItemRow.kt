@@ -2,7 +2,7 @@ package cz.litoj.schlmgr.ui.viewmodel
 
 import androidx.annotation.VisibleForTesting
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import cz.litoj.schlmgr.app.AppSettings
 import cz.litoj.schlmgr.data.ItemRepository
@@ -20,8 +20,7 @@ class Placement(
  * One explorer list row — a [DbItem] plus parent id, 1-based position, flip
  * and selection — one shared object for composables and controller. A
  * reference-linked row keeps its type icon, with a jump to its source.
- * - the mutable fields are main-owned (an io read snapshots them on
- *   main first) — a main-thread write must not race the read.
+	 * - the mutable fields are main-owned (an io read snapshots them on main first) — a main-thread write must not race the read.
  *
  * @param applyDefFlip whether the word takes the default flip state ([defFlip])
  */
@@ -33,8 +32,11 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		private set
 
 	var position: Int = position
+		private set
 	var flipped = false
+		private set
 	var selected = false
+		private set
 	var toShow = ""
 		private set
 	var info = ""
@@ -53,6 +55,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	 * last) — `null` for browse rows.
 	 */
 	var path: MutableList<DbItem>? = null
+		private set
 
 	var isReference = false
 		private set
@@ -68,6 +71,16 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 
 	val isSubject: Boolean
 		get() = parentId == ROOT_ID
+
+	/** The selection machine's mark write — see [Selection]. */
+	fun select(on: Boolean) {
+		selected = on
+	}
+
+	/** The list's renumber write — every insert, move and sort runs it. */
+	fun renumber(to: Int) {
+		position = to
+	}
 
 	init {
 		setNew(item, parentId, applyDefFlip)
@@ -94,19 +107,23 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 
 	/**
 	 * Flips this word — the blocking composed form. Production callers read
-	 * the translations on io and land [applyFlip] on main instead.
+	 * the flip content on io and land [applyFlip] on main instead.
 	 */
 	@VisibleForTesting
-	fun flip() = applyFlip(ItemRepository.translations(item.id))
+	fun flip() = applyFlip(flipContent())
+
+	/** The items a flip shows below the row — see [flipContentOf]. */
+	private fun flipContent(): List<DbItem> = flipContentOf(item)
 
 	/**
-	 * Applies a flip with pre-read translations — runs on the main thread.
-	 * A non-word row stays put.
+	 * Applies a flip with pre-read content — runs on the main thread.
+	 * A word shows its translations, a translation its words. Any other
+	 * row stays put.
 	 */
-	fun applyFlip(translations: List<DbItem>) {
-		if (item.type != ItemKind.WORD) return
+	fun applyFlip(items: List<DbItem>) {
+		if (item.type != ItemKind.WORD && item.type != ItemKind.TRANSLATION) return
 		flipped = !flipped
-		if (flipped) toShow = renderTranslations(translations) else renderName()
+		if (flipped) toShow = renderTranslations(items) else renderName()
 	}
 
 	/**
@@ -158,21 +175,21 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	 * and land [applyFresh] on main instead.
 	 */
 	@VisibleForTesting
-	fun update() = applyFresh(ItemRepository.get(item.id), ItemRepository.translations(item.id))
+	fun update() = applyFresh(ItemRepository.get(item.id), flipContent())
 
 	/**
 	 * Applies a fresh read of the row — runs on the main thread, the reads
 	 * happened on the caller's io side (a `null` row, deleted meanwhile,
 	 * changes nothing).
 	 */
-	fun applyFresh(fresh: DbItem?, translations: List<DbItem>) {
+	fun applyFresh(fresh: DbItem?, items: List<DbItem>) {
 		if (fresh == null) return
 		item = fresh
-		if (item.type != ItemKind.WORD) {
+		if (item.type != ItemKind.WORD && item.type != ItemKind.TRANSLATION) {
 			renderName()
 			return
 		}
-		if (flipped) toShow = renderTranslations(translations) else renderName()
+		if (flipped) toShow = renderTranslations(items) else renderName()
 	}
 
 	private fun renderName() {
@@ -181,12 +198,12 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		translationLines = emptyList()
 	}
 
-	private fun renderTranslations(): String =
-		renderTranslations(ItemRepository.translations(item.id))
+	private fun renderTranslations(): String = renderTranslations(flipContent())
 
-	private fun renderTranslations(translations: List<DbItem>): String {
-		val display = flippedDisplay(translations)
-		info = display.info
+	private fun renderTranslations(items: List<DbItem>): String {
+		val display = flippedDisplay(items)
+		// no joint description — each line carries its own
+		info = ""
 		translationLines = display.lines
 		return display.names
 	}
@@ -194,15 +211,38 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	companion object {
 
 		/**
+		 * The items a flip shows below [item] — a word's translations, a
+		 * translation's words (the actual words the translation translates,
+		 * each living in its own chapter).
+		 */
+		fun flipContentOf(item: DbItem): List<DbItem> =
+			if (item.type == ItemKind.TRANSLATION) ItemRepository.parentRows(item.id)
+			else ItemRepository.translations(item.id)
+
+		/**
 		 * The display settings below persist through `AppSettings` — toggling
 		 * code assigns them together with the `AppSettings.set` call.
 		 */
-		// showDesc is Compose state so a settings toggle reaches a live
+		// descLines is Compose state so a settings change reaches a live
 		// explorer list without a reload
-		var showDesc by mutableStateOf(false)
+		var descLines by mutableIntStateOf(DEFAULT_DESC_LINES)
 		var parse = true
 		var defFlip = true
 		var flipAllOnClick = false
+
+		/** The default line limit — descriptions at or under it show directly. */
+		const val DEFAULT_DESC_LINES = 5
+
+		/**
+		 * Whether a description shows directly under its row — a blank one never does.
+		 * At or under [descLines] non-empty lines it does, a longer one collapses
+		 * to its icon.
+		 */
+		@JvmStatic
+		fun showsDescription(description: String): Boolean {
+			if (description.isBlank()) return false
+			return description.lines().count { it.isNotBlank() } <= descLines
+		}
 
 		/**
 		 * The row display's own half of the stored options — the app layer
@@ -213,7 +253,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 			defFlip = AppSettings.getBool("flipWord", true)
 			flipAllOnClick = AppSettings.getBool("flipAllOnClick", false)
 			parse = AppSettings.getBool("parseNames", true)
-			showDesc = AppSettings.getBool("doShowDesc", false)
+			descLines = AppSettings.getInt("descLines", DEFAULT_DESC_LINES)
 		}
 
 		/**
@@ -236,36 +276,23 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		private const val SINGLE_LINE_MAX = 18
 
 		/**
-		 * The flipped display of a word, assembled from its translations — the name
-		 * block (one translation per line), the flat info text (the descriptions of
-		 * the translations that have one, each prefixed with its name when several
-		 * do, so the text stays attributable) and the per-translation lines for the
-		 * interleaved display.
+		 * The flipped display of a word, assembled from its flip content — the
+		 * name block (one item per line) and the per-item lines for the
+		 * interleaved display. Each line keeps its own description — no joint
+		 * description text is assembled.
 		 */
 		@JvmStatic
-		fun flippedDisplay(translations: List<DbItem>): FlippedDisplay {
-			val infoText = StringBuilder()
+		fun flippedDisplay(items: List<DbItem>): FlippedDisplay {
 			val trls = StringBuilder()
-			val lines = ArrayList<TranslationLine>(translations.size)
-			val withDescription = ArrayList<DbItem>()
-			for (trl in translations) {
+			val lines = ArrayList<TranslationLine>(items.size)
+			for (trl in items) {
 				val name = nameParser(trl.name)
 				trls.append('\n').append(name)
 				lines.add(TranslationLine(name, trl.description))
-				if (trl.description.isNotEmpty()) withDescription.add(trl)
-			}
-			// Show the owning translate's name only when its description
-			// would otherwise be ambiguous among multiple descriptions.
-			val showNames = withDescription.size > 1
-			for (trl in withDescription) {
-				infoText.append('\n')
-				if (showNames) infoText.append(trl.name).append(": ")
-				infoText.append(trl.description)
 			}
 			return FlippedDisplay(
 			// a translation-less word (a mis-anchored import) has no names to cut apart
-			if (trls.isNotEmpty()) trls.substring(1) else "",
-			if (infoText.isNotEmpty()) infoText.substring(1) else "", lines)
+			if (trls.isNotEmpty()) trls.substring(1) else "", lines)
 		}
 
 		/**
@@ -285,7 +312,8 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 			val ret = ArrayList<ItemRow>(items.size)
 			var pos = 1
 			for (item in items)
-				ret.add(ofBrowse(item, parentId, pos++, byChild[item.id] ?: emptyList(), translations[item.id] ?: emptyList()))
+				ret.add(ofBrowse(item, parentId, pos++, byChild[item.id] ?: emptyList(),
+					translations[item.id] ?: emptyList()))
 			return ret
 		}
 
@@ -328,8 +356,8 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	}
 }
 
-/** One translation of a flipped word — its display name and its (possibly empty) description. */
+/** One item of a flipped row's display — its display name and description. */
 class TranslationLine(val name: String, val description: String)
 
 /** The parts of a flipped word's display — see [ItemRow.flippedDisplay]. */
-class FlippedDisplay(val names: String, val info: String, val lines: List<TranslationLine>)
+class FlippedDisplay(val names: String, val lines: List<TranslationLine>)

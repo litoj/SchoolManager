@@ -7,8 +7,7 @@ val mainHistory = NavigationHistory()
 /**
  * The navigation history of the explorer list.
  * - [path]: the displayed container chain (root first, open container last).
- * - [onePath]: how many hops the current entry stacks — descent and
- *   search alike.
+	 * - [onePath]: how many hops the current entry stacks — descent and search alike.
  * - a fresh instance is a valid empty position ([onePath] holds its base 0).
  */
 class NavigationHistory {

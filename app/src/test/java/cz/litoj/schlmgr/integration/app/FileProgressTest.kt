@@ -2,6 +2,7 @@ package cz.litoj.schlmgr.integration.app
 
 import android.app.Notification
 import android.app.NotificationManager
+import android.os.Looper
 import cz.litoj.schlmgr.app.FileProgress
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.DataExporter
@@ -22,8 +23,9 @@ import org.robolectric.annotation.Config
 
 /**
  * The progress-bar notification of the file imports and exports.
- * - it appears only once the operation ran half a second — a quick one never
- *   flashes a notification.
+ * - it appears only once the operation ran the show delay — a quick one
+ *   never flashes a notification, and a quiet stretch past the delay still
+ *   gets its bar from the pending self-post.
  * - the throttled advances keep it one notification and closing removes it.
  * - the stream proxies of the middleware re-target the bar to the saved or
  *   walked rows and count them through the boundary hooks.
@@ -51,13 +53,13 @@ class FileProgressTest {
 		FileProgress("test") { now }.also { now = 5_000 }
 
 	@Test
-	fun `the bar appears only after half a second of runtime and closes`() {
+	fun `the bar appears only past the show delay of runtime and closes`() {
 		FileProgress("test") { now }.use { progress ->
 			progress.bytes(100)
 			progress.advance(40)
 			// under the show delay — nothing posted, however the phase moves
 			assertEquals(0, shadowOf(manager).allNotifications.size)
-			now = 500
+			now = 200
 			progress.advance(10)
 			assertEquals(1, shadowOf(manager).allNotifications.size)
 			// the throttle keeps it a single notification until the step passes
@@ -73,6 +75,25 @@ class FileProgressTest {
 			progress.bytes(100)
 			progress.advance(100) // the completion post, still under the delay
 			assertEquals(0, shadowOf(manager).allNotifications.size)
+		}
+		// the close removed the pending self-post — nothing fires late
+		shadowOf(Looper.getMainLooper()).runToEndOfTasks()
+		assertEquals(0, shadowOf(manager).allNotifications.size)
+	}
+
+	@Test
+	fun `a quiet stretch past the delay still shows its bar`() {
+		FileProgress("test") { now }.use { progress ->
+			progress.bytes(100)
+			// every caller lands under the delay — none posts
+			progress.advance(10)
+			assertEquals(0, shadowOf(manager).allNotifications.size)
+
+			// the delay passes with no further call — the pending self-post
+			// carries the bar
+			now = 5_000
+			shadowOf(Looper.getMainLooper()).runToEndOfTasks()
+			assertEquals(1, shadowOf(manager).allNotifications.size)
 		}
 		assertEquals(0, shadowOf(manager).allNotifications.size)
 	}

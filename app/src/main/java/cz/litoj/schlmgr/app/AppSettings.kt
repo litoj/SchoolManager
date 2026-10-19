@@ -13,6 +13,7 @@ object AppSettings {
 
 	@JvmStatic fun getBool(key: String, def: Boolean): Boolean = prefs.getBoolean(key, def)
 	@JvmStatic fun getInt(key: String, def: Int): Int = prefs.getInt(key, def)
+	@JvmStatic fun has(key: String): Boolean = prefs.contains(key)
 	@JvmStatic fun getString(key: String): String? = prefs.getString(key, null)
 	@JvmStatic fun getString(key: String, def: String): String = prefs.getString(key, def) ?: def
 	@JvmStatic fun set(key: String, value: Boolean) { prefs.edit { putBoolean(key, value) } }

@@ -16,8 +16,22 @@ internal class ImportAccumulator {
 
 	val topLevel = ArrayList<DbItem>()
 
-	var words = 0
-	var chapters = 0
+	private val wordRows = HashSet<Int>()
+	private val chapterRows = HashSet<Int>()
+
+	/**
+	 * The distinct rows the stream's words and chapters became — a shared
+	 * word's every entry merges into one row, so the counts match the
+	 * export's own row counts of the same content.
+	 */
+	val words: Int get() = wordRows.size
+	val chapters: Int get() = chapterRows.size
+
+	/** Counts one saved row into the report — merges land on one id. */
+	fun countRow(id: Int, type: ItemKind) {
+		if (type == ItemKind.WORD) wordRows.add(id)
+		else if (type == ItemKind.CHAPTER) chapterRows.add(id)
+	}
 
 	/**
 	 * Indexes one saved row for the reference phase — the first row of a name

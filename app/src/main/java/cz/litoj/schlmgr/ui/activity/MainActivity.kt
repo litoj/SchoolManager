@@ -13,10 +13,8 @@ import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 
 /**
  * The app's only shell activity.
- * - starts the program state (repository, option statics, crash handler)
- *   before the first composition reads the database.
- * - hands the window to [SchlMgrApp]: drawer, navigation, top bars, dialogs,
- *   messages — all composed there.
+	 * - starts the program state (repository, option statics, crash handler) before the first composition reads the database.
+	 * - hands the window to [SchlMgrApp]: drawer, navigation, top bars, dialogs, messages — all composed there.
  */
 class MainActivity : ComponentActivity() {
 
@@ -28,12 +26,9 @@ class MainActivity : ComponentActivity() {
 		// the navigation bar stays black in both palettes — a solid
 		// dark scrim keeps it that way under edge-to-edge
 		enableEdgeToEdge(
-			// @bool/darkStatusBarIcons stays the single place the icon polarity
-			// lives (white on the green band, both palettes). Edge-to-edge's default
-			// follows the SYSTEM's night mode and would invert them against the band
-			statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { res ->
-				!res.getBoolean(R.bool.darkStatusBarIcons)
-			},
+			// the status band is the darkened green in both palettes — the
+			// dark style keeps its icons white whatever the system theme does
+			statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
 			navigationBarStyle = SystemBarStyle.dark(Color.BLACK),
 		)
 		setContent { SchlMgrApp() }

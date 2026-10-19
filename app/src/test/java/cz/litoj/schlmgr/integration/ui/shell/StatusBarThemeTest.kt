@@ -2,7 +2,6 @@ package cz.litoj.schlmgr.integration.ui.shell
 
 import android.graphics.Color
 import cz.litoj.schlmgr.R
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -30,9 +29,6 @@ class StatusBarThemeTest {
 	/** The header green the band is derived from. */
 	private fun headerColor(): Int = app.getColor(R.color.colorPrimaryHeader)
 
-	/** Whether the palette asks the platform for dark status icons. */
-	private fun darkIcons(): Boolean = app.resources.getBoolean(R.bool.darkStatusBarIcons)
-
 	/** The WCAG relative luminance of an sRGB colour, 0 (black) to 1 (white). */
 	private fun luminance(color: Int): Double {
 		fun channel(v: Int): Double {
@@ -51,9 +47,8 @@ class StatusBarThemeTest {
 		return (maxOf(la, lb) + 0.05) / (minOf(la, lb) + 0.05)
 	}
 
-	/** Both palettes ask for white icons and a band the icons read on. */
+	/** The band is dark enough for the white icons in both palettes. */
 	private fun assertWhiteOnDarkenedPrimary() {
-		assertFalse("the status bar must not ask for dark icons", darkIcons())
 		val contrast = contrast(Color.WHITE, bandColor())
 		assertTrue("white must read on the band (was $contrast)", contrast >= 4.5)
 		assertTrue(

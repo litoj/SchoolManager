@@ -14,8 +14,8 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 		/**
 		 * Loads the merge base of one import.
 		 * - container import — the anchor subject's whole subgraph, once.
-		 * - root import — the root's children, plus a joined subject's scope
-		 *   on demand. Fresh subjects load no base at all.
+		 * - root import — the root's children, plus a joined subject's scope on demand.
+		 * - fresh subjects load no base at all.
 		 */
 		suspend fun load(dao: ItemDao, anchorId: Int): ImportSession {
 			val session = ImportSession(dao)
@@ -110,6 +110,13 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 		children[parentId]?.mapNotNull { rows[it.childId] } ?: emptyList()
 
 	/**
+	 * The plain children of [parentId] in link order — a reference holds no
+	 * name in its parent, the shown content is not the parent's own.
+	 */
+	private fun plainChildren(parentId: Int): List<DbItem> =
+		children[parentId]?.filter { !it.isReference }?.mapNotNull { rows[it.childId] } ?: emptyList()
+
+	/**
 	 * Whether [rowId] lies in [containerId]'s content — the session's links
 	 * included, so an import's own pending rows answer before the flush.
 	 */
@@ -174,9 +181,11 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 	 * A container under a parent — the container half of the add merge rule.
 	 * - file counters are never trusted — the counter phase derives them.
 	 * - a top-level merge lazily loads the joined subject's scope.
+	 * - the parent's plain children dedup — a reference shows content, it
+	 *   holds no name in the parent.
 	 */
 	suspend fun insertContainer(parentId: Int, item: DbItem): DbItem {
-		val existing = children(parentId)
+		val existing = plainChildren(parentId)
 			.firstOrNull { it.type == item.type && it.name == item.name }
 		if (existing != null) {
 			// a same-import placeholder has no scope to load — the flush

@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
+import cz.litoj.schlmgr.R
 import androidx.lifecycle.viewModelScope
 import cz.litoj.schlmgr.app.FileProgress
 import cz.litoj.schlmgr.app.GlobalDependencies
@@ -71,8 +72,8 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 		data class ConfirmDelete(val doomed: List<ItemRow>) : Request
 
-		/** Pick container to jump to. */
-		data class PickSource(val paths: List<List<DbItem>>) : Request
+		/** Pick container to jump to — the chains plus the search's own position. */
+		data class PickSource(val paths: List<List<DbItem>>, val origin: List<DbItem>) : Request
 	}
 
 	enum class MenuKind { ROOT, CONTAINER, SEARCH }
@@ -124,7 +125,16 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 	private var pendingAfterPermission: (() -> Unit)? = null
 
+	/**
+	 * Hands [action] to the permission flow — it runs after the grant dialog.
+	 * A second request while one waits is refused and reported, so none is
+	 * silently lost.
+	 */
 	fun requestWithPermission(action: () -> Unit) {
+		if (pendingAfterPermission != null) {
+			Startup.showMsg(ctx.getString(R.string.permission_pending), ctx.getString(R.string.permission_pending))
+			return
+		}
 		pendingAfterPermission = action
 	}
 
@@ -182,7 +192,6 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		MenuId.EXPORT_JSON -> { exportJsonFile(); true }
 		MenuId.FLIP -> { flipSelected(); true }
 		MenuId.REFERENCE -> { move(true); true }
-		MenuId.GO_TO -> { goToSelectedHit(); true }
 		else -> false
 	}
 
@@ -198,8 +207,7 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		if (loadJob?.isActive == true) return
 		val items = items().toMutableList()
 		items.sortWith(comparator)
-		items.forEachIndexed { index, row -> row.position = index + 1 }
-		load(items, isSearch = searching, isPicker = listState.value.pickerMode)
+		applyOrder(items)
 		refreshInfo()
 	}
 
@@ -240,7 +248,10 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		if (!pasteArmed) toggleSelect(row)
 	}
 
-	/** Search hit tap — word flips, chapter opens, note copies. Otherwise ends search. */
+	/**
+	 * Search hit tap — a word flips to its translations, a note copies.
+	 * A chapter opens its chain. Otherwise ends search.
+	 */
 	fun onSearchHitClick(ui: ItemUiModel) {
 		val row = ui.payload ?: return
 		if (row.item.type == ItemKind.WORD) {
@@ -261,11 +272,10 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		openChain(path)
 	}
 
-	/** Opens container of selected hit. */
+	/** Opens container of selected hit — one home opens, several show the picker. */
 	private fun goToSelectedHit() {
 		val row = items().singleOrNull(ItemRow::selected) ?: return
-		val path = row.path ?: return
-		openChain(ArrayList(path))
+		navigation.goToSelectedHit(row)
 	}
 
 	private val navigation = SubjectsNavigation(viewModelScope, io, history, NavigationHost())
@@ -283,6 +293,7 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		override fun switchedSibling(step: Int, delta: Int) {
 			updateState { it.copy(sibling = SiblingSwitch(step, delta)) }
 		}
+		override fun clearSelection() = this@MainExplorerViewModel.clearSelection()
 	}
 
 	fun onReferenceClick(ui: ItemUiModel) = navigation.onReferenceClick(ui)
@@ -319,6 +330,9 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 	fun onEditAction() = wordEdit.onEditAction()
 
+	/** 'Go to location' of the selected hit — one home opens, several pick. */
+	fun onGoToAction() = goToSelectedHit()
+
 	/**
 	 * `false` keeps popup open. See [SubjectsWordEdit.commitWordEdit].
 	 */
@@ -337,18 +351,37 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		emitRequest(Request.ConfirmDelete(doomed))
 	}
 
+	/**
+	 * Deletes the doomed rows — from their shown parent, or in search from
+	 * every parent inside the searched region.
+	 * - a search at the subject level clears every occurrence in the subject,
+	 *   a deeper search only the occurrences inside that chapter's subtree.
+	 * - occurrences outside the region survive, so a hit may outlive its
+	 *   deletion and stay in the results.
+	 */
 	fun performDelete(doomed: List<ItemRow>, title: String? = null) {
-		val marks = doomed.map { it.item.id to it.parentId }
 		val searchNow = searching
+		// snapshot on main — the io pass must not read the live rows
+		val regionRoot = if (searchNow) history.path.lastOrNull() else null
+		val marks = doomed.map { it.item.id to it.parentId }
 		viewModelScope.launch(io) {
-			if (title == null) for ((id, parent) in marks) ItemRepository.remove(id, parent)
+			val links = if (regionRoot == null) marks
+			else {
+				// every parent inside the searched region — one subgraph read,
+				// then the doomed rows' own parent links
+				val region = ItemRepository.subgraph(regionRoot.id).mapTo(HashSet()) { it.id }
+				marks.flatMap { (id, _) ->
+					ItemRepository.parentIds(id).filter { it in region }.map { id to it }
+				}
+			}
+			if (title == null) for ((id, parent) in links) ItemRepository.remove(id, parent)
 			else FileProgress(title).use { progress ->
 				// Count unknown before the walk — the bar shows the running count.
 				progress.rows(0)
-				for ((id, parent) in marks) ItemRepository.remove(id, parent, progress)
+				for ((id, parent) in links) ItemRepository.remove(id, parent, progress)
 			}
 			postToUi {
-				// Search re-reads — the cascade takes more than the selection.
+				// Search re-reads — the region deletion takes more than the selection.
 				if (searchNow) refreshSearchRows() else removeItems(doomed)
 				refreshInfo()
 			}
@@ -403,7 +436,7 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 				return@launch
 			}
 			postToUi {
-				TestSetupState.openedWithSelection = true
+				TestSetupState.markOpenedWithSelection()
 				emitRequest(Request.OpenTest)
 			}
 		}

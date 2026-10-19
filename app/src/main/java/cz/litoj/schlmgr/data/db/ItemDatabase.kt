@@ -26,9 +26,9 @@ abstract class ItemDatabase : RoomDatabase() {
 				// No migrations while unreleased — version bump drops tables.
 				// The app rebuilds them from subject files on next start.
 				.fallbackToDestructiveMigration(dropAllTables = true)
-				// WAL explicitly, never AUTOMATIC heuristic — low-RAM
-				// fallback (TRUNCATE, one connection) lets long import hold
-				// sole connection, so every read waits behind it.
+				// WAL journal mode explicitly — never AUTOMATIC heuristic.
+				// The low-RAM fallback uses TRUNCATE with one connection.
+				// A long import holds sole connection; every read waits behind it.
 				.setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
 				.allowMainThreadQueries() // the UI layer is synchronous — see ItemRepository
 				.build()

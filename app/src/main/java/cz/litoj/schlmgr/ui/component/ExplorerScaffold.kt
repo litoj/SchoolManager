@@ -8,6 +8,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -38,6 +40,8 @@ fun ExplorerScaffold(
 	onInfoClick: () -> Unit,
 	callbacks: ItemListCallbacks,
 	modifier: Modifier = Modifier,
+	/** The owning screen's list state — kept so it can watch the scroll. */
+	scrollState: LazyListState = rememberLazyListState(),
 	actionBar: @Composable () -> Unit = {},
 ) {
 	// The displayed list — browse content and search results alike — comes from
@@ -93,6 +97,7 @@ fun ExplorerScaffold(
 				callbacks = callbacks,
 				modifier = Modifier.fillMaxSize(),
 				reorderable = state.reorderable,
+				listState = scrollState,
 			)
 		}
 		actionBar()

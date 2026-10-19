@@ -14,8 +14,8 @@ import cz.litoj.schlmgr.ui.viewmodel.RowKind
 /**
  * Process-wide state of a test being set up — picked source chains plus the
  * amount/duration/reverse answers.
- * - written only through this object's doors, so the dedup pass cannot be
- *   forgotten. Reset happens only on a genuine fresh entry.
+	 * - written only through this object's doors, so the dedup pass cannot be forgotten.
+	 * - reset happens only on a genuine fresh entry.
  */
 object TestSetupState {
 
@@ -24,16 +24,32 @@ object TestSetupState {
 	 * fresh-entry check — a picker return keeps the sources. Only a
 	 * genuine fresh entry (the drawer) resets the setup.
 	 */
-	@JvmField
-	var openedPicker = false
+	private var openedPicker = false
 
 	/**
 	 * Set when a screen prepares the sources straight from a selection (the subjects
 	 * screen's 'Prepare test') and consumed by the fresh-entry check, so the filled
 	 * [list] survives like a picker return.
 	 */
-	@JvmField
-	var openedWithSelection = false
+	private var openedWithSelection = false
+
+	/** Marks the setup as entered from the picker — its return keeps the sources. */
+	fun markOpenedPicker() {
+		openedPicker = true
+	}
+
+	/** Marks the setup as filled from a selection — its sources survive the entry. */
+	fun markOpenedWithSelection() {
+		openedWithSelection = true
+	}
+
+	/** Takes the entry marks — the fresh-entry check consumes them. */
+	fun consumeEntryMarks(): Pair<Boolean, Boolean> {
+		val marks = openedPicker to openedWithSelection
+		openedPicker = false
+		openedWithSelection = false
+		return marks
+	}
 
 	/**
 	 * The picked sources, each entry one item's container chain (root

@@ -1,5 +1,7 @@
 package cz.litoj.schlmgr.unit.ui.popup
 
+import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.popup.CreatorContent
 import cz.litoj.schlmgr.ui.popup.CreatorPopup
 import cz.litoj.schlmgr.ui.popup.Dialogs
@@ -71,8 +73,8 @@ class CreatorResultTest {
 	@Test
 	fun `removed translations travel with the snapshot`() {
 		val popup = CreatorPopup(CreatorPopup.Kind.EDIT, null, CreatorContent.Simple)
-		val source = cz.litoj.schlmgr.data.db.DbItem(
-			id = 7, name = "house", description = "", type = cz.litoj.schlmgr.data.db.ItemKind.TRANSLATION)
+		val source = DbItem(
+			id = 7, name = "house", description = "", type = ItemKind.TRANSLATION)
 		popup.removedTranslations.add(source)
 
 		val result = popup.result()

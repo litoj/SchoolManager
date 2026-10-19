@@ -36,25 +36,33 @@ private class Action(
 )
 
 /**
- * The bottom-strip selection actions — test / cut / edit / delete.
- * - the strip renders only while rows are selected, so test/cut/delete stay
- *   enabled. Edit follows [editEnabled] (the single-target rule).
+ * The bottom-strip selection actions — test / cut / edit / delete, with the
+ * search strip swapping cut for go-to.
+	 * - the strip renders only while rows are selected, so test/cut/delete stay enabled.
+	 * - edit follows [editEnabled] (the single-target rule).
+	 * - a hit's cut is ambiguous — the same word can live in several containers — so the search strip shows its go-to instead, disabled without the single target.
  */
 @Composable
 fun SelectionActionBar(
 	editEnabled: Boolean,
 	onTest: () -> Unit,
-	onCut: () -> Unit,
 	onEdit: () -> Unit,
 	onDelete: () -> Unit,
 	modifier: Modifier = Modifier,
+	onCut: (() -> Unit)? = null,
+	onGoTo: (() -> Unit)? = null,
+	goToEnabled: Boolean = true,
 ) {
 	ActionStrip(modifier) {
 		ActionButton(
 			Action(R.drawable.ic_test, R.string.select_test, onTest),
 			true,
 		)
-		ActionButton(
+		if (onGoTo != null) ActionButton(
+			Action(R.drawable.ic_goto, R.string.more_go_to, onGoTo),
+			goToEnabled,
+		)
+		if (onCut != null) ActionButton(
 			Action(R.drawable.ic_cut, R.string.cut, onCut),
 			true,
 		)

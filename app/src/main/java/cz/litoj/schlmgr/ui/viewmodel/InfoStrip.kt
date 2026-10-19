@@ -48,7 +48,7 @@ internal class InfoStrip(
 	fun refreshInfo() {
 		if (host.isSearching()) {
 			val info = (host.lastSearchInfo as? InfoBar.Search)?.copy(count = host.listSize())
-				?: InfoBar.Search(host.listSize(), 0L)
+				?: InfoBar.Search(host.listSize(), 0)
 			host.lastSearchInfo = info
 			host.publishInfo(info)
 			return

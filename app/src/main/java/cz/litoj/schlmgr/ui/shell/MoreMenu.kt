@@ -18,11 +18,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.R
 
 /**
+ * @property icon the row's leading icon — `0` renders none
  * @property children non-empty opens a second menu level (parents carry a placeholder id)
  * @property selectionAction acts on selected rows, keeping the resource order
  * @property always stays in both menu forms (the export rows)
@@ -31,6 +33,7 @@ import cz.litoj.schlmgr.R
 data class MenuEntry(
 	val id: Int,
 	val label: Int,
+	val icon: Int = 0,
 	val children: List<MenuEntry> = emptyList(),
 	val selectionAction: Boolean = false,
 	val always: Boolean = false,
@@ -77,12 +80,14 @@ fun MoreMenu(entries: List<MenuEntry>, onPick: (Int) -> Unit, onDismiss: () -> U
 @Composable
 private fun MenuLeaf(entry: MenuEntry, onClick: () -> Unit) {
 	DropdownMenuItem(onClick = onClick, enabled = entry.enabled) {
+		MenuIcon(entry)
 		Text(
 			stringResource(entry.label),
 			// the disabled alpha matches Material's muted text — the menu carries
 			// no per-row theme, so the leaf picks the colour itself
 			color = if (entry.enabled) Color.Unspecified
 			else MaterialTheme.colors.onSurface.copy(alpha = 0.38f),
+			modifier = Modifier.padding(start = entry.iconSpacing()),
 		)
 	}
 }
@@ -93,7 +98,11 @@ private fun MenuLeaf(entry: MenuEntry, onClick: () -> Unit) {
 @Composable
 private fun MenuParentRow(entry: MenuEntry, onClick: () -> Unit) {
 	DropdownMenuItem(onClick = onClick) {
-		Text(stringResource(entry.label))
+		MenuIcon(entry)
+		Text(
+			stringResource(entry.label),
+			modifier = Modifier.padding(start = entry.iconSpacing()),
+		)
 		Icon(
 			Icons.AutoMirrored.Filled.KeyboardArrowRight,
 			contentDescription = null,
@@ -101,6 +110,15 @@ private fun MenuParentRow(entry: MenuEntry, onClick: () -> Unit) {
 		)
 	}
 }
+
+/** The row's leading icon — an icon-less entry renders text only. */
+@Composable
+private fun MenuIcon(entry: MenuEntry) {
+	if (entry.icon != 0) Icon(painterResource(entry.icon), contentDescription = null)
+}
+
+/** The label's leading space — the icon column, zero without an icon. */
+private fun MenuEntry.iconSpacing() = if (icon != 0) 12.dp else 0.dp
 
 /**
  * The submenu's back row — left arrow plus the parent label, a tap returns

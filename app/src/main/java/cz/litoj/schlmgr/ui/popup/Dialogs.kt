@@ -24,8 +24,7 @@ import kotlinx.coroutines.flow.update
 /**
  * One dialog of the app — a state holder rendered by [DialogHost] as a Compose
  * [Dialog] — its own window above the hosting activity.
- * - survives rotation (only the window re-creates), so editor state stays
- *   intact with no repaint hooks.
+ * - survives rotation (only the window re-creates) — editor state stays intact.
  */
 interface DialogSpec {
 
@@ -49,8 +48,7 @@ interface DialogSpec {
 /**
  * The app's dialog stack — the process-wide dialog list as observable state.
  * - every activity composing a [DialogHost] renders the same dialogs.
- *   Rotation needs no repaint machinery (the stack survives, recomposition
- *   re-renders).
+ * - rotation needs no repaint machinery (the stack survives, recomposition re-renders).
  */
 object Dialogs {
 

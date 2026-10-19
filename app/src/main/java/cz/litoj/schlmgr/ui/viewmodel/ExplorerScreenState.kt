@@ -36,5 +36,5 @@ sealed interface InfoBar {
 
 	data class Root(val count: Int) : InfoBar
 
-	data class Search(val count: Int, val elapsedMs: Long) : InfoBar
+	data class Search(val count: Int, val chapters: Int) : InfoBar
 }

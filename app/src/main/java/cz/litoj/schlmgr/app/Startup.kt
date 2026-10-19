@@ -3,6 +3,7 @@ package cz.litoj.schlmgr.app
 import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.core.content.edit
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.db.ItemDatabase
@@ -29,6 +30,7 @@ object Startup {
 		// before any read — the invisible root every subject hangs under
 		ItemRepository.ensureRoot()
 		installCrashHandler()
+		migrateStoredSettings()
 		applyStoredOptions()
 		recordAppVersion()
 	}
@@ -42,6 +44,22 @@ object Startup {
 	private fun installCrashHandler() {
 		Thread.setDefaultUncaughtExceptionHandler { t, e -> onUncaught(t, e) }
 	}
+
+	/**
+	 * The compatibility checker — converts a stored format left by an older
+	 * version. Runs before the options apply, once per old key: the conversion
+	 * removes it.
+	 * - the description switch became a line limit: `on` converts to 5 lines, `off` to 0.
+	 */
+	@VisibleForTesting
+	internal fun migrateStoredSettings() {
+		if (!AppSettings.has("doShowDesc")) return
+		AppSettings.set("descLines", if (AppSettings.getBool("doShowDesc", true)) DescLinesOn else 0)
+		AppSettings.remove("doShowDesc")
+	}
+
+	/** The line limit the old description switch's `on` state converts to. */
+	private const val DescLinesOn = 5
 
 	/**
 	 * Pushes the stored options into the engine's config statics. The

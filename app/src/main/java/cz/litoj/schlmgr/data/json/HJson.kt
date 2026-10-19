@@ -19,30 +19,46 @@ class JsonTranslation(
 	var failedTests: Int = 0,
 )
 
+/** One child entry of a chapter — a word, a note, a chapter or a reference. */
+sealed interface JsonChild
+
 class JsonWord(
 	var name: String,
 	var description: String? = null,
 	var passedTests: Int = 0,
 	var failedTests: Int = 0,
-) {
+) : JsonChild {
 	val translations = ArrayList<JsonTranslation>()
 }
 
-/** One chapter node of the tree JSON file, with nested words and chapters —
- * no counters, a container's are derived from its words, so the format
- * carries none. */
+class JsonNote(var name: String, var description: String? = null) : JsonChild
+
+/**
+ * One chapter node of the tree JSON file — its children in one ordered list.
+ * No counters: a container's are derived from its words, so the format
+ * carries none.
+ */
 class JsonChapter(
 	var name: String,
 	var description: String? = null,
-) {
-	val words = ArrayList<JsonWord>()
-	val chapters = ArrayList<JsonChapter>()
+) : JsonChild {
+	val entries = ArrayList<JsonChild>()
 }
+
+/**
+ * A reference child — the target's path: an exported root's name, the
+ * containers below it, the target's name last. The root alone names the root itself.
+ *
+ * Resolved once every row of the import is saved.
+ */
+class JsonRef(val path: List<String>) : JsonChild
 
 /**
  * The tree JSON export (HJSON) — human-editable, carries the success counters
  * the `.txt` word list drops.
- * - top level is one object or an array.
+ * - one node shape everywhere: `children` marks a chapter (always written), `translations` a word.
+ * - `ref` is a reference entry; neither is a note.
+ * - the file is a list of entries landing in the import target — one object is a one-item array.
  * - pure codec — no database. The repository feeds it.
  */
 object JsonWordList {
@@ -50,8 +66,8 @@ object JsonWordList {
 	/**
 	 * Writes [chapters] as HJSON.
 	 * - one object for a single chapter, an array for several.
-	 * - the caller owns the tree — the exporter converts its stream into
-	 *   it, tests build it by hand.
+	 * - the caller owns the tree — the exporter converts its stream into it.
+	 * - tests build it by hand.
 	 */
 	@JvmStatic
 	fun writeChapters(chapters: List<JsonChapter>): String {
@@ -61,21 +77,22 @@ object JsonWordList {
 	}
 
 	/**
-	 * Parses HJSON or plain JSON into the tree. Accepts one object or an array of
-	 * objects and always returns a list.
+	 * Parses HJSON or plain JSON into the file's entries. Accepts one object
+	 * or an array of them and always returns a list — one object is a
+	 * one-item array.
 	 *
 	 * @throws IllegalArgumentException when the text is malformed or a value has the wrong type
 	 */
 	@JvmStatic
-	fun parse(text: String): List<JsonChapter> {
+	fun parse(text: String): List<JsonChild> {
 		val root = try {
 			JsonValue.readHjson(text)
 		} catch (e: ParseException) {
 			throw IllegalArgumentException(e.describe())
 		}
 		return when {
-			root.isArray -> root.asArray().mapIndexed { i, value -> parseChapter(value, "[$i]") }
-			root.isObject -> listOf(parseChapter(root, "root"))
+			root.isArray -> root.asArray().mapIndexed { i, value -> parseEntry(value, "[$i]") }
+			root.isObject -> listOf(parseEntry(root, "root"))
 			else -> throw IllegalArgumentException("JSON root: expected an object or an array")
 		}
 	}
@@ -84,25 +101,30 @@ object JsonWordList {
 
 	private fun chapterValue(chapter: JsonChapter): JsonObject {
 		val obj = JsonObject()
-		obj.add("name", chapter.name)
-		chapter.description?.takeIf { it.isNotEmpty() }?.let { obj.add("desc", it) }
-		if (chapter.words.isNotEmpty()) {
-			obj.add("words", JsonArray().apply { chapter.words.forEach { add(wordValue(it)) } })
-		}
-		if (chapter.chapters.isNotEmpty()) {
-			obj.add("chapters", JsonArray().apply { chapter.chapters.forEach { add(chapterValue(it)) } })
-		}
+		putCommon(obj, chapter.name, chapter.description)
+		obj.add("children", JsonArray().apply { chapter.entries.forEach { add(childValue(it)) } })
 		return obj
+	}
+
+	private fun childValue(child: JsonChild): JsonValue = when (child) {
+		is JsonChapter -> chapterValue(child)
+		is JsonWord -> wordValue(child)
+		is JsonNote -> noteValue(child)
+		is JsonRef -> refValue(child)
 	}
 
 	private fun wordValue(word: JsonWord): JsonObject {
 		val obj = JsonObject()
 		putCommon(obj, word.name, word.description, word.passedTests, word.failedTests)
-		if (word.translations.isNotEmpty()) {
-			obj.add("translations", JsonArray().apply {
-				word.translations.forEach { add(translationValue(it)) }
-			})
-		}
+		obj.add("translations", JsonArray().apply {
+			word.translations.forEach { add(translationValue(it)) }
+		})
+		return obj
+	}
+
+	private fun noteValue(note: JsonNote): JsonObject {
+		val obj = JsonObject()
+		putCommon(obj, note.name, note.description)
 		return obj
 	}
 
@@ -112,11 +134,21 @@ object JsonWordList {
 		return obj
 	}
 
+	private fun refValue(ref: JsonRef): JsonObject {
+		val obj = JsonObject()
+		obj.add("ref", JsonArray().apply { ref.path.forEach { add(it) } })
+		return obj
+	}
+
 	/**
-	 * The shared `name`/`desc`/`s`/`f` fields — unset optionals are omitted
-	 * so the file stays clean. A re-import fills them with the defaults.
+	 * The shared `name`/`desc` fields and the counters a tested row carries —
+	 * unset optionals are omitted so the file stays clean. A re-import fills
+	 * them with the defaults.
 	 */
-	private fun putCommon(obj: JsonObject, name: String, description: String?, passedTests: Int, failedTests: Int) {
+	private fun putCommon(
+		obj: JsonObject, name: String, description: String?,
+		passedTests: Int = 0, failedTests: Int = 0,
+	) {
 		obj.add("name", name)
 		description?.takeIf { it.isNotEmpty() }?.let { obj.add("desc", it) }
 		if (passedTests != 0) obj.add("s", passedTests)
@@ -125,23 +157,50 @@ object JsonWordList {
 
 	// ------------------------------------------------------------ reading
 
-	private fun parseChapter(value: JsonValue, path: String): JsonChapter {
+	private fun parseEntry(value: JsonValue, path: String): JsonChild {
 		val obj = asObject(value, path)
+		// the retired save format — its split keys lost the order and never
+		// held notes, so a re-export from the database is the only fix
+		if (hasKey(obj, "words") || hasKey(obj, "chapters"))
+			throw IllegalArgumentException(
+				"$path: 'words' and 'chapters' are the retired format's keys — re-export the file from the database")
+		if (hasKey(obj, "ref")) return parseRef(obj, path)
+		val hasChildren = hasKey(obj, "children")
+		val hasTranslations = hasKey(obj, "translations")
+		if (hasChildren && hasTranslations)
+			throw IllegalArgumentException("$path: a node holds 'children' or 'translations', never both")
+		return if (hasChildren) parseChapter(obj, path)
+		else if (hasTranslations) parseWord(obj, path)
+		else JsonNote(requireName(obj, path), optionalString(obj, "desc", path))
+	}
+
+	private fun parseRef(obj: JsonObject, path: String): JsonRef {
+		for (key in listOf("name", "desc", "children", "translations"))
+			if (hasKey(obj, key))
+				throw IllegalArgumentException("$path: a reference entry holds only 'ref'")
+		val value = obj.get("ref")!!
+		if (!value.isArray) throw IllegalArgumentException("$path.ref: expected an array")
+		val names = value.asArray().mapIndexed { i, element ->
+			if (!element.isString) throw IllegalArgumentException("$path.ref[$i]: expected a string")
+			element.asString()
+		}
+		if (names.isEmpty())
+			throw IllegalArgumentException("$path.ref: a path needs at least the target")
+		return JsonRef(names)
+	}
+
+	private fun parseChapter(obj: JsonObject, path: String): JsonChapter {
 		val chapter = JsonChapter(
 			requireName(obj, path),
 			optionalString(obj, "desc", path),
 		)
-		optionalArray(obj, "words", path)?.forEachIndexed { i, child ->
-			chapter.words.add(parseWord(child, "$path.words[$i]"))
-		}
-		optionalArray(obj, "chapters", path)?.forEachIndexed { i, child ->
-			chapter.chapters.add(parseChapter(child, "$path.chapters[$i]"))
+		optionalArray(obj, "children", path)?.forEachIndexed { i, child ->
+			chapter.entries.add(parseEntry(child, "$path.children[$i]"))
 		}
 		return chapter
 	}
 
-	private fun parseWord(value: JsonValue, path: String): JsonWord {
-		val obj = asObject(value, path)
+	private fun parseWord(obj: JsonObject, path: String): JsonWord {
 		val word = JsonWord(
 			requireName(obj, path),
 			optionalString(obj, "desc", path),
@@ -164,6 +223,12 @@ object JsonWordList {
 			optionalInt(obj, "s", path),
 			optionalInt(obj, "f", path),
 		)
+	}
+
+	/** Key presence under the null-means-missing rule of every optional. */
+	private fun hasKey(obj: JsonObject, key: String): Boolean {
+		val value = obj.get(key) ?: return false
+		return !value.isNull
 	}
 
 	private fun requireName(obj: JsonObject, path: String): String {
@@ -206,26 +271,54 @@ internal fun ParseException.describe(): String {
 }
 
 /**
- * The tree JSON format as an import source — the parsed tree as a
- * [StreamItem] stream (see [DataImporter]).
- * - each top-level subject of the file becomes a root item.
- * - a container's own stored counters never enter the stream (derived from
- *   the words below on every read) — only word/translation counters travel.
+ * The tree JSON format as an import source — the parsed file as a
+ * [StreamItem] stream plus the reference entries as [StreamReference]s
+ * (see [DataImporter]).
+ * - every top-level item lands in the import target as it is.
+ * - a chapter becomes a subject at the root; a word or note joins the open container's rows.
+ * - references resolve against saved rows after every item — a path may name rows reached later.
+ * - a container's stored counters never enter the stream — only word/translation counters travel.
  */
 class HJsonImporter(text: String) : DataImporter {
 	override val items: List<StreamItem>
-	override val references: List<StreamReference> = emptyList()
+	override val references: List<StreamReference>
 
 	init {
 		val out = ArrayList<StreamItem>()
-		for (subject in JsonWordList.parse(text)) addChapter(out, subject, null)
+		val refs = ArrayList<StreamReference>()
+		for (entry in JsonWordList.parse(text)) when (entry) {
+			// a reference names a target for a parent chapter of the file —
+			// the top level itself is no parent
+			is JsonRef -> throw IllegalArgumentException(
+				"a reference needs a parent chapter in the file")
+			is JsonChapter -> addChapter(out, refs, entry, null)
+			is JsonWord -> addWord(out, entry, null)
+			is JsonNote ->
+				StreamBuilder.addItem(out, ItemKind.NOTE, entry.name, entry.description ?: "", null)
+		}
 		items = out
+		references = refs
 	}
 
-	private fun addChapter(out: MutableList<StreamItem>, chapter: JsonChapter, parent: StreamItem?) {
+	private fun addChapter(
+		out: MutableList<StreamItem>, refs: MutableList<StreamReference>,
+		chapter: JsonChapter, parent: StreamItem?,
+	) {
 		val ref = StreamBuilder.addChapter(out, chapter.name, chapter.description ?: "", parent)
-		for (word in chapter.words) addWord(out, word, ref)
-		for (child in chapter.chapters) addChapter(out, child, ref)
+		addEntries(out, refs, chapter.entries, ref)
+	}
+
+	private fun addEntries(
+		out: MutableList<StreamItem>, refs: MutableList<StreamReference>,
+		entries: List<JsonChild>, parent: StreamItem,
+	) {
+		for (entry in entries) when (entry) {
+			is JsonRef -> refs.add(StreamReference(parent, entry.path.dropLast(1), entry.path.last()))
+			is JsonWord -> addWord(out, entry, parent)
+			is JsonNote ->
+				StreamBuilder.addItem(out, ItemKind.NOTE, entry.name, entry.description ?: "", parent)
+			is JsonChapter -> addChapter(out, refs, entry, parent)
+		}
 	}
 
 	private fun addWord(out: MutableList<StreamItem>, word: JsonWord, parent: StreamItem?) {
@@ -248,11 +341,12 @@ class HJsonExporter : DataExporter {
 
 	private fun chapterOf(item: StreamItem, childrenOf: Map<StreamItem, List<StreamItem>>): JsonChapter {
 		val chapter = JsonChapter(item.item.name, item.item.description.ifEmpty { null })
-		for (child in childrenOf[item] ?: emptyList()) when (child.item.type) {
-			ItemKind.WORD -> chapter.words.add(wordOf(child, childrenOf))
-			ItemKind.CHAPTER -> chapter.chapters.add(chapterOf(child, childrenOf))
-			// notes have no node in this format — skipped, not failed
-			else -> {}
+		for (child in childrenOf[item] ?: emptyList()) when {
+			// a reference names its target — the plain home holds the row
+			child.refPath != null -> chapter.entries.add(JsonRef(child.refPath!!))
+			child.item.type == ItemKind.WORD -> chapter.entries.add(wordOf(child, childrenOf))
+			child.item.type == ItemKind.CHAPTER -> chapter.entries.add(chapterOf(child, childrenOf))
+			else -> chapter.entries.add(JsonNote(child.item.name, child.item.description.ifEmpty { null }))
 		}
 		return chapter
 	}

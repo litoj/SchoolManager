@@ -19,7 +19,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * Unit tests of the folded back-sequence ([ExplorerViewModel.changedPath]):
+ * Integration tests of the folded back-sequence ([ExplorerViewModel.changedPath]):
  * popping the hops and then either re-showing the stacked search run (the
  * mode lands on its results) or reloading the browse list through the
  * screen's content switch. No database is needed — word rows build detached

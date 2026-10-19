@@ -2,9 +2,8 @@ package cz.litoj.schlmgr.unit.ui.viewmodel
 
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
-import cz.litoj.schlmgr.support.TestExplorerViewModel
+import cz.litoj.schlmgr.support.wordVm
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
-import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
@@ -17,19 +16,9 @@ import org.junit.Test
  */
 class IncrementalAddTest {
 
-	private fun vmWith(count: Int): TestExplorerViewModel {
-		val vm = TestExplorerViewModel(NavigationHistory())
-		// word rows build without the database — positions run 1..count
-		val rows = (1..count).map { i ->
-			ItemRow(DbItem(name = "w$i", description = "", type = ItemKind.WORD), null, i, false)
-		}
-		vm.load(rows)
-		return vm
-	}
-
 	@Test
 	fun `addItem appends one row without rebuilding the mapped items`() {
-		val vm = vmWith(3)
+		val vm = wordVm(3)
 		val before = vm.listState.value.items
 		val added = ItemRow(DbItem(name = "new", description = "", type = ItemKind.WORD), null, 4, false)
 		vm.addItem(added)
@@ -42,7 +31,7 @@ class IncrementalAddTest {
 
 	@Test
 	fun `an inserted row keeps positions sequential`() {
-		val vm = vmWith(3)
+		val vm = wordVm(3)
 		assertEquals(3, vm.listState.value.maxPosition)
 		val inserted = ItemRow(DbItem(name = "wide", description = "", type = ItemKind.WORD), null, 99, false)
 		vm.addItem(0, inserted)
@@ -53,7 +42,7 @@ class IncrementalAddTest {
 
 	@Test
 	fun `a move keeps positions sequential and the maximum at the size`() {
-		val vm = vmWith(4)
+		val vm = wordVm(4)
 		vm.moveRow(0, 3)
 		assertEquals(listOf(1, 2, 3, 4), vm.listState.value.items.map { it.position })
 		assertEquals(4, vm.listState.value.maxPosition)
@@ -61,7 +50,7 @@ class IncrementalAddTest {
 
 	@Test
 	fun `an empty load resets the position maximum`() {
-		val vm = vmWith(3)
+		val vm = wordVm(3)
 		vm.load(ArrayList())
 		assertEquals(0, vm.listState.value.items.size)
 		assertEquals(1, vm.listState.value.maxPosition)

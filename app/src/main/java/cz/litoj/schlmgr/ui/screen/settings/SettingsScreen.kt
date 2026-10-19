@@ -25,6 +25,8 @@ import cz.litoj.schlmgr.ui.component.SettingNumberRow
 import cz.litoj.schlmgr.ui.component.SettingSwitchRow
 import cz.litoj.schlmgr.ui.component.DefaultTextColor
 import cz.litoj.schlmgr.ui.shell.TopBar
+import cz.litoj.schlmgr.ui.viewmodel.SettingsState
+import cz.litoj.schlmgr.ui.viewmodel.SettingsViewModel
 import cz.litoj.schlmgr.ui.shell.TopBarNav
 import cz.litoj.schlmgr.ui.shell.TopBarTitle
 import cz.litoj.schlmgr.ui.shell.headerShadow
@@ -64,7 +66,9 @@ private fun SettingsList(state: SettingsState, modifier: Modifier = Modifier) {
 		HairlineDivider()
 		SettingSwitchRow(stringResource(R.string.setts_him_allflip), state.flipAllOnClick, state::toggleFlipAllOnClick)
 		HairlineDivider()
-		SettingSwitchRow(stringResource(R.string.setts_show_desc), state.showDesc, state::toggleShowDesc)
+		SettingNumberRow(
+			stringResource(R.string.setts_desc_lines), state.descLinesText, state::setDescLines,
+		) { state.descLinesFocusLost(); keyboard?.hide() }
 		HairlineDivider()
 		WordSplitRow(state)
 		// no resource exists for the "Test" section label — it stays a literal

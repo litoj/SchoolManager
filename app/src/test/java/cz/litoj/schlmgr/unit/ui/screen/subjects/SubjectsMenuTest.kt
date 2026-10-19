@@ -19,6 +19,17 @@ import org.junit.Test
 class SubjectsMenuTest {
 
 	@Test
+	fun `every top-level entry carries an icon`() {
+		for (kind in MainExplorerViewModel.MenuKind.entries) {
+			for (selecting in listOf(false, true)) {
+				val menu = subjectsMenu(kind, selecting)
+				assertTrue("$kind selecting=$selecting gives every row an icon",
+					menu.all { it.icon != 0 })
+			}
+		}
+	}
+
+	@Test
 	fun `every menu kind filters by the selection flag`() {
 		for (kind in MainExplorerViewModel.MenuKind.entries) {
 			val plain = subjectsMenu(kind, selecting = false)
@@ -51,9 +62,10 @@ class SubjectsMenuTest {
 	}
 
 	@Test
-	fun `the root menu offers creation without a selection and flip with one`() {
+	fun `the root menu offers no creation and flip with a selection`() {
 		val plain = subjectsMenu(MainExplorerViewModel.MenuKind.ROOT, selecting = false)
-		assertTrue(plain.any { it.id == MenuId.NEW_SUBJECT })
+		assertTrue("the floating button owns creation — no menu row offers it",
+			plain.none { it.id == MenuId.NEW_SUBJECT })
 
 		val selecting = subjectsMenu(MainExplorerViewModel.MenuKind.ROOT, selecting = true)
 		assertTrue(selecting.any { it.id == MenuId.FLIP })
@@ -92,23 +104,6 @@ class SubjectsMenuTest {
 	}
 
 	@Test
-	fun `the search menu go-to acts on one selected row`() {
-		val single = subjectsMenu(
-			MainExplorerViewModel.MenuKind.SEARCH, selecting = true, singleSelected = true)
-		assertTrue(single.single { it.id == MenuId.GO_TO }.enabled)
-
-		val several = subjectsMenu(MainExplorerViewModel.MenuKind.SEARCH, selecting = true)
-		assertFalse("several selected rows mute the go-to", several.single { it.id == MenuId.GO_TO }.enabled)
-
-		for (kind in listOf(
-			MainExplorerViewModel.MenuKind.ROOT,
-			MainExplorerViewModel.MenuKind.CONTAINER,
-		)) {
-			assertTrue("$kind offers no go-to", subjectsMenu(kind, selecting = true).none { it.id == MenuId.GO_TO })
-		}
-	}
-
-	@Test
 	fun `the root menu groups both imports under one submenu`() {
 		val plain = subjectsMenu(MainExplorerViewModel.MenuKind.ROOT, selecting = false)
 		// no import leaf sits at the root's top level — both hide in the submenu
@@ -121,17 +116,13 @@ class SubjectsMenuTest {
 	}
 
 	@Test
-	fun `the container menus offer the plain file import only`() {
-		for (kind in listOf(
-			MainExplorerViewModel.MenuKind.CONTAINER,
-		)) {
-			val plain = subjectsMenu(kind, selecting = false)
-			// the only import a container offers is the file import, as a plain
-			// row — no submenu needed to tell it apart
-			assertEquals(1, plain.count { it.id == MenuId.IMPORT_FILE || it.id == MenuId.IMPORT_DIR })
-			assertTrue(plain.any { it.id == MenuId.IMPORT_FILE && it.children.isEmpty() })
-			assertTrue("$kind offers no folder import", plain.none { it.id == MenuId.IMPORT_DIR })
-		}
+	fun `the container menu offers the plain file import only`() {
+		val plain = subjectsMenu(MainExplorerViewModel.MenuKind.CONTAINER, selecting = false)
+		// the only import a container offers is the file import, as a plain
+		// row — no submenu needed to tell it apart
+		assertEquals(1, plain.count { it.id == MenuId.IMPORT_FILE || it.id == MenuId.IMPORT_DIR })
+		assertTrue(plain.any { it.id == MenuId.IMPORT_FILE && it.children.isEmpty() })
+		assertTrue("a container offers no folder import", plain.none { it.id == MenuId.IMPORT_DIR })
 	}
 
 	@Test

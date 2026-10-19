@@ -115,6 +115,10 @@ object ItemRepository {
 	@JvmStatic
 	fun parentIds(childId: Int): List<Int> = query { it.itemDao().parentsOf(childId) }
 
+	/** The rows that link to [childId] in link order — a translation's words. */
+	@JvmStatic
+	fun parentRows(childId: Int): List<DbItem> = query { it.itemDao().parentRowsOf(childId) }
+
 	/**
 	 * Container chain down to parent, subject first, root excluded.
 	 * Multi-parent rows take first parent found.
@@ -159,6 +163,7 @@ object ItemRepository {
 	/**
 	 * Every link into subgraph — whole parent set, outside included.
 	 * Preloaded for search — hit rows need no per-row lookup.
+	 *
 	 * Outside parents matter because a reference link's parent can sit outside
 	 * the subgraph, and the search row must still know where to jump to.
 	 */
@@ -211,7 +216,8 @@ object ItemRepository {
 		description: String?,
 		translations: List<Pair<String, String?>>,
 	): DbItem {
-		require(translations.any { it.first.isNotEmpty() }) {
+		// a blank name carries no translation once trimmed
+		require(translations.any { it.first.trim().isNotEmpty() }) {
 			"A word needs at least one translation — make a note instead"
 		}
 		return query {
@@ -263,50 +269,93 @@ object ItemRepository {
 	 */
 	@JvmStatic
 	fun export(exporter: DataExporter, containers: List<DbItem>): String =
-		exporter.render(containers.flatMap { streamOf(exporter, it) })
+		exporter.render(walkExport(exporter, containers))
 
 	/**
-	 * Pre-order stream of container content — container first, then rows below.
-	 * - preloads whole subtree in two queries.
+	 * Pre-order stream of the containers' content — each container first,
+	 * then its rows below. Preloads every subtree, shared links once.
+	 * - a reference child writes as its plain-home path under [containers] — appears at home only.
+	 * - a home outside the export writes its content in place — the save would lose it.
 	 */
-	private fun streamOf(exporter: DataExporter, container: DbItem): List<StreamItem> {
-		val root = StreamItem(container, null)
+	private fun walkExport(exporter: DataExporter, containers: List<DbItem>): List<StreamItem> {
 		val out = ArrayList<StreamItem>()
-		out.add(root)
-		exporter.onItem(root)
-		val rows = query { it.itemDao().subgraph(container.id) }
-		val itemsById = HashMap<Int, DbItem>(rows.size * 2)
-		for (row in rows) itemsById[row.id] = row
+		val itemsById = HashMap<Int, DbItem>()
+		for (container in containers)
+			for (row in query { it.itemDao().subgraph(container.id) }) itemsById[row.id] = row
+		val links = LinkedHashSet<DbLink>()
+		for (container in containers)
+			links.addAll(query { it.itemDao().subgraphLinks(container.id) })
 		// Sort links by position — matches live per-node order.
-		val children = HashMap<Int, MutableList<DbItem>>()
-		for (link in query { it.itemDao().subgraphLinks(container.id) }
-			.sortedWith(compareBy({ it.position }, { it.childId }))) {
+		val sorted = links.sortedWith(compareBy({ it.position }, { it.childId }))
+		val rootIds = HashSet<Int>()
+		for (container in containers) rootIds.add(container.id)
+		// Plain parents by child — every reference path climbs them to a root,
+		// so they gather before any path computes.
+		val plainParents = HashMap<Int, MutableList<Int>>()
+		for (link in sorted) if (!link.isReference)
+			plainParents.getOrPut(link.childId) { ArrayList() }.add(link.parentId)
+		val children = HashMap<Int, MutableList<StreamChild>>()
+		for (link in sorted) {
 			val child = itemsById[link.childId] ?: continue
-			children.getOrPut(link.parentId) { ArrayList() }.add(child)
+			val refPath =
+				if (link.isReference) refPathOf(child, itemsById, plainParents, rootIds) else null
+			children.getOrPut(link.parentId) { ArrayList() }.add(StreamChild(child, refPath))
 		}
-		GraphWalk.collectInto(out, root,
-			{ walked ->
-				val kids = children[walked.id] ?: emptyList()
-				// Words list translations only.
-				if (walked.type == ItemKind.WORD) kids.filter { it.type == ItemKind.TRANSLATION }
-				else kids
-			},
-			exporter::onItem)
+		for (container in containers) {
+			val root = StreamItem(container, null)
+			out.add(root)
+			exporter.onItem(root)
+			GraphWalk.collectInto(out, root,
+				{ walked ->
+					val kids = children[walked.id] ?: emptyList()
+					// Words list translations only.
+					if (walked.type == ItemKind.WORD)
+						kids.filter { it.row.type == ItemKind.TRANSLATION }
+					else kids
+				},
+				exporter::onItem)
+		}
 		return out
 	}
 
 	/**
+	 * A reference target's plain-home path — names from an exported root
+	 * down, the target's name last; the root row alone when the target IS
+	 * a root. `null` when no plain chain reaches a root of this export.
+	 */
+	private fun refPathOf(
+		target: DbItem,
+		itemsById: Map<Int, DbItem>,
+		plainParents: Map<Int, List<Int>>,
+		rootIds: Set<Int>,
+	): List<String>? {
+		if (target.id in rootIds) return listOf(target.name)
+		val names = ArrayDeque<String>()
+		names.addFirst(target.name)
+		var cursor = target.id
+		while (true) {
+			val parent = plainParents[cursor]?.firstOrNull { it in itemsById } ?: return null
+			names.addFirst(itemsById[parent]!!.name)
+			if (parent in rootIds) return names.toList()
+			cursor = parent
+		}
+	}
+
+	/**
 	 * Word-add merge rule for every item add.
+	 * - the name trims first — a spaced name is the same word.
+	 * - the row stores the trimmed name.
 	 * - same-named word in scope merges, new one otherwise.
 	 */
 	internal suspend fun insertWord(store: ItemStore, params: InsertWordParams): DbItem {
+		val name = params.name.trim()
 		val scope = store.subjectRootOf(params.parentId) ?: params.parentId
-		val existing = store.findInSubject(scope, params.name, ItemKind.WORD)
+		val existing = store.findInSubject(scope, name, ItemKind.WORD)
 		val word = if (existing != null) {
 			store.mergeCounters(existing, params.passedTests, params.failedTests)
 			store.mergeDescription(existing, params.description)
 		} else store.insert(DbItem(
-			name = params.name, description = params.description ?: "", type = ItemKind.WORD,
+			name = name, description = params.description ?: "", type = ItemKind.WORD,
 			passedTests = params.passedTests, failedTests = params.failedTests))
 		if (!store.linked(params.parentId, word.id)) store.linkAtEnd(params.parentId, word.id)
 		addTranslations(store, AddTranslationsParams(scope, word.id, params.translations))
@@ -315,15 +364,17 @@ object ItemRepository {
 
 	/**
 	 * Translation-add half of merge rule, for any store.
+	 * - the name trims first — a blank name is no translation.
 	 * - same-named translation in scope merges, new one otherwise.
-	 * - empty names skipped. Rows return in given order.
+	 * - empty names skip. Rows return in given order.
 	 */
 	internal suspend fun addTranslations(store: ItemStore, params: AddTranslationsParams): List<DbItem> {
 		val word = store.row(params.wordId) ?: return emptyList()
 		val rows = ArrayList<DbItem>(params.translations.size)
 		for (translation in params.translations) {
-			if (translation.name.isEmpty()) continue
-			val existing = store.findInSubject(params.scope, translation.name, ItemKind.TRANSLATION)
+			val name = translation.name.trim()
+			if (name.isEmpty()) continue
+			val existing = store.findInSubject(params.scope, name, ItemKind.TRANSLATION)
 			val trl = if (existing != null) {
 				// Merge adopts more-tested counters.
 				store.mergeCounters(existing, translation.passedTests ?: word.passedTests,
@@ -331,7 +382,7 @@ object ItemRepository {
 				store.mergeDescription(existing, translation.description)
 			}
 			else store.insert(DbItem(
-				name = translation.name, description = translation.description ?: "",
+				name = name, description = translation.description ?: "",
 				type = ItemKind.TRANSLATION,
 				passedTests = translation.passedTests ?: word.passedTests,
 				failedTests = translation.failedTests ?: word.failedTests))
@@ -355,12 +406,15 @@ object ItemRepository {
 
 	private suspend fun renameInternal(dao: ItemDao, wordDao: WordDao, id: Int, name: String): DbItem {
 		val item = dao.get(id) ?: throw IllegalArgumentException("No item $id")
+		// the same trim as creation — the merge lookup and the stored name
+		// see the trimmed form
+		val trimmed = name.trim()
 		if (item.type == ItemKind.WORD) {
 			val scope = dao.subjectRootOf(id, ROOT_ID) ?: id
-			val target = wordDao.findWordInSubject(scope, name)
+			val target = wordDao.findWordInSubject(scope, trimmed)
 			if (target != null && target.id != id) return FlipService.mergeWords(dao, id, target)
 		}
-		dao.updateById(id, name, item.description)
+		dao.updateById(id, trimmed, item.description)
 		return dao.get(id)!!
 	}
 
@@ -601,8 +655,9 @@ object ItemRepository {
 			GraphWalk.collectInto(items, rootItem, { walked ->
 				val kids = children[walked.id] ?: emptyList()
 				// Words list translations only.
-				if (walked.type == ItemKind.WORD) kids.filter { it.type == ItemKind.TRANSLATION }
-				else kids
+				val visible = if (walked.type == ItemKind.WORD)
+					kids.filter { it.type == ItemKind.TRANSLATION } else kids
+				visible.map { StreamChild(it) }
 			}, {})
 			val outcome = ImportService.run(dao, StreamImporter(items), targetParentId)
 			// Reference links follow rows — in-tree endpoints remap, outside ones keep row.
@@ -667,8 +722,7 @@ object ItemRepository {
 	 * Places existing item into another container through reference link.
 	 * Any item, chapter included, can be referenced — whole content shows
 	 * through link alone, with no per-item copies.
-	 * - no counter ever changes — referenced words never count toward the
-	 *   parent's rate.
+	 * - no counter ever changes — referenced words never count toward the parent's rate.
 	 * - returns `true` without change when link already exists.
 	 * - returns `false` when link would close cycle.
 	 */

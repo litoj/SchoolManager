@@ -28,7 +28,7 @@ class TestEngineConvertAllTest {
 		TestEngine.convertAll(sources.toList()) { id -> children[id] ?: emptyList() }
 
 	@Test
-	fun wordReferencedInSiblingChaptersIsOneEntry() {
+	fun `a word referenced in sibling chapters is one entry`() {
 		val s = item(1, "subject", ItemKind.CHAPTER)
 		val a = item(2, "a", ItemKind.CHAPTER)
 		val b = item(3, "b", ItemKind.CHAPTER)
@@ -42,7 +42,7 @@ class TestEngineConvertAllTest {
 	}
 
 	@Test
-	fun chapterReachedThroughTwoPathsIsExpandedOnce() {
+	fun `a chapter reached through two paths expands once`() {
 		val s = item(1, "subject", ItemKind.CHAPTER)
 		val a = item(2, "a", ItemKind.CHAPTER)
 		val b = item(3, "b", ItemKind.CHAPTER)
@@ -57,7 +57,7 @@ class TestEngineConvertAllTest {
 	}
 
 	@Test
-	fun selectedWordIsADirectEntry() {
+	fun `a selected word is a direct entry`() {
 		val w = item(4, "w", ItemKind.WORD)
 		val entries = convertAll(listOf(w))
 		assertEquals(1, entries.size)
@@ -65,7 +65,7 @@ class TestEngineConvertAllTest {
 	}
 
 	@Test
-	fun overlappingSourcesExpandEachWordOnce() {
+	fun `overlapping sources expand each word once`() {
 		val s = item(1, "subject", ItemKind.CHAPTER)
 		val a = item(2, "a", ItemKind.CHAPTER)
 		val w = item(4, "w", ItemKind.WORD)

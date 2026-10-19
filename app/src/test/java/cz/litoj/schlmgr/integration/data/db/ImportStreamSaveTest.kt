@@ -26,9 +26,8 @@ import org.robolectric.annotation.Config
  * The save phase of a hand-made item stream ([ItemRepository.import]):
  * chapters, words, translations and notes each land as the right row shape,
  * and the result counts words and chapters only. Pins the per-kind save
- * behaviour, notes included (the tree JSON drops them, so only a direct
- * stream or a word list carries them), and the reference phase's cycle
- * guard (an ancestor reference adds no link).
+ * behaviour, notes included, and the reference phase's cycle guard (an
+ * ancestor reference adds no link).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -54,6 +53,36 @@ class ImportStreamSaveTest {
 
 	private fun item(name: String, type: ItemKind, description: String = "") =
 		DbItem(name = name, description = description, type = type)
+
+	@Test
+	fun `a reference holds no name in its parent - the plain child saves as its own row`() {
+		val subject = ItemRepository.createSubject("S", null)
+		val home = ItemRepository.createChapter(subject.id, "home", null)
+		val holder = ItemRepository.createChapter(subject.id, "holder", null)
+		val chapter = ItemRepository.createChapter(home.id, "c1", null)
+		// the chapter shows in the holder through a reference
+		assertTrue(ItemRepository.reference(chapter.id, holder.id))
+
+		// a plain c1 lands in the holder from a stream
+		val plain = StreamItem(item("c1", ItemKind.CHAPTER), null)
+		val word = StreamItem(item("w", ItemKind.WORD), plain)
+		val trl = StreamItem(item("t", ItemKind.TRANSLATION), word)
+		ItemRepository.import(object : DataImporter {
+			override val items = listOf(plain, word, trl)
+			override val references: List<StreamReference> = emptyList()
+		}, holder.id)
+
+		// the holder shows both: the reference and its own plain row
+		val kids = ItemRepository.children(holder.id).filter { it.name == "c1" }
+		assertEquals(2, kids.size)
+		// the reference still points at the home's chapter — the plain row
+		// is the holder's own
+		assertTrue(ItemRepository.linkIsReference(holder.id, chapter.id))
+		val own = kids.single { it.id != chapter.id }
+		assertFalse(ItemRepository.linkIsReference(holder.id, own.id))
+		// the plain row carried its own content
+		assertEquals(listOf("w"), ItemRepository.children(own.id).map { it.name })
+	}
 
 	@Test
 	fun `a stream with every kind saves each row in its place and counts words and chapters`() {

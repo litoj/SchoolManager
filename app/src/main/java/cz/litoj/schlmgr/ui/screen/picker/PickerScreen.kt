@@ -51,7 +51,7 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 	Column(Modifier.fillMaxSize()) {
 		TopBar {
 			TopBarNav(up = true, onNavigate = onExit)
-			if (fieldOpen) ExplorerSearchField(query, viewModel::onQueryChange, viewModel::onQuerySubmit, Modifier.weight(1f))
+			if (fieldOpen) ExplorerSearchField(query, viewModel::onQueryChange, viewModel::onQuerySubmit, viewModel::closeSearchField, Modifier.weight(1f))
 			else TopBarTitle(title)
 			TopBarIconButton(
 				icon = R.drawable.ic_search,
@@ -100,4 +100,5 @@ private fun pickerCallbacks(viewModel: PickerViewModel): ItemListCallbacks = Ite
 	onItemLongClick = { ui -> viewModel.onItemLongClick(ui.payload) },
 	onSelectRange = viewModel::selectRange,
 	onSelectEnd = viewModel::endRangeSelect,
+	onTopPull = viewModel::openSearchField,
 )

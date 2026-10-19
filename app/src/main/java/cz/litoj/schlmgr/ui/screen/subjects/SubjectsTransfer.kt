@@ -78,8 +78,11 @@ internal class SubjectsTransfer(
 		val atRoot = host.path.isEmpty()
 		scope.launch(io) {
 			val name = FileGateway.displayName(host.ctx, uri, "")
+			// the document's own shape decides its format — the name may
+			// resolve to nothing on some providers
+			val jsonContent = FileGateway.startsAsJson(host.ctx, uri)
 			val worker = ImporterFactory.create(
-				host.ctx, host::postToUi, uri, name, target, { open }, { atRoot },
+				host.ctx, host::postToUi, uri, name, jsonContent, target, { open }, { atRoot },
 				{ host.setContent(null) },
 				{ host.reloadContent() },
 				{

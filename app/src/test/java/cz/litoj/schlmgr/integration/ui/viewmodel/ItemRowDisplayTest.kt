@@ -3,6 +3,7 @@ package cz.litoj.schlmgr.integration.ui.viewmodel
 import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import org.junit.After
@@ -51,7 +52,7 @@ class ItemRowDisplayTest {
 	}
 
 	/** A subject with one word carrying two translations, one with a description. */
-	private fun wordWithTranslations(): Pair<Int, cz.litoj.schlmgr.data.db.DbItem> {
+	private fun wordWithTranslations(): Pair<Int, DbItem> {
 		val subject = ItemRepository.createSubject("subject", null)
 		val word = ItemRepository.createWord(
 			subject.id, "das Haus", "noun", listOf("house" to "dwell", "home" to null))
@@ -65,8 +66,8 @@ class ItemRowDisplayTest {
 		val row = ItemRow(word, parentId, 1)
 		assertTrue(row.flipped)
 		assertEquals("house\nhome", row.toShow)
-		assertEquals("dwell", row.info)
-		assertEquals(2, row.translationLines.size)
+		assertEquals("no joint description — the lines carry their own", "", row.info)
+		assertEquals(listOf("dwell", ""), row.translationLines.map { it.description })
 	}
 
 	@Test
@@ -89,7 +90,7 @@ class ItemRowDisplayTest {
 		row.flip()
 		assertTrue(row.flipped)
 		assertEquals("house\nhome", row.toShow)
-		assertEquals("dwell", row.info)
+		assertEquals("no joint description — the lines carry their own", "", row.info)
 		assertEquals(2, row.translationLines.size)
 
 		row.flip()

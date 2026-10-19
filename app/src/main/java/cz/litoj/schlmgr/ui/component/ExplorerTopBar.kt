@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -71,24 +72,41 @@ private fun Breadcrumbs(breadcrumbs: List<String>, onClick: (Int) -> Unit) {
 			.horizontalScroll(scroll),
 		verticalAlignment = Alignment.CenterVertically,
 	) {
-		breadcrumbs.forEachIndexed { index, label ->
+		CrumbChain(breadcrumbs, CrumbColor, onCrumbClick = onClick)
+	}
+}
+
+/**
+ * One crumb chain — the shared rendering of the titlebar's breadcrumbs and
+ * the source picker's paths.
+ * @param onCrumbClick a crumb's tap — `null` renders a plain chain
+ */
+@Composable
+fun CrumbChain(
+	names: List<String>,
+	crumbColor: Color,
+	modifier: Modifier = Modifier,
+	onCrumbClick: ((Int) -> Unit)? = null,
+) {
+	Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+		names.forEachIndexed { index, label ->
 			Text(
 				label,
 				fontSize = 17.sp,
-				color = CrumbColor,
+				color = crumbColor,
 				maxLines = 1,
 				modifier = Modifier
-					.clickable { onClick(index) }
+					.then(if (onCrumbClick != null) Modifier.clickable { onCrumbClick(index) } else Modifier)
 					.padding(horizontal = 4.dp),
 			)
-			if (index < breadcrumbs.size - 1) {
+			if (index < names.size - 1) {
 				// scaled content stays centered. The tint carries the palette — the
 				// drawable's own fill is a fixed grey, which would read the same in
 				// both palettes
 				Image(
 					painterResource(R.drawable.ic_bread_crumbs),
 					contentDescription = null,
-					colorFilter = ColorFilter.tint(CrumbColor),
+					colorFilter = ColorFilter.tint(crumbColor),
 				)
 			}
 		}
@@ -115,7 +133,7 @@ private fun InfoStrip(
 			R.string.data_children_sf, info.count, info.ratio,
 			if (info.description.isEmpty()) "%" else "%\n" + info.description,
 		)
-		is InfoBar.Search -> stringResource(R.string.data_search_time, info.count, info.elapsedMs)
+		is InfoBar.Search -> stringResource(R.string.data_search_chapters, info.count, info.chapters)
 	}
 	// The laid-out line count of the current text. The wrapper Box always gives
 	// the text its full width, so the count is stable whatever the strip height.

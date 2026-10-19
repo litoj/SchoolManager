@@ -113,11 +113,11 @@ class WordIntoContainerImport(
 
 /**
  * A word list picked at the root — the file's content lands as it is, with
- * no wrapper of the file's name, so a saved container's own wrapper chapter
- * becomes a subject again and bare words land as the root's rows. The file's
- * name only labels the parse errors (see [FileGateway.containerNameFrom]).
- * - the importer parses the whole text before anything is written, so a bad
- *   file leaves nothing half-created behind.
+ * no wrapper of the file's name. A saved container's own wrapper chapter
+ * becomes a subject again and bare words land as the root's rows.
+ *
+ * The file's name only labels the parse errors (see [FileGateway.containerNameFrom]).
+ * - the importer parses the whole text before anything is written.
  * - the subjects screen reloads instead of adding rows.
  */
 class WordAsSubjectImport(
@@ -143,8 +143,8 @@ class WordAsSubjectImport(
 /**
  * A tree JSON (HJSON) import — the codec parses the text into chapters,
  * the repository persists the stream in one transaction.
- * - the pick-time open container anchors the top-level chapters — with
- *   none picked they become subjects of the root.
+ * - the pick-time open container anchors the top-level chapters.
+ * - none picked — they become subjects of the root.
  * - subject-level reload — the open content re-reads otherwise.
  */
 class JsonTreeImport(
@@ -174,10 +174,10 @@ class JsonTreeImport(
 /**
  * A subject-directory import from files — a one-time conversion with no
  * link back to the picked folder.
- * - every file parses before anything is written — a non-subject
- *   directory reports the load failure, leaving nothing behind.
- * - the root reload runs past validation, even on a failed import, but
- *   never on a rejected pick.
+ * - every file parses before anything is written.
+ * - a non-subject directory reports the load failure, leaving nothing behind.
+ * - the root reload runs past validation, even on a failed import.
+ * - never on a rejected pick.
  */
 class LegacyDirImport(
 	appContext: Context,
@@ -232,8 +232,7 @@ class LegacyDirImport(
  * The one shared export path — the codec is the injected [ExportFormat]
  * strategy, so the word-list and tree-JSON target workers differ only in
  * the format they hand over.
- * - the containers are the caller's pick-time snapshot — the selection,
- *   else the open container or every subject.
+ * - the containers are the caller's pick-time snapshot.
  */
 class ExportPipeline(
 	appContext: Context,

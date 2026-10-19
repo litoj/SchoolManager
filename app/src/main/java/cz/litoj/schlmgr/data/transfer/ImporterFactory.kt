@@ -14,21 +14,21 @@ enum class ImportKind {
 }
 
 /**
- * The `onAnyFilePicked` dispatch — file extension first, backlog position
- * second — a `.json`/`.hjson` name is a tree import (its own names, the
- * open container as its anchor), anything else is a word list (a new
- * subject at the root, the open container's content otherwise).
+ * The `onAnyFilePicked` dispatch — the document's own shape first, the
+ * backlog position second: a `[`/`{` start is a tree import (its own names,
+ * the open container as its anchor), anything else is a word list (a new
+ * subject at the root, the open container's content otherwise). The picked
+ * name never decides — a provider may report none at all, so a suffix is
+ * not a promise.
  */
 object ImporterFactory {
 
-	fun decide(fileName: String, target: ImportTarget): ImportKind {
-		val lower = fileName.lowercase()
-		if (lower.endsWith(".json") || lower.endsWith(".hjson")) return ImportKind.JSON_TREE
-		return when (target) {
+	fun decide(jsonContent: Boolean, target: ImportTarget): ImportKind =
+		if (jsonContent) ImportKind.JSON_TREE
+		else when (target) {
 			is ImportTarget.Root -> ImportKind.WORD_AS_SUBJECT
 			is ImportTarget.Container -> ImportKind.WORD_INTO_CONTAINER
 		}
-	}
 
 	/** The backlog position as an [ImportTarget]: no open container is the root. */
 	fun targetFor(openContainer: DbItem?): ImportTarget =
@@ -37,21 +37,21 @@ object ImporterFactory {
 	/**
 	 * Builds the picked file's worker without starting it:
 	 * - [decide] picks the kind, the `when` the worker.
-	 * - name and target resolve on the caller thread — the workers keep the
-	 *   pick-time snapshots.
+	 * - name, shape and target resolve on the caller thread — workers keep the pick-time snapshots.
 	 */
 	fun create(
 		appContext: Context,
 		postToUi: (Runnable) -> Unit,
 		uri: Uri,
 		fileName: String,
+		jsonContent: Boolean,
 		target: ImportTarget,
 		openContainer: () -> DbItem?,
 		atRoot: () -> Boolean,
 		onRootReload: () -> Unit,
 		onCurrentReload: () -> Unit,
 		onContainerReload: () -> Unit,
-	): FileWorker = when (decide(fileName, target)) {
+	): FileWorker = when (decide(jsonContent, target)) {
 		ImportKind.WORD_INTO_CONTAINER ->
 			WordIntoContainerImport(appContext, postToUi, uri, fileName, openContainer, atRoot, onRootReload, onContainerReload)
 		ImportKind.WORD_AS_SUBJECT ->

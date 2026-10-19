@@ -21,6 +21,5 @@ object MenuId {
 	const val SORT_LENGTH_01 = 15
 	const val SORT_LENGTH_10 = 16
 	const val SORT_DEFAULT = 17
-	const val GO_TO = 18
 	const val SORT_PRIORITY = 19
 }

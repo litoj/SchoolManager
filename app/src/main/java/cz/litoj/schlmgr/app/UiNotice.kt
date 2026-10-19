@@ -31,8 +31,8 @@ sealed interface UiNotice {
 
 	/**
 	 * Test-source pick refused — sources must come from one subject.
-	 * - [subject] is the already-picked one, null when the refused pick
-	 *   was first.
+	 * - [subject] is the already-picked one.
+	 * - null when the refused pick was first.
 	 */
 	data class OneSubjectOnly(val subject: String?) : UiNotice
 }

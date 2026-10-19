@@ -20,7 +20,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * Unit tests of the search error return — a bad regex aborts the run before it
+ * Integration tests of the search error return — a bad regex aborts the run before it
  * starts ([ExplorerViewModel.submitSearch] shows the engine's
  * [cz.litoj.schlmgr.ui.search.SearchEngine.regexError]), stacking no hop and
  * showing no list. The message travels through the shared message flow.

@@ -27,12 +27,10 @@ import org.robolectric.annotation.Config
 /**
  * Subject-directory import ([ItemRepository.import] with a
  * [LegacySubjectImporter]) on a real in-memory database:
- * - the tree assembles from its split files — a save chapter's node marks its
- *   place and carries its file's content.
+ * - the tree assembles from its split files — a save chapter's node marks its place and carries its file's content.
  * - chapters nest and unlinked files are skipped.
  * - a word re-encountered in another chapter reuses its row.
- * - a persisted `Reference` node becomes a reference link to the item its origin
- *   path names.
+ * - a persisted `Reference` node becomes a reference link to the item its origin path names.
  * - a failed import leaves nothing behind.
  */
 @RunWith(RobolectricTestRunner::class)

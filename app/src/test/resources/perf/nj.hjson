@@ -1,14 +1,14 @@
 {
   name: NJ
-  chapters:
+  children:
   [
     {
       name: 1. 100
-      chapters:
+      children:
       [
         {
           name: 11.9.
-          words:
+          children:
           [
             {
               name: Auf Bild A sehe ich
@@ -140,7 +140,7 @@
         }
         {
           name: 12.9.
-          words:
+          children:
           [
             {
               name: die Pfanne
@@ -281,7 +281,7 @@
         }
         {
           name: 14.9.
-          words:
+          children:
           [
             {
               name: Ich habe Lust auf das Fleisch dort.
@@ -479,7 +479,7 @@
         }
         {
           name: 18.9.
-          words:
+          children:
           [
             {
               name: der/das Sandwich
@@ -650,7 +650,7 @@
         }
         {
           name: 21.9.
-          words:
+          children:
           [
             {
               name: Der Topf liegt auf dem Tisch.
@@ -827,7 +827,7 @@
         }
         {
           name: 25.9.
-          words:
+          children:
           [
             {
               name: Hast du schon Geschirr gespült?
@@ -934,11 +934,11 @@
     }
     {
       name: 2. 100
-      chapters:
+      children:
       [
         {
           name: 5.10.
-          words:
+          children:
           [
             {
               name: Ich habe ihn vor drei Tagen gesehen.
@@ -1007,7 +1007,7 @@
         }
         {
           name: 9.10.
-          words:
+          children:
           [
             {
               name: die Cafeteria
@@ -1175,7 +1175,7 @@
         }
         {
           name: 10.10.
-          words:
+          children:
           [
             {
               name: der Nebensatz
@@ -1274,7 +1274,7 @@
         }
         {
           name: 16.10.
-          words:
+          children:
           [
             {
               name: Ich wollte mit ihr nicht chatten.
@@ -1415,7 +1415,7 @@
         }
         {
           name: 2.11.
-          words:
+          children:
           [
             {
               name: der Gedanke
@@ -1694,7 +1694,7 @@
         }
         {
           name: 13.11.
-          words:
+          children:
           [
             {
               name: Was darf's denn sein?
@@ -1972,11 +1972,11 @@
     }
     {
       name: 3. 100
-      chapters:
+      children:
       [
         {
           name: 14.11.
-          words:
+          children:
           [
             {
               name: schwanger
@@ -2099,7 +2099,7 @@
         }
         {
           name: 20.11.
-          words:
+          children:
           [
             {
               name: das Heft
@@ -2294,7 +2294,7 @@
         }
         {
           name: 21.11.
-          words:
+          children:
           [
             {
               name: ich will
@@ -2552,7 +2552,7 @@
         }
         {
           name: 27.11.
-          words:
+          children:
           [
             {
               name: die Geschichte
@@ -2734,11 +2734,11 @@
     }
     {
       name: 4. 100
-      chapters:
+      children:
       [
         {
           name: 4.12.
-          words:
+          children:
           [
             {
               name: Wie gefällt dir der Laptop?
@@ -2888,7 +2888,7 @@
         }
         {
           name: 5.12.
-          words:
+          children:
           [
             {
               name: der Kalender
@@ -3011,7 +3011,7 @@
         }
         {
           name: 7.12.
-          words:
+          children:
           [
             {
               name: das Kissen
@@ -3308,7 +3308,7 @@
         }
         {
           name: 11.12.
-          words:
+          children:
           [
             {
               name: Die Uhr hängt and der Wand.
@@ -3431,7 +3431,7 @@
         }
         {
           name: 18.12.
-          words:
+          children:
           [
             {
               name: das Weihnachtsgebäck
@@ -3619,11 +3619,11 @@
     }
     {
       name: 5. 100
-      chapters:
+      children:
       [
         {
           name: 8.1.
-          words:
+          children:
           [
             {
               name: in den Ferien
@@ -3836,7 +3836,7 @@
         }
         {
           name: 9.1.
-          words:
+          children:
           [
             {
               name: in den Park gehen
@@ -3968,7 +3968,7 @@
         }
         {
           name: 30.1.
-          words:
+          children:
           [
             {
               name: Zeit verbringen
@@ -4283,7 +4283,7 @@
         }
         {
           name: 5.2.
-          words:
+          children:
           [
             {
               name: an der Grundschule
@@ -4379,7 +4379,7 @@
         }
         {
           name: 6.2.
-          words:
+          children:
           [
             {
               name: die Schultasche
@@ -4576,11 +4576,11 @@
     }
     {
       name: 6. 100
-      chapters:
+      children:
       [
         {
           name: 8.2.
-          words:
+          children:
           [
             {
               name: der Spitzer
@@ -4793,7 +4793,7 @@
         }
         {
           name: 25.2.
-          words:
+          children:
           [
             {
               name: Radio/Musik hören
@@ -5072,7 +5072,7 @@
         }
         {
           name: 12.3.
-          words:
+          children:
           [
             {
               name: das Betriebssystem
@@ -5153,7 +5153,7 @@
         }
         {
           name: 1.3.
-          words:
+          children:
           [
             {
               name: täglich
@@ -5330,7 +5330,7 @@
         }
         {
           name: 15.3.
-          words:
+          children:
           [
             {
               name: Großbritannien
@@ -5491,11 +5491,11 @@
     }
     {
       name: 7. 100
-      chapters:
+      children:
       [
         {
           name: 20.3.
-          words:
+          children:
           [
             {
               name: das Thema
@@ -5681,7 +5681,7 @@
         }
         {
           name: 26.3.
-          words:
+          children:
           [
             {
               name: Mein Name ist...
@@ -5894,7 +5894,7 @@
         }
         {
           name: 27.3.
-          words:
+          children:
           [
             {
               name: fett
@@ -6017,7 +6017,7 @@
         }
         {
           name: 29.3.
-          words:
+          children:
           [
             {
               name: Sie hat einen Schluckauf.
@@ -6104,7 +6104,7 @@
         }
         {
           name: 2.4.
-          words:
+          children:
           [
             {
               name: Was für Filme siehst du gern?
@@ -6328,11 +6328,11 @@
     }
     {
       name: 8. 100
-      chapters:
+      children:
       [
         {
           name: 3.4.
-          words:
+          children:
           [
             {
               name: Ich finde den Film spannend.
@@ -6557,7 +6557,7 @@
         }
         {
           name: 17.4.
-          words:
+          children:
           [
             {
               name: der Aussenseiter
@@ -6806,7 +6806,7 @@
         }
         {
           name: 10.5.
-          words:
+          children:
           [
             {
               name: ein Auto lenken/fahren
@@ -6968,7 +6968,7 @@
         }
         {
           name: 14.5.
-          words:
+          children:
           [
             {
               name: Sprichst du über ihn?
@@ -7145,7 +7145,7 @@
         }
         {
           name: 15.5.
-          words:
+          children:
           [
             {
               name: das Heim
@@ -7282,11 +7282,11 @@
     }
     {
       name: 9. 100
-      chapters:
+      children:
       [
         {
           name: 17.5.
-          words:
+          children:
           [
             {
               name: eine schlechte Note schreiben
@@ -7418,7 +7418,7 @@
         }
         {
           name: 29.5.
-          words:
+          children:
           [
             {
               name: die Hochzeit
@@ -7607,7 +7607,7 @@
         }
         {
           name: 31.5.
-          words:
+          children:
           [
             {
               name: Hartes Training lohnt sich doch.
@@ -7865,7 +7865,7 @@
         }
         {
           name: 5.6.
-          words:
+          children:
           [
             {
               name: wegfahren
@@ -7988,7 +7988,7 @@
         }
         {
           name: 7.6.
-          words:
+          children:
           [
             {
               name: Regnet es?
@@ -8147,7 +8147,7 @@
         }
         {
           name: 11.6.
-          words:
+          children:
           [
             {
               name: Fotos auf seine Facebook Seite stellen
@@ -8290,11 +8290,11 @@
     }
     {
       name: 10. 100
-      chapters:
+      children:
       [
         {
           name: 5.9.
-          words:
+          children:
           [
             {
               name: an den Veranstaltungen teilnehmen
@@ -8408,7 +8408,7 @@
         }
         {
           name: 10.9.
-          words:
+          children:
           [
             {
               name: verlieren
@@ -8657,7 +8657,7 @@
         }
         {
           name: 11.9.
-          words:
+          children:
           [
             {
               name: die Kirche
@@ -8780,7 +8780,7 @@
         }
         {
           name: 24.9.I
-          words:
+          children:
           [
             {
               name: das Los
@@ -9083,7 +9083,7 @@
         }
         {
           name: 24.9.II
-          words:
+          children:
           [
             {
               name: der Morgenmuffel
@@ -9337,11 +9337,11 @@
     }
     {
       name: 11. 100
-      chapters:
+      children:
       [
         {
           name: 25.9.
-          words:
+          children:
           [
             {
               name: das Leben im Ausland
@@ -9491,7 +9491,7 @@
         }
         {
           name: 1.10.
-          words:
+          children:
           [
             {
               name: Auf welche Post wartet man ungeduldig?
@@ -9590,7 +9590,7 @@
         }
         {
           name: 17.10.
-          words:
+          children:
           [
             {
               name: der Hammer
@@ -9731,7 +9731,7 @@
         }
         {
           name: 5.11.I
-          words:
+          children:
           [
             {
               name: Ich komme morgen zurück und dann melde ich mich.
@@ -9899,7 +9899,7 @@
         }
         {
           name: 5.11.II
-          words:
+          children:
           [
             {
               name: Mario interessiert sich für Sprach.
@@ -10094,7 +10094,7 @@
         }
         {
           name: 6.11.
-          words:
+          children:
           [
             {
               name: der Feierabend
@@ -10193,11 +10193,11 @@
     }
     {
       name: 12. 100
-      chapters:
+      children:
       [
         {
           name: 19.11.
-          words:
+          children:
           [
             {
               name: die Kaputze
@@ -10392,7 +10392,7 @@
         }
         {
           name: 28.11.
-          words:
+          children:
           [
             {
               name: die Tätigkeit
@@ -10632,7 +10632,7 @@
         }
         {
           name: 3.12.
-          words:
+          children:
           [
             {
               name: der Streit
@@ -10827,7 +10827,7 @@
         }
         {
           name: 5.12.
-          words:
+          children:
           [
             {
               name: Ich habe mich von meiner Freundin getrennt.
@@ -10896,7 +10896,7 @@
         }
         {
           name: 10.12.I
-          words:
+          children:
           [
             {
               name: der Kern
@@ -11165,11 +11165,11 @@
     }
     {
       name: 13. 100
-      chapters:
+      children:
       [
         {
           name: 10.12.II
-          words:
+          children:
           [
             {
               name: der Eimer
@@ -11410,7 +11410,7 @@
         }
         {
           name: 12.12.
-          words:
+          children:
           [
             {
               name: das Verstecken
@@ -11677,7 +11677,7 @@
         }
         {
           name: 11.2.I
-          words:
+          children:
           [
             {
               name: das Feriencamp
@@ -11946,11 +11946,11 @@
     }
     {
       name: 14. 100
-      chapters:
+      children:
       [
         {
           name: 11.2.II
-          words:
+          children:
           [
             {
               name: das Labyrinth
@@ -12217,7 +12217,7 @@
         }
         {
           name: 11.2.III
-          words:
+          children:
           [
             {
               name: der Wasserhahn
@@ -12535,7 +12535,7 @@
         }
         {
           name: 11.2.IV
-          words:
+          children:
           [
             {
               name: die Werkstatt
@@ -12822,11 +12822,11 @@
     }
     {
       name: 15. 100
-      chapters:
+      children:
       [
         {
           name: 11.2.V
-          words:
+          children:
           [
             {
               name: im Alter arbeiten
@@ -13102,7 +13102,7 @@
         }
         {
           name: 13.2.
-          words:
+          children:
           [
             {
               name: Wie war dein letztes Wochenende?
@@ -13243,7 +13243,7 @@
         }
         {
           name: 18.2.
-          words:
+          children:
           [
             {
               name: der Notruf
@@ -13438,7 +13438,7 @@
         }
         {
           name: 3.3.
-          words:
+          children:
           [
             {
               name: Geht das überhaupt?
@@ -13725,11 +13725,11 @@
     }
     {
       name: 16. 100
-      chapters:
+      children:
       [
         {
           name: 13.3.I
-          words:
+          children:
           [
             {
               name: besiegen
@@ -13922,7 +13922,7 @@
         }
         {
           name: 13.3.II
-          words:
+          children:
           [
             {
               name: die Reihe
@@ -14114,7 +14114,7 @@
         }
         {
           name: 13.3.III
-          words:
+          children:
           [
             {
               name: Er beugt sich zu ihr.
@@ -14306,7 +14306,7 @@
         }
         {
           name: 13.3.IV
-          words:
+          children:
           [
             {
               name: der Reifen
@@ -14500,7 +14500,7 @@
         }
         {
           name: 13.3.V
-          words:
+          children:
           [
             {
               name: Ich werde meine Eltern nicht belügen.
@@ -14696,11 +14696,11 @@
     }
     {
       name: 17. 100
-      chapters:
+      children:
       [
         {
           name: 11.9.
-          words:
+          children:
           [
             {
               name: das Fahrradtour
@@ -14841,7 +14841,7 @@
         }
         {
           name: 16.9.
-          words:
+          children:
           [
             {
               name: der Popo/Po
@@ -15037,7 +15037,7 @@
         }
         {
           name: 18.9.
-          words:
+          children:
           [
             {
               name: die Schrift
@@ -15137,7 +15137,7 @@
         }
         {
           name: 25.9.
-          words:
+          children:
           [
             {
               name: zu spät anfangen
@@ -15269,7 +15269,7 @@
         }
         {
           name: 30.9.
-          words:
+          children:
           [
             {
               name: Ich bin total gestresst.
@@ -15365,7 +15365,7 @@
         }
         {
           name: 26.2.2020 - I
-          words:
+          children:
           [
             {
               name: Welche Berufe haben mit Sprache zu tun?
@@ -15542,7 +15542,7 @@
         }
         {
           name: 26.2.2020 - II
-          words:
+          children:
           [
             {
               name: die Logopädin
@@ -15722,11 +15722,11 @@
     }
     {
       name: 18. 100
-      chapters:
+      children:
       [
         {
           name: 26.2.2020 - III
-          words:
+          children:
           [
             {
               name: der Flugbegleiter 
@@ -15911,7 +15911,7 @@
         }
         {
           name: 26.2.2020 - IV
-          words:
+          children:
           [
             {
               name: eine Frage stellen
@@ -16088,7 +16088,7 @@
         }
         {
           name: 26.2.2020 - V
-          words:
+          children:
           [
             {
               name: motivieren
@@ -16265,7 +16265,7 @@
         }
         {
           name: 26.2.2020 - VI
-          words:
+          children:
           [
             {
               name: sportlich
@@ -16442,7 +16442,7 @@
         }
         {
           name: 26.2.2020 - VII
-          words:
+          children:
           [
             {
               name: Muskeln anspannen und entspannen
@@ -16621,11 +16621,11 @@
     }
     {
       name: 19. 100
-      chapters:
+      children:
       [
         {
           name: 26.2.2020 - VIII
-          words:
+          children:
           [
             {
               name: treu
@@ -16802,7 +16802,7 @@
         }
         {
           name: 26.2.2020 - IX
-          words:
+          children:
           [
             {
               name: gerecht
@@ -16985,7 +16985,7 @@
         }
         {
           name: 26.2.2020 - X
-          words:
+          children:
           [
             {
               name: der Lieblingssong
@@ -17166,7 +17166,7 @@
         }
         {
           name: 26.2.2020 - XI
-          words:
+          children:
           [
             {
               name: der Stapel
@@ -17345,7 +17345,7 @@
         }
         {
           name: 26.2.2020 - XII
-          words:
+          children:
           [
             {
               name: hineinlegen
@@ -17524,11 +17524,11 @@
     }
     {
       name: 20. 100
-      chapters:
+      children:
       [
         {
           name: 26.2.2020 - XIII
-          words:
+          children:
           [
             {
               name: Welche Kleidung trägt sie?
@@ -17714,7 +17714,7 @@
         }
         {
           name: 26.2.2020 - XIV
-          words:
+          children:
           [
             {
               name: der Keller 
@@ -17897,7 +17897,7 @@
         }
         {
           name: 26.2.2020 - XV
-          words:
+          children:
           [
             {
               name: das Stadtleben
@@ -18075,7 +18075,7 @@
         }
         {
           name: 26.2.2020 - XVI
-          words:
+          children:
           [
             {
               name: Ist ja schon gut.
@@ -18256,7 +18256,7 @@
         }
         {
           name: 26.2.2020 - XVII
-          words:
+          children:
           [
             {
               name: der Bleistift
@@ -18439,11 +18439,11 @@
     }
     {
       name: 21. 100
-      chapters:
+      children:
       [
         {
           name: 26.2.2020 - XVIII
-          words:
+          children:
           [
             {
               name: Wir haben uns lange unterhalten.
@@ -18628,7 +18628,7 @@
         }
         {
           name: 26.2.2020 - XIX
-          words:
+          children:
           [
             {
               name: auspacken
@@ -18809,7 +18809,7 @@
         }
         {
           name: 26.2.2020 - XX
-          words:
+          children:
           [
             {
               name: im Norden von Deutschland liegen
@@ -18994,7 +18994,7 @@
         }
         {
           name: 26.2.2020 - XXI
-          words:
+          children:
           [
             {
               name: das Huhn
@@ -19173,7 +19173,7 @@
         }
         {
           name: 26.2.2020 - XXII
-          words:
+          children:
           [
             {
               name: der Mitbewohner (-)
@@ -19352,11 +19352,11 @@
     }
     {
       name: 22. 100
-      chapters:
+      children:
       [
         {
           name: 26.2.2020 - XXIII
-          words:
+          children:
           [
             {
               name: Gänse schnattern
@@ -19536,7 +19536,7 @@
         }
         {
           name: 26.2.2020 - XXIV
-          words:
+          children:
           [
             {
               name: die Schlossführung 
@@ -19713,7 +19713,7 @@
         }
         {
           name: 26.2.2020 - XXV
-          words:
+          children:
           [
             {
               name: der Jazz
@@ -19893,7 +19893,7 @@
         }
         {
           name: 26.2.2020 - XXVI
-          words:
+          children:
           [
             {
               name: die Mehrwertsteuer (MwSt)
@@ -20073,7 +20073,7 @@
         }
         {
           name: 26.2.2020 - XXVII
-          words:
+          children:
           [
             {
               name: Ich muss dir mal was sagen.
@@ -20254,11 +20254,11 @@
     }
     {
       name: 23. 100
-      chapters:
+      children:
       [
         {
           name: 26.2.2020 - XXIX
-          words:
+          children:
           [
             {
               name: die Malerei
@@ -20435,7 +20435,7 @@
         }
         {
           name: 26.2.2020 - XXX
-          words:
+          children:
           [
             {
               name: der Drehort (e)
@@ -20612,7 +20612,7 @@
         }
         {
           name: 26.2.2020 - XXXI
-          words:
+          children:
           [
             {
               name: lügen
@@ -20789,7 +20789,7 @@
         }
         {
           name: 26.2.2020 - XXXII
-          words:
+          children:
           [
             {
               name: Von mir aus gern.
@@ -20966,7 +20966,7 @@
         }
         {
           name: 26.2.2020 - XXVIII
-          words:
+          children:
           [
             {
               name: Wasser ist mein Element.
@@ -21145,11 +21145,11 @@
     }
     {
       name: 24. 100
-      chapters:
+      children:
       [
         {
           name: 15.6. - I
-          words:
+          children:
           [
             {
               name: Was hast du damit zu tun?
@@ -21342,7 +21342,7 @@
         }
         {
           name: 15.6. - II
-          words:
+          children:
           [
             {
               name: einsam
@@ -21533,7 +21533,7 @@
         }
         {
           name: 15.6. - III
-          words:
+          children:
           [
             {
               name: ein Beispiel geben
@@ -21738,7 +21738,7 @@
         }
         {
           name: 15.6. - IV
-          words:
+          children:
           [
             {
               name: Fallschirm springen
@@ -21925,7 +21925,7 @@
         }
         {
           name: 15.6. - V
-          words:
+          children:
           [
             {
               name: Ich will mehr Zeit für mich.
@@ -22125,11 +22125,11 @@
     }
     {
       name: 25. 100
-      chapters:
+      children:
       [
         {
           name: 15.6. - VI
-          words:
+          children:
           [
             {
               name: Er hat mich immer so komisch angesehen.
@@ -22325,7 +22325,7 @@
         }
         {
           name: 15.6. - VII
-          words:
+          children:
           [
             {
               name: ein Geschenk mitbringen
@@ -22515,7 +22515,7 @@
         }
         {
           name: 15.6. - VIII
-          words:
+          children:
           [
             {
               name: Es ist mir aufgefallen, dass ...
@@ -22698,7 +22698,7 @@
         }
         {
           name: 15.6. - IX
-          words:
+          children:
           [
             {
               name: selbst gekochtes Essen
@@ -22886,7 +22886,7 @@
         }
         {
           name: 15.6. - X
-          words:
+          children:
           [
             {
               name: Was ist im Preis inbegriffen?
@@ -23075,11 +23075,11 @@
     }
     {
       name: 26. 100
-      chapters:
+      children:
       [
         {
           name: 15.6. - XI
-          words:
+          children:
           [
             {
               name: die Sitzreihe
@@ -23267,7 +23267,7 @@
         }
         {
           name: 15.6. - XII
-          words:
+          children:
           [
             {
               name: Ich habe mich erkältet.
@@ -23461,7 +23461,7 @@
         }
         {
           name: 15.6. - XIII
-          words:
+          children:
           [
             {
               name: der Werbeprospekt
@@ -23654,7 +23654,7 @@
         }
         {
           name: 15.6. - XIV
-          words:
+          children:
           [
             {
               name: den Bildschirm berühren
@@ -23848,7 +23848,7 @@
         }
         {
           name: 15.6. - XV
-          words:
+          children:
           [
             {
               name: Konsum fördern
@@ -24053,11 +24053,11 @@
     }
     {
       name: 27. 100
-      chapters:
+      children:
       [
         {
           name: 15.6. - XVI
-          words:
+          children:
           [
             {
               name: berufstätig/arbeitstätig/erwerbstätig
@@ -24243,7 +24243,7 @@
         }
         {
           name: 15.6. - XVII
-          words:
+          children:
           [
             {
               name: der Bauchnabel
@@ -24439,7 +24439,7 @@
         }
         {
           name: 15.6. - XVIII
-          words:
+          children:
           [
             {
               name: das Dilemma
@@ -24627,7 +24627,7 @@
         }
         {
           name: 15.6. - XIX
-          words:
+          children:
           [
             {
               name: freie Wahlen fordern
@@ -24814,7 +24814,7 @@
         }
         {
           name: 7.9 I
-          words:
+          children:
           [
             {
               name: das Leitungswasser
@@ -25002,11 +25002,11 @@
     }
     {
       name: 28. 100
-      chapters:
+      children:
       [
         {
           name: 7.9. II
-          words:
+          children:
           [
             {
               name: Das kann doch jedem passieren.
@@ -25184,7 +25184,7 @@
         }
         {
           name: 7.9. III
-          words:
+          children:
           [
             {
               name: der Händler
@@ -25371,7 +25371,7 @@
         }
         {
           name: 29.9.
-          words:
+          children:
           [
             {
               name: der Lohn
@@ -25485,7 +25485,7 @@
         }
         {
           name: 1.10.
-          words:
+          children:
           [
             {
               name: denken an
@@ -25599,7 +25599,7 @@
         }
         {
           name: 5.10.
-          words:
+          children:
           [
             {
               name: das (Bewerbungs/Vorstellungs)gespräch
@@ -25740,7 +25740,7 @@
         }
         {
           name: 12.10.
-          words:
+          children:
           [
             {
               name: umweltfreundlich
@@ -25995,11 +25995,11 @@
     }
     {
       name: 29. 100
-      chapters:
+      children:
       [
         {
           name: 13.10.
-          words:
+          children:
           [
             {
               name: die Bettdecke
@@ -26205,7 +26205,7 @@
         }
         {
           name: 15.10.
-          words:
+          children:
           [
             {
               name: umweltschädlich
@@ -26337,7 +26337,7 @@
         }
         {
           name: 20.10.
-          words:
+          children:
           [
             {
               name: der Briefumschlag
@@ -26527,7 +26527,7 @@
         }
         {
           name: 22.10.
-          words:
+          children:
           [
             {
               name: stricken
@@ -26605,7 +26605,7 @@
         }
         {
           name: 2.11.
-          words:
+          children:
           [
             {
               name: die Anforderung
@@ -26746,7 +26746,7 @@
         }
         {
           name: 3.11.
-          words:
+          children:
           [
             {
               name: erscheinen
@@ -26902,11 +26902,11 @@
     }
     {
       name: 30. 100
-      chapters:
+      children:
       [
         {
           name: 14.12.
-          words:
+          children:
           [
             {
               name: windig
@@ -27101,7 +27101,7 @@
         }
         {
           name: 17.12.
-          words:
+          children:
           [
             {
               name: rodeln
@@ -27251,7 +27251,7 @@
         }
         {
           name: 8.1.
-          words:
+          children:
           [
             {
               name: deuten
@@ -27384,7 +27384,7 @@
         }
         {
           name: 11.1.
-          words:
+          children:
           [
             {
               name: der Wassermann
@@ -27510,7 +27510,7 @@
         }
         {
           name: 12.1.
-          words:
+          children:
           [
             {
               name: Wie soll ich mir das alles merken?
@@ -27588,7 +27588,7 @@
         }
         {
           name: 14.1.
-          words:
+          children:
           [
             {
               name: der Heuschnupfen
@@ -27675,7 +27675,7 @@
         }
         {
           name: 8.2.
-          words:
+          children:
           [
             {
               name: der Postbote/Briefträger
@@ -27791,7 +27791,7 @@
         }
         {
           name: 16.2.
-          words:
+          children:
           [
             {
               name: alles/(jedes Wort) auf die Goldwaage legen
@@ -27871,11 +27871,11 @@
     }
     {
       name: 31. 100
-      chapters:
+      children:
       [
         {
           name: 22.2.
-          words:
+          children:
           [
             {
               name: Wenn zwei sich streiten, freut sich der Dritte.
@@ -28064,7 +28064,7 @@
         }
         {
           name: 23.2.
-          words:
+          children:
           [
             {
               name: die Mücke
@@ -28136,7 +28136,7 @@
         }
         {
           name: 2.3.
-          words:
+          children:
           [
             {
               name: die Spritze
@@ -28243,7 +28243,7 @@
         }
         {
           name: 4.3.
-          words:
+          children:
           [
             {
               name: der Hausarzt
@@ -28376,7 +28376,7 @@
         }
         {
           name: 8.3.
-          words:
+          children:
           [
             {
               name: Musik zu bestimmten Anlässen.
@@ -28518,7 +28518,7 @@
         }
         {
           name: 9.9.
-          words:
+          children:
           [
             {
               name: das Sprichwort
@@ -28872,11 +28872,11 @@
     }
     {
       name: 32. 100
-      chapters:
+      children:
       [
         {
           name: 16.9.
-          words:
+          children:
           [
             {
               name: der Vortrag
@@ -29122,7 +29122,7 @@
         }
         {
           name: 23. 9.
-          words:
+          children:
           [
             {
               name: die Beschleunigung
@@ -29422,7 +29422,7 @@
         }
         {
           name: 30.9.
-          words:
+          children:
           [
             {
               name: der Umweltschutz
@@ -29788,11 +29788,11 @@
     }
     {
       name: 33. 100
-      chapters:
+      children:
       [
         {
           name: 7.10.
-          words:
+          children:
           [
             {
               name: Die Möglichkeiten sind eingeschränkt.
@@ -30071,7 +30071,7 @@
         }
         {
           name: 14.10.
-          words:
+          children:
           [
             {
               name: auswandern/emigrieren
@@ -30387,7 +30387,7 @@
         }
         {
           name: 21.10.
-          words:
+          children:
           [
             {
               name: handeln
@@ -30683,11 +30683,11 @@
     }
     {
       name: 34. 100
-      chapters:
+      children:
       [
         {
           name: 4.11.
-          words:
+          children:
           [
             {
               name: bereuen
@@ -30905,7 +30905,7 @@
         }
         {
           name: 11.11.
-          words:
+          children:
           [
             {
               name: belegen

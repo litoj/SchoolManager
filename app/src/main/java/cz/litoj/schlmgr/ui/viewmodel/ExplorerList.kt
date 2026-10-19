@@ -69,6 +69,15 @@ internal class ExplorerList(
 		publish(content, isSearch, isPicker)
 	}
 
+	/**
+	 * Publishes the caller-sorted order of the current rows — renumbering
+	 * stays with the list, like its own inserts and moves.
+	 */
+	fun applyOrder(sorted: List<ItemRow>) {
+		sorted.forEachIndexed { i, row -> row.renumber(i + 1) }
+		load(sorted, isSearch = searching, isPicker = pickerMode)
+	}
+
 	private fun publish(content: List<ItemRow>, isSearch: Boolean, isPicker: Boolean) {
 		pickerMode = isPicker || host.picker
 		host.resetDragSelect()
@@ -134,7 +143,7 @@ internal class ExplorerList(
 		listMutationGen++
 		// Index ages with popup — clamp to the live list.
 		models.add(index.coerceIn(0, models.size), item)
-		models.forEachIndexed { i, row -> row.position = i + 1 }
+		models.forEachIndexed { i, row -> row.renumber(i + 1) }
 		_listState.update {
 			it.copy(
 				contentStep = it.contentStep + 1,
@@ -155,7 +164,7 @@ internal class ExplorerList(
 	}
 
 	fun append(batch: List<ItemRow>) {
-		batch.forEachIndexed { index, row -> row.position = models.size + 1 + index }
+		batch.forEachIndexed { index, row -> row.renumber(models.size + 1 + index) }
 		models.addAll(batch)
 		val mapped = batch.map { it.toUi() }
 		_listState.update {
@@ -173,7 +182,7 @@ internal class ExplorerList(
 		listMutationGen++
 		models.removeAll(items)
 		// the removal leaves number gaps — renumber like a reorder step does
-		models.forEachIndexed { i, row -> row.position = i + 1 }
+		models.forEachIndexed { i, row -> row.renumber(i + 1) }
 		host.resetDragSelect()
 		if (searching) host.onSearchRowsChanged()
 		remap(structuralChange = true)
@@ -186,20 +195,26 @@ internal class ExplorerList(
 	}
 
 	/**
-	 * Shared tap rule — flips word row.
+	 * Shared tap rule — flips a word's translations, a translation's words.
 	 * - reads run on [io] — flips publish on main.
 	 */
 	fun flipWord(item: ItemRow?) {
 		val row = item ?: return
 		scope.launch {
-			// Snapshot on main — the ids travel.
+			// Snapshot on main — the rows travel.
 			val toFlip = if (ItemRow.flipAllOnClick) {
 				val flip = !row.flipped
-				models.filter { it.item.type == ItemKind.WORD && it.flipped != flip }
+				models.filter {
+					(it.item.type == ItemKind.WORD || it.item.type == ItemKind.TRANSLATION) &&
+						it.flipped != flip
+				}
 			} else listOf(row)
-			val ids = toFlip.map { it.item.id }
-			val translations = withContext(io) { ids.map { ItemRepository.translations(it) } }
-			toFlip.forEachIndexed { i, target -> target.applyFlip(translations[i]) }
+			// the flip content, read on io — a word's translations, a
+			// translation's words
+			val applied = withContext(io) {
+				toFlip.map { target -> target to ItemRow.flipContentOf(target.item) }
+			}
+			applied.forEach { (target, content) -> target.applyFlip(content) }
 			remap()
 		}
 	}
@@ -210,7 +225,7 @@ internal class ExplorerList(
 		// the baseline belongs to the pre-drag order.
 		host.resetDragSelect()
 		models.add(to, models.removeAt(from))
-		models.forEachIndexed { i, row -> row.position = i + 1 }
+		models.forEachIndexed { i, row -> row.renumber(i + 1) }
 		remap()
 	}
 

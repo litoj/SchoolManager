@@ -5,34 +5,22 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.ui.component.ExplorerScaffold
 import cz.litoj.schlmgr.ui.component.ExplorerSearchField
-import cz.litoj.schlmgr.ui.component.ItemListCallbacks
-import cz.litoj.schlmgr.ui.component.PasteActionBar
-import cz.litoj.schlmgr.ui.component.SelectionActionBar
 import cz.litoj.schlmgr.ui.popup.ContinuePopup
 import cz.litoj.schlmgr.ui.popup.CreatorContent
 import cz.litoj.schlmgr.ui.popup.CreatorPopup
-import cz.litoj.schlmgr.ui.popup.MessagePopup
 import cz.litoj.schlmgr.ui.popup.ReferencePopup
 import cz.litoj.schlmgr.ui.popup.SourcePickPopup
 import cz.litoj.schlmgr.ui.shell.ExplorerBackHandler
@@ -42,9 +30,9 @@ import cz.litoj.schlmgr.ui.shell.TopBarMoreButton
 import cz.litoj.schlmgr.ui.shell.TopBarNav
 import cz.litoj.schlmgr.ui.shell.TopBarTitle
 import cz.litoj.schlmgr.ui.shell.headerShadow
+import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
-import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 import cz.litoj.schlmgr.ui.viewmodel.SearchUi
 
 private fun creatorKind(kind: RowKind) = when (kind) {
@@ -161,7 +149,7 @@ fun SubjectsScreen(
 								R.plurals.progress_items, request.doomed.size, request.doomed.size))
 					}
 				is MainExplorerViewModel.Request.PickSource ->
-					SourcePickPopup(request.paths, viewModel::navigateToSource)
+					SourcePickPopup(request.paths, request.origin, viewModel::navigateToSource)
 			}
 		}
 	}
@@ -171,7 +159,7 @@ fun SubjectsScreen(
 	Column(Modifier.fillMaxSize()) {
 		TopBar {
 			TopBarNav(onNavigate = openDrawer)
-			if (fieldOpen) ExplorerSearchField(query, viewModel::onQueryChange, viewModel::onQuerySubmit, Modifier.weight(1f))
+			if (fieldOpen) ExplorerSearchField(query, viewModel::onQueryChange, viewModel::onQuerySubmit, viewModel::closeSearchField, Modifier.weight(1f))
 			else TopBarTitle(title)
 			TopBarIconButton(
 				icon = if (selecting) R.drawable.ic_check_all else R.drawable.ic_search,
@@ -180,7 +168,7 @@ fun SubjectsScreen(
 				if (selecting) viewModel.onSelectAllToggle() else viewModel.openSearchField()
 			}
 			TopBarMoreButton(
-				subjectsMenu(menuKind, selecting, listState.singleSelected),
+				subjectsMenu(menuKind, selecting),
 				viewModel::onMenuItemClick,
 			)
 		}
@@ -191,64 +179,3 @@ fun SubjectsScreen(
 internal fun selectAllButtonVisible(selecting: Boolean, searchVisible: Boolean): Boolean =
 	selecting || searchVisible
 
-/** Explorer content plus bottom strip. */
-@Composable
-private fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifier = Modifier) {
-	val state by viewModel.state.collectAsStateWithLifecycle()
-	val listState by viewModel.listState.collectAsStateWithLifecycle()
-	// Horizontal swipe switches sibling.
-	val swipeThreshold = with(LocalDensity.current) { 40.dp.toPx() }
-	var swipe by remember { mutableFloatStateOf(0f) }
-	ExplorerScaffold(
-		state = state,
-		listState = listState,
-		onBreadcrumbClick = viewModel::breadcrumbClick,
-		onInfoClick = viewModel::toggleInfoExpanded,
-		callbacks = mainCallbacks(viewModel, listState.selectionActive),
-		modifier = modifier.pointerInput(Unit) {
-			detectHorizontalDragGestures(
-				onHorizontalDrag = { _, amount -> swipe += amount },
-				onDragEnd = {
-					if (swipe < -swipeThreshold) viewModel.openSibling(1)
-					else if (swipe > swipeThreshold) viewModel.openSibling(-1)
-					swipe = 0f
-				},
-				onDragCancel = { swipe = 0f },
-			)
-		},
-	) {
-		when {
-			viewModel.pasteArmed -> PasteActionBar(
-				onCancel = viewModel::cancelPaste,
-				onPaste = viewModel::doPaste,
-			)
-			listState.anySelected -> SelectionActionBar(
-				editEnabled = listState.singleSelected,
-				onTest = viewModel::prepareTest,
-				onCut = { viewModel.move(false) },
-				onEdit = viewModel::onEditAction,
-				onDelete = viewModel::onDeleteAction,
-			)
-			else -> {}
-		}
-	}
-}
-
-/** Row intents — hits carry `trackPath`. Selection tap toggles. */
-private fun mainCallbacks(viewModel: MainExplorerViewModel, selectionActive: Boolean): ItemListCallbacks =
-	ItemListCallbacks(
-		onItemClick = { ui ->
-			if (selectionActive) viewModel.setSelected(ui.payload, !ui.selected)
-			else if (ui.trackPath != null) viewModel.onSearchHitClick(ui)
-			else viewModel.onItemClick(ui.payload)
-		},
-		onItemLongClick = { ui ->
-			viewModel.onItemLongClick(ui.payload)
-		},
-		onInfo = { ui -> MessagePopup(ui.description) },
-		onReference = viewModel::onReferenceClick,
-		onSelectRange = viewModel::selectRange,
-		onSelectEnd = viewModel::endRangeSelect,
-		onReorderMove = viewModel::moveRow,
-		onReorderDrop = viewModel::persistOrder,
-	)

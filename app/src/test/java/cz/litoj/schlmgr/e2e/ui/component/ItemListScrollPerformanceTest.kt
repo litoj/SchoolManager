@@ -47,24 +47,15 @@ import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 
 /**
- * The scroll floor of the explorer list under the fastest real scroll: one
- * maximum-velocity fling pass through a whole list, one hand-stepped frame at
- * a time, against the same count of one-line no-description rows.
- * - a frame's wall time is the composition, layout and draw of the rows it
- *   brings on screen; the per-frame harness cost is the same for both lists,
- *   so the pass DIFFERENCE is the scroll work itself, in frames.
- * - the NJ pass loads the committed legacy fixture and runs the production
- *   search pipeline for `\W/` — every word whose name carries a variant
- *   slash, whose parsed display spans several lines.
- * - the height pass builds a large synthetic sample of every row shape that
- *   changes a row's height — half one-line rows, half multi-line (wrapped
- *   names, multi-line parsed names, descriptions of several lengths),
- *   interleaved so a recycled row composition changes height almost every
- *   time it lands new content.
- * - the kind pass interleaves the four row kinds, all one-line — the only
- *   per-row difference is the kind's icon, the recycling pool question.
- * - `PERF scroll-*` lines carry the numbers; the budget assertion fails
- *   loudly on an order-of-magnitude regression.
+ * The scroll floor of the explorer list under the fastest real scroll: one maximum-velocity fling pass
+ * through a whole list, one hand-stepped frame at a time, against the same count of one-line rows.
+ * - a frame's wall time is composition, layout and draw of the rows on screen.
+ * - the harness cost per frame is the same for both lists — the pass DIFFERENCE is scroll work in frames.
+ * - the NJ pass loads the legacy fixture and runs the production `\W/` search — matched words have variant slashes.
+ * - the height pass builds a synthetic sample of all row shapes — half one-line, half multi-line, interleaved.
+ * - interleaving makes a recycled row composition change height almost every time.
+ * - the kind pass interleaves the four row kinds, all one-line — only the icon differs.
+ * - `PERF scroll-*` lines carry the numbers — the budget assertion fails loudly on regression.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -74,7 +65,7 @@ class ItemListScrollPerformanceTest {
 	val rule = createComposeRule()
 
 	private lateinit var db: ItemDatabase
-	private val showDescWas = ItemRow.showDesc
+	private val descLinesWas = ItemRow.descLines
 
 	/** The host list — a swap exchanges the measured population. */
 	private val state = mutableStateOf(ItemListState())
@@ -92,7 +83,7 @@ class ItemListScrollPerformanceTest {
 
 	@After
 	fun tearDown() {
-		ItemRow.showDesc = showDescWas
+		ItemRow.descLines = descLinesWas
 		db.close()
 	}
 
@@ -357,7 +348,7 @@ class ItemListScrollPerformanceTest {
 
 	@Test
 	fun `fast-scrolling the NJ variant-word results stays under its time budget`() {
-		ItemRow.showDesc = true
+		ItemRow.descLines = Int.MAX_VALUE
 		val target = njVariantRows()
 		// NJ's word rows carrying a variant slash — 138 after the subject-wide name merge
 		assertEquals(138, target.size)
@@ -377,7 +368,7 @@ class ItemListScrollPerformanceTest {
 
 	@Test
 	fun `fast-scrolling variable-height rows stays under its time budget`() {
-		ItemRow.showDesc = true
+		ItemRow.descLines = Int.MAX_VALUE
 		val target = variableHeightRows()
 		assertEquals(300, target.size)
 		composeHost(reorderable = true)

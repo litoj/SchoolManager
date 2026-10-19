@@ -22,7 +22,6 @@ internal class SearchFlow(
 	private val io: CoroutineDispatcher,
 	private val history: NavigationHistory,
 	private val host: Host,
-	private val clock: () -> Long = System::currentTimeMillis,
 ) {
 
 	interface Host {
@@ -36,6 +35,9 @@ internal class SearchFlow(
 		fun removeRows(items: Collection<ItemRow>)
 
 		fun remap()
+
+		/** Drops the marks of rows outside the shown list — see [Selection.discard]. */
+		fun discardSelection(rows: List<ItemRow>)
 
 		fun load(content: List<ItemRow>, isSearch: Boolean, isPicker: Boolean)
 
@@ -62,7 +64,7 @@ internal class SearchFlow(
 
 	val query: StateFlow<String> get() = searchInput.query
 
-	internal val run = SearchRun(scope, io, RunHost(), clock = clock)
+	internal val run = SearchRun(scope, io, RunHost())
 
 	private var lastSearchRows: List<ItemRow> = emptyList()
 
@@ -111,7 +113,7 @@ internal class SearchFlow(
 	private fun appendSearchRows(batch: List<ItemRow>) {
 		host.appendRows(batch)
 		lastSearchRows = ArrayList(host.models)
-		lastSearchInfo = InfoBar.Search(host.models.size, run.elapsed())
+		lastSearchInfo = InfoBar.Search(host.models.size, run.visitedChapters())
 		host.publishSearchInfo(lastSearchInfo)
 	}
 
@@ -119,7 +121,7 @@ internal class SearchFlow(
 		override fun appendBatch(batch: List<ItemRow>) = appendSearchRows(batch)
 
 		override fun runFinished() {
-			lastSearchInfo = InfoBar.Search(host.models.size, run.elapsed())
+			lastSearchInfo = InfoBar.Search(host.models.size, run.visitedChapters())
 			host.publishSearchInfo(lastSearchInfo)
 		}
 	}
@@ -157,7 +159,7 @@ internal class SearchFlow(
 		if (host.searchUi() == SearchUi.RESULTS || lastSearchRows.isEmpty() || !history.onSearchHop()) return false
 		// Pending browse read must not land over search strip.
 		host.cancelPendingInfoRead()
-		lastSearchRows.forEach { it.selected = false }
+		host.discardSelection(lastSearchRows)
 		host.load(lastSearchRows, isSearch = true, isPicker = host.pickerMode())
 		host.setSearchUi(SearchUi.RESULTS)
 		host.publishSearchInfoCollapsed(lastSearchInfo)
@@ -174,13 +176,17 @@ internal class SearchFlow(
 		val ids = rows.map { it.item.id }
 		scope.launch {
 			val fresh = withContext(io) {
-				ids.map { ItemRepository.get(it) to ItemRepository.translations(it) }
+				ids.map { id ->
+					val row = ItemRepository.get(id)
+					// a translation hit's flip content is its words
+					row to (row?.let(ItemRow::flipContentOf) ?: emptyList())
+				}
 			}
 			// Apply on main — gone rows leave the list.
 			val dead = ArrayList<ItemRow>()
 			rows.forEachIndexed { i, row ->
-				val f = fresh[i].first
-				if (f == null) dead.add(row) else row.applyFresh(f, fresh[i].second)
+				val (f, content) = fresh[i]
+				if (f == null) dead.add(row) else row.applyFresh(f, content)
 			}
 			if (dead.isNotEmpty()) host.removeRows(dead) else host.remap()
 			// Count follows drop.

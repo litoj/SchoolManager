@@ -9,10 +9,9 @@ import java.util.regex.Pattern
 
 /**
  * Pure query-parsing + matching engine — no Views, threads or history.
- * - matches against a preloaded [SearchIndex], synchronously on the caller
- *   thread. A superseded run aborts via [active].
- * - a leading `\` selects structured search: `[W|T|C]? [D|S|F|N|R]? OP TAIL`
- *   (type, value source, op) — see the `resolve` cases below.
+ * - matches against a preloaded [SearchIndex], synchronously on the caller thread.
+ * - a superseded run aborts via [abort].
+ * - a leading `\` selects structured search: `[W|T|C]? [D|S|F|N|R]? OP TAIL` (type, value source, op) — see the `resolve` cases below.
  */
 class SearchEngine(query: String) {
 
@@ -38,13 +37,24 @@ class SearchEngine(query: String) {
 	 */
 	private val visited = HashSet<Int>()
 
+	/** Chapters the last search walked — the run reports it with its count. */
+	val visitedChapters: Int get() = visited.size
+
 	/**
 	 * Live-run flag — the walk abandons itself the moment the user navigates
 	 * away or starts a new search. The view model lowers it when the search
 	 * stops displaying.
 	 */
 	@Volatile
-	var active = true
+	private var active = true
+
+	/** Whether the run still displays — a superseded walk abandons itself. */
+	val isActive: Boolean get() = active
+
+	/** Marks the run superseded — the walk ends at its next check. */
+	fun abort() {
+		active = false
+	}
 
 	// ------------------------------------------------------------ matchers
 	private fun interface Correct {
@@ -201,10 +211,12 @@ class SearchEngine(query: String) {
 					list.add(item)
 					walk(index, index.childrenOf(item.id), list, onMatch)
 				}
-				ItemKind.WORD -> if (!foundIt)
-					// a word that did not match is retried through its translations
-					for (trl in index.childrenOf(item.id))
-						correct(trl, path, onMatch)
+				ItemKind.WORD -> if (!foundIt) {
+					// A word that did not match its own name is retried through its
+					// translations — the WORD is the hit, so its own row and path show.
+					if (index.childrenOf(item.id).any { matcher.verify(it) } && found.add(item.id))
+						onMatch(item, ArrayList(path))
+				}
 				else -> {}
 			}
 		}

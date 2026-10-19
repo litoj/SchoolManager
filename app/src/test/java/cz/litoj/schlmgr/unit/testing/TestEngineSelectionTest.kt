@@ -78,7 +78,7 @@ class TestEngineSelectionTest {
 	 * 3+2+2+1+1 fill 10 words).
 	 */
 	@Test
-	fun exactAmountWhenSourcesPlentiful() {
+	fun `the exact requested amount comes from plentiful sources`() {
 		val all = ArrayList<Item>()
 		var id = 0
 		repeat(3) { all.add(Item(id++, 0, 1)) }   // urgency 4
@@ -99,7 +99,7 @@ class TestEngineSelectionTest {
 	 * mastered ones.
 	 */
 	@Test
-	fun neediestWordsArePreferred() {
+	fun `the neediest words are preferred`() {
 		val fresh = Item(0, 0, 0)      // urgency 5 (untested)
 		val failing = Item(1, 0, 3)    // urgency 2 (0% ratio)
 		val mastered = Item(2, 1, 0)   // urgency -1 (100% ratio)
@@ -116,7 +116,7 @@ class TestEngineSelectionTest {
 	 * test runs, updating stats after each run.
 	 */
 	@Test
-	fun masteredWordsResurface() {
+	fun `mastered words resurface`() {
 		val mastered = Item(0, 1, 0)
 		val all = ArrayList<Item>()
 		all.add(mastered)
@@ -145,7 +145,7 @@ class TestEngineSelectionTest {
 	 * prefix of the source.
 	 */
 	@Test
-	fun equallyUrgentWordsTakeTurns() {
+	fun `equally urgent words take turns`() {
 		val all = ArrayList<Item>()
 		repeat(10) { all.add(Item(it, 1, 0)) }
 		var varied = false
@@ -165,7 +165,7 @@ class TestEngineSelectionTest {
 	 * Both compare through the `/()` variant forms.
 	 */
 	@Test
-	fun reversedAnswerNamesATranslation() {
+	fun `a reversed answer names a translation`() {
 		val word = DbItem(id = 1, name = "house", description = "", type = ItemKind.WORD)
 		val translation = DbItem(id = 2, name = "dům/domov", description = "", type = ItemKind.TRANSLATION)
 		val translations = listOf(translation)
@@ -195,7 +195,7 @@ class TestEngineSelectionTest {
 	 * credits every one of them.
 	 */
 	@Test
-	fun reversedAnswerCreditsOnlyTheNamedTranslation() {
+	fun `a reversed answer credits only the named translation`() {
 		val dum = DbItem(id = 1, name = "dům/domov", description = "", type = ItemKind.TRANSLATION)
 		val stavba = DbItem(id = 2, name = "stavba", description = "", type = ItemKind.TRANSLATION)
 		val translations = listOf(dum, stavba)

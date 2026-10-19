@@ -10,7 +10,7 @@
     <string name="cut">Vyjmout</string>
     <string name="data_child_count">"Položek: %1$d"</string>
     <string name="data_children_sf">"Položek: %1$d, Úspěšnost: %2$d%3$s"</string>
-    <string name="data_search_time">"Položek: %1$d;\tČas: %2$dms"</string>
+    <string name="data_search_chapters">"Položek: %1$d;\tKapitol: %2$d"</string>
     <string name="data_desc">Popisek</string>
     <string name="data_name">Název</string>
     <string name="data_translate">Překlad</string>
@@ -60,20 +60,22 @@
     <string name="help">Nápověda</string>
     <string name="help_create">Vytváření položek</string>
     <string name="help_create_ch">Kapitoly</string>
-    <string name="help_create_ch_how">Kapitoly se vytvářejí pomocí menu \'více\'.
+    <string name="help_create_ch_how">Kapitoly se vytvářejí plovoucím tlačítkem \'+\' uvnitř kontejneru: tlačítko stiskněte a táhněte prstem na ikonu kapitoly, nebo na ikonu klepněte.
         \nTaké obsahují pouze základní informace výše uvedené.</string>
-    <string name="help_create_how">Všechny položky vytvářené z menu \'více\' mají dva základní parametry k vyplnění.
+    <string name="help_create_how">Každá položka se vytváří plovoucím tlačítkem \'+\' vpravo dole. Na obrazovce předmětů rovnou otevře tvůrce předmětu; uvnitř kontejneru rozvine kruhovou paletu nabízených typů — prstem přetáhněte na ikonu, nebo na ikonu klepněte po obyčejném tapnutí, které paletu nechá otevřenou. Klepnutím mimo ikony paletu zavřete.
+        \nTlačítko se při posouvání seznamu dolů schová a při posouvání nahoru se vrátí.
+        \nVšechny dialogy mají dva základní parametry k vyplnění.
         \nPrvním je název vytvářené položky (povinný).\nDruhým jsou poznámky k dané položce (volitelné, mohou mít více řádků).
         \nDále mohou dialogy obsahovat další doplňující parametry specifické pro různé typy vytvářených položek.
         \nPo vyplnění všech potřebných informací klikněte na tlačítko \'OK\' pro vytvoření položky, nebo můžete vytváření kdykoli ukončit kliknutím na tlačítko \'Zrušit\'. Kliknutím mimo okno dialog také zavřete, ale pouze dokud nebyla provedena žádná změna.</string>
     <string name="help_create_mch">Předměty</string>
-    <string name="help_create_mch_how">Předměty se vytvářejí pomocí menu \'více\'.
+    <string name="help_create_mch_how">Předměty se vytvářejí plovoucím tlačítkem \'+\' na obrazovce předmětů — tapnutí rovnou otevře tvůrce.
         \nObsahují pouze základní informace výše uvedené.</string>
     <string name="help_create_note">Poznámky</string>
-    <string name="help_create_note_how">Poznámky se vytvářejí pomocí menu \'více\'.
+    <string name="help_create_note_how">Poznámky se vytvářejí plovoucím tlačítkem \'+\' uvnitř kontejneru, stejně jako kapitoly.
         \nObsahují pouze základní informace výše uvedené — název a popis — a slouží pro text, který není slovíčkem, například pravidlo gramatiky.</string>
     <string name="help_create_word">Slovíčka</string>
-    <string name="help_create_word_how">Slovíčka se vytvářejí pomocí menu \'více\'.
+    <string name="help_create_word_how">Slovíčka se vytvářejí plovoucím tlačítkem \'+\' uvnitř kontejneru, stejně jako kapitoly.
         \nKromě základních informací obsahují ikonu přidání pod poli, která vytvoří pole se základními parametry určené pro definování překladu.
         \nPřeklad má opět svůj název a možnost vlastních poznámek.
         \nPokud se rozhodnete libovolný z překladů odstranit, klikněte na ikonu zrušení vpravo od překladu.</string>
@@ -94,10 +96,10 @@
         \n(Já jdu)/(Ty jdeš). = \'Já jdu.\', nebo \'Ty jdeš.\'</string>
     <string name="help_extra_words_export">Export slovíček</string>
     <string name="help_extra_words_export_how">Zvolte možnost v podmenu \'Exportovat\' v menu \'více\': vybrané položky se vyexportují, a bez výběru celý otevřený kontejner (na obrazovce předmětů všechny předměty).
-        \nSoubor se slovíčky je kompaktní a nese pouze strukturu slovní zásoby; soubor JSON je úplná kopie předmětu včetně úspěšnosti.
-        \nOba formáty lze zpětně importovat bez ztráty obsahu.</string>
+        \nSoubor se slovíčky je kompaktní a nese pouze strukturu slovní zásoby — bez úspěšnosti a referencí; soubor JSON je úplná kopie předmětu včetně úspěšnosti, poznámek a referencí.
+        \nPouze soubor JSON lze zpětně importovat bez ztráty obsahu.</string>
     <string name="help_extra_words_import">Import slovíček</string>
-    <string name="help_extra_words_import_how">Slovíčka se importují přes menu \'více\' — uvnitř kontejneru zvolte \'Import\', na obrazovce předmětů \'Soubor\' v podmenu \'Import\'; uvnitř kontejneru se přidají do něj, na obrazovce předmětů vytvoří nový předmět. Typ souboru se pozná automaticky: název končící \'.json\' nebo \'.hjson\' je strom předmětu, ostatní soubory jsou slovíčka. Soubor může obsahovat kapitoly a slovíčka.
+    <string name="help_extra_words_import_how">Slovíčka se importují přes menu \'více\' — uvnitř kontejneru zvolte \'Import\', na obrazovce předmětů \'Soubor\' v podmenu \'Import\'; uvnitř kontejneru se přidají do něj, na obrazovce předmětů vytvoří nový předmět. Typ souboru se pozná automaticky podle obsahu: soubor začínající \'[\' nebo \'{\' je strom předmětu (kapitoly, slovíčka, poznámky a reference), ostatní soubory jsou slovíčka. Soubor může obsahovat kapitoly a slovíčka.
         \nPoznámky k položkám pište ve tvaru \'\\[poznámky k položce\\]\'.
         \nSlovíčka a jejich překlady oddělte pomocí \';\', \'=\', nebo \'→\'.
         \nPro zápis více slovíček se stejným překladem (a naopak) oddělte slovíčka zpětným lomítkem \\.
@@ -173,7 +175,8 @@
         \nDržením prstu a jeho pohybem po seznamu vyberete rozsah položek, které prst protne.
         \nPokud jsou některé položky vybrány, tlačítko vyhledávání v pravém horním rohu se změní na přepínač výběru všeho: vybere všechny položky v seznamu, nebo, pokud již jsou všechny vybrány, výběrové zobrazení vypne. Výběrové zobrazení vypne i tlačítko \'zpět\'.
         \nNíže je uveden seznam možných akcí.</string>
-    <string name="help_select_move">Vyjme všechny vybrané položky ze seznamu a zobrazí vkládací lištu (možnosti zrušit a vložit). Po otevření cílové kapitoly stiskněte tlačítko \'Vložit\'.</string>
+    <string name="help_select_move">Vyjme všechny vybrané položky ze seznamu a zobrazí vkládací lištu (možnosti zrušit a vložit). Po otevření cílové kapitoly stiskněte tlačítko \'Vložit\'.
+        \nOzbrojené přesouvání přežije přepnutí kapitoly, boční smyk včetně — smyk pouze zruší výběr položek.</string>
     <string name="help_test">Testy</string>
     <string name="help_test_how">Test se ptá na slovíčka ze zvolených zdrojů.
         \nU testů si můžete zvolit jejich délku a počet položek, které budete v testu muset vyplnit.
@@ -191,9 +194,6 @@
     <string name="help_test_select_how">Soubor položek, ze kterých se vytvoří test se vybírá tlačítkem \'Přidat zdroj\'.
         \nPo stisknutí se otevře prohlížeč předmětů, ve kterém můžete opakovaně vybrat položky do testu (pouze z jednoho předmětu).
         \nTest lze připravit i přímo z průzkumníku: vyberte položky k otestování a klepněte na \'Test\' na liště výběru.</string>
-    <string name="hierarchy_ch">Kapitola</string>
-    <string name="hierarchy_word">Slovíčko</string>
-    <string name="hierarchy_note">Poznámka</string>
     <string name="menu_label">Menu</string>
     <string name="menu_about">O programu</string>
     <string name="menu_objects">Předměty</string>
@@ -217,7 +217,6 @@
     </plurals>
     <string name="json_export_ext">.hjson</string>
     <string name="json_import_types">application/hjson</string>
-    <string name="more_new">Nový</string>
     <string name="new_chapter">Nová kapitola</string>
     <string name="new_mch">Nový předmět</string>
     <string name="new_word">Nové slovíčko</string>
@@ -230,6 +229,7 @@
     <string name="popup_copy_failed">Kopírování do schránky se nezdařilo</string>
     <string name="popup_copy_truncated">[kopie byla zkrácena — text je pro schránku příliš dlouhý]</string>
     <string name="press_exit">Stiskněte ještě jednou pro ukončení</string>
+    <string name="permission_pending">Akce už čeká na oprávnění</string>
     <string name="search">Zadat klíčové slovo</string>
     <string name="select">Zvolit</string>
     <string name="select_all">Vybrat vše</string>
@@ -238,7 +238,7 @@
     <string name="setts_him_flipped">Automaticky překládat slovíčka</string>
     <string name="setts_him_parse">Zobrazovat názvy položek ve zpracované formě</string>
     <string name="setts_interface">Rozhraní</string>
-    <string name="setts_show_desc">Zobrazovat poznámky přímo</string>
+    <string name="setts_desc_lines">Počet přímo zobrazených řádků poznámky</string>
     <string name="setts_test_amount">Výchozí počet položek v testu</string>
     <string name="setts_test_clever">Vytváření testů podle úspěšnosti</string>
     <string name="setts_test_time">Výchozí čas na položku</string>

@@ -45,6 +45,34 @@ class WordAddMergeTest {
 	}
 
 	@Test
+	fun `a spaced name is the same word - it trims before the merge`() {
+		val subject = ItemRepository.createSubject("subject", null)
+		val first = ItemRepository.createWord(
+			subject.id, " word ", "first description", listOf(" one " to null))
+		val second = ItemRepository.createWord(
+			subject.id, "word", "second description", listOf("two" to null))
+
+		// the trimmed names merge — one row, the stored name trimmed
+		assertEquals(first.id, second.id)
+		val words = ItemRepository.children(subject.id)
+		assertEquals(1, words.size)
+		assertEquals("word", words.single().name)
+		// the spaced translation trimmed and joined the word
+		assertEquals(listOf("one", "two"), ItemRepository.translations(first.id).map { it.name })
+	}
+
+	@Test
+	fun `a word whose every translation is blank is refused`() {
+		val subject = ItemRepository.createSubject("subject", null)
+		try {
+			ItemRepository.createWord(subject.id, "word", null, listOf("   " to null))
+			fail("A blank translation is no translation")
+		} catch (e: IllegalArgumentException) {
+			// the create refuses — a bare name is the note's shape
+		}
+	}
+
+	@Test
 	fun `adding a word whose name exists in the subject scope merges into it`() {
 		val subject = ItemRepository.createSubject("subject", null)
 		val first = ItemRepository.createWord(

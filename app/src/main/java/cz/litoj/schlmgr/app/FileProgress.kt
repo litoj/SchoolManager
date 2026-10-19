@@ -4,6 +4,8 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.DataExporter
@@ -12,11 +14,23 @@ import cz.litoj.schlmgr.data.StreamItem
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
+ * Reports the amount that has flowed through one long file operation —
+ * the bridge from [FileText]'s counting streams to the implementations
+ * that drive a bar.
+ */
+fun interface Progress {
+	/** Reports more processed — bytes in the file phase, rows in the row phase. */
+	fun advance(amount: Int)
+}
+
+/**
  * A progress-bar notification for one long file operation, one counted
  * phase at a time. Imports count bytes then rows, exports rows then
- * written bytes.
- * - without `POST_NOTIFICATIONS` (Android 13+) posts are dropped. The
- *   run goes on without a bar.
+ * written bytes, deletions count rows.
+	 * - the bar always appears after [SHOW_DELAY_MS] of activity — a pending self-post carries it over a quiet stretch.
+	 * - a call before the delay never flashes one for a finished operation.
+	 * - without `POST_NOTIFICATIONS` (Android 13+) posts are dropped.
+	 * - the run goes on without a bar.
  *
  * @param clock elapsed-ms source, injectable so tests can drive the throttle
  */
@@ -69,6 +83,8 @@ class FileProgress @JvmOverloads constructor(
 	private val start = clock()
 	/** Whether the bar passed the show delay — later posts skip it. */
 	private var shown = false
+	/** Carries the bar over a quiet stretch — see [init]. */
+	private val show = Handler(Looper.getMainLooper())
 	/**
 	 * Drops posts that arrive within the step — one notification per read
 	 * chunk would flood the manager.
@@ -99,7 +115,10 @@ class FileProgress @JvmOverloads constructor(
 				NotificationManager.IMPORTANCE_LOW,
 			)
 		)
-		// no post yet — the bar waits out [SHOW_DELAY_MS]
+		// the bar appears once the operation ran the delay even when no
+		// phase step calls in — a quiet stretch must not hide it. Close
+		// removes the pending post, a finished operation never flashes one.
+		show.postDelayed({ post() }, SHOW_DELAY_MS)
 	}
 
 	/** Targets the bar at the read or write phase — total bytes, 0 or below when unknown. */
@@ -151,6 +170,7 @@ class FileProgress @JvmOverloads constructor(
 	}
 
 	override fun close() {
+		show.removeCallbacksAndMessages(null)
 		manager.cancel(id)
 	}
 
@@ -182,7 +202,7 @@ class FileProgress @JvmOverloads constructor(
 		private const val CHANNEL = "file_progress"
 		private const val STEP_MS = 100L
 		/** How long an operation must run before its bar appears at all. */
-		private const val SHOW_DELAY_MS = 500L
+		private const val SHOW_DELAY_MS = 200L
 		private val nextId = AtomicInteger(1)
 	}
 }

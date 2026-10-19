@@ -5,15 +5,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
@@ -22,12 +25,22 @@ import cz.litoj.schlmgr.R
 
 /**
  * The small dialogs' shared look — a theme-background card, only as
- * tall as its content. A centered [Box] hugs it, so no dead space
- * surrounds the bar.
+ * tall as its content, growing to the full height between the
+ * status-bar-height gaps. A centered [Box] hugs it, so no dead space
+ * surrounds the bar. A scrollable middle takes `weight(1f, fill =
+ * false)` — it fills the free height before it starts to scroll.
  */
 @Composable
 internal fun PopupCard(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
-	Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+	// the band's height gaps both ends — the 30dp margin measures from the
+	// status bar above and from an equally tall gap above the screen bottom
+	val statusBar = with(LocalDensity.current) { WindowInsets.statusBars.getTop(this).toDp() }
+	Box(
+		Modifier
+			.fillMaxSize()
+			.padding(top = statusBar, bottom = statusBar),
+		contentAlignment = Alignment.Center,
+	) {
 		Column(
 			Modifier
 				.padding(30.dp)

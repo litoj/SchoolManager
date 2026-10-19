@@ -1,4 +1,4 @@
-package cz.litoj.schlmgr.ui.screen.settings
+package cz.litoj.schlmgr.ui.viewmodel
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -11,15 +11,14 @@ import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 
 /**
  * The values shown and edited by the settings screen.
- * - every change applies to the backing statics and persists at once, so
- *   nothing is lost on process death and no save is deferred.
+	 * - every change applies to the backing statics and persists at once, so nothing is lost on process death and no save is deferred.
  * - [SettingsViewModel] fills the plain-value constructor from the state.
  */
 class SettingsState(
 	parse: Boolean = true,
 	defFlip: Boolean = true,
 	flipAllOnClick: Boolean = false,
-	showDesc: Boolean = false,
+	descLinesText: String = ItemRow.DEFAULT_DESC_LINES.toString(),
 	wordSplitText: String = ";",
 	clever: Boolean = false,
 	amountText: String = "10",
@@ -31,7 +30,7 @@ class SettingsState(
 		private set
 	var flipAllOnClick by mutableStateOf(flipAllOnClick)
 		private set
-	var showDesc by mutableStateOf(showDesc)
+	var descLinesText by mutableStateOf(descLinesText)
 		private set
 	var wordSplitText by mutableStateOf(wordSplitText)
 		private set
@@ -60,10 +59,22 @@ class SettingsState(
 		AppSettings.set("flipAllOnClick", flipAllOnClick)
 	}
 
-	fun toggleShowDesc() {
-		showDesc = !showDesc
-		ItemRow.showDesc = showDesc
-		AppSettings.set("doShowDesc", showDesc)
+	/**
+	 * Persists the description line limit if the text parses to a usable value.
+	 * Zero stands for the icon-only display.
+	 */
+	fun setDescLines(text: String) {
+		descLinesText = digitsOnly(text)
+		descLinesText.toIntOrNull()?.let {
+			ItemRow.descLines = it
+			AppSettings.set("descLines", it)
+		}
+	}
+
+	/** Restores the last persisted limit when the text is empty or unusable. */
+	fun descLinesFocusLost() {
+		if (descLinesText.toIntOrNull() == null)
+			descLinesText = ItemRow.descLines.toString()
 	}
 
 	fun toggleClever() {
@@ -141,7 +152,7 @@ class SettingsViewModel : ViewModel() {
 		parse = ItemRow.parse,
 		defFlip = ItemRow.defFlip,
 		flipAllOnClick = ItemRow.flipAllOnClick,
-		showDesc = ItemRow.showDesc,
+		descLinesText = ItemRow.descLines.toString(),
 		wordSplitText = WordListWriter.wordTranslationSplitter,
 		clever = TestEngine.isClever,
 		amountText = TestEngine.amount.toString(),

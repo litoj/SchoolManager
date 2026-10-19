@@ -71,10 +71,8 @@ object LegacyJsonLoader {
 
 	/**
 	 * Parses one old-format subject from its handed texts.
-	 * - every file parses before anything returns, so a malformed file fails
-	 *   with nothing persisted.
-	 * - chapter files read on demand through [source] (the total upper
-	 *   bound — [subjectSize]).
+	 * - every file parses before anything returns — a malformed file fails with nothing persisted.
+	 * - chapter files read on demand through [source] — the total upper bound is [subjectSize].
 	 * - returns `null` when `main.json` is missing or empty.
 	 */
 	@JvmStatic
@@ -157,10 +155,8 @@ object LegacyJsonLoader {
 
 	/**
 	 * A save chapter's node only marks where in the hierarchy the chapter sits.
-	 * - description and content live in `Chapters/name[hash].json`, whose root
-	 *   is the chapter itself (it can hold more save chapters).
-	 * - a gone file leaves nothing to import — the first save file omits the
-	 *   suffix (`hash == 1` reads `name.json`).
+	 * - description and content live in `Chapters/name[hash].json`, root is the chapter itself.
+	 * - a gone file leaves nothing to import — the first save file omits the suffix (`hash == 1` reads `name.json`).
 	 */
 	private fun saveChapter(obj: JsonObject, ctx: LoadContext): LegacyNode? {
 		val name = obj.string("name")

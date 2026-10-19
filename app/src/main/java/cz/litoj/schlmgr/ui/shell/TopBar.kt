@@ -41,8 +41,7 @@ import cz.litoj.schlmgr.R
 /**
  * The top bar's chrome — the status strip's height above the 55dp row on the
  * header colour.
- * - the screen supplies the row's pieces ([TopBarNav], title, icon buttons,
- *   more button) — all tinted with the on-header colour.
+ * - the screen supplies the row's pieces ([TopBarNav], title, icon buttons, more button) — all tinted with the on-header colour.
  *
  * @param content the row's pieces, with `Modifier.weight(1f)` on the middle child
  */
@@ -51,9 +50,6 @@ fun TopBar(content: @Composable RowScope.() -> Unit) {
 	Column(
 		Modifier
 			.fillMaxWidth()
-			// The status strip above the bar is the shell's own band
-			// (colorStatusBar) so it also covers the open drawer — the bar only
-			// reserves its height here. See SchlMgrApp.
 			.statusBarsPadding()
 	) {
 		Row(

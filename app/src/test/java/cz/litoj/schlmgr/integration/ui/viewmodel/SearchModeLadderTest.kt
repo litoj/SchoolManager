@@ -17,7 +17,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * Unit tests of the search-mode ladder ([ExplorerViewModel]'s [SearchUi]):
+ * Integration tests of the search-mode ladder ([ExplorerViewModel]'s [SearchUi]):
  * closing the field over results keeps them, closing it with no run behind
  * it falls back to browsing, ending the search closes the field with the
  * flow, and clearing the query leaves the flow but keeps the field. The
@@ -40,7 +40,10 @@ class SearchModeLadderTest {
 
 	private fun recordingVm(): RecordingVm {
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
-		return RecordingVm(NavigationHistory())
+		// the field opens only inside a container — seed one into the path
+		return RecordingVm(NavigationHistory()).apply {
+			history.push(mutableListOf(DbItem(name = "c", description = "", type = ItemKind.CHAPTER)))
+		}
 	}
 
 	/** A shown search — the field open, the hop stacked, a hit row loaded. */

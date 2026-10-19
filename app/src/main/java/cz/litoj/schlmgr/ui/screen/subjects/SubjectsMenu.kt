@@ -13,17 +13,16 @@ fun menuKindFor(searching: Boolean, pathSize: Int): MainExplorerViewModel.MenuKi
 }
 
 /**
- * More-options menu. [singleSelected] mutes go-to-location unless single.
+ * More-options menu.
  */
 fun subjectsMenu(
 	kind: MainExplorerViewModel.MenuKind,
 	selecting: Boolean,
-	singleSelected: Boolean = false,
 ): List<MenuEntry> {
 	val menu = when (kind) {
 		MainExplorerViewModel.MenuKind.ROOT -> rootMenu
 		MainExplorerViewModel.MenuKind.CONTAINER -> containerMenu
-		MainExplorerViewModel.MenuKind.SEARCH -> searchMenu(singleSelected)
+		MainExplorerViewModel.MenuKind.SEARCH -> searchMenu()
 	}
 	return menu.filter { it.always || it.selectionAction == selecting }
 }
@@ -44,42 +43,34 @@ private val exportMenu = listOf(
 	MenuEntry(MenuId.EXPORT_JSON, R.string.more_export_json),
 )
 
-private val newMenu = listOf(
-	MenuEntry(MenuId.NEW_CHAPTER, R.string.hierarchy_ch),
-	MenuEntry(MenuId.NEW_WORD, R.string.hierarchy_word),
-	MenuEntry(MenuId.NEW_NOTE, R.string.hierarchy_note),
-)
-
 private val importMenu = listOf(
 	MenuEntry(MenuId.IMPORT_DIR, R.string.dir_import),
 	MenuEntry(MenuId.IMPORT_FILE, R.string.more_import_file),
 )
 
 private val rootMenu = listOf(
-	MenuEntry(MenuId.NEW_SUBJECT, R.string.new_mch),
-	MenuEntry(0, R.string.sort, sortMenu),
-	MenuEntry(0, R.string.more_import, importMenu),
-	MenuEntry(0, R.string.more_export, exportMenu, always = true),
-	MenuEntry(MenuId.FLIP, R.string.more_flip, selectionAction = true),
-	MenuEntry(MenuId.REFERENCE, R.string.more_reference, selectionAction = true),
+	MenuEntry(0, R.string.sort, icon = R.drawable.ic_sort_black, children = sortMenu),
+	MenuEntry(0, R.string.more_import, icon = R.drawable.ic_import_black, children = importMenu),
+	MenuEntry(0, R.string.more_export, icon = R.drawable.ic_export_black, children = exportMenu, always = true),
+	MenuEntry(MenuId.FLIP, R.string.more_flip, icon = R.drawable.ic_flip_black, selectionAction = true),
+	MenuEntry(MenuId.REFERENCE, R.string.more_reference, icon = R.drawable.ic_reference_black, selectionAction = true),
 )
 
 private val containerMenu = listOf(
-	MenuEntry(0, R.string.more_new, newMenu),
-	MenuEntry(0, R.string.sort, sortMenu),
+	MenuEntry(0, R.string.sort, icon = R.drawable.ic_sort_black, children = sortMenu),
 	// Single import needs no submenu.
-	MenuEntry(MenuId.IMPORT_FILE, R.string.more_import),
-	MenuEntry(0, R.string.more_export, exportMenu, always = true),
-	MenuEntry(MenuId.FLIP, R.string.more_flip, selectionAction = true),
-	MenuEntry(MenuId.REFERENCE, R.string.more_reference, selectionAction = true),
+	MenuEntry(MenuId.IMPORT_FILE, R.string.more_import, icon = R.drawable.ic_import_black),
+	MenuEntry(0, R.string.more_export, icon = R.drawable.ic_export_black, children = exportMenu, always = true),
+	MenuEntry(MenuId.FLIP, R.string.more_flip, icon = R.drawable.ic_flip_black, selectionAction = true),
+	MenuEntry(MenuId.REFERENCE, R.string.more_reference, icon = R.drawable.ic_reference_black, selectionAction = true),
 )
 
 
-private fun searchMenu(goToEnabled: Boolean) = listOf(
-	MenuEntry(MenuId.GO_TO, R.string.more_go_to, selectionAction = true, enabled = goToEnabled),
-	MenuEntry(MenuId.FLIP, R.string.more_flip, selectionAction = true),
-	MenuEntry(MenuId.REFERENCE, R.string.more_reference, selectionAction = true),
-	MenuEntry(0, R.string.more_export, exportMenu, always = true),
+private fun searchMenu() = listOf(
+	MenuEntry(MenuId.FLIP, R.string.more_flip, icon = R.drawable.ic_flip_black, selectionAction = true),
+	MenuEntry(MenuId.REFERENCE, R.string.more_reference, icon = R.drawable.ic_reference_black, selectionAction = true),
+	MenuEntry(0, R.string.more_export, icon = R.drawable.ic_export_black, children = exportMenu, always = true),
 	// No sort-default — search has no browse order.
-	MenuEntry(0, R.string.sort, sortMenu.filter { it.id != MenuId.SORT_DEFAULT }),
+	MenuEntry(0, R.string.sort, icon = R.drawable.ic_sort_black,
+		children = sortMenu.filter { it.id != MenuId.SORT_DEFAULT }),
 )

@@ -11,6 +11,7 @@ import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.json.HJsonExporter
 import cz.litoj.schlmgr.data.transfer.ExportFormat
 import cz.litoj.schlmgr.data.transfer.ExportPipeline
+import cz.litoj.schlmgr.data.transfer.FileGateway
 import cz.litoj.schlmgr.data.transfer.ImporterFactory
 import cz.litoj.schlmgr.data.transfer.LegacyDirImport
 import cz.litoj.schlmgr.data.wordlist.WordListExporter
@@ -62,7 +63,7 @@ class FileWorkerTest {
 		[
 		  {
 		    name: A
-		    words:
+		    children:
 		    [
 		      {
 		        name: w1
@@ -77,6 +78,7 @@ class FileWorkerTest {
 		  }
 		  {
 		    name: B
+		    children: []
 		  }
 		]
 	""".trimIndent()
@@ -100,16 +102,23 @@ class FileWorkerTest {
 	/** A picked text document — the resolver hands its bytes to a read. */
 	private fun picked(text: String): Uri {
 		val uri = Uri.parse("content://schlmgr.test/pick/${nextPick++}")
+		// the shadow serves one instance for every open — the format peek
+		// closes it, so it resets and the import read starts clean
+		val bytes = text.toByteArray(StandardCharsets.UTF_8)
 		shadowOf(RuntimeEnvironment.getApplication().contentResolver)
-			.registerInputStream(uri, text.byteInputStream(StandardCharsets.UTF_8))
+			.registerInputStream(uri, object : java.io.ByteArrayInputStream(bytes) {
+				override fun close() { reset() }
+			})
 		return uri
 	}
 
 	/** The `onAnyFilePicked` dispatch, the backlog resolvers live as the view model hands them over. */
 	private fun importPicked(fileName: String, open: () -> DbItem?, text: String): Reloads {
 		val reloads = Reloads()
+		val uri = picked(text)
 		ImporterFactory.create(
-			GlobalDependencies.appContext, { it.run() }, picked(text), fileName,
+			GlobalDependencies.appContext, { it.run() }, uri, fileName,
+			FileGateway.startsAsJson(GlobalDependencies.appContext, uri),
 			ImporterFactory.targetFor(open()),
 			open, { open() == null },
 			{ reloads.root++ }, { reloads.current++ }, { reloads.container++ },
@@ -139,6 +148,29 @@ class FileWorkerTest {
 		assertEquals(listOf("t1"), ItemRepository.translations(words[0].id).map { it.name })
 		assertEquals(1, reloads.root)
 		assertEquals(0, reloads.current)
+	}
+
+	@Test
+	fun `a tree file whose name resolves to nothing imports as a tree`() {
+		// some providers report no document name — the empty fallback
+		// must not send the tree JSON to the word-list parser
+		val reloads = importPicked("", { null }, tree)
+
+		val subjects = ItemRepository.subjects()
+		assertEquals(listOf("A", "B"), subjects.map { it.name })
+		assertEquals(listOf("w1"), ItemRepository.children(subjects[0].id).map { it.name })
+		assertEquals(1, reloads.root)
+	}
+
+	@Test
+	fun `a word list with a json-sounding name imports as a word list`() {
+		val reloads = importPicked("list.hjson", { null }, "Kapitel {\nHaus;home\n}")
+
+		// the document's own shape decides — the name never does
+		val subject = ItemRepository.subjects().single()
+		assertEquals("Kapitel", subject.name)
+		assertEquals(listOf("Haus"), ItemRepository.children(subject.id).map { it.name })
+		assertEquals(1, reloads.root)
 	}
 
 	@Test

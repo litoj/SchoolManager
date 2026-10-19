@@ -8,6 +8,7 @@ import cz.litoj.schlmgr.ui.viewmodel.TranslationRow
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -15,8 +16,8 @@ import org.junit.Test
  * Unit tests of the word editor's Enter chain — the word name leads to the
  * first translation, a translation's name to the next, and the last one
  * confirms (the OK button's commit) instead of adding a row. An accepted
- * Enter commit of a new word resets the editor for the next one; every
- * other accepted commit closes the popup.
+ * confirm of a new word renews the editor for the next one through the Enter
+ * chain alone — the OK button closes, like every other accepted commit.
  *
  * Dialogs register on the shared stack on construction and the teardown
  * clears it, so none leak across tests.
@@ -82,11 +83,12 @@ class CreatorPopupEnterChainTest {
 	}
 
 	@Test
-	fun `an accepted enter commit of a new word resets the editor for the next one`() {
+	fun `an accepted enter commit of a new word renews the editor with a fresh one`() {
 		val popup = wordPopup()
 		popup.name = "Haus"
 		popup.description = "a noun"
 		popup.translations[0].name = "dům"
+		val committedRow = popup.translations[0]
 		popup.setOkListener { true }
 
 		popup.onTranslationNameEnter(0)
@@ -95,12 +97,13 @@ class CreatorPopupEnterChainTest {
 		assertEquals("", popup.description)
 		assertEquals(1, popup.translations.size)
 		assertEquals("", popup.translations[0].name)
-		assertFalse("the reset editor is clean again", popup.isDirty)
+		assertNotSame("the renewal builds a fresh editor, not a wiped one", committedRow, popup.translations[0])
+		assertFalse("the renewed editor is clean again", popup.isDirty)
 		assertTrue("the run continues — the popup stays shown", Dialogs.stack.value.contains(popup))
 	}
 
 	@Test
-	fun `the reset editor commits the next word through the same listener`() {
+	fun `the renewed editor commits the next word through the same listener`() {
 		val popup = wordPopup()
 		popup.name = "first"
 		popup.translations[0].name = "první"
@@ -116,6 +119,17 @@ class CreatorPopupEnterChainTest {
 	}
 
 	@Test
+	fun `an ok-button commit of a new word closes it`() {
+		val popup = wordPopup()
+		popup.name = "Haus"
+		popup.setOkListener { true }
+
+		popup.notifyOk()
+
+		assertFalse("the OK button never renews — the run ends", Dialogs.stack.value.contains(popup))
+	}
+
+	@Test
 	fun `an enter commit of an edit popup closes it`() {
 		val popup = wordPopup(CreatorPopup.Kind.EDIT)
 		popup.setOkListener { true }
@@ -127,7 +141,7 @@ class CreatorPopupEnterChainTest {
 
 	@Test
 	fun `an ok-button commit closes the popup`() {
-		val popup = wordPopup()
+		val popup = CreatorPopup(CreatorPopup.Kind.NEW_CHAPTER, null, CreatorContent.Simple)
 		popup.setOkListener { true }
 
 		popup.notifyOk()
@@ -137,7 +151,7 @@ class CreatorPopupEnterChainTest {
 
 	@Test
 	fun `an ok-button commit is one shot`() {
-		val popup = wordPopup()
+		val popup = CreatorPopup(CreatorPopup.Kind.NEW_CHAPTER, null, CreatorContent.Simple)
 		var commits = 0
 		popup.setOkListener { commits++; true }
 

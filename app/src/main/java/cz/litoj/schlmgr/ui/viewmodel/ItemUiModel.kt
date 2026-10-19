@@ -34,10 +34,7 @@ enum class ExplorerRowVariant { Browse, Search }
 
 /**
  * Stable string keys for `LazyColumn` items.
- * - [ItemUiModel.key] must be Bundle-storable (row objects are not) and
- *   stable across recompositions (`ItemUiModel` rebuilds on every change).
- * - the row instance's identity-based key satisfies both — it regenerates
- *   only when the identity itself is gone (process death rebuilds anyway).
+	 * - [ItemUiModel.key] must be Bundle-storable (row objects are not) and stable across recompositions (`ItemUiModel` rebuilds on every change).
  */
 private val keyRegistry = java.util.WeakHashMap<Any, String>()
 private val keyCounter = java.util.concurrent.atomic.AtomicLong()

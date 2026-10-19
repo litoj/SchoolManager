@@ -21,6 +21,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.component.BareTextFieldStyle
 import cz.litoj.schlmgr.ui.component.HairlineDivider
 import cz.litoj.schlmgr.ui.component.WideTextField
@@ -66,8 +68,9 @@ sealed class CreatorContent {
  * database's business — there is no position picker.
  *
  * The OK listener returns the commit verdict only — the popup closes itself
- * on acceptance, except an Enter commit of a new word, which resets the
- * editor for the next one instead (see [onTranslationNameEnter]).
+ * on acceptance, except a new word confirmed through the Enter chain, which
+ * renews the editor for the next one instead (see [resetForNextWord]); the
+ * OK button always closes.
  */
 class CreatorPopup(
 	private val kind: Kind,
@@ -80,41 +83,84 @@ class CreatorPopup(
 
 	private var okListener: ((CreatorResult) -> Boolean)? = null
 
-	// Exposed publicly so the call sites read them as name/description.
-	var name by mutableStateOf(edited?.item?.name ?: "")
-	var description by mutableStateOf(edited?.item?.description ?: "")
+	/**
+	 * The editor's whole content, built by the one construction path (see
+	 * [freshEditor]) — a renewal replaces the instance (see
+	 * [resetForNextWord]) instead of wiping fields, so nothing of the
+	 * committed word survives it: the screen keys the composed fields on
+	 * the instance, so they are rebuilt with it too.
+	 */
+	@Stable
+	private class EditorState(
+		val focusNameOnOpen: Boolean,
+		edited: ItemRow?,
+		rows: List<TranslationRow>,
+	) {
+		var name by mutableStateOf(edited?.item?.name ?: "")
+		var description by mutableStateOf(edited?.item?.description ?: "")
 
-	val translations: SnapshotStateList<TranslationRow> =
-		((content as? CreatorContent.Word)?.initial
-			?: emptyList()).toMutableStateList()
-			// A new word always starts with one empty translation ready to type into.
-			.apply { if (isEmpty()) add(TranslationRow("", "", null)) }
+		val translations: SnapshotStateList<TranslationRow> =
+			rows.toMutableStateList()
+				// A new word always starts with one empty translation ready to type into.
+				.apply { if (isEmpty()) add(TranslationRow("", "", null)) }
+
+		/** The existing translations whose rows were removed in the editor. */
+		val removedTranslations = mutableListOf<DbItem>()
+
+		// Snapshots of the last committed state, used for the unsaved-changes guard.
+		private val initialName = name
+		private val initialDescription = description
+		private val initialRows = translations.map { it.name to it.description }
+
+		val isDirty: Boolean
+			get() = name != initialName || description != initialDescription ||
+				removedTranslations.isNotEmpty() ||
+				translations.map { it.name to it.description } != initialRows
+
+		// The Enter chain's row-focus plumbing — held by the editor, so a
+		// renewal drops the dead handles with the rows they belonged to.
+		val nameFieldFocus = mutableStateMapOf<Long, FocusRequester>()
+		var pendingFocusId by mutableStateOf<Long?>(null)
+	}
+
+	/** One construction path of the editor — the first word of a run and every renewed one (see [resetForNextWord]). */
+	private fun freshEditor(focusNameOnOpen: Boolean = false) = EditorState(
+		focusNameOnOpen,
+		edited,
+		(content as? CreatorContent.Word)?.initial ?: emptyList(),
+	)
+
+	private var editor by mutableStateOf(freshEditor())
+
+	// Exposed publicly so the call sites read them as name/description.
+	var name: String
+		get() = editor.name
+		set(value) { editor.name = value }
+	var description: String
+		get() = editor.description
+		set(value) { editor.description = value }
+
+	val translations: SnapshotStateList<TranslationRow> get() = editor.translations
 
 	/** The existing translations whose rows were removed in the editor. */
-	val removedTranslations = mutableListOf<DbItem>()
-
-	// Snapshots of the last committed state, used for the unsaved-changes guard.
-	// Vars — an Enter commit of a new word re-baselines them (see [resetForNextWord]).
-	private var initialName = name
-	private var initialDescription = description
-	private var initialRows = translations.map { it.name to it.description }
+	val removedTranslations: MutableList<DbItem> get() = editor.removedTranslations
 
 	init {
 		Dialogs.show(this)
 	}
 
-	val isDirty: Boolean
-		get() = name != initialName || description != initialDescription ||
-			removedTranslations.isNotEmpty() ||
-			translations.map { it.name to it.description } != initialRows
+	val isDirty: Boolean get() = editor.isDirty
 
 	override fun canDismissByOutsideTouch(): Boolean = !isDirty
 
-	private val nameFieldFocus = mutableStateMapOf<Long, FocusRequester>()
-
-	private var pendingFocusId by mutableStateOf<Long?>(null)
-
 	private val nameFocus = FocusRequester()
+
+	/** A note's name Enter lands here — its body is the description. */
+	private val descriptionFocus = FocusRequester()
+
+	/** Whether the popup edits a note — its name Enter targets the description (see [onNoteNameEnter]). */
+	private val isNote = kind == Kind.NEW_NOTE ||
+		(kind == Kind.EDIT && edited?.item?.type == ItemKind.NOTE)
 
 	/**
 	 * Enter in the word's name — the first translation follows; a fresh row is
@@ -128,22 +174,35 @@ class CreatorPopup(
 	}
 
 	/**
+	 * Enter in a note's name — the description follows. A note commits
+	 * through the OK button only: its body is the description, typed over
+	 * newlines.
+	 */
+	@VisibleForTesting
+	internal fun onNoteNameEnter() {
+		// the field is composed whenever Enter can fire — catching keeps the
+		// call safe outside composition (the unit tests)
+		runCatching { descriptionFocus.requestFocus() }
+	}
+
+	/**
 	 * Enter in a translation's name — the next row follows, the last one
-	 * confirms instead (see [notifyOk]).
+	 * confirms instead (see [notifyOk]): a new word renews the editor for
+	 * the next one, everything else closes.
 	 */
 	@VisibleForTesting
 	internal fun onTranslationNameEnter(index: Int) {
 		val next = translations.getOrNull(index + 1)
-		if (next != null) focusTranslation(next.id) else notifyOk(fromEnter = true)
+		if (next != null) focusTranslation(next.id) else notifyOk(renew = true)
 	}
 
 	/** Moves the keyboard to a translation's name field, deferred until the row is composed. */
 	private fun focusTranslation(id: Long) {
-		val focused = runCatching { nameFieldFocus[id]?.requestFocus() }.isSuccess
-		if (!focused) pendingFocusId = id
+		val focused = runCatching { editor.nameFieldFocus[id]?.requestFocus() }.isSuccess
+		if (!focused) editor.pendingFocusId = id
 	}
 
-	/** Sets the commit verdict — `false` keeps the popup open; on acceptance the popup closes itself. */
+	/** Sets the commit verdict — `false` keeps the popup open; an accepted commit closes the popup, except a new word confirmed through the Enter chain, which renews (see [resetForNextWord]). */
 	fun setOkListener(listener: (CreatorResult) -> Boolean) {
 		okListener = listener
 	}
@@ -158,24 +217,13 @@ class CreatorPopup(
 	fun dismiss() = Dialogs.dismiss(this)
 
 	/**
-	 * Clears the editor for the next word of an Enter-driven run — the popup
-	 * stays open, the keyboard moves to the name field.
+	 * Rebuilds the editor for the next word of a creation run — a fresh
+	 * [EditorState] through the same construction path as the first word
+	 * (a run holds no edited row), with the keyboard landing in the name
+	 * field. The popup stays open.
 	 */
 	private fun resetForNextWord() {
-		name = ""
-		description = ""
-		translations.clear()
-		translations.add(TranslationRow("", "", null))
-		removedTranslations.clear()
-		// the dropped rows' focus handles are dead — drop them with the rows
-		nameFieldFocus.clear()
-		// the guard starts over against the fresh state
-		initialName = name
-		initialDescription = description
-		initialRows = translations.map { it.name to it.description }
-		// the field is composed whenever the chain can fire — catching keeps
-		// the reset safe outside composition (the unit tests)
-		runCatching { nameFocus.requestFocus() }
+		editor = freshEditor(focusNameOnOpen = true)
 	}
 
 	@Composable
@@ -187,60 +235,82 @@ class CreatorPopup(
 		// hard-coded here, so a theme change only needs to touch the resource file.
 		val textColor = colorResource(R.color.colorPrimaryFg)
 
-		// Outside-dismiss (the dirty-guarded scrim tap) and the keyboard inset
-		// handling both live in the shared dialog host.
-		PopupCard {
-			// Fixed header — title, divider, name and description are always visible.
-			Text(
-				stringResource(kind.headerRes),
-				Modifier
-					.fillMaxWidth()
-					.padding(top = 5.dp),
-				style = TextStyle(fontSize = 25.sp, color = textColor),
-				textAlign = TextAlign.Center
-			)
-			HairlineDivider()
-			// Enter in the word name jumps to the first translation's name. The
-			// other kinds have no next field — no ImeAction offered.
-			BorderedTextField(
-				name,
-				{ name = it },
-				R.string.data_name,
-				textColor,
-				singleLine = true,
-				onImeAction = if (content is CreatorContent.Word) {
-					{ onWordNameEnter() }
-				} else null,
-				focusRequester = nameFocus,
-			)
-			BorderedTextField(description, { description = it }, R.string.data_desc, textColor)
-			// Variable middle — the type-specific editor scroll when it
-			// outgrows the (keyboard-resized) window, so the header and the Cancel/OK bar
-			// below always stay visible.
-			Column(
-				Modifier
-					.fillMaxWidth()
-					.weight(1f, fill = false)
-					.verticalScroll(rememberScrollState())
-			) {
-				when (content) {
-					is CreatorContent.Word -> WordEditor(textColor)
-
-					else -> Unit
-				}
+		// The editor instance is the content's identity — the renewal (see
+		// [resetForNextWord]) rebuilds the whole subtree, so the next word
+		// gets fresh field components instead of the committed word's ones.
+		key(editor) {
+			// A renewed editor opens with the keyboard in its name field — the
+			// deferred effect lets the fresh subtree compose first.
+			LaunchedEffect(editor.focusNameOnOpen) {
+				if (editor.focusNameOnOpen) runCatching { nameFocus.requestFocus() }
 			}
-			HairlineDivider()
-			Row(
-				Modifier
-					.fillMaxWidth()
-					.height(50.dp)
-			) {
-				PopupButton(
-					stringResource(R.string.cancel),
-					Modifier.weight(1f)
-				) { dismiss() }
-				VerticalButtonSeparator()
-				PopupButton(stringResource(R.string.ok), Modifier.weight(1f)) { notifyOk() }
+			// Outside-dismiss (the dirty-guarded scrim tap) and the keyboard inset
+			// handling both live in the shared dialog host.
+			PopupCard {
+				// Fixed header — title, divider, name and description are always visible.
+				Text(
+					stringResource(kind.headerRes),
+					Modifier
+						.fillMaxWidth()
+						.padding(top = 5.dp),
+					style = TextStyle(fontSize = 25.sp, color = textColor),
+					textAlign = TextAlign.Center
+				)
+				HairlineDivider()
+				// Enter commits on the last name field in the view: this name for
+				// the simple kinds, the last translation for words (the word name
+				// chains there). A note is the exception — its body is the
+				// description, so its name Enter jumps there and the commit
+				// stays on the OK button.
+				BorderedTextField(
+					name,
+					{ name = it },
+					R.string.data_name,
+					textColor,
+					singleLine = true,
+					onImeAction = when {
+						content is CreatorContent.Word -> ({ onWordNameEnter() })
+						isNote -> ({ onNoteNameEnter() })
+						else -> ({ notifyOk() })
+					},
+					imeAction = if (content is CreatorContent.Word || isNote) ImeAction.Next else ImeAction.Done,
+					focusRequester = nameFocus,
+				)
+				BorderedTextField(
+					description,
+					{ description = it },
+					R.string.data_desc,
+					textColor,
+					focusRequester = descriptionFocus,
+				)
+				// Variable middle — the type-specific editor scroll when it
+				// outgrows the (keyboard-resized) window, so the header and the Cancel/OK bar
+				// below always stay visible.
+				Column(
+					Modifier
+						.fillMaxWidth()
+						.weight(1f, fill = false)
+						.verticalScroll(rememberScrollState())
+				) {
+					when (content) {
+						is CreatorContent.Word -> WordEditor(textColor)
+
+						else -> Unit
+					}
+				}
+				HairlineDivider()
+				Row(
+					Modifier
+						.fillMaxWidth()
+						.height(50.dp)
+				) {
+					PopupButton(
+						stringResource(R.string.cancel),
+						Modifier.weight(1f)
+					) { dismiss() }
+					VerticalButtonSeparator()
+					PopupButton(stringResource(R.string.ok), Modifier.weight(1f)) { notifyOk() }
+				}
 			}
 		}
 	}
@@ -251,7 +321,9 @@ class CreatorPopup(
 		// same-direction scrollables would let the inner one steal the drags.
 		Column(Modifier.fillMaxWidth()) {
 			translations.forEach { row ->
-				TranslationRowEditor(row, textColor)
+				// Keyed by the row: rows come and go without a renewal too, and
+				// a slot shift must not hand one row another row's field state.
+				key(row.id) { TranslationRowEditor(row, textColor) }
 			}
 			// Just the centered add icon — no label, no separator above it.
 			Box(
@@ -279,14 +351,14 @@ class CreatorPopup(
 		val nameFocus = remember(row.id) { FocusRequester() }
 		// registered post-composition — an abandoned recomposition leaves
 		// no stale entry behind
-		SideEffect { nameFieldFocus[row.id] = nameFocus }
+		SideEffect { editor.nameFieldFocus[row.id] = nameFocus }
 		// Keyed on pendingFocusId as well so that re-targeting an already-composed row
 		// re-runs the effect and actually moves focus there (otherwise IME-Next falls
 		// through to the description field). Newly appended rows are focused as soon as
 		// they are composed.
-		LaunchedEffect(row.id, pendingFocusId) {
-			if (pendingFocusId == row.id) {
-				pendingFocusId = null
+		LaunchedEffect(row.id, editor.pendingFocusId) {
+			if (editor.pendingFocusId == row.id) {
+				editor.pendingFocusId = null
 				runCatching { nameFocus.requestFocus() }
 			}
 		}
@@ -337,7 +409,7 @@ class CreatorPopup(
 							row.source?.let { removedTranslations.add(it) }
 							translations.remove(row)
 							// the row's focus handle is dead — drop it with the row
-							nameFieldFocus.remove(row.id)
+							editor.nameFieldFocus.remove(row.id)
 						}
 				)
 			}
@@ -380,12 +452,13 @@ class CreatorPopup(
 	}
 
 	@VisibleForTesting
-	internal fun notifyOk(fromEnter: Boolean = false) {
-		// one shot per ACCEPTED commit — a double-tap must not commit twice,
-		// but a refused one (the popup stays open) must leave the door open
+	internal fun notifyOk(renew: Boolean = false) {
+		// the closing commit is one shot — a double-tap must not commit twice,
+		// but a refused one (the popup stays open) must leave the door open.
+		// A new word's renew keeps the listener for the next word of the run.
 		val listener = okListener ?: return
 		if (!listener(result())) return
-		if (fromEnter && kind == Kind.NEW_WORD) resetForNextWord()
+		if (renew && kind == Kind.NEW_WORD) resetForNextWord()
 		else {
 			okListener = null
 			dismiss()

@@ -48,6 +48,8 @@ class PickerViewModelTest {
 
 	@After
 	fun tearDown() {
+		// the picker's saved position is process-wide — leave the root for the next class
+		PickerViewModel.resetSavedHistory()
 		db.close()
 	}
 

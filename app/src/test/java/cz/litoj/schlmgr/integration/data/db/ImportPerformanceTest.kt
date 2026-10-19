@@ -50,18 +50,13 @@ class ImportPerformanceTest {
 	}
 
 	/**
-	 * The NJ stream's own counts — every format carries them identically.
-	 * The saved row count is lower — the subject-wide name merge folds the
-	 * repeated words (NJ's 3282 word entries hold 3024 distinct names, the
-	 * translations the same) — one stat row per name per subject, linked
-	 * into every chapter that names it.
+	 * The NJ saved-row counts — the subject-wide name merge folds the
+	 * repeated word entries (3282 entries, 3023 rows: the names trim
+	 * before the merge, so every format lands the same rows).
 	 */
-	private val njWords = 3282
+	private val njWords = 3023
 	private val njChapters = 204
-	private val njRows = 6252
-	/** The word-list reader trims names, so NJ's one trailing-space name
-	 * pair collapses — one row fewer than the other formats carry. */
-	private val njWordListRows = 6251
+	private val njRows = 6251
 
 	/** The fixture file at [path] — a committed test resource. */
 	private fun fixture(path: String): File =
@@ -124,7 +119,7 @@ class ImportPerformanceTest {
 		val result = timed("word-as-subject") { ItemRepository.import(importer) }
 		assertEquals(njWords, result.words)
 		assertEquals(njChapters, result.chapters)
-		assertEquals(njWordListRows, rowCount())
+		assertEquals(njRows, rowCount())
 		assertEquals("NJ", ItemRepository.subjects().single().name)
 	}
 
@@ -138,7 +133,7 @@ class ImportPerformanceTest {
 		assertEquals(njWords, result.words)
 		assertEquals(njChapters, result.chapters)
 		// the deck row plus the word list's trimmed row count
-		assertEquals(njWordListRows + 1, rowCount())
+		assertEquals(njRows + 1, rowCount())
 		// the stream's NJ wrapper becomes a chapter of the deck
 		val children = ItemRepository.children(deck.id)
 		assertEquals(listOf("NJ"), children.map { it.name })
@@ -166,7 +161,7 @@ class ImportPerformanceTest {
 		val result = timed("word-into-container-reimport") { ItemRepository.import(importer, deck.id) }
 		assertEquals(njWords, result.words)
 		assertEquals(njChapters, result.chapters)
-		assertEquals(njWordListRows + 1, rowCount())
+		assertEquals(njRows + 1, rowCount())
 		assertEquals(listOf("NJ"), ItemRepository.children(deck.id).map { it.name })
 	}
 }

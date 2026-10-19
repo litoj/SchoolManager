@@ -104,6 +104,16 @@ abstract class ItemDao {
 	abstract suspend fun referenceParentsOf(childId: Int): List<DbItem>
 
 	/**
+	 * The rows that link to [childId] in link order — a translation's words.
+	 * Reference parents included: a shown-through parent is a home too.
+	 */
+	@Query(
+		"SELECT i.* FROM item i INNER JOIN item_link l ON l.parent_id = i.id " +
+			"WHERE l.child_id = :childId ORDER BY l.position"
+	)
+	abstract suspend fun parentRowsOf(childId: Int): List<DbItem>
+
+	/**
 	 * One hop of the browsing path walk — the first parent row of [childId],
 	 * the root is a valid answer. No ordering among equal candidates —
 	 * a multi-parent path stays arbitrary.
@@ -178,10 +188,8 @@ abstract class ItemDao {
 
 	/**
 	 * All links between the rows of [subgraph].
-	 * - every link whose parent lies in the subgraph (reached rows bring
-	 *   their children), in no particular order.
-	 * - with [subgraph], the whole preloaded container content — for the
-	 *   search run, the export walk and the subject merge.
+	 * - every link whose parent lies in the subgraph (reached rows bring their children), in no particular order.
+	 * - with [subgraph], the whole preloaded container content — for the search run, the export walk and the subject merge.
 	 */
 	@Query(
 		"WITH RECURSIVE des(id) AS (SELECT :rootId " +
@@ -193,8 +201,7 @@ abstract class ItemDao {
 	/**
 	 * Every link whose child lies in the [subgraph] — the child's whole parent
 	 * set, outside parents included.
-	 * - one query instead of per-row [parentsOf]/[linkIsReference] round-trips
-	 *   while building search-hit rows.
+	 * - one query instead of per-row [parentsOf]/[linkIsReference] round-trips while building search-hit rows.
 	 */
 	@Query(
 		"WITH RECURSIVE des(id) AS (SELECT :rootId " +

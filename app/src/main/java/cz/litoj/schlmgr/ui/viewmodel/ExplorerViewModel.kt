@@ -80,7 +80,7 @@ abstract class ExplorerViewModel<R>(
 		const val EXIT_WINDOW_MS = 3000L
 	}
 
-	private val searchFlow = SearchFlow(viewModelScope, io, history, SearchFlowHost(), clock = { clock() })
+	private val searchFlow = SearchFlow(viewModelScope, io, history, SearchFlowHost())
 
 	val query: StateFlow<String> get() = searchFlow.query
 
@@ -104,6 +104,9 @@ abstract class ExplorerViewModel<R>(
 
 	fun load(content: List<ItemRow>, isSearch: Boolean = false, isPicker: Boolean = false) =
 		list.load(content, isSearch, isPicker)
+
+	/** Publishes a caller-sorted order of the current rows — see [ExplorerList.applyOrder]. */
+	fun applyOrder(items: List<ItemRow>) = list.applyOrder(items)
 
 	internal val loadJob get() = list.loadJob
 
@@ -206,7 +209,15 @@ abstract class ExplorerViewModel<R>(
 	// ------------------------------------------------------------------ search flow
 	// Policy lives in [SearchFlow].
 
-	fun openSearchField() = searchFlow.openField()
+	/**
+	 * Opens the search field.
+	 * - the run walks the open container — the root offers no search.
+	 * - an armed paste freezes the flow like navigation.
+	 */
+	fun openSearchField() {
+		if (history.path.isEmpty() || pasteArmed()) return
+		searchFlow.openField()
+	}
 
 	fun closeSearchField() = searchFlow.closeField()
 
@@ -228,6 +239,7 @@ abstract class ExplorerViewModel<R>(
 		override fun appendRows(batch: List<ItemRow>) = list.append(batch)
 		override fun removeRows(items: Collection<ItemRow>) = list.removeItems(items)
 		override fun remap() = list.remap()
+		override fun discardSelection(rows: List<ItemRow>) = selection.discard(rows)
 		override fun load(content: List<ItemRow>, isSearch: Boolean, isPicker: Boolean) =
 			this@ExplorerViewModel.load(content, isSearch, isPicker)
 

@@ -3,7 +3,8 @@ package cz.litoj.schlmgr.ui.component
 /**
  * The position in `1..maxPosition` with the widest text (digit widths differ,
  * so the longest number is not always the widest).
- * - chosen without walking the list. Ties go to the larger position.
+	 * - chosen without walking the list.
+	 * - ties go to the larger position.
  */
 internal fun widestPosition(maxPosition: Int, digitWidth: (Int) -> Int): Int {
 	val max = maxPosition.coerceAtLeast(1)

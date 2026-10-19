@@ -38,8 +38,8 @@ import cz.litoj.schlmgr.ui.viewmodel.RowKind
 /**
  * Post-test results — the success percentage and one explorer-style row
  * per tested item.
- * - translations replace the description. The tested count replaces the
- *   position.
+	 * - translations replace the description.
+	 * - the tested count replaces the position.
  * - the typed answer below, `passed/total` at the row's end.
  *
  * @param success success percentage 0–100 (not a fraction)

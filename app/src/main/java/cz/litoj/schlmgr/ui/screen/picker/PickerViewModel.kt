@@ -1,5 +1,6 @@
 package cz.litoj.schlmgr.ui.screen.picker
 
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.viewModelScope
 import cz.litoj.schlmgr.app.Startup
 import cz.litoj.schlmgr.app.UiNotice
@@ -35,6 +36,13 @@ class PickerViewModel(
 
 		private fun ensureHistory(): NavigationHistory =
 			savedHistory ?: NavigationHistory().also { savedHistory = it }
+
+		/** Drops the saved position — the next picker starts at the root. */
+		@VisibleForTesting
+		@JvmStatic
+		internal fun resetSavedHistory() {
+			savedHistory = null
+		}
 	}
 
 	// The model is created at the browsing position the saved history holds.

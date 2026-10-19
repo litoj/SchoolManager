@@ -31,8 +31,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
+import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
+import cz.litoj.schlmgr.ui.viewmodel.TranslationLine
 
 /**
  * Explorer row with slot parameters — `infoAction`/`referenceAction`
@@ -53,6 +55,7 @@ fun Item(
 	answer: (@Composable () -> Unit)? = null,
 	trailing: (@Composable () -> Unit)? = null,
 	referenceAction: (@Composable () -> Unit)? = null,
+	onInnerInfo: ((TranslationLine) -> Unit)? = null,
 ) {
 	Row(
 		modifier
@@ -74,19 +77,26 @@ fun Item(
 						.weight(1f)
 						.padding(start = 3.dp, top = 3.dp),
 				) {
-					// A flipped word with translation descriptions keeps each description directly
-					// under its own translation. Every other row shows the flat name and info line.
-					val inlineTranslations = descVisible && item.translations.any { it.description.isNotEmpty() }
-					if (inlineTranslations) {
+					if (item.translations.isNotEmpty()) {
+						// A flipped row is the inner items in a list under the
+						// row's own unified score — each line carries its own
+						// description (inline, or the icon when descriptions hide).
 						item.translations.forEach { line ->
-							Text(
-								line.name,
-								fontSize = 20.sp,
-								color = ExplorerColors.body,
-								modifier = Modifier.padding(vertical = 2.dp),
-							)
-							if (line.description.isNotEmpty()) {
-								Text(line.description, fontSize = 15.sp, color = ExplorerColors.description)
+							Row(Modifier.fillMaxWidth()) {
+								Column(Modifier.weight(1f)) {
+									Text(
+										line.name,
+										fontSize = 20.sp,
+										color = ExplorerColors.body,
+										modifier = Modifier.padding(vertical = 2.dp),
+									)
+									if (descVisible && ItemRow.showsDescription(line.description)) {
+										Text(line.description, fontSize = 15.sp, color = ExplorerColors.description)
+									}
+								}
+								if (line.description.isNotEmpty() && !ItemRow.showsDescription(line.description) && onInnerInfo != null) {
+									ActionSlot { InfoActionIcon { onInnerInfo(line) } }
+								}
 							}
 						}
 					} else {
@@ -96,7 +106,7 @@ fun Item(
 							color = ExplorerColors.body,
 							modifier = Modifier.padding(vertical = 2.dp),
 						)
-						if (descVisible && item.description.isNotEmpty()) {
+						if (descVisible && ItemRow.showsDescription(item.description)) {
 							Text(item.description, fontSize = 15.sp, color = ExplorerColors.description)
 						}
 					}

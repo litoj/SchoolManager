@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -19,15 +18,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.ui.component.CrumbChain
 import cz.litoj.schlmgr.ui.component.HairlineDivider
 
 /**
  * The source picker of a referenced row living in several containers.
- * - one button per source, labeled with its whole chain.
- * - picking hands the chain to [onPick].
+ * - one button per source, its chain rendered like the titlebar's breadcrumbs.
+ * - the chains show the descent below the searched chapter — not the
+ *   absolute chain from the subject root.
+ * - picking hands the whole chain to [onPick].
  */
 class SourcePickPopup(
 	private val paths: List<List<DbItem>>,
+	private val origin: List<DbItem>,
 	private val onPick: (List<DbItem>) -> Unit,
 ) : DialogSpec {
 
@@ -46,10 +49,10 @@ class SourcePickPopup(
 			HairlineDivider()
 			Column(
 				Modifier
-					.heightIn(max = 400.dp)
+					.weight(1f, fill = false)
 					.verticalScroll(rememberScrollState())
 			) {
-				for (path in paths) {
+				paths.forEachIndexed { index, path ->
 					Box(
 						Modifier
 							.fillMaxWidth()
@@ -60,14 +63,28 @@ class SourcePickPopup(
 							},
 						contentAlignment = Alignment.Center,
 					) {
-						Text(
-							path.joinToString(" / ") { it.name },
-							Modifier.padding(horizontal = 5.dp),
-							style = TextStyle(fontSize = 18.sp, color = TextColor),
+						CrumbChain(
+							path.relativeTo(origin).map { it.name },
+							TextColor,
+							modifier = Modifier.padding(horizontal = 5.dp),
 						)
 					}
+					if (index < paths.lastIndex) HairlineDivider()
 				}
 			}
 		}
 	}
+}
+
+/**
+ * The chain as shown against the search's [origin] — the descent below the
+ * searched chapter, with the chapter itself dropped. The location equal to the
+ * searched chapter shows itself; a chain from outside the origin's subject
+ * shows whole.
+ */
+internal fun List<DbItem>.relativeTo(origin: List<DbItem>): List<DbItem> {
+	if (origin.isEmpty()) return this
+	if (take(origin.size) != origin) return this
+	val below = drop(origin.size)
+	return below.ifEmpty { listOf(last()) }
 }

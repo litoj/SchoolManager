@@ -17,7 +17,7 @@ class WordNamesTest {
 	 * examples were slightly inaccurate — these are the actual results).
 	 */
 	@Test
-	fun documentedVariantExamples() {
+	fun `the documented variant examples parse`() {
 		assertEquals(
 			listOf("They moved.", "He and she moved."),
 			WordNames.parseVariants("They/(He and she) moved.")
@@ -41,24 +41,24 @@ class WordNamesTest {
 	}
 
 	@Test
-	fun noSlashMeansSingleName() {
+	fun `a name without a slash stays a single name`() {
 		assertEquals(listOf("plain name"), WordNames.parseVariants("plain name"))
 	}
 
 	@Test
-	fun escapedSlashIsNotAVariant() {
+	fun `an escaped slash is not a variant`() {
 		assertEquals(listOf("a/b c"), WordNames.parseVariants("a\\/b c"))
 	}
 
 	@Test
-	fun trailingBackslashIsDroppedNotCrashedOn() {
+	fun `a trailing backslash drops instead of crashing`() {
 		// the parser only runs for names with a `/`. A trailing `\` escapes
 		// nothing at the end of the source
 		assertEquals(WordNames.parseVariants("a/b"), WordNames.parseVariants("a/b\\"))
 	}
 
 	@Test
-	fun splitEscapedDividesNames() {
+	fun `split escaped divides the names`() {
 		assertEquals(
 			listOf("word one", "word two"),
 			WordNames.splitEscaped("word one\\word two")
@@ -66,7 +66,7 @@ class WordNamesTest {
 	}
 
 	@Test
-	fun splitEscapedKeepsVariantSyntax() {
+	fun `split escaped keeps the variant syntax`() {
 		// `\\` and the `/` stay part of one name — no split, input unchanged
 		assertEquals(
 			listOf("he\\\\/she"),
@@ -75,7 +75,7 @@ class WordNamesTest {
 	}
 
 	@Test
-	fun splitEscapedKeepsAnEscapedBackslash() {
+	fun `split escaped keeps an escaped backslash`() {
 		// like the file parser, `\\` is an escape pair — a name can hold a
 		// backslash without being cut in two
 		assertEquals(
@@ -85,7 +85,7 @@ class WordNamesTest {
 	}
 
 	@Test
-	fun splitEscapedSplitsAfterAnEscapedBackslash() {
+	fun `split escaped splits after an escaped backslash`() {
 		// the escape pair protects only itself — the plain `\` after it still divides
 		assertEquals(
 			listOf("a\\\\b", "c"),
@@ -94,12 +94,12 @@ class WordNamesTest {
 	}
 
 	@Test
-	fun splitEscapedKeepsSingleName() {
+	fun `split escaped keeps a single name whole`() {
 		assertEquals(listOf("only"), WordNames.splitEscaped("only"))
 	}
 
 	@Test
-	fun anEmptyGroupDropsNothing() {
+	fun `an empty group drops nothing`() {
 		// `()` carries no alternative — the text after it stays in the
 		// variant it belongs to
 		assertEquals(listOf("a", "b"), WordNames.parseVariants("a/()b"))
@@ -110,7 +110,7 @@ class WordNamesTest {
 	}
 
 	@Test
-	fun aStrayClosingParenIsText() {
+	fun `a stray closing paren is text`() {
 		// the unmatched `)` collapses into the pending variant instead of
 		// discarding everything after it
 		assertEquals(listOf("a d", "b)c d"), WordNames.parseVariants("a/b)c d"))

@@ -10,7 +10,7 @@
     <string name="cut">Cut</string>
     <string name="data_child_count">"Elements: %1$d"</string>
     <string name="data_children_sf">"Elements: %1$d, Success rate: %2$d%3$s"</string>
-    <string name="data_search_time">"Elements: %1$d;\tTime: %2$dms"</string>
+    <string name="data_search_chapters">"Elements: %1$d;\tChapters: %2$d"</string>
     <string name="data_desc">Description</string>
     <string name="data_name">Name</string>
     <string name="data_translate">Translation</string>
@@ -54,20 +54,22 @@
     <string name="help">Help</string>
     <string name="help_create">Items creation</string>
     <string name="help_create_ch">Chapters</string>
-    <string name="help_create_ch_how">Chapters are created from the \'more\' menu.
+    <string name="help_create_ch_how">Chapters are created from the floating New button inside a container: press the button and drag onto the chapter icon, or tap the icon in the standing palette.
         \nThey have only the basic information described above.</string>
-    <string name="help_create_how">All items created from the \'more\' menu in the top right corner have two columns for name of the new item and for its description (optional).
+    <string name="help_create_how">Every item is created from the floating New button at the bottom right. On the subjects screen it opens the subject creator right away; inside a container it fans out a circular palette of the offered types — drag the finger onto an icon, or tap the icon after a plain tap leaves the palette standing. A tap outside the icons closes the palette.
+        \nThe button hides when the list scrolls down and returns when it scrolls back up.
+        \nAll the creator dialogs have two columns for name of the new item and for its description (optional).
         \nThe description of the item can be multiline.
         \nAfter you are done with these two colums, there can be more stuff for each different type of item.
         \nWhen you are done with all that information, click \'OK\' to create the item, or click \'Cancel\' to exit the dialog. A click outside the window closes the dialog too, but only when nothing was changed.</string>
     <string name="help_create_mch">Subjects</string>
-    <string name="help_create_mch_how">Subjects are created from the \'more\' menu.
+    <string name="help_create_mch_how">Subjects are created from the floating New button on the subjects screen — the tap opens the creator directly.
         \nThey have just the basic information described above.</string>
     <string name="help_create_note">Notes</string>
-    <string name="help_create_note_how">Notes are created from the \'more\' menu.
+    <string name="help_create_note_how">Notes are created from the floating New button inside a container, like chapters.
         \nThey carry only the basic information described above — a name and a description — and serve for any text that is not a word, like a grammar rule.</string>
     <string name="help_create_word">Words</string>
-    <string name="help_create_word_how">Words are created from the \'more\' menu.
+    <string name="help_create_word_how">Words are created from the floating New button inside a container, like chapters.
         \nOther than the basic information they contain an add icon below the fields, which adds a translate item.
         \nTranslates consist of name and optional description.
         \nTo remove a translate, click on the cancel icon on the right of the specified translate.</string>
@@ -87,10 +89,10 @@
         \n(I go)/(He goes). = \'I go.\' or \'He goes\'.</string>
     <string name="help_extra_words_export">Words exporting</string>
     <string name="help_extra_words_export_how">Pick an option in the \'Export\' submenu of the \'more\' menu: selected rows are exported, and with nothing selected the whole open container (every subject on the subjects screen).
-        \nThe word file is compact and carries only the structure of the vocabulary; the JSON file is a complete replica of the subject, success rates included.
-        \nBoth formats can be imported again without loss.</string>
+        \nThe word file is compact and carries only the structure of the vocabulary — no success rates, no references; the JSON file is a complete replica of the subject, success rates, notes and references included.
+        \nOnly the JSON file imports back without loss.</string>
     <string name="help_extra_words_import">Words importing</string>
-    <string name="help_extra_words_import_how">Words are imported through the \'more\' menu — inside a container pick \'Import\', on the subjects screen pick \'File\' in the \'Import\' submenu; inside a container they land in it, on the subjects screen they create a new subject. The import detects the file itself: a name ending in \'.json\' or \'.hjson\' is a subject tree, anything else is a word list. The word file can be structured in a simpler hierarchy: it can contain chapters and words.
+    <string name="help_extra_words_import_how">Words are imported through the \'more\' menu — inside a container pick \'Import\', on the subjects screen pick \'File\' in the \'Import\' submenu; inside a container they land in it, on the subjects screen they create a new subject. The import detects the file itself by its content: a file starting with \'[\' or \'{\' is a subject tree (chapters, words, notes and references), anything else is a word list. The word file can be structured in a simpler hierarchy: it can contain chapters and words.
         \nDescription to individual items can be written directly behind the item in format like \'[description]\'.
         \nWords and translates can be separated using \';\', \'=\', or \'→\'.
         \nWords with same translate are separated by a backward slash \'\\\'.
@@ -165,7 +167,8 @@
         \nKeep the finger pressed and move it over the list to select the range of items it crosses.
         \nWhile items are selected, the search button in the top right corner becomes the select-all toggle: it selects all items of the list, or (if all items are selected) exits the selection mode. The back key also exits the selection mode.
         \nThe list of possible actions follows below.</string>
-    <string name="help_select_move">Cuts all selected items and shows the paste sheet (cancel and paste buttons). After you open the target chapter, click \'Paste\'.</string>
+    <string name="help_select_move">Cuts all selected items and shows the paste sheet (cancel and paste buttons). After you open the target chapter, click \'Paste\'.
+        \nThe armed move survives switching chapters, the side swipe included — the swipe only cancels the row selection.</string>
     <string name="help_test">Tests</string>
     <string name="help_test_how">The test asks for the words of the chosen sources.
         \nYou can choose the test\'s length and number of tested items.
@@ -184,9 +187,6 @@
     <string name="help_test_select_how">The variety of items to create the test from can be added to using the \'Add source\' button.
         \nThen a item chooser pops up, where you can repeatedly select items for the test (but only from on one subject).
         \nA test can also be prepared straight from the explorer: select the rows to test and tap \'Test\' on the selection bar.</string>
-    <string name="hierarchy_ch">Chapter</string>
-    <string name="hierarchy_word">Word</string>
-    <string name="hierarchy_note">Note</string>
     <string name="menu_label">Menu</string>
     <string name="menu_about">About</string>
     <string name="menu_objects">Subjects</string>
@@ -208,7 +208,6 @@
     </plurals>
     <string name="json_export_ext">.hjson</string>
     <string name="json_import_types">application/hjson</string>
-    <string name="more_new">New</string>
     <string name="new_chapter">New chapter</string>
     <string name="new_mch">New subject</string>
     <string name="new_word">New word</string>
@@ -221,6 +220,7 @@
     <string name="popup_copy_failed">Copying to the clipboard failed</string>
     <string name="popup_copy_truncated">[the copy was truncated — the text is too long for the clipboard]</string>
     <string name="press_exit">Press again to exit</string>
+    <string name="permission_pending">An action already waits for the permission</string>
     <string name="search">Input Keyword</string>
     <string name="select">Select</string>
     <string name="select_all">Select all</string>
@@ -229,7 +229,7 @@
     <string name="setts_him_flipped">Translate words automatically</string>
     <string name="setts_him_parse">Display item names parsed</string>
     <string name="setts_interface">Interface</string>
-    <string name="setts_show_desc">Show description directly</string>
+    <string name="setts_desc_lines">Directly displayed description lines</string>
     <string name="setts_test_amount">Default tested amount</string>
     <string name="setts_test_clever">Make tests by success rate</string>
     <string name="setts_test_time">Default time per item</string>

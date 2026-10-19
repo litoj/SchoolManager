@@ -20,7 +20,6 @@ internal class SearchRun(
 	private val scope: CoroutineScope,
 	private val io: CoroutineDispatcher,
 	private val host: Host,
-	private val clock: () -> Long = System::currentTimeMillis,
 ) {
 
 	interface Host {
@@ -36,13 +35,12 @@ internal class SearchRun(
 
 	private var engine: SearchEngine? = null
 	private var job: Job? = null
-	private var start = 0L
 
-	fun elapsed() = clock() - start
+	/** Chapters the engine walked — read while the run lives. */
+	fun visitedChapters(): Int = engine?.visitedChapters ?: 0
 
 	fun start(engine: SearchEngine, path: List<DbItem>) {
 		this.engine = engine
-		start = clock()
 		job = scope.launch {
 			// Run always has root.
 			val root = path.lastOrNull() ?: return@launch
@@ -54,7 +52,7 @@ internal class SearchRun(
 				)
 			}
 			// May have been superseded in preload.
-			if (!engine.active) return@launch
+			if (!engine.isActive) return@launch
 			// Producer walks on IO while the consumer appends on main.
 			val rows = Channel<ItemRow>(Channel.UNLIMITED)
 			launch(io) {
@@ -66,7 +64,7 @@ internal class SearchRun(
 			}
 			drainBatches(rows)
 			// May have been superseded in drain.
-			if (!engine.active) return@launch
+			if (!engine.isActive) return@launch
 			ensureActive()
 			host.runFinished()
 		}
@@ -85,7 +83,7 @@ internal class SearchRun(
 	}
 
 	fun abort() {
-		engine?.active = false
+		engine?.abort()
 		engine = null
 		job?.cancel()
 		job = null
