@@ -11,7 +11,8 @@ import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 
 /**
  * The values shown and edited by the settings screen.
-	 * - every change applies to the backing statics and persists at once, so nothing is lost on process death and no save is deferred.
+ * - every change applies to the backing statics and persists at once.
+ * - so nothing is lost on process death, and no save is deferred.
  * - [SettingsViewModel] fills the plain-value constructor from the state.
  */
 class SettingsState(
@@ -59,10 +60,7 @@ class SettingsState(
 		AppSettings.set("flipAllOnClick", flipAllOnClick)
 	}
 
-	/**
-	 * Persists the description line limit if the text parses to a usable value.
-	 * Zero stands for the icon-only display.
-	 */
+	/** Zero stands for the icon-only display. */
 	fun setDescLines(text: String) {
 		descLinesText = digitsOnly(text)
 		descLinesText.toIntOrNull()?.let {
@@ -71,7 +69,6 @@ class SettingsState(
 		}
 	}
 
-	/** Restores the last persisted limit when the text is empty or unusable. */
 	fun descLinesFocusLost() {
 		if (descLinesText.toIntOrNull() == null)
 			descLinesText = ItemRow.descLines.toString()
@@ -84,8 +81,9 @@ class SettingsState(
 	}
 
 	/**
-	 * Persists the export word splitter. The writer keeps its previous value
-	 * for anything it cannot parse — only a taken-over text persists.
+	 * Persists the export word splitter.
+	 * - the writer keeps its previous value for anything it cannot parse.
+	 * - so only a taken-over text persists.
 	 */
 	fun setWordSplit(text: String) {
 		wordSplitText = text
@@ -94,13 +92,11 @@ class SettingsState(
 			AppSettings.set("exportWordSplit", text)
 	}
 
-	/** Restores the effective splitter when the text was refused or emptied. */
 	fun wordSplitFocusLost() {
 		if (wordSplitText != WordListWriter.wordTranslationSplitter)
 			wordSplitText = WordListWriter.wordTranslationSplitter
 	}
 
-	/** Persists the amount if the text parses to a usable value. */
 	fun setAmount(text: String) {
 		amountText = digitsOnly(text)
 		amountText.toIntOrNull()?.let {
@@ -111,13 +107,11 @@ class SettingsState(
 		}
 	}
 
-	/** Restores the last persisted amount when the text is empty or unusable. */
 	fun amountFocusLost() {
 		if (needsRestore(amountText))
 			amountText = TestEngine.amount.toString()
 	}
 
-	/** Persists the time per item if the text parses to a usable value. */
 	fun setTime(text: String) {
 		timeText = digitsOnly(text)
 		timeText.toIntOrNull()?.let {
@@ -128,7 +122,6 @@ class SettingsState(
 		}
 	}
 
-	/** Restores the last persisted time when the text is empty or unusable. */
 	fun timeFocusLost() {
 		if (needsRestore(timeText))
 			timeText = TestEngine.getDefaultTime().toString()
@@ -138,14 +131,12 @@ class SettingsState(
 
 		fun digitsOnly(text: String): String = text.filter { it.isDigit() }
 
-		/** Whether a number field needs its persisted value restored on focus loss. */
 		fun needsRestore(text: String): Boolean = text.toIntOrNull()?.let { it >= 1 } != true
 	}
 }
 
 /**
- * Loads the current values from the program state once.
- * - survives rotation and the back stack, so edits stay visible on return.
+ * The state survives rotation and the back stack, so edits stay visible on return.
  */
 class SettingsViewModel : ViewModel() {
 	val state = SettingsState(

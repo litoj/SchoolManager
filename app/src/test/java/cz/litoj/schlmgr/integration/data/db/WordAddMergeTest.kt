@@ -3,7 +3,12 @@ package cz.litoj.schlmgr.integration.data.db
 import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.data.db.DaoItemStore
+import cz.litoj.schlmgr.data.db.ImportSession
 import cz.litoj.schlmgr.data.db.ItemDatabase
+import cz.litoj.schlmgr.data.db.ItemKind
+import cz.litoj.schlmgr.data.db.ROOT_ID
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -17,10 +22,8 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The interactive word-add merge ([ItemRepository.createWord]): a word whose
- * name exists in the subject scope merges into it instead of creating a second
- * row, and an added translation that exists merges its description. Pins the
- * merge rule the repository owns on every item add.
+ * - a word whose name exists in the subject scope merges into that row.
+ * - an added translation that exists merges its description.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -52,7 +55,7 @@ class WordAddMergeTest {
 		val second = ItemRepository.createWord(
 			subject.id, "word", "second description", listOf("two" to null))
 
-		// the trimmed names merge — one row, the stored name trimmed
+		// the trimmed names merge into one row, with the stored name trimmed
 		assertEquals(first.id, second.id)
 		val words = ItemRepository.children(subject.id)
 		assertEquals(1, words.size)
@@ -68,7 +71,7 @@ class WordAddMergeTest {
 			ItemRepository.createWord(subject.id, "word", null, listOf("   " to null))
 			fail("A blank translation is no translation")
 		} catch (e: IllegalArgumentException) {
-			// the create refuses — a bare name is the note's shape
+			// the create refuses, because a bare name is the shape of a note
 		}
 	}
 
@@ -84,7 +87,6 @@ class WordAddMergeTest {
 		assertEquals(first.id, second.id)
 		val words = ItemRepository.children(subject.id)
 		assertEquals(1, words.size)
-		// both descriptions and both translations joined the one row
 		assertEquals("first description\nsecond description", words.single().description)
 		assertEquals(listOf("one", "two"), ItemRepository.translations(first.id).map { it.name })
 	}
@@ -120,8 +122,29 @@ class WordAddMergeTest {
 			ItemRepository.createWord(subject.id, "lonely", null, emptyList())
 			fail("a translation-less word must not be created — make a note instead")
 		} catch (e: IllegalArgumentException) {
-			// expected — every word carries at least one translation
+			// expected, because every word carries at least one translation
 		}
 		assertTrue(ItemRepository.children(subject.id).isEmpty())
+	}
+
+	@Test
+	fun `a row without a plain home answers through its reference in both stores`() {
+		val subjectA = ItemRepository.createSubject("english", null)
+		val subjectB = ItemRepository.createSubject("deutsch", null)
+		val holder = ItemRepository.createChapter(subjectB.id, "holder", null)
+		val word = ItemRepository.createWord(subjectA.id, "dog", null, listOf("pes" to null))
+		// the row survives on the reference alone after its plain home drops it
+		ItemRepository.reference(word.id, holder.id)
+		ItemRepository.remove(word.id, subjectA.id)
+
+		// both stores share the merge scope, so each must find the row
+		runBlocking {
+			val dao = db.itemDao()
+			val daoStore = DaoItemStore(dao)
+			val bRoot = dao.subjectRootOf(holder.id, ROOT_ID)!!
+			assertEquals(word.id, daoStore.findInSubject(bRoot, "dog", ItemKind.WORD)?.id)
+			val session = ImportSession.load(dao, holder.id)
+			assertEquals(word.id, session.findInSubject(bRoot, "dog", ItemKind.WORD)?.id)
+		}
 	}
 }

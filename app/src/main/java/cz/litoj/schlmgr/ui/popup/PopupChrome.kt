@@ -1,6 +1,8 @@
 package cz.litoj.schlmgr.ui.popup
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,24 +18,29 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.ui.component.BareTextFieldStyle
+import cz.litoj.schlmgr.ui.component.WideTextField
 
 /**
- * The small dialogs' shared look — a theme-background card, only as
- * tall as its content, growing to the full height between the
- * status-bar-height gaps. A centered [Box] hugs it, so no dead space
- * surrounds the bar. A scrollable middle takes `weight(1f, fill =
- * false)` — it fills the free height before it starts to scroll.
+ * The shared look of the small dialogs: a theme-background card, only as tall as its content.
+ * - it grows to the full height between the status-bar-height gaps.
+ * - a centered [Box] hugs it, so no dead space surrounds the bar.
+ * - a scrollable middle takes weight 1f without fill and fills the free height first.
  */
 @Composable
 internal fun PopupCard(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
-	// the band's height gaps both ends — the 30dp margin measures from the
-	// status bar above and from an equally tall gap above the screen bottom
+	// the band height gaps both ends: the 30dp margin measures from the status bar above.
+	// an equally tall gap sits above the screen bottom
 	val statusBar = with(LocalDensity.current) { WindowInsets.statusBars.getTop(this).toDp() }
 	Box(
 		Modifier
@@ -80,3 +87,40 @@ internal fun PopupButton(label: String, modifier: Modifier, onClick: () -> Unit)
 }
 
 internal val TextColor @Composable get() = colorResource(R.color.colorPrimaryFg)
+
+/**
+ * A text field inside the thin border of the popup card, reusing [WideTextField].
+ */
+@Composable
+internal fun BorderedTextField(
+	value: String,
+	onValueChange: (String) -> Unit,
+	@StringRes label: Int,
+	textColor: Color,
+	singleLine: Boolean = false,
+	onImeAction: (() -> Unit)? = null,
+	imeAction: ImeAction? = null,
+	focusRequester: FocusRequester? = null,
+	horizontalPadding: androidx.compose.ui.unit.Dp = 20.dp,
+) {
+	Box(
+		Modifier
+			.fillMaxWidth()
+			.padding(horizontal = horizontalPadding, vertical = 5.dp)
+			.border(0.8.dp, colorResource(R.color.colorControlLine))
+			.padding(5.dp)
+	) {
+		WideTextField(
+			value = value,
+			onValueChange = onValueChange,
+			fontSize = 17.sp,
+			style = BareTextFieldStyle(textColor = textColor, cursorColor = textColor, underline = false),
+			focusRequester = focusRequester,
+			imeAction = imeAction
+				?: if (onImeAction != null) ImeAction.Next else ImeAction.Default,
+			hint = stringResource(label),
+			singleLine = singleLine,
+			onImeAction = onImeAction,
+		)
+	}
+}

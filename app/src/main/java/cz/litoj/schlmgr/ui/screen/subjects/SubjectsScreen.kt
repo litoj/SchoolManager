@@ -21,6 +21,8 @@ import cz.litoj.schlmgr.ui.component.ExplorerSearchField
 import cz.litoj.schlmgr.ui.popup.ContinuePopup
 import cz.litoj.schlmgr.ui.popup.CreatorContent
 import cz.litoj.schlmgr.ui.popup.CreatorPopup
+import cz.litoj.schlmgr.ui.popup.Dialogs
+import cz.litoj.schlmgr.ui.popup.FlipConflictPopup
 import cz.litoj.schlmgr.ui.popup.ReferencePopup
 import cz.litoj.schlmgr.ui.popup.SourcePickPopup
 import cz.litoj.schlmgr.ui.shell.ExplorerBackHandler
@@ -42,9 +44,6 @@ private fun creatorKind(kind: RowKind) = when (kind) {
 	RowKind.WORD -> CreatorPopup.Kind.NEW_WORD
 }
 
-/**
- * Subjects explorer screen. See [MainExplorerViewModel].
- */
 @Composable
 fun SubjectsScreen(
 	viewModel: MainExplorerViewModel,
@@ -53,19 +52,19 @@ fun SubjectsScreen(
 	onExitApp: () -> Unit,
 ) {
 	val context = LocalContext.current
-	// LocalResources avoids stale cached resources.
+	// the local resources avoid stale cached resources.
 	val resources = LocalResources.current
 	val state by viewModel.state.collectAsStateWithLifecycle()
 	val title = state.breadcrumbs.lastOrNull() ?: stringResource(R.string.menu_objects)
 	val query by viewModel.query.collectAsStateWithLifecycle()
 	val listState by viewModel.listState.collectAsStateWithLifecycle()
 	val selecting = listState.selectionActive
-	// See [SearchUi].
+	// the mode decides the chrome, see [SearchUi].
 	val fieldOpen = state.searchUi == SearchUi.TYPING
 	val searchVisible = state.breadcrumbs.isNotEmpty() && !viewModel.pasteArmed && !fieldOpen
 	val menuKind = menuKindFor(listState.variant == ExplorerRowVariant.Search, state.breadcrumbs.size)
 
-	// Pickers for import/export requests.
+	// the pickers for the import and export requests.
 	val createWordFile = rememberLauncherForActivityResult(
 		ActivityResultContracts.CreateDocument("text/plain"),
 	) { uri -> if (uri != null) viewModel.onWordTargetPicked(uri) }
@@ -79,7 +78,8 @@ fun SubjectsScreen(
 		ActivityResultContracts.CreateDocument("application/hjson"),
 	) { uri -> if (uri != null) viewModel.onJsonTargetPicked(uri) }
 
-	// Notification permission for progress bar. Action runs on grant and denial.
+	// the notification permission for the progress bar.
+	// the action runs on grant and on denial
 	val notificationPermission = rememberLauncherForActivityResult(
 		ActivityResultContracts.RequestPermission(),
 	) {
@@ -141,6 +141,10 @@ fun SubjectsScreen(
 						popup.dismiss()
 					}
 				}
+				is MainExplorerViewModel.Request.ResolveFlipConflicts -> {
+					val popup = FlipConflictPopup(request.analysis.conflicts)
+					popup.setOkListener { result -> viewModel.commitFlipResolutions(request.analysis, result) }
+				}
 				is MainExplorerViewModel.Request.ConfirmDelete ->
 					ContinuePopup {
 						viewModel.performDelete(request.doomed, resources.getString(R.string.progress_delete) +
@@ -169,8 +173,12 @@ fun SubjectsScreen(
 			}
 			TopBarMoreButton(
 				subjectsMenu(menuKind, selecting),
-				viewModel::onMenuItemClick,
-			)
+			) { itemId ->
+				// an open conflict round owns the flip, so a second start would stack another popup
+				if (itemId == MenuId.FLIP && Dialogs.isShowing<FlipConflictPopup>())
+					return@TopBarMoreButton
+				viewModel.onMenuItemClick(itemId)
+			}
 		}
 		SubjectsContent(viewModel, Modifier.weight(1f).headerShadow())
 	}

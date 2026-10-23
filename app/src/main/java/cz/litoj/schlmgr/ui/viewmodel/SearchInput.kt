@@ -7,8 +7,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * Search-input policy — query state, debounce, threshold, clearing.
- * - shell field is dumb view of [query].
+ * The search-input policy: query state, debounce, threshold and clearing.
+ * - the shell field is a dumb view of [query].
  */
 internal class SearchInput(
 	private val scope: CoroutineScope,
@@ -47,7 +47,7 @@ internal class SearchInput(
 	}
 
 	/**
-	 * One keystroke batch — empty ends the run, short supersedes.
+	 * One keystroke batch: empty ends the run, and short text supersedes it.
 	 * - longer text runs once typing pauses.
 	 */
 	fun onTextChange(text: String) {
@@ -74,8 +74,8 @@ internal class SearchInput(
 	}
 
 	/**
-	 * Explicit submit — bypasses the length gate. A query the run already
-	 * holds does not run again: its results are already on the screen.
+	 * Explicit submit, which bypasses the length gate.
+	 * - a query the run already holds does not run again, since its results are on screen.
 	 */
 	fun onSubmit(text: String) {
 		debounceJob?.cancel()

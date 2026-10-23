@@ -17,20 +17,18 @@ import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ROOT_ID
 
 /**
- * Template-Method base of the file workers (imports and the shared export),
- * each on its own named thread — an import reads, parses and persists, while an
- * export walks, renders and writes. Both refresh the UI and notify at the end.
+ * Template-Method base of the file workers, imports and the shared export.
+ * - each worker runs on its own named thread.
  */
 abstract class FileWorker(
 	protected val appContext: Context,
 	private val postToUi: (Runnable) -> Unit,
 	private val threadName: String,
 ) {
-	/** Starts the raw worker thread — the view may be gone while it runs. */
+	/** The view may be gone while the worker runs, so nothing binds the thread to it. */
 	fun start(): Thread =
 		Thread({ runTemplate() }, threadName).also { it.start() }
 
-	// the template — run, report the failure, then settle.
 	private fun runTemplate() {
 		try {
 			doRun()
@@ -39,7 +37,7 @@ abstract class FileWorker(
 		} catch (e: Exception) {
 			onLoadFail(e)
 		} catch (e: StackOverflowError) {
-			// pathologically nested input — a parse failure, not a process crash
+			// pathologically nested input, a parse failure rather than a process crash
 			onParseFail(IllegalArgumentException("The file nests too deeply", e))
 		}
 		onSettled()
@@ -48,7 +46,7 @@ abstract class FileWorker(
 	/** Read -> parse -> persist -> refresh/notify. Runs on the worker thread. */
 	protected abstract fun doRun()
 
-	/** Runs after the attempt, failure or not — the dir import's root reload. */
+	/** Runs after the attempt, failure or not, for the root reload of the dir import. */
 	protected open fun onSettled() {}
 
 	protected open fun onParseFail(e: IllegalArgumentException) {
@@ -63,11 +61,11 @@ abstract class FileWorker(
 
 	protected fun post(work: () -> Unit) = postToUi(Runnable { work() })
 
-	// Reads the whole picked document — a failure already went out, skip then.
+	// reads the whole picked document, and a failure already went out, so skip then
 	protected fun readContent(uri: Uri, progress: FileProgress): String? =
 		FileText.readText(uri, progress)
 
-	// Persists the parsed stream under [anchorId] with the bar's row phase.
+	// the save loop drives the row phase of the bar
 	protected fun persist(
 		importer: DataImporter, progress: FileProgress,
 		anchorId: Int = ROOT_ID,
@@ -80,8 +78,8 @@ abstract class FileWorker(
 }
 
 /**
- * A word list landing in the open container — the parsed stream is saved
- * under it, then the open content is re-read from the database.
+ * The parsed stream is saved under the open container, and then the open content re-reads
+ * from the database.
  */
 class WordIntoContainerImport(
 	appContext: Context,
@@ -95,13 +93,13 @@ class WordIntoContainerImport(
 ) : FileWorker(appContext, postToUi, "Word list import") {
 
 	override fun doRun() {
-		// the resolver holds the pick-time snapshot — never `null` for a
-		// container target. The root anchor below is the defensive default
+		// the resolver holds the pick-time snapshot, never null for a container
+		// target. The root anchor below is the defensive default
 		val self = openContainer()
 		val anchor = self?.id ?: ROOT_ID
 		FileGateway.importProgress(appContext, R.string.progress_import, uri).use { progress ->
 			val content = readContent(uri, progress) ?: return
-			// wrapped — the save loop drives the bar's row phase
+			// wrapped, since the save loop drives the row phase of the bar
 			val outcome = persist(WordListImporter(self?.name ?: FileGateway.containerNameFrom(fileName), content), progress, anchor)
 			post { if (self == null && atRoot()) onRootReload() else onRefreshed() }
 			notifyImported(outcome)
@@ -112,11 +110,10 @@ class WordIntoContainerImport(
 }
 
 /**
- * A word list picked at the root — the file's content lands as it is, with
- * no wrapper of the file's name. A saved container's own wrapper chapter
- * becomes a subject again and bare words land as the root's rows.
- *
- * The file's name only labels the parse errors (see [FileGateway.containerNameFrom]).
+ * A word list picked at the root: the file content lands as it is, with no wrapper.
+ * - a saved container wrapper chapter becomes a subject again.
+ * - bare words land as the rows of the root.
+ * - the file name only labels the parse errors, see [FileGateway.containerNameFrom].
  * - the importer parses the whole text before anything is written.
  * - the subjects screen reloads instead of adding rows.
  */
@@ -141,11 +138,11 @@ class WordAsSubjectImport(
 }
 
 /**
- * A tree JSON (HJSON) import — the codec parses the text into chapters,
- * the repository persists the stream in one transaction.
+ * A tree JSON import in HJSON form: the codec parses the text into chapters.
+ * - the repository persists the stream in one transaction.
  * - the pick-time open container anchors the top-level chapters.
- * - none picked — they become subjects of the root.
- * - subject-level reload — the open content re-reads otherwise.
+ * - with none picked, they become subjects of the root.
+ * - a subject-level reload re-reads the open content otherwise.
  */
 class JsonTreeImport(
 	appContext: Context,
@@ -160,7 +157,7 @@ class JsonTreeImport(
 	override fun doRun() {
 		FileGateway.importProgress(appContext, R.string.progress_import, uri).use { progress ->
 			val content = readContent(uri, progress) ?: return
-			// no open container is the root — the file's chapters become subjects there
+			// no open container means the root, where the file chapters become subjects
 			val anchor = openContainer()?.id ?: ROOT_ID
 			val result = persist(HJsonImporter(content), progress, anchor)
 			post { if (atRoot()) onRootReload() else onCurrentReload() }
@@ -172,12 +169,11 @@ class JsonTreeImport(
 }
 
 /**
- * A subject-directory import from files — a one-time conversion with no
- * link back to the picked folder.
+ * A subject-directory import from files, a one-time conversion with no link back to the folder.
  * - every file parses before anything is written.
  * - a non-subject directory reports the load failure, leaving nothing behind.
  * - the root reload runs past validation, even on a failed import.
- * - never on a rejected pick.
+ * - it never runs on a rejected pick.
  */
 class LegacyDirImport(
 	appContext: Context,
@@ -203,10 +199,9 @@ class LegacyDirImport(
 		attempted = true
 		FileGateway.titledProgress(appContext, R.string.progress_import, name).use { progress ->
 			progress.bytes(LegacyJsonLoader.subjectSize(dir))
-			// the gateway reads the directory's files as pure text, the bytes
-			// reporting to the bar exactly as the loader's own reads did
-			// An unreadable file already reported itself through FileText —
-			// returning quietly here keeps the one real failure report
+			// the gateway reads the directory files as pure text, so the bytes report to the bar.
+			// - an unreadable file already reported itself through FileText.
+			// - returning quietly here keeps the one real failure report.
 			val subject = FileGateway.loadLegacySubject(dir, progress) ?: return
 			val result = persist(LegacySubjectImporter(subject), progress)
 			notifyImported(result)
@@ -217,22 +212,20 @@ class LegacyDirImport(
 		if (attempted && atRoot()) post { onRootReload() }
 	}
 
-	// the directory worker reports every failure as a load failure
+	// a directory read failure is no parse failure, so it reports as a load failure
 	override fun onParseFail(e: IllegalArgumentException) = onLoadFail(e)
 
 	override fun failureName(): String =
-		// the fallback re-queries the SAF — the first query may be exactly
-		// what failed, so this runs guarded or the failure handler itself
-		// would crash the process
+		// the fallback re-queries the SAF, since the first query may be exactly
+		// what failed. Guarded, or the failure handler itself would crash the process
 		dirName ?: runCatching { DocumentFile.fromTreeUri(appContext, uri)?.name }.getOrNull()
 			?: uri.toString()
 }
 
 /**
- * The one shared export path — the codec is the injected [ExportFormat]
- * strategy, so the word-list and tree-JSON target workers differ only in
- * the format they hand over.
- * - the containers are the caller's pick-time snapshot.
+ * The one shared export path, with the codec as the injected [ExportFormat] strategy.
+ * - the word-list and tree-JSON target workers differ only in the format they hand over.
+ * - the containers are the pick-time snapshot of the caller.
  */
 class ExportPipeline(
 	appContext: Context,
@@ -246,27 +239,27 @@ class ExportPipeline(
 	override fun doRun() {
 		val containers = selected()
 		if (containers.isEmpty()) return
-		// the callback touches UI state (the selection clear) — it runs on
+		// the callback touches UI state, the selection clear, so it runs on
 		// the main thread like every other follow-up
 		post { onExportStart() }
 		val request = ExportRequest(uri, containers, format)
 		val name = FileGateway.displayName(appContext, request.uri)
 		FileGateway.titledProgress(appContext, R.string.progress_export, name).use { progress ->
-			// wrapped — the walk drives the bar's row phase
+			// wrapped, since the stream handover targets the bar at the object count
 			val text = ItemRepository.export(progress.exporter(format.exporter()), request.containers)
 			val (words, chapters) = ItemRepository.subgraphStats(request.containers.map { it.id })
-			FileGateway.writeExport(progress, request.uri, name, text, words, chapters)
+			FileGateway.writeExport(request.uri, name, text, words, chapters)
 		}
 	}
 
-	// the write's own IO failure already reports through FileText — anything
+	// the IO failure of the write already reports through FileText, so anything
 	// else reaching here is an export failure, not a load
 	override fun onLoadFail(e: Exception) {
 		Startup.onSaveFail(e, failureName())
 	}
 
-	// the writer's own refusals (an unrepresentable name) arrive here as
-	// IllegalArgumentException — an export failure, not a parse failure
+	// the refusals of the writer, such as an unrepresentable name, arrive here as
+	// IllegalArgumentException, an export failure rather than a parse failure
 	override fun onParseFail(e: IllegalArgumentException) {
 		Startup.onSaveFail(e, failureName())
 	}

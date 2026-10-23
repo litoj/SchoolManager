@@ -24,11 +24,6 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
-/**
- * The search flow through the composed subjects screen — toggling a word
- * of the shown results must keep the search: the field, the query and the
- * result list all stay as they were.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class SubjectsScreenSearchClickTest {
@@ -68,17 +63,14 @@ class SubjectsScreenSearchClickTest {
 		rule.onNodeWithText("A").performClick()
 		rule.waitForIdle()
 
-		// open the field and submit the query — the results list below
 		rule.runOnIdle { model.openSearchField() }
 		rule.runOnIdle { model.onQuerySubmit("xy") }
 		rule.waitForIdle()
 		rule.onNodeWithText("xyz").assertExists()
 
-		// toggle the word of the results
 		rule.onNodeWithText("xyz").performClick()
 		rule.waitForIdle()
 
-		// the row flipped to its translation — and the search never left
 		rule.onNodeWithText("t1").assertExists()
 		rule.runOnIdle {
 			assertEquals(SearchUi.TYPING, model.state.value.searchUi)
@@ -101,14 +93,13 @@ class SubjectsScreenSearchClickTest {
 		}
 		rule.waitForIdle()
 
-		// into the subject, then search for the translation text
 		rule.onNodeWithText("A").performClick()
 		rule.waitForIdle()
 		rule.runOnIdle { model.openSearchField() }
 		rule.runOnIdle { model.onQuerySubmit("t") }
 		rule.waitForIdle()
 
-		// the WORD is the hit — its own row shows, not the translation's
+		// the WORD is the hit, so its own row shows, not the one of the translation
 		rule.onNodeWithText("xyz").assertExists()
 		rule.runOnIdle {
 			assertEquals(ExplorerRowVariant.Search, model.listState.value.variant)
@@ -116,7 +107,6 @@ class SubjectsScreenSearchClickTest {
 				"xyz", model.items().single().item.name)
 		}
 
-		// the click flips the word to its translations
 		rule.onNodeWithText("xyz").performClick()
 		rule.waitForIdle()
 

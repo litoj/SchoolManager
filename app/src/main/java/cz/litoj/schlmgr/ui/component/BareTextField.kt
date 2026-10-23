@@ -61,8 +61,8 @@ fun BareTextField(
 )
 
 /**
- * Full-row form field — taps and focus anywhere, a hint over an empty value, and
- * the keyboard-action and focus-requester chain for moving between fields.
+ * Full-row form field: taps and focus land anywhere, a hint covers an empty
+ * value, and the field carries the IME-action and focus chain between fields.
  */
 @Composable
 fun WideTextField(
@@ -92,7 +92,7 @@ fun WideTextField(
 
 /**
  * The shared body behind the two field shapes. [fillWidth] stays an
- * implementation detail, not a caller's mode flag.
+ * implementation detail, not a mode flag of the caller.
  */
 @Composable
 private fun BareTextFieldCore(
@@ -110,10 +110,10 @@ private fun BareTextFieldCore(
 	onImeAction: (() -> Unit)? = null,
 	singleLine: Boolean = true,
 ) {
-	// theme colors captured here — the draw scope below cannot read them itself
+	// theme colors captured here, because the draw scope below cannot read them
 	val accent = colorResource(R.color.colorPrimaryHeader)
 	val idleBar = colorResource(R.color.colorControlLine)
-	// Unspecified means "the standard look" — the resource reads cannot be
+	// unspecified means the standard look, since the resource reads cannot be
 	// data-class defaults, so they resolve here
 	val textColor = if (style.textColor != Color.Unspecified) style.textColor else DefaultTextColor
 	val cursorColor = if (style.cursorColor != Color.Unspecified) style.cursorColor else accent
@@ -121,11 +121,11 @@ private fun BareTextFieldCore(
 	var focused by remember { mutableStateOf(false) }
 	val state = rememberTextFieldState(value)
 	if (state.text.toString() != value) state.setTextAndPlaceCursorAtEnd(value)
-	// the parent's own value — an emission equal to it is the echo of the
+	// the value of the parent: an emission equal to it is the echo of the
 	// programmatic sync above, not user input
 	val echoed by rememberUpdatedState(value)
 	LaunchedEffect(state) {
-		// drop(1) — the initial emission is the seeded value, not user input
+		// skipping the first emission avoids echoing the seeded value
 		snapshotFlow { state.text.toString() }
 			.drop(1)
 			.collect { if (it != echoed) onValueChange(it) }
@@ -133,10 +133,10 @@ private fun BareTextFieldCore(
 	val textStyle = TextStyle(fontSize = fontSize, color = textColor)
 	Box(
 		modifier
-			// Thin bottom line — gray so the field is visible as editable,
-			// accent green while focused. Kept BEFORE the square-clamp layout below — draw
-			// modifiers further along the chain draw in the inner (pre-clamp) coordinate
-			// space, so ordering it before makes the line span the full clamped width.
+			// thin bottom line, gray when idle and green while focused.
+			// - sits before the square-clamp layout below.
+			// - later draw modifiers paint in the inner pre-clamp space.
+			// - this order makes the line span the full clamped width.
 			.drawBehind {
 				if (!style.underline) return@drawBehind
 				val y = size.height - 1.dp.toPx()
@@ -147,9 +147,9 @@ private fun BareTextFieldCore(
 					strokeWidth = 1.dp.toPx(),
 				)
 			}
-			// Compact default, a one-line field never renders narrower than
-			// tall — the minimum width clamps to the rendered height in the
-			// same layout pass. Full-width callers size to the text height.
+			// compact default: a one-line field never renders narrower than tall.
+			// - the minimum width clamps to the rendered height in the same pass.
+			// - full-width callers size to the text height.
 			.then(
 				if (fillWidth) Modifier
 				else Modifier.layout { measurable, constraints ->
@@ -160,9 +160,8 @@ private fun BareTextFieldCore(
 				},
 			)
 			.onFocusChanged {
-				// hasFocus, not isFocused — the Box is only the wrapper — the inner
-				// field holds the focus, and the wrapper's isFocused stays false
-				// (the loss callback fired on every gain before)
+				// hasFocus, not isFocused: only the inner field holds the focus.
+				// - the wrapper around it keeps isFocused false.
 				focused = it.hasFocus
 				if (!it.hasFocus) onFocusLost?.invoke()
 			},
@@ -171,11 +170,10 @@ private fun BareTextFieldCore(
 		if (state.text.isEmpty() && hint != null) {
 			Text(hint, style = textStyle.copy(color = hintColor))
 		}
-		// For compact callers the field hugs its content and grows as the user
-		// types — the square min-width keeps the empty field visible, and it
-		// must NOT fill the width (next to a weighted label it would grab the
-		// whole row). Full-width callers fill the caller's width instead, so
-		// the field area takes taps and focus.
+		// compact callers get a field that hugs its content and grows as the user types.
+		// - the square min-width keeps the empty field visible.
+		// - it must not fill the width, or it grabs the whole row next to a weighted label.
+		// - full-width callers fill the width instead, so the area takes taps and focus.
 		BasicTextField(
 			state = state,
 			lineLimits = if (singleLine) TextFieldLineLimits.SingleLine else TextFieldLineLimits.Default,
@@ -186,9 +184,9 @@ private fun BareTextFieldCore(
 				imeAction = imeAction
 					?: if (onImeAction != null) ImeAction.Done else ImeAction.Default,
 			),
-			// Name the action — inside the SAM lambda the implicit `it` is
-			// `performDefaultAction`, not the outer `onImeAction` — the naive
-			// `let { { it() } }` would just invoke the default focus move.
+			// name the action: inside the SAM lambda the implicit it is
+			// performDefaultAction, not the outer onImeAction.
+			// - a plain let with an inner it would invoke the default focus move.
 			onKeyboardAction = onImeAction?.let { action -> { action() } },
 			modifier = Modifier
 				.then(if (fillWidth) Modifier.fillMaxWidth() else Modifier.width(IntrinsicSize.Min))
@@ -200,11 +198,10 @@ private fun BareTextFieldCore(
 val DefaultTextColor: Color @Composable get() = colorResource(R.color.colorPrimaryFg)
 
 /**
- * The appearance overrides of a bare text field ([BareTextField],
- * [WideTextField]): the color escapes for inverted surfaces (the green header
- * bars) and the chrome-free form.
- * - one value, so the field's signature carries behavior only.
- *   `Color.Unspecified` means "the standard look", resolved inside.
+ * The appearance overrides of [BareTextField] and [WideTextField].
+ * - the color escapes for inverted surfaces and the chrome-free form.
+ * - one value, so the signature of the field carries behavior only.
+ * - an unspecified color means the standard look, resolved inside.
  */
 data class BareTextFieldStyle(
 	val textColor: Color = Color.Unspecified,

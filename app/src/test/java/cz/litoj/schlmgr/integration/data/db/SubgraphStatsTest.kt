@@ -13,9 +13,8 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The import/export statistics ([ItemRepository.subgraphStats]): the distinct word
- * and chapter counts of the union of the given containers' subgraphs — a row under
- * several containers counts once.
+ * - the counts cover the union of the subgraphs of the given containers.
+ * - a row under several containers counts once.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -49,7 +48,7 @@ class SubgraphStatsTest {
 
 		val (words, chapters) = ItemRepository.subgraphStats(listOf(c1.id, c2.id))
 
-		assertEquals(2, words) // dog and cat — the shared cat once
-		assertEquals(3, chapters) // c1, nested and c2 — the roots included
+		assertEquals(2, words) // dog and cat, the shared cat once
+		assertEquals(3, chapters) // c1, nested and c2, the roots included
 	}
 }

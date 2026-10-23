@@ -32,10 +32,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The floating New button's interactions on the composed tree — one offered
- * kind commits on the release wherever the finger ends, several fan out a
- * palette that a drag onto an icon or a standing tap commits, and a plain
- * tap leaves the palette standing for the icon's own click.
+ * - one offered kind commits on the release, wherever the finger ends.
+ * - several kinds fan out a palette.
+ * - a drag onto an icon or a standing tap commits a palette entry.
+ * - a plain tap leaves the palette standing for the click on the icon.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -58,14 +58,13 @@ class NewItemFabTest {
 		rule.waitForIdle()
 	}
 
-	/** The button's center — bottom end, at its own margin and half size. */
+	/** The center of the button at the bottom end, at its own margin and half size. */
 	private fun TouchInjectionScope.fabCenter(): Offset {
 		val margin = with(rule.density) { FabMargin.toPx() }
 		val half = with(rule.density) { FabSize.toPx() } / 2
 		return Offset(width - margin - half, height - margin - half)
 	}
 
-	/** The palette icon's center for [index] of [count] around the button. */
 	private fun TouchInjectionScope.iconAt(index: Int, count: Int): Offset =
 		fabCenter() + paletteOffset(index, count, with(rule.density) { PaletteRadius.toPx() })
 
@@ -96,11 +95,10 @@ class NewItemFabTest {
 	fun `a plain tap leaves the palette standing, the icon's click commits`() {
 		setContent(listOf(RowKind.CHAPTER, RowKind.WORD, RowKind.NOTE))
 
-		// the tap on the button releases off the icons — nothing commits yet
+		// the tap on the button releases off the icons, so nothing commits yet
 		rule.onRoot().performTouchInput { click(fabCenter()) }
 		assertTrue("the plain tap commits nothing", picked.isEmpty())
 
-		// the standing palette's own icon takes the click
 		rule.onRoot().performTouchInput { click(iconAt(2, 3)) }
 
 		assertEquals(listOf(RowKind.NOTE), picked)
@@ -110,8 +108,8 @@ class NewItemFabTest {
 	fun `a short drag toward the icon commits it`() {
 		setContent(listOf(RowKind.CHAPTER, RowKind.WORD, RowKind.NOTE))
 
-		// the drag leaves the button toward the word icon but stops far
-		// short of it — the direction alone picks
+		// the drag leaves the button toward the word icon but stops far short of
+		// it, so the direction alone picks
 		rule.onRoot().performTouchInput {
 			down(fabCenter())
 			moveTo(fabCenter() + Offset(-25f, -25f))
@@ -125,8 +123,8 @@ class NewItemFabTest {
 	fun `a drag from the button's corner past half its size commits`() {
 		setContent(listOf(RowKind.CHAPTER, RowKind.WORD, RowKind.NOTE))
 
-		// the press lands at the button's bottom-right corner, the drag runs
-		// up past half the button and releases still inside it
+		// the press lands at the bottom-right corner of the button, and the drag
+		// runs up past half of it and releases inside
 		rule.onRoot().performTouchInput {
 			val press = fabCenter() + Offset(15f, 15f)
 			down(press)
@@ -141,8 +139,8 @@ class NewItemFabTest {
 	fun `a drag under half the button stays a tap`() {
 		setContent(listOf(RowKind.CHAPTER, RowKind.WORD, RowKind.NOTE))
 
-		// the small move never crosses half the button — the release is a
-		// plain tap, nothing commits
+		// the small move never crosses half of the button, so the release is a
+		// plain tap and nothing commits
 		rule.onRoot().performTouchInput {
 			down(fabCenter())
 			moveTo(fabCenter() + Offset(-12f, -12f))
@@ -180,8 +178,8 @@ class NewItemFabTest {
 	fun `a drag into the gap between two icons picks the harder one`() {
 		setContent(listOf(RowKind.CHAPTER, RowKind.WORD, RowKind.NOTE))
 
-		// the direction runs into the gap between the word and the note,
-		// past the gap's middle — the word's two thirds still take it
+		// the direction runs into the gap between the word and the note, past the
+		// middle of the gap, and two thirds of the word still take it
 		rule.onRoot().performTouchInput {
 			down(fabCenter())
 			moveTo(fabCenter() + Offset(-94f, -34f))
@@ -195,8 +193,8 @@ class NewItemFabTest {
 	fun `a drag along the bottom commits the leftmost icon`() {
 		setContent(listOf(RowKind.CHAPTER, RowKind.WORD, RowKind.NOTE))
 
-		// the sweep runs below the button's center line, off the icons'
-		// arc — the direction still points at the note
+		// the sweep runs below the center line of the button, off the arc of the
+		// icons, and the direction still points at the note
 		rule.onRoot().performTouchInput {
 			down(fabCenter())
 			moveTo(fabCenter() + Offset(-30f, 60f))

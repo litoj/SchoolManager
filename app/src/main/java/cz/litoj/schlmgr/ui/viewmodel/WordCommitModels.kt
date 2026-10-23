@@ -7,16 +7,13 @@ import androidx.compose.runtime.setValue
 import cz.litoj.schlmgr.data.db.DbItem
 
 /**
- * The word editor's commit models — the shared contract between the creator
- * popup (the editor) and the view model (the applier), so the screen logic
- * owns its input types instead of reaching into a dialog implementation.
+ * The commit models of the word editor, shared by the creator popup and the view model.
+ * - the popup is the editor and the view model is the applier.
+ * - so the screen logic owns its input types instead of reaching into a dialog implementation.
  */
 
 /**
- * One editable translation row of the word editor.
- *
- * @param source the existing translation ([DbItem]) being edited, or `null` for a newly
- * added one
+ * @param source the existing translation, a [DbItem], being edited, or null for a new one
  */
 @Stable
 class TranslationRow(name: String, description: String, val source: DbItem?) {
@@ -27,8 +24,8 @@ class TranslationRow(name: String, description: String, val source: DbItem?) {
 	var description by mutableStateOf(description)
 
 	private companion object {
-		// rows are built on both dispatchers (an edit's io read, the popup's
-		// own adds) — the counter must survive the cross-thread increments
+		// rows are built on both dispatchers: an edit reads on io, and the popup adds.
+		// so the counter must survive the cross-thread increments
 		val nextId = java.util.concurrent.atomic.AtomicLong()
 	}
 }
@@ -36,12 +33,22 @@ class TranslationRow(name: String, description: String, val source: DbItem?) {
 data class TranslationValue(val name: String, val description: String, val source: DbItem?)
 
 /**
- * Committed state of one OK press — an immutable copy of the edited fields, so
- * the view model applies it without reading the dialog's live state.
+ * The immutable copy of the edited fields, so the view model never reads the live dialog state.
  */
 data class CreatorResult(
 	val name: String,
 	val description: String,
 	val translations: List<TranslationValue>,
 	val removedTranslations: List<DbItem>,
+)
+
+/**
+ * One conflict row the user left in the list, with the possibly edited
+ * contents. The source is the row the conflict carried, never an addition.
+ */
+data class FlipKeptRow(val source: DbItem, val name: String, val description: String)
+
+data class FlipConflictsResult(
+	val kept: List<FlipKeptRow>,
+	val removed: List<DbItem>,
 )

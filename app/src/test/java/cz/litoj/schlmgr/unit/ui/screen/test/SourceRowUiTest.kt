@@ -7,11 +7,6 @@ import cz.litoj.schlmgr.ui.viewmodel.RowKind
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/**
- * Unit tests of the source-row mapper ([toSourceRowUi]): the kind follows the
- * row the item was picked as (a chain of length 1 is a whole subject, anything
- * else by its last item's type), and a plain name maps through unchanged.
- */
 class SourceRowUiTest {
 
 	private fun item(name: String, type: ItemKind) =

@@ -12,8 +12,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * The success-ratio background tint — a fixed low alpha over the plain
- * success colours at 50/100 and the unrated/empty sentinels.
+ * The success-ratio background tint, a fixed low alpha over the plain colours.
  */
 class SuccessRatioArgbTest {
 
@@ -32,14 +31,14 @@ class SuccessRatioArgbTest {
 
 	@Test
 	fun `below 50 grades the green channel at a 0x40 alpha`() {
-		// "FF" + hex(sf*256/50) + "22", alpha 0x40
+		// the high byte from the success ratio, the low byte 22, alpha 0x40
 		assertEquals(0x40FF0000 or (25 * 256 / 50 shl 8) or 0x22, successRatioArgb(25))
 		assertEquals(0x40, successRatioArgb(25) ushr 24 and 0xFF)
 	}
 
 	@Test
 	fun `above 50 grades the red channel and keeps the 0x40 alpha`() {
-		// hex((100-sf)*256/50) + "FF22" at alpha 0x40
+		// the high byte from the inverted ratio, then FF22, at alpha 0x40
 		val grade = (100 - 75) * 256 / 50 // 128 = 0x80
 		assertEquals(0x40, successRatioArgb(75) ushr 24 and 0xFF) // alpha, not the grade
 		assertEquals(grade, successRatioArgb(75) ushr 16 and 0xFF) // red carries the grade

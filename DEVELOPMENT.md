@@ -33,44 +33,18 @@ app/src/main/java/cz/litoj/schlmgr/
 ## 2. Runtime architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         SchlMgrApp (Compose shell)                  │
-│  Navigation graph: SUBJECTS ↔ TEST ↔ PICKER_ROUTE ↔ SETTINGS ↔ ABOUT  │
-│  SnackbarHost (GlobalDependencies.messages) + DialogHost + Drawer   │
-└─────────────────────────────────────────────────────────────────────┘
-                              │
-        ┌───────────────────┼───────────────────┬───────────────────┐
-        ▼                   ▼                   ▼                   ▼
-┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
-│ MainExplorer │   │ TestSetup    │   │ Picker       │   │ Settings     │
-│ ViewModel    │   │ ViewModel    │   │ ViewModel    │   │ ViewModel    │
-└──────┬───────┘   └──────┬───────┘   └──────┬───────┘   └──────┬───────┘
-       │                  │                  │                  │
-       ▼                  ▼                  ▼                  ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                    ExplorerViewModel family (shared core)           │
-│  NavigatorHistory · SearchFlow · SearchInput · SearchRun · Selection│
-│  ExplorerList · InfoStrip · ItemRow · ItemListState · NavigationHistory│
-└─────────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                   ItemRepository (single data gateway)              │
-│  ┌──────────────┐ ┌──────────────┐ ┌─────────────────────────────┐ │
-│  │  Read API    │  │ Create/Edit  │  │ Import/Export / Flip /    │ │
-│  │  subjects/   │  │ create* /    │  │ Move / Remove / Reorder / │ │
-│  │  children/   │  │ rename /     │  │ Counters / Test stats     │ │
-│  │  get/…       │  │ setDescription│  │                           │ │
-│  └──────────────┘ └──────────────┘ └─────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────┘
-                              │
-        ┌───────────────────┼───────────────────┬───────────────────┐
-        ▼                   ▼                   ▼                   ▼
-┌──────────────┐   ┌──────────────┐   ┌──────────────────────┐  ┌─────┐
-│  Room DB     │   │  Codecs      │   │  SAF transport         │  │Test│
-│  (single DB) │   │  (HJson,     │   │  (FileText)            │  │Eng │
-│  version 5   │   │  WordList)   │   │  (FileGateway)         │  │    │
-└──────────────┘   └──────────────┘   └──────────────────────┘  └────┘
+SchlMgrApp (Compose shell)            ← navigation graph: SUBJECTS ↔ TEST ↔
+  PICKER_ROUTE ↔ SETTINGS ↔ ABOUT; SnackbarHost (GlobalDependencies.messages)
+  + DialogHost + Drawer
+→ screen view models                  ← MainExplorer · TestSetup · Picker · Settings
+→ ExplorerViewModel family            ← shared core: NavigatorHistory · SearchFlow ·
+  SearchInput · SearchRun · Selection · ExplorerList · InfoStrip · ItemRow ·
+  ItemListState · NavigationHistory
+→ ItemRepository (single data gateway) ← Read API (subjects/children/get/…) ·
+  Create/Edit (create*/rename/setDescription) · Import/Export/Flip/Move/
+  Remove/Reorder/Counters/Test stats
+→ back ends                            ← Room DB (single DB, version 5) ·
+  Codecs (HJson, WordList) · SAF transport (FileText/FileGateway) · Test engine
 ```
 
 ### Component responsibilities
@@ -123,100 +97,75 @@ Single-table design (DB version 5, destructive fallback — no migrations, no of
 
 ```
 picked document (SAF Uri)
-    │
-    ▼
-FileGateway.startsAsJson()          ← peeks first non-whitespace byte
-    │  '[' or '{' = tree JSON  ·  anything else = word list
-    ▼
-ImporterFactory.decide()            ← ImportKind: JSON_TREE / WORD_AS_SUBJECT / WORD_INTO_CONTAINER
-    │
-    ▼
-FileWorker (named thread)           ← parses on worker, posts results to UI
-    │
-    ▼
-Codec (pure, testable)              ← HJsonImporter / WordListImporter / LegacySubjectImporter
-    │  produces DataImporter stream (StreamItem pre-order + StreamReference links)
-    ▼
-ItemRepository.import()             ← one Room transaction:
-    │  ImportService.run() 3 phases:
-    │  1. save stream (merge by name/type, placeholder ids)
-    │  2. resolve references (climb plain-parent paths to exported root)
-    │  3. refresh counters (subtree sums)
-    │
-    ▼
-Room DB tables: item + item_link
+→ FileGateway.startsAsJson()           ← peeks first non-whitespace byte:
+  '[' or '{' = tree JSON, anything else = word list
+→ ImporterFactory.decide()             ← ImportKind: JSON_TREE / WORD_AS_SUBJECT /
+  WORD_INTO_CONTAINER
+→ FileWorker (named thread)            ← parses on worker, posts results to UI
+→ Codec (pure, testable)              ← HJsonImporter / WordListImporter /
+  LegacySubjectImporter; produces DataImporter stream (StreamItem pre-order +
+  StreamReference links)
+→ ItemRepository.import()             ← one Room transaction, ImportService.run()
+  3 phases: 1. save stream (merge by name/type, placeholder ids)
+  2. resolve references (climb plain-parent paths to exported root)
+  3. refresh counters (subtree sums)
+→ Room DB tables: item + item_link
 ```
 
 ### Export
 
 ```
 selection or open container
-    │
-    ▼
-ItemRepository.export()             ← walkExport() pre-order stream:
-    │  each container first, then children; references write as ref: paths
-    │  content-in-place when target outside export
-    ▼
-Codec.render()                      ← HJsonExporter / WordListExporter
-    │  produces text (HJSON tree or word list)
-    ▼
-FileText.writeText()                ← SAF output stream, UTF-8, byte counting
-    ▼
-Startup.onExportSuccess()           ← snackbar with stats + path
+→ ItemRepository.export()             ← walkExport() pre-order stream: each
+  container first, then children; references write as ref: paths;
+  content-in-place when target outside export; onStream hands the whole
+  stream over — its size targets the bar
+→ Codec.render()                      ← HJsonExporter / WordListExporter;
+  produces text (HJSON tree or word list)
+→ FileText.writeText()                ← SAF output stream, UTF-8, one pass
+→ Startup.onExportSuccess()           ← snackbar with stats + path
 ```
 
 ### Delete
 
 ```
-ItemRepository.remove()             ← deleteGraph() recursively removes subtree
-    │  reports every deleted row via Progress (rows phase)
-    ▼
-FileProgress                        ← indeterminate bar with row count text
-    ▼
-Startup.onLoadFail / onSaveFail     ← failures per file
+ItemRepository.remove()               ← deleteGraph() recursively removes subtree;
+  reports every deleted row via Progress (rows phase)
+→ FileProgress                        ← indeterminate bar with row count text
+→ Startup.onLoadFail / onSaveFail     ← failures per file
 ```
 
 ### Test flow
 
 ```
 TestSetupState (picked source chains)
-    │
-    ▼
-TestActivity.startTest()            ← TestEngine.convertAll(chains)
-    │  → TestEngine.setTested(amount, timeSec, sources)
-    │     selection heuristics: usage count + success-rate belts
-    │     answer matching: name variants + linked translations
-    ▼
-TestScreen (Compose)                ← countdown header, answer rows, Done button
-    │
-    ▼
-onSubmit()                          ← grades off IO thread, shows TestResultsPopup
-    ▼
-ItemRepository.recordPass/recordFail│  bumps counters up the plain-link chain
+→ TestActivity.startTest()            ← TestEngine.convertAll(chains), then
+  TestEngine.setTested(amount, timeSec, sources); selection heuristics:
+  usage count + success-rate belts; answer matching: name variants + linked
+  translations
+→ TestScreen (Compose)                ← countdown header, answer rows, Done button
+→ onSubmit()                          ← grades off IO thread, shows TestResultsPopup
+→ ItemRepository.recordPass/recordFail ← bumps counters up the plain-link chain
 ```
 
 ### Search
 
 ```
 query field (SearchInput)
-    │
-    ▼
-SearchEngine.search()               ← filters preloaded SearchIndex in memory
-    │  matches word names and translation text (typed translation → its words)
-    │  regex via java.util.regex.Pattern (invalid → BadPattern notice)
-    ▼
-SearchRun                           ← batches of 32 rows to the UI thread
-    │  debounce onSubmit, cancel pending run on new text
-    ▼
-ExplorerScreenState.searchUi        ← OFF / TYPING / RESULTS
-    ▹ back from search → restoreSearch() reloads cached rows
+→ SearchEngine.search()               ← filters preloaded SearchIndex in memory;
+  matches word names and translation text (typed translation → its words);
+  regex via java.util.regex.Pattern (invalid → BadPattern notice)
+→ SearchRun                           ← batches of 32 rows to the UI thread;
+  debounce onSubmit, cancel pending run on new text
+→ ExplorerScreenState.searchUi        ← OFF / TYPING / RESULTS; back from search →
+  restoreSearch() reloads cached rows
 ```
 
 ## 5. UI components
 
 ### Shell (`ui.shell`)
 
-- **SchlMgrApp** — the only Compose root. Navigation graph with 5 destinations. Shows crash-report popup (from `Startup.getCrashReport()` once per launch), snackbar host over content, dialog host, drawer layer, status band drawn last so it covers the open drawer too.
+- **SchlMgrApp** — the only Compose root. Navigation graph with 5 destinations. Shows crash-report popup (from `CrashReporter.getCrashReport()` once per launch), snackbar host over content, dialog host, drawer layer, status band drawn last so it covers the open drawer too.
 - **TopBar** — composable chrome: `TopBarNav` (hamburger), `TopBarTitle`, `TopBarIconButton`, `TopBarMoreButton` (owns its dropdown), `headerShadow()` modifier under content.
 - **DrawerLayer** — 250dp panel with full-screen scrim (tap closes), drag open/close, settle to nearest anchor.
 - **AppDrawer** — destinations SUBJECTS / TEST / SETTINGS / ABOUT, each with icon + label.
@@ -262,6 +211,7 @@ All implement `DialogSpec`, shown through `Dialogs` stack (own `Dialog` window e
 | Popup | Purpose |
 |-------|---------|
 | `CreatorPopup` | Create/edit item: name + description, word translations editor, `CreatorResult` verdict |
+| `FlipConflictPopup` | Flip's conflict round: editable rows (keep/edit/remove), `FlipConflictsResult` verdict |
 | `ReferencePopup` | Pick which referenced chapters keep the moved word (fork decision) |
 | `ContinuePopup` | OK/cancel confirm, OK fires exactly once |
 | `TestResultsPopup` | Post-test results: success % + per-item rows with typed answer colored |
@@ -269,7 +219,7 @@ All implement `DialogSpec`, shown through `Dialogs` stack (own `Dialog` window e
 | `CrashReportPopup` | Previous-session crash report + Copy |
 | `SourcePickPopup` | Pick source chain for a word living in multiple containers |
 | `Dialogs` | Stack: show/dismiss/clear, `isShowing<T>()` |
-| `PopupChrome` | Shared card/separator/button chrome |
+| `PopupChrome` | Shared card/separator/button/field chrome |
 
 ### Components (`ui.component`)
 

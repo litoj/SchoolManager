@@ -13,13 +13,12 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 
 /**
- * One screen explorer state.
- * - actions go here and delegate the work to [cz.litoj.schlmgr.data.ItemRepository].
- * - chrome shows published state.
+ * The explorer state of one screen.
+ * - actions arrive here and delegate the work to [cz.litoj.schlmgr.data.ItemRepository].
+ * - the chrome shows the published state.
  *
- * @param history navigation history this screen reads and writes
- * @param picker selection mode stays on
- * @param io blocking reads, injectable for tests
+ * @param picker keeps the selection mode on
+ * @param io the blocking reads, injectable for tests
  */
 abstract class ExplorerViewModel<R>(
 	val history: NavigationHistory,
@@ -27,22 +26,19 @@ abstract class ExplorerViewModel<R>(
 	protected val io: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
-	/**
-	 * Content switch every navigation funnels through.
-	 * - screens may override it.
-	 */
+	/** The content switch that every navigation funnels through. */
 	protected open fun setContent(container: DbItem?) = loadContent(container)
 
 	/**
-	 * Restores screens after popping hops.
-	 * - re-shows stacked search run, else reloads browse list.
+	 * Restores the screens after popping hops.
+	 * - it re-shows a stacked search run, and otherwise reloads the browse list.
 	 */
 	fun changedPath(skip: Int) {
-		// Strip refresh follows load.
+		// the strip refresh follows the load.
 		updateBackPath(skip, refreshStrip = false)
-		// Back hop onto search run restores filtered list.
+		// a back hop onto a search run restores the filtered list.
 		if (restoreSearch()) return
-		// Leaving search ends flow without reload.
+		// leaving the search ends the flow without a reload.
 		if (searching && history.onSearchHop()) {
 			searchFlow.leaveSearchFlow(reload = false)
 			setSearchUi(SearchUi.OFF)
@@ -51,10 +47,7 @@ abstract class ExplorerViewModel<R>(
 		onChange()
 	}
 
-	/**
-	 * Pending view-layer requests.
-	 * - unlimited — it survives while the view is stopped.
-	 */
+	/** Unlimited, so a request survives while the view is stopped. */
 	private val _requests = Channel<R>(Channel.UNLIMITED)
 	val requests = _requests.receiveAsFlow()
 
@@ -62,7 +55,7 @@ abstract class ExplorerViewModel<R>(
 		_requests.trySend(request)
 	}
 
-	// Seed mirrors restored position, so the title stays correct before first load.
+	// the seed mirrors the restored position, so the title stays correct before the first load.
 	private val _state = MutableStateFlow(ExplorerScreenState(breadcrumbs = history.path.map { it.name }))
 	val state: StateFlow<ExplorerScreenState> = _state.asStateFlow()
 
@@ -90,14 +83,9 @@ abstract class ExplorerViewModel<R>(
 		_state.update { it.copy(searchUi = mode) }
 	}
 
-	/** The selection machine — see [Selection]. */
 	private val selection = Selection(SelectionHost())
 
-	// ------------------------------------------------------------------ list doors
-
-	/**
-	 * Whether paste is armed — armed paste freezes reorder, drag-select, navigation.
-	 */
+	/** An armed paste freezes reorder, drag-select and navigation. */
 	protected open fun pasteArmed() = false
 
 	fun refreshReorderable() = list.refreshReorderable()
@@ -105,7 +93,6 @@ abstract class ExplorerViewModel<R>(
 	fun load(content: List<ItemRow>, isSearch: Boolean = false, isPicker: Boolean = false) =
 		list.load(content, isSearch, isPicker)
 
-	/** Publishes a caller-sorted order of the current rows — see [ExplorerList.applyOrder]. */
 	fun applyOrder(items: List<ItemRow>) = list.applyOrder(items)
 
 	internal val loadJob get() = list.loadJob
@@ -126,8 +113,6 @@ abstract class ExplorerViewModel<R>(
 
 	fun items(): List<ItemRow> = list.items()
 
-	// ------------------------------------------------------------------ breadcrumbs
-
 	fun onChange() {
 		_state.update {
 			it.copy(
@@ -138,8 +123,8 @@ abstract class ExplorerViewModel<R>(
 	}
 
 	/**
-	 * Jumps to breadcrumb — pops [NavigationHistory.onePath] hops if they cover distance.
-	 * - else pushes truncated path as new entry.
+	 * Jumps to a breadcrumb, popping [NavigationHistory.onePath] hops if they cover distance.
+	 * - otherwise it pushes the truncated path as a new entry.
 	 */
 	fun breadcrumbClick(index: Int) {
 		val container = history.path.getOrNull(index) ?: return
@@ -149,14 +134,14 @@ abstract class ExplorerViewModel<R>(
 			path.add(e)
 			if (e === container) break
 		}
-		// Stacked search hop consumes one pop — drop it first.
+		// a stacked search hop consumes one pop, so drop it first.
 		if (history.onSearchHop()) {
-			// Aborts run too — keeps the abort guard able to fire.
+			// the abort also stops the run, so the abort guard can still fire.
 			searchFlow.leaveSearchFlow(reload = false)
 			setSearchUi(SearchUi.OFF)
 		}
 		val diff = history.path.size - path.size
-		// Hops cover distance, so only strip refresh is added.
+		// the hops cover the distance, so only the strip refresh is added.
 		if (diff <= history.onePath.last()) {
 			changedPath(diff)
 			setInfo(history.path.lastOrNull())
@@ -167,8 +152,7 @@ abstract class ExplorerViewModel<R>(
 		}
 	}
 
-	// ------------------------------------------------------------------ info strip
-	// Policy lives in [InfoStrip].
+	// the policy lives in [InfoStrip].
 
 	private val infoStrip = InfoStrip(viewModelScope, io, InfoStripHost())
 
@@ -206,12 +190,10 @@ abstract class ExplorerViewModel<R>(
 		}
 	}
 
-	// ------------------------------------------------------------------ search flow
-	// Policy lives in [SearchFlow].
+	// the policy lives in [SearchFlow].
 
 	/**
-	 * Opens the search field.
-	 * - the run walks the open container — the root offers no search.
+	 * The run walks the open container, since the root offers no search.
 	 * - an armed paste freezes the flow like navigation.
 	 */
 	fun openSearchField() {
@@ -260,12 +242,7 @@ abstract class ExplorerViewModel<R>(
 		override fun setContent(container: DbItem?) = this@ExplorerViewModel.setContent(container)
 	}
 
-	// ------------------------------------------------------------------ navigation
-
-	/**
-	 * Replaces path and loads last container.
-	 * - stacked search run stays stacked.
-	 */
+	/** A stacked search run stays stacked across the new container. */
 	protected fun openChain(path: MutableList<DbItem>) {
 		history.push(path)
 		if (searching) searchFlow.suspendSearch()
@@ -273,8 +250,7 @@ abstract class ExplorerViewModel<R>(
 	}
 
 	/**
-	 * Pops [skip] screens — restores crumbs and info only.
-	 * - search rows belong to caller.
+	 * The search rows survive, since they belong to the caller.
 	 */
 	fun updateBackPath(skip: Int, refreshStrip: Boolean = true) {
 		var s = skip
@@ -294,8 +270,8 @@ abstract class ExplorerViewModel<R>(
 	}
 
 	/**
-	 * Back, deepest layer out — selection, then search, then one level.
-	 * - root double press exits.
+	 * Back, deepest layer out: selection, then search, then one level.
+	 * - a double press at the root exits.
 	 */
 	fun onBackRequested(): BackOutcome {
 		if (selectionCount() > 0) {
@@ -324,15 +300,12 @@ abstract class ExplorerViewModel<R>(
 	private var backTime = 0L
 
 	/**
-	 * Records root back press in exit window.
-	 * @return true on first press, false on second inside window.
+	 * @return true on the first press, and false on the second inside the window
 	 */
 	protected fun registerExitPress(): Boolean = if (clock() - backTime > EXIT_WINDOW_MS) {
 		backTime = clock()
 		true
 	} else false
-
-	// ------------------------------------------------------------------ row intents
 
 	fun flipWord(item: ItemRow?) = list.flipWord(item)
 
@@ -360,8 +333,6 @@ abstract class ExplorerViewModel<R>(
 
 	fun clearSelection() = selection.clearSelection()
 
-	// ------------------------------------------------------------------ list host
-
 	private inner class ListHost : ExplorerList.Host {
 		override val picker get() = this@ExplorerViewModel.picker
 		override fun pasteArmed() = this@ExplorerViewModel.pasteArmed()
@@ -373,7 +344,7 @@ abstract class ExplorerViewModel<R>(
 		override fun publishChrome(reorderable: Boolean) {
 			_state.update {
 				it.copy(
-					// Crumbs follow each open and back.
+					// the crumbs follow each open and back.
 					breadcrumbs = history.path.map { container -> container.name },
 					reorderable = reorderable,
 					contentStep = it.contentStep + 1,

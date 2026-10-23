@@ -21,8 +21,8 @@ class AboutViewModel : ViewModel() {
 		private set
 
 	/**
-	 * Reads the version once per screen — the application context outlives
-	 * the screen, so holding no activity reference is safe.
+	 * Reads the version once per screen.
+	 * - the application context outlives the screen, so holding no activity reference is safe.
 	 */
 	fun loadVersion(context: Context) {
 		if (version != null) return

@@ -12,13 +12,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Unit tests of the commit snapshot ([CreatorPopup.result]) — the OK press
- * hands the view model an immutable copy of the edited fields, taken at press
- * time, so later edits of the still-open dialog cannot change a committed
- * result.
- *
- * Dialogs register on the shared stack on construction and the teardown
- * clears it, so none leak across tests.
+ * - the OK press hands the view model an immutable copy of the edited fields.
+ * - the copy is taken at press time.
+ * - later edits of the still-open dialog cannot change a committed result.
+ * - dialogs register on the shared stack on construction.
+ * - the teardown clears the stack, so none leak across tests.
  */
 class CreatorResultTest {
 

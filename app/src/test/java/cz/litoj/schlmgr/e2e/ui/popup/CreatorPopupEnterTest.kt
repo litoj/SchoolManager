@@ -25,11 +25,12 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The popup's Enter behaviour on the composed view — Enter commits on the
- * last name field in the view: the item name for the simple kinds, the last
- * translation's name for words (the word name and the earlier translations
- * move the keyboard along the fields). A note is the exception — its name
- * Enter jumps to the description, its commit stays on the OK button.
+ * - the Enter key commits on the last name field in the view.
+ * - that is the item name for the simple kinds.
+ * - for words it is the name of the last translation.
+ * - the word name and the earlier translations move the keyboard along.
+ * - a note is the exception, where Enter jumps to the description.
+ * - its commit stays on the OK button.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -144,7 +145,7 @@ class CreatorPopupEnterTest {
 		}
 	}
 
-	/** The field holding the keyboard — typing lands where this matcher points. */
+	/** The field holding the keyboard: typing lands where this matcher points. */
 	private val focusedField = SemanticsMatcher("focused field") {
 		it.config.getOrElse(SemanticsProperties.Focused) { false }
 	}
@@ -159,7 +160,7 @@ class CreatorPopupEnterTest {
 
 		rule.onNodeWithText("dům").performImeAction()
 
-		// the keyboard landed in the fresh name field — typing reaches it
+		// the keyboard landed in the fresh name field, so typing reaches it
 		rule.onNode(focusedField).performTextInput("Baum")
 		rule.runOnIdle { assertEquals("Baum", popup.name) }
 		// and the Enter chain continues into the fresh translation row

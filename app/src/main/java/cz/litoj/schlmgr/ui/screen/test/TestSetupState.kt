@@ -12,38 +12,38 @@ import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 
 /**
- * Process-wide state of a test being set up — picked source chains plus the
- * amount/duration/reverse answers.
-	 * - written only through this object's doors, so the dedup pass cannot be forgotten.
-	 * - reset happens only on a genuine fresh entry.
+ * Process-wide state of a test being set up.
+ * - it holds the picked source chains and the amount, duration and reverse answers.
+ * - written only through the doors of this object, so the dedup pass cannot be forgotten.
+ * - reset happens only on a genuine fresh entry.
  */
 object TestSetupState {
 
 	/**
-	 * Set when the setup screen launches the picker, consumed by its
-	 * fresh-entry check — a picker return keeps the sources. Only a
-	 * genuine fresh entry (the drawer) resets the setup.
+	 * Set when the setup screen launches the picker, and consumed by its fresh-entry check.
+	 * - so a picker return keeps the sources.
+	 * - only a genuine fresh entry from the drawer resets the setup.
 	 */
 	private var openedPicker = false
 
 	/**
-	 * Set when a screen prepares the sources straight from a selection (the subjects
-	 * screen's 'Prepare test') and consumed by the fresh-entry check, so the filled
-	 * [list] survives like a picker return.
+	 * Set when a screen prepares the sources straight from a selection.
+	 * - the fresh-entry check consumes it, so the filled [list] survives like a picker return.
+	 * - the source is the Prepare test action of the subjects screen.
 	 */
 	private var openedWithSelection = false
 
-	/** Marks the setup as entered from the picker — its return keeps the sources. */
+	/** Marks the setup as entered from the picker, whose return keeps the sources. */
 	fun markOpenedPicker() {
 		openedPicker = true
 	}
 
-	/** Marks the setup as filled from a selection — its sources survive the entry. */
+	/** Marks the setup as filled from a selection, so its sources survive the entry. */
 	fun markOpenedWithSelection() {
 		openedWithSelection = true
 	}
 
-	/** Takes the entry marks — the fresh-entry check consumes them. */
+	/** Returns the picker mark first, then the selection mark. */
 	fun consumeEntryMarks(): Pair<Boolean, Boolean> {
 		val marks = openedPicker to openedWithSelection
 		openedPicker = false
@@ -52,9 +52,9 @@ object TestSetupState {
 	}
 
 	/**
-	 * The picked sources, each entry one item's container chain (root
-	 * first, picked item last — the TestEntry shape).
-	 * - written only by this object's doors. Readers take [list].
+	 * The picked sources, each entry one container chain of an item.
+	 * - the root comes first and the picked item last, the TestEntry shape.
+	 * - written only by the doors of this object, while readers take [list].
 	 * - a snapshot state list, so mutations recompose the screen.
 	 */
 	private val _list = ArrayList<List<DbItem>>().toMutableStateList()
@@ -62,34 +62,23 @@ object TestSetupState {
 	@JvmField
 	val list: List<List<DbItem>> = _list
 
-	/** Answer to "how many items" — read by the running test when it starts. */
 	var amountText by mutableStateOf(TestEngine.amount.toString())
 		private set
 
-	/** Answer to "how long per item" — read by the running test when it starts. */
 	var timeText by mutableStateOf(TestEngine.getDefaultTime().toString())
 		private set
 
 	/**
-	 * Whether the test runs in the reverse direction (see [TestEngine.isReversed]).
-	 * Restored from the engine, which [cz.litoj.schlmgr.app.Startup] fills from the
-	 * persisted setting.
+	 * The engine holds the value, and [cz.litoj.schlmgr.app.Startup] fills it from the setting.
 	 */
 	var reverseTest by mutableStateOf(TestEngine.isReversed)
 		private set
 
-	/**
-	 * Sets the tested amount. An empty or below-1 field falls back to
-	 * the engine default at the start.
-	 */
+	/** An empty or below-1 field falls back to the engine default at the start. */
 	fun setAmount(text: String) {
 		amountText = text.filter(Char::isDigit)
 	}
 
-	/**
-	 * Sets the per-item seconds. Digits only, committed as typed — an empty
-	 * or below-1 field falls back to the engine default at the start.
-	 */
 	fun setTime(text: String) {
 		timeText = text.filter(Char::isDigit)
 	}
@@ -98,11 +87,7 @@ object TestSetupState {
 		reverseTest = on
 	}
 
-	/**
-	 * The fresh-entry reset — drops the picked sources (the picker owns
-	 * its own position) and re-reads the engine's defaults. A settings
-	 * change between visits reaches the next test.
-	 */
+	/** A settings change between visits reaches the next test. */
 	fun reset() {
 		_list.clear()
 		amountText = TestEngine.amount.toString()
@@ -110,31 +95,25 @@ object TestSetupState {
 	}
 
 	/**
-	 * The one subject every source must belong to — the first picked chain's
-	 * subject, `null` before the first pick.
-	 * - a test never mixes subjects — the mutation doors refuse other-subject
-	 *   rows.
+	 * A test never mixes subjects, so the mutation doors refuse other-subject rows.
+	 * - the subject is that of the first picked chain, null before the first pick.
 	 */
 	fun pickedSubject(): DbItem? = _list.firstOrNull()?.firstOrNull()
 
 	/**
-	 * One picked row's chain inputs, snapshotted on the caller's thread —
-	 * the rows' mutable fields must not be read on io against the main
-	 * thread rewriting them.
+	 * The chain inputs of one picked row, snapshotted on the caller thread.
+	 * - the mutable fields of the rows must not be read on io while main rewrites them.
 	 */
 	class ChainSeed(val row: ItemRow, val item: DbItem, val path: List<DbItem>?, val parentId: Int?)
 
-	// the path copies — main rewrites the row's list in place, and the io
-	// chain build must not iterate a live one
+	// the path copies, since main rewrites the list of the row in place.
+	// the io chain build must not iterate a live one
 	fun seedOf(row: ItemRow) = ChainSeed(row, row.item, row.path?.toList(), row.parentId)
 
 	/**
-	 * 'Prepare test': replace the sources with the selected rows' chains.
-	 * - deduped (a picked chapter covers the words in it).
-	 * - a multi-subject selection is refused whole (foreign rows return, the
-	 *   list stays).
-	 * - [chainOfSeed] reads the database — callers stay off main, handing
-	 *   snapshotted seeds.
+	 * A multi-subject selection is refused whole, and the foreign rows return.
+	 * - a picked chapter covers the words in it, so the chains dedup.
+	 * - [chainOfSeed] reads the database, so callers stay off main with snapshotted seeds.
 	 */
 	fun fillFromSelection(seeds: List<ChainSeed>): List<ItemRow> {
 		if (seeds.isEmpty()) return emptyList()
@@ -149,12 +128,10 @@ object TestSetupState {
 	}
 
 	/**
-	 * The picker's Select — prepends the selected rows' chains (new picks lead)
-	 * and dedup.
-	 * - the pick is whole or nothing — other-subject rows are refused with
-	 *   nothing added, so the picker reports and stays open.
-	 * - [chainOfSeed] reads the database — callers stay off main with
-	 *   snapshotted seeds.
+	 * The picker Select: prepends the chains of the selected rows, so new picks lead.
+	 * - the pick is whole or nothing, so other-subject rows are refused with nothing added.
+	 * - the picker then reports and stays open.
+	 * - [chainOfSeed] reads the database, so callers stay off main with snapshotted seeds.
 	 */
 	fun addPicked(seeds: List<ChainSeed>): List<ItemRow> {
 		if (seeds.isEmpty()) return emptyList()
@@ -162,7 +139,6 @@ object TestSetupState {
 		val subject = pickedSubject()?.id ?: chains[0].second[0].id
 		val foreign = chains.filter { it.second[0].id != subject }.map { it.first }
 		if (foreign.isNotEmpty()) return foreign
-		// the whole pick leads the list, in its selection order
 		_list.addAll(0, chains.map { it.second })
 		dedup(_list)
 		return emptyList()
@@ -174,14 +150,14 @@ object TestSetupState {
 
 	fun hasSources() = _list.isNotEmpty()
 
-	/** Whether the whole hierarchy is picked (the add-source tile hides then). */
+	/** Whether the whole hierarchy is picked, which hides the add-source tile. */
 	fun hierarchyPicked() = _list.any { it.size == 1 }
 
 	/**
-	 * One seed's source chain — root first, picked item last.
-	 * - a search row's seed carries its hit's chain already — a browse row's
-	 *   seed rebuilds from the selected-under parent (multi-parent items
-	 *   use it).
+	 * The root comes first and the picked item last.
+	 * - the seed of a search row carries the chain of its hit already.
+	 * - the seed of a browse row rebuilds it from the selected-under parent.
+	 * - multi-parent items use that parent.
 	 */
 	fun chainOfSeed(seed: ChainSeed): List<DbItem> {
 		seed.path?.let { return it + seed.item }
@@ -190,10 +166,10 @@ object TestSetupState {
 	}
 
 	/**
-	 * The dedup pass — a chain inside another picked chain's item is covered by
-	 * it, and the same chain twice is one source.
-	 * - internal — the mutation doors run it, and tests exercise it directly.
-	 * - any thread — the snapshot list recomposes the screen on removal.
+	 * The dedup pass, where a chain inside another picked chain is covered by it.
+	 * - the same chain twice is one source.
+	 * - it is internal, since the mutation doors run it and tests exercise it directly.
+	 * - any thread works, since the snapshot list recomposes the screen on removal.
 	 */
 	internal fun dedup(list: MutableList<List<DbItem>>) {
 		var pos = 0
@@ -204,10 +180,11 @@ object TestSetupState {
 			while (i > pos) {
 				val other = list[i]
 				if (within(chain, other) && chain.size < other.size) {
-					// `other` sits inside chain's item — the ancestor alone covers it
+					// other sits inside the item of the chain, so the ancestor alone covers it
 					list.removeAt(i)
 				} else if (within(other, chain)) {
-					// chain sits inside `other`'s item, or is the very same chain — keep the other
+					// the chain sits inside the item of the other, or is the very same chain
+					// so keep the other
 					list.removeAt(pos)
 					removedPos = true
 					break
@@ -226,16 +203,12 @@ object TestSetupState {
 }
 
 /**
- * Presentation of one picked source chain — the single mapping place, so the
- * setup screen's rows stay free of database imports (the explorer equivalent
- * is [ItemRow.toUi]).
+ * The presentation of one picked source chain, the single mapping place.
+ * - so the rows of the setup screen stay free of database imports.
+ * - the explorer equivalent is [ItemRow.toUi].
  */
 data class SourceRowUi(val kind: RowKind, val displayName: String)
 
-/**
- * Maps one chain — length 1 is a whole subject, the last item's type
- * otherwise. The name is the parsed last item's name.
- */
 fun List<DbItem>.toSourceRowUi() = SourceRowUi(
 	kind = when {
 		size == 1 -> RowKind.SUBJECT

@@ -11,9 +11,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Unit tests of [ItemRow.ofSearchHit]: a search-hit row takes its reference facts
- * (`isReference` / `hasSource`) from the preloaded parent links instead of
- * per-row repository queries — building the row must touch no database.
+ * - a search-hit row takes its reference facts from the preloaded parent links.
+ * - building the row must touch no database.
  */
 class SearchHitRowTest {
 
@@ -61,7 +60,7 @@ class SearchHitRowTest {
 		assertEquals(7, row.position)
 		assertEquals(listOf<DbItem>(parent), row.path)
 		path.clear()
-		// the walk mutates its path list — the row must own its copy
+		// the walk mutates its path list, so the row must own its copy
 		assertEquals(1, row.path?.size)
 		assertNotSame(path, row.path)
 	}

@@ -6,9 +6,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * The drag-select spread of [ExplorerViewModel]: the range follows the finger
- * from the long-pressed anchor, and pulling back towards the anchor deselects
- * the overshoot instead of leaving it selected.
+ * - pulling back towards the anchor deselects the overshoot.
+ * - the overshoot thus does not stay selected.
  */
 class DragSelectTest {
 

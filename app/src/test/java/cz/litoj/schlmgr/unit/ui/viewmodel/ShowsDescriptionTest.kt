@@ -7,9 +7,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * The direct-description limit ([ItemRow.showsDescription]): a description
- * at or under the limit shows under its row, a longer one and a blank one
- * never do. Blank lines never count toward the limit.
+ * - a description at or under the limit shows under its row.
+ * - a longer one and a blank one never show.
+ * - blank lines never count toward the limit.
  */
 class ShowsDescriptionTest {
 

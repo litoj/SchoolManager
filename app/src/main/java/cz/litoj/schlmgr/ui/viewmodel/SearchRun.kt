@@ -13,8 +13,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * One live search run — preload, walk, drain.
- * - superseded run is [abort]ed first.
+ * One live search run: preload, walk and drain.
+ * - a superseded run is [abort]ed first.
  */
 internal class SearchRun(
 	private val scope: CoroutineScope,
@@ -36,13 +36,13 @@ internal class SearchRun(
 	private var engine: SearchEngine? = null
 	private var job: Job? = null
 
-	/** Chapters the engine walked — read while the run lives. */
+	/** The chapters the engine walked, read while the run lives. */
 	fun visitedChapters(): Int = engine?.visitedChapters ?: 0
 
 	fun start(engine: SearchEngine, path: List<DbItem>) {
 		this.engine = engine
 		job = scope.launch {
-			// Run always has root.
+			// a run always has a root.
 			val root = path.lastOrNull() ?: return@launch
 			val index = withContext(io) {
 				SearchIndex(
@@ -51,9 +51,9 @@ internal class SearchRun(
 					ItemRepository.subgraphChildLinks(root.id),
 				)
 			}
-			// May have been superseded in preload.
+			// the run may have been superseded in preload.
 			if (!engine.isActive) return@launch
-			// Producer walks on IO while the consumer appends on main.
+			// the producer walks on IO while the consumer appends on main.
 			val rows = Channel<ItemRow>(Channel.UNLIMITED)
 			launch(io) {
 				var position = 0
@@ -63,7 +63,7 @@ internal class SearchRun(
 				rows.close()
 			}
 			drainBatches(rows)
-			// May have been superseded in drain.
+			// the run may have been superseded in drain.
 			if (!engine.isActive) return@launch
 			ensureActive()
 			host.runFinished()

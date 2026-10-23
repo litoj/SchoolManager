@@ -5,9 +5,6 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
 
-/**
- * Kind of row in single `item` table. Stored as lowercase name.
- */
 enum class ItemKind {
 	CHAPTER,
 	WORD,
@@ -17,9 +14,7 @@ enum class ItemKind {
 	ROOT,
 }
 
-/**
- * Reserved id of single invisible root row — `0`, safe as autoincrement starts at `1`.
- */
+/** Reserved id of the single invisible root row: 0, safe because autoincrement starts at 1. */
 const val ROOT_ID: Int = 0
 
 class ItemKindConverter {
@@ -40,7 +35,7 @@ data class DbItem(
 	@ColumnInfo(name = "failed_tests") val failedTests: Int = 0,
 )
 
-/** Success ratio in percent, `-1` when never tested. */
+/** Success ratio in percent, -1 when never tested. */
 val DbItem.ratio: Int
 	get() = if (passedTests + failedTests == 0) -1 else 100 * passedTests / (passedTests + failedTests)
 

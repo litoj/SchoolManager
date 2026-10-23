@@ -26,7 +26,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.app.Startup
+import cz.litoj.schlmgr.app.CrashReporter
 import cz.litoj.schlmgr.ui.popup.CrashReportPopup
 import cz.litoj.schlmgr.ui.popup.DialogHost
 import cz.litoj.schlmgr.ui.popup.Dialogs
@@ -44,21 +44,22 @@ import cz.litoj.schlmgr.ui.viewmodel.mainHistory
 import kotlinx.coroutines.launch
 
 /**
- * The app's one Compose shell — snackbars, dialogs, drawer, navigation graph.
- * - each destination owns its top bar and view model — the shell manages only names, factories, drawer and back stack.
+ * The one Compose shell of the app: snackbars, dialogs, drawer and navigation graph.
+ * - each destination owns its top bar and view model.
+ * - the shell manages only names, factories, the drawer and the back stack.
  */
 @Composable
 fun SchlMgrApp() {
-	// the app's presses arm faster than the platform default — see [QuickLongPress]
+	// the presses of the app arm faster than the platform default, see [QuickLongPress]
 	val system = LocalViewConfiguration.current
 	CompositionLocalProvider(LocalViewConfiguration provides QuickLongPress(system)) {
-		// the transient user messages — every screen shows them over the content
+		// the transient user messages, which every screen shows over the content
 		val snackbar = messageSnackbarHost()
 
-		// The previous session's crash report, once per composition — a composed
-		// window is attached, so the popup cannot hit a missing window token.
+		// the crash report of the previous session, once per composition.
+		// a composed window is attached, so the popup cannot hit a missing window token
 		LaunchedEffect(Unit) {
-			val crash = Startup.getCrashReport() ?: return@LaunchedEffect
+			val crash = CrashReporter.getCrashReport() ?: return@LaunchedEffect
 			if (!Dialogs.isShowing<CrashReportPopup>()) CrashReportPopup(crash)
 		}
 
@@ -66,7 +67,7 @@ fun SchlMgrApp() {
 		val navController = rememberNavController()
 		fun openDrawer() = drawer.open()
 
-		// the open drawer destination — the checked row and the gestures' owner
+		// the open drawer destination, which checks a row and owns the gestures
 		val backStack by navController.currentBackStackEntryAsState()
 		val route = backStack?.destination?.route
 		val current = Destination.entries.firstOrNull { it.name == route }
@@ -78,8 +79,7 @@ fun SchlMgrApp() {
 				drawerContent = {
 					AppDrawer(current) { destination ->
 						drawer.close()
-						// the flat-siblings rule — never restore a saved stack under the
-						// start destination (a restored stack silently ignored the tap)
+						// the flat-siblings rule applies to the start destination.
 						navController.navigate(destination.name) {
 							popUpTo(Destination.SUBJECTS.name) {
 								inclusive = false
@@ -95,14 +95,14 @@ fun SchlMgrApp() {
 						navController = navController,
 						startDestination = Destination.SUBJECTS.name,
 						// the screens draw under the system bars.
-						// The content stops above the navigation bar and the keyboard here, once.
+						// the content stops above the navigation bar and the keyboard here, once.
 						modifier = Modifier.navigationBarsPadding().imePadding(),
 					) {
 						composable(Destination.SUBJECTS.name) { entry ->
 							val vm: MainExplorerViewModel = viewModel(entry) {
 								MainExplorerViewModel(mainHistory)
 							}
-							// the app exit — the shell owns the host activity
+							// the app exit, since the shell owns the host activity
 							val activity = LocalActivity.current
 							SubjectsScreen(
 								viewModel = vm,
@@ -135,8 +135,8 @@ fun SchlMgrApp() {
 							AboutScreen(vm, ::openDrawer)
 						}
 					}
-					// the snackbar sits above everything but the dialogs' own windows. It
-					// takes the content's insets — or it rests under the navigation buttons
+					// the snackbar sits above everything except the windows of the dialogs.
+					// it takes the insets of the content, or rests under the navigation buttons
 					SnackbarHost(
 						hostState = snackbar,
 						modifier = Modifier.align(Alignment.BottomCenter)
@@ -145,10 +145,10 @@ fun SchlMgrApp() {
 					)
 				}
 			}
-			// The status band (the drawer banner's own green, darkened) is
-			// drawn last, so it also covers the drawer and its scrim — the bar
-			// looks the same whether the drawer is open or closed. TopBar
-			// reserves only the strip's height.
+			// the status band is the dark green of the drawer banner.
+			// - it is drawn last, so it also covers the drawer and its scrim.
+			// - the bar looks the same whether the drawer is open or closed.
+			// - the top bar reserves only the height of the strip.
 			Box(
 				Modifier
 					.fillMaxWidth()
@@ -161,12 +161,9 @@ fun SchlMgrApp() {
 	}
 }
 
-/**
- * The app's view configuration — the system's, with a shorter long press.
- */
 private class QuickLongPress(system: ViewConfiguration) : ViewConfiguration by system {
 	override val longPressTimeoutMillis = LongPressMillis
 }
 
-/** The long-press wait — the platform's 400ms default feels slow for a row selection. */
+/** The long-press wait, since the 400ms platform default feels slow for a row selection. */
 private const val LongPressMillis = 250L

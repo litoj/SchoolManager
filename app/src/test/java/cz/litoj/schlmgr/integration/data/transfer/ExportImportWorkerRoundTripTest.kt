@@ -27,11 +27,9 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * The chained worker round trips — every export the UI offers, through the
- * real [ExportPipeline] bytes, back through the real [ImporterFactory]
- * dispatch, at the root or into the open container. The database under test
- * carries every row kind and the name shapes that stress a codec: commas,
- * colons, hashes, brackets, leading digits.
+ * - the export bytes come from the real [ExportPipeline].
+ * - the import dispatch comes from the real [ImporterFactory].
+ * - the database carries every row kind and the name shapes that stress a codec.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -56,7 +54,6 @@ class ExportImportWorkerRoundTripTest {
 		db.close()
 	}
 
-	/** Closes the export-side database and installs a fresh empty one. */
 	private fun freshDatabase() {
 		db.close()
 		val app = RuntimeEnvironment.getApplication()
@@ -73,7 +70,6 @@ class ExportImportWorkerRoundTripTest {
 			cursor.getInt(0)
 		}
 
-	/** The bytes the real export worker wrote for the given selection. */
 	private fun exportPicked(format: ExportFormat, selected: () -> List<DbItem>): String {
 		val uri = Uri.parse("content://schlmgr.test/out/${nextPick++}")
 		val out = ByteArrayOutputStream()
@@ -84,7 +80,6 @@ class ExportImportWorkerRoundTripTest {
 		return String(out.toByteArray(), StandardCharsets.UTF_8)
 	}
 
-	/** The real import worker run against the given bytes. */
 	private fun importPicked(fileName: String, open: () -> DbItem?, text: String) {
 		val uri = Uri.parse("content://schlmgr.test/pick/${nextPick++}")
 		val bytes = text.toByteArray(StandardCharsets.UTF_8)
@@ -100,13 +95,6 @@ class ExportImportWorkerRoundTripTest {
 		).start().join()
 	}
 
-	/**
-	 * The stress database — two subjects; the first holds chapters with
-	 * hostile names, words with hostile names and descriptions, counters, a
-	 * note, a word directly under the subject and three references: a word
-	 * into a later chapter, a chapter under the subject's word, a word into
-	 * the other subject.
-	 */
 	private fun buildStressDb() {
 		val mathe = ItemRepository.createSubject("Mathe", "subject desc")
 		val c0 = ItemRepository.createChapter(mathe.id, "1. 100", "chapter desc")
@@ -125,7 +113,7 @@ class ExportImportWorkerRoundTripTest {
 		assertTrue(ItemRepository.reference(w1.id, dc.id))
 	}
 
-	/** The two saved subjects' shape — names in order, kinds, links. */
+	/** The shape of the two saved subjects: names in order, kinds, links. */
 	private fun assertStressTree(mathe: DbItem, deutsch: DbItem) {
 		assertEquals("Mathe", mathe.name)
 		assertEquals("subject desc", mathe.description)
@@ -142,8 +130,6 @@ class ExportImportWorkerRoundTripTest {
 		assertEquals(listOf("dog", "hound #2"), ItemRepository.translations(w1.id).map { it.name })
 		assertEquals("a: dog", ItemRepository.translations(w1.id)[0].description)
 		assertEquals(ItemKind.NOTE, c0Children[2].type)
-		// the references came through — a word and a chapter into c1, a
-		// word across the subjects
 		assertTrue(ItemRepository.linkIsReference(c1.id, w1.id))
 		assertTrue(ItemRepository.linkIsReference(c1.id, c0.id))
 		val dc = ItemRepository.children(deutsch.id).single()
@@ -201,8 +187,8 @@ class ExportImportWorkerRoundTripTest {
 		val chapter = ItemRepository.createChapter(holder.id, "box", null)
 		importPicked("selection.hjson", { chapter }, text)
 
-		// both selected chapters land under the open container, in the
-		// export's own order, the reference between them intact
+		// both selected chapters land under the open container, in the own order
+		// of the export, with the reference between them intact
 		val box = ItemRepository.children(holder.id).single()
 		assertEquals(listOf("c: one", "1. 100"), ItemRepository.children(box.id).map { it.name })
 		val back = ItemRepository.children(box.id)
@@ -216,20 +202,19 @@ class ExportImportWorkerRoundTripTest {
 		val c0 = ItemRepository.createChapter(mathe.id, "c0", null)
 		val c1 = ItemRepository.createChapter(mathe.id, "c1", null)
 		val word = ItemRepository.createWord(c0.id, "Hund", null, listOf("pes" to null))
-		// the word shows in a second chapter — its file entry doubles, the
+		// the word shows in a second chapter, so its file entry doubles while the
 		// row does not
 		ItemRepository.legacyLinkAtEnd(c1.id, word.id)
 		ItemRepository.createWord(c0.id, "Schule", null, listOf("skola" to null))
 
-		// the numbers the export worker reports
 		val (words, chapters) = ItemRepository.subgraphStats(listOf(mathe.id))
 		val text = exportPicked(ExportFormat.JSON) { listOf(mathe) }
 
 		freshDatabase()
 		val result = ItemRepository.import(HJsonImporter(text))
 
-		// the numbers the import worker reports — the same rows, not the
-		// file's doubled entries
+		// the numbers the import worker reports, the same rows, not the doubled
+		// entries of the file
 		assertEquals(words, result.words)
 		assertEquals(chapters, result.chapters)
 	}
@@ -237,8 +222,8 @@ class ExportImportWorkerRoundTripTest {
 	@Test
 	fun `the reimported database re-exports to the same file`() {
 		buildStressDb()
-		// a word shared into a second chapter — its entry doubles in the
-		// file, the row does not
+		// a word shared into a second chapter, whose entry doubles in the file
+		// while the row does not
 		val mathe = ItemRepository.subjects()[0]
 		val shared = ItemRepository.children(ItemRepository.children(mathe.id)[0].id)[0]
 		val extra = ItemRepository.createChapter(mathe.id, "extra", null)
@@ -249,8 +234,8 @@ class ExportImportWorkerRoundTripTest {
 		freshDatabase()
 		importPicked("subjects.hjson", { null }, text)
 
-		// the identity of the data, not a hand-picked shape — the round
-		// trip reproduces the very same file
+		// the identity of the data, not a hand-picked shape, so the round trip
+		// reproduces the very same file
 		assertEquals(text, exportPicked(ExportFormat.JSON) { ItemRepository.subjects() })
 	}
 
@@ -267,8 +252,8 @@ class ExportImportWorkerRoundTripTest {
 		freshDatabase()
 		importPicked("subjects.txt", { null }, text)
 
-		// both subjects come back through the word-list flow — counters and
-		// references are the format's documented losses
+		// both subjects come back through the word-list flow, while counters and
+		// references are the documented losses of the format
 		val subjects = ItemRepository.subjects()
 		assertEquals(listOf("Mathe", "Deutsch"), subjects.map { it.name })
 		val children = ItemRepository.children(subjects[0].id)
@@ -277,7 +262,6 @@ class ExportImportWorkerRoundTripTest {
 		assertEquals(listOf("Hund"), words.map { it.name })
 		assertEquals("noun", words[0].description)
 		assertEquals(listOf("dog"), ItemRepository.translations(words[0].id).map { it.name })
-		// the counters are the format's documented loss
 		assertEquals(0, words[0].passedTests)
 		assertEquals(listOf("das Haus"), ItemRepository.children(subjects[1].id).map { it.name })
 	}

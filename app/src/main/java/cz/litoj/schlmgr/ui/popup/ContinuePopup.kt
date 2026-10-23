@@ -16,8 +16,8 @@ import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.component.HairlineDivider
 
 /**
- * OK reports through [onOk] on the caller's thread (the owner decides
- * where the action runs). Cancel only dismisses.
+ * OK reports through [onOk] on the thread of the caller, which decides where the action runs.
+ * - the Cancel button only dismisses.
  */
 class ContinuePopup(private val onOk: () -> Unit) : DialogSpec {
 
@@ -41,7 +41,7 @@ class ContinuePopup(private val onOk: () -> Unit) : DialogSpec {
 				VerticalButtonSeparator()
 				PopupButton(stringResource(R.string.ok), Modifier.weight(1f)) {
 					Dialogs.dismiss(this@ContinuePopup)
-					// one shot — a double-tap must not confirm twice
+					// one shot, so a double-tap must not confirm twice
 					if (!fired) {
 						fired = true
 						onOk()

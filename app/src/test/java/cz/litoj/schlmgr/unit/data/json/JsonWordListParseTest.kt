@@ -13,9 +13,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Pure-JVM tests of the tree JSON (HJSON) codec [JsonWordList] — the parser and
- * the hand-built round trip. No database is touched: [JsonWordList.writeChapters]
- * is the database-free counterpart of `write`.
+ * - no database is touched.
+ * - [JsonWordList.writeChapters] is the database-free counterpart of write.
  */
 class JsonWordListParseTest {
 
@@ -167,7 +166,7 @@ class JsonWordListParseTest {
 		word.translations.add(JsonTranslation("trl", "td", 5, 6))
 		val nested = JsonChapter("nested")
 		nested.entries.add(JsonWord("inner", null, 0, 9))
-		// a mixed order — the format must keep it through the cycle
+		// a mixed order, which the format must keep through the cycle
 		subject.entries.add(note)
 		subject.entries.add(word)
 		subject.entries.add(nested)
@@ -178,7 +177,6 @@ class JsonWordListParseTest {
 		val subject2 = parsed.single() as JsonChapter
 		assertEquals("Subject", subject2.name)
 		assertEquals("desc", subject2.description)
-		// the kinds and their order survive
 		assertEquals(
 			listOf(JsonNote::class, JsonWord::class, JsonChapter::class, JsonRef::class),
 			subject2.entries.map { it::class })
@@ -224,7 +222,7 @@ class JsonWordListParseTest {
 
 		val text = JsonWordList.writeChapters(listOf(chapter))
 
-		// the whole format in one pin — unset optionals leave no line
+		// the whole format in one pin, where unset optionals leave no line
 		assertEquals(
 			"""
 			{
@@ -248,8 +246,8 @@ class JsonWordListParseTest {
 	@Test
 	fun `every chapter and word writes its kind key`() {
 		val outer = JsonChapter("Outer")
-		// an empty chapter and a translation-less word — the always-written
-		// keys keep a reader from taking either for a note
+		// an empty chapter and a translation-less word, whose always-written keys
+		// keep a reader from taking either for a note
 		outer.entries.add(JsonChapter("empty"))
 		outer.entries.add(JsonWord("word"))
 
@@ -257,7 +255,6 @@ class JsonWordListParseTest {
 
 		assertTrue(text.contains("children"))
 		assertTrue(text.contains("translations"))
-		// the empty chapter still shows its list
 		assertTrue(text.contains("[]"))
 	}
 
@@ -317,14 +314,13 @@ class JsonWordListParseTest {
 			""".trimIndent()
 		)
 
-		// every entry keeps its own kind at the top level — the list lands
-		// in the import target as it is
+		// every entry keeps its own kind at the top level, so the list lands in
+		// the import target as it is
 		assertEquals(3, parsed.size)
 		assertTrue(parsed[0] is JsonWord)
 		assertTrue(parsed[1] is JsonNote)
 		assertTrue(parsed[2] is JsonChapter)
 
-		// one object is a one-item array
 		val single = JsonWordList.parse("{\n  name: n\n}")
 		assertEquals(1, single.size)
 		assertTrue(single.single() is JsonNote)
@@ -332,14 +328,14 @@ class JsonWordListParseTest {
 
 	@Test
 	fun `the retired format's keys are named, at any level`() {
-		// a root exported before the format change — its top-level subject
+		// a root exported before the format change, with its top-level subject
 		val topLevel = assertThrows(IllegalArgumentException::class.java) {
 			JsonWordList.parse("[\n  {\n    name: A\n    words: []\n  }\n]")
 		}
 		assertTrue(topLevel.message!!.contains("retired format"))
 
-		// a nested chapter of the same old file — the note shape would
-		// silently drop its content
+		// a nested chapter of the same old file, whose note shape would silently
+		// drop its content
 		val nested = assertThrows(IllegalArgumentException::class.java) {
 			JsonWordList.parse("{\n  name: S\n  children:\n  [\n    {\n      name: c\n      words: []\n    }\n  ]\n}")
 		}

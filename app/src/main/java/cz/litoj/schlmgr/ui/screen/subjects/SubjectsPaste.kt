@@ -3,8 +3,8 @@ package cz.litoj.schlmgr.ui.screen.subjects
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import cz.litoj.schlmgr.app.Startup
 import cz.litoj.schlmgr.app.UiNotice
+import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ROOT_ID
 import cz.litoj.schlmgr.data.ItemRepository
@@ -15,7 +15,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * Cut/reference paste — armed state, placement, follow-up.
+ * The cut and reference paste of the subjects screen.
+ * - it covers the armed state, the placement and the follow-up.
  */
 internal class SubjectsPaste(
 	private val scope: CoroutineScope,
@@ -30,23 +31,21 @@ internal class SubjectsPaste(
 
 		fun clearSelection()
 
-		/** Open chain — paste lands in last. */
+		/** The open chain, where the paste lands in the last entry. */
 		val path: List<DbItem>
 
 		val searching: Boolean
 
-		/** Runs [work] on main. */
 		fun postToUi(work: Runnable)
 
-		/** Re-reads open container — browse only. */
+		/** Re-reads the open container, for a browse list only. */
 		fun reloadContent()
 
-		/** Re-maps shown rows — search only. */
+		/** Re-maps the shown rows, for a search list only. */
 		fun notifyChanged()
 
 		fun refreshInfo()
 
-		/** Re-applies reorder freeze. */
 		fun refreshReorderable()
 	}
 
@@ -68,9 +67,7 @@ internal class SubjectsPaste(
 		host.refreshReorderable()
 	}
 
-	/**
-	 * Arms paste from selection — true means references. See [doPaste].
-	 */
+	/** Arms the paste from the selection, where true means references, see [doPaste]. */
 	fun move(reference: Boolean) {
 		if (host.selectionCount() == 0) return
 		armPaste(PasteData(
@@ -80,15 +77,13 @@ internal class SubjectsPaste(
 		host.clearSelection()
 	}
 
-	/**
-	 * Pastes armed rows into current container. Browse re-reads — search re-maps.
-	 */
+	/** A browse list re-reads, and a search list re-maps. */
 	fun doPaste() {
 		val paste = pasteData ?: return
 		armPaste(null)
 		val np = host.path.lastOrNull()
 		if (np == null) {
-			Startup.showNotice(UiNotice.PasteNoTarget)
+			UserMessages.showNotice(UiNotice.PasteNoTarget)
 			return
 		}
 		val searchNow = host.searching
@@ -97,7 +92,7 @@ internal class SubjectsPaste(
 		scope.launch(io) {
 			val outcome = performPaste(paste.referencing, src, np, searchNow)
 			host.postToUi {
-				outcome.notice?.let(Startup::showNotice)
+				outcome.notice?.let(UserMessages::showNotice)
 				outcome.placements.forEach { (row, placement) -> row.applyPlacement(placement) }
 				if (searchNow) host.notifyChanged() else host.reloadContent()
 				host.refreshInfo()
@@ -105,14 +100,13 @@ internal class SubjectsPaste(
 		}
 	}
 
-	/** Places armed rows into [np] — returns the notice. */
 	private suspend fun performPaste(
 		referencing: Boolean,
 		src: List<PasteSrc>,
 		np: DbItem,
 		searchNow: Boolean,
 	): PasteOutcome {
-		// Skips rows already in target.
+		// skips the rows already in the target.
 		val present = ItemRepository.children(np.id).mapTo(HashSet()) { it.id }
 		var skipped = false
 		var refusedCycle = false
@@ -123,13 +117,13 @@ internal class SubjectsPaste(
 				skipped = true
 				continue
 			}
-			// Parentless row references instead of moving.
+			// a parentless row references instead of moving.
 			val oldParent = armed.oldParent
 			when {
-				// Reference and subject merge refuse on cycle.
+				// a reference and a subject merge refuse on a cycle.
 				referencing || oldParent == null ->
 					if (!ItemRepository.reference(armed.id, np.id)) refusedCycle = true
-				// Cut subject merges whole tree.
+				// a cut subject merges its whole tree.
 				oldParent == ROOT_ID ->
 					if (!ItemRepository.mergeSubject(armed.id, np.id)) refusedCycle = true
 				else -> when (ItemRepository.move(armed.id, oldParent, np.id)) {
@@ -140,7 +134,7 @@ internal class SubjectsPaste(
 				}
 			}
 		}
-		// Moved hit carries new placement for jumps.
+		// a moved hit carries its new placement for jumps.
 		val placements = if (searchNow) moved.map {
 			val fresh = ItemRepository.get(it.id) ?: return@performPaste PasteOutcome(null, emptyList())
 			it.row to it.row.readPlacement(np.id, fresh)

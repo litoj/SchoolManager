@@ -5,16 +5,15 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * Unit tests of the stored-name codecs ([WordNames]): variant expansion
- * (`/` alternatives, `()` groups, escapes), the escaped-field split, and
- * the escape pairs that must not split. The examples come from the
- * original format documentation, so a mismatch means a behavior change.
+ * - the examples come from the original format documentation.
+ * - a mismatch thus means a behavior change.
  */
 class WordNamesTest {
 
 	/**
-	 * Expected outputs verified against the original engine parser (its javadoc
-	 * examples were slightly inaccurate — these are the actual results).
+	 * Expected outputs verified against the original engine parser.
+	 * - the javadoc examples there were slightly inaccurate.
+	 * - these are the actual results.
 	 */
 	@Test
 	fun `the documented variant examples parse`() {
@@ -52,8 +51,8 @@ class WordNamesTest {
 
 	@Test
 	fun `a trailing backslash drops instead of crashing`() {
-		// the parser only runs for names with a `/`. A trailing `\` escapes
-		// nothing at the end of the source
+		// the parser only runs for names with a slash, because a trailing backslash
+		// escapes nothing at the end
 		assertEquals(WordNames.parseVariants("a/b"), WordNames.parseVariants("a/b\\"))
 	}
 
@@ -67,7 +66,7 @@ class WordNamesTest {
 
 	@Test
 	fun `split escaped keeps the variant syntax`() {
-		// `\\` and the `/` stay part of one name — no split, input unchanged
+		// an escaped backslash and the slash stay part of one name, so no split happens
 		assertEquals(
 			listOf("he\\\\/she"),
 			WordNames.splitEscaped("he\\\\/she")
@@ -76,8 +75,8 @@ class WordNamesTest {
 
 	@Test
 	fun `split escaped keeps an escaped backslash`() {
-		// like the file parser, `\\` is an escape pair — a name can hold a
-		// backslash without being cut in two
+		// like the file parser, an escaped backslash is an escape pair, so a name can
+		// hold a backslash without a split
 		assertEquals(
 			listOf("a\\\\b"),
 			WordNames.splitEscaped("a\\\\b")
@@ -86,7 +85,7 @@ class WordNamesTest {
 
 	@Test
 	fun `split escaped splits after an escaped backslash`() {
-		// the escape pair protects only itself — the plain `\` after it still divides
+		// the escape pair protects only itself, so the plain backslash after it still divides
 		assertEquals(
 			listOf("a\\\\b", "c"),
 			WordNames.splitEscaped("a\\\\b\\c")
@@ -100,8 +99,8 @@ class WordNamesTest {
 
 	@Test
 	fun `an empty group drops nothing`() {
-		// `()` carries no alternative — the text after it stays in the
-		// variant it belongs to
+		// an empty group carries no alternative, so the text after it stays in its
+		// variant
 		assertEquals(listOf("a", "b"), WordNames.parseVariants("a/()b"))
 		assertEquals(listOf("a", "b", "c"), WordNames.parseVariants("a/()b/c"))
 		// a trailing empty group or separator is not an empty variant
@@ -111,8 +110,8 @@ class WordNamesTest {
 
 	@Test
 	fun `a stray closing paren is text`() {
-		// the unmatched `)` collapses into the pending variant instead of
-		// discarding everything after it
+		// the unmatched closing parenthesis collapses into the pending variant instead
+		// of discarding everything after it
 		assertEquals(listOf("a d", "b)c d"), WordNames.parseVariants("a/b)c d"))
 	}
 }

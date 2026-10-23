@@ -5,16 +5,16 @@ import cz.litoj.schlmgr.data.db.dao.Counters
 
 /**
  * One import run working set.
- * - merge base preloads once, rows and links flush in bulk at end.
- * - store behind repository merge rule, not copy of it.
+ * - the merge base preloads once, and rows and links flush in bulk at the end.
+ * - the store sits behind the repository merge rule instead of copying it.
  */
 internal class ImportSession private constructor(private val dao: ItemDao) : ItemStore {
 
 	internal companion object {
 		/**
 		 * Loads the merge base of one import.
-		 * - container import — the anchor subject's whole subgraph, once.
-		 * - root import — the root's children, plus a joined subject's scope on demand.
+		 * - a container import loads the whole subgraph of the anchor subject, once.
+		 * - a root import loads the root children, plus a joined subject scope on demand.
 		 * - fresh subjects load no base at all.
 		 */
 		suspend fun load(dao: ItemDao, anchorId: Int): ImportSession {
@@ -30,19 +30,18 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 		}
 	}
 
-	/** Every row of the loaded scopes, by id — new rows as they are created. */
+	/** Every row of the loaded scopes by id, including new rows as they are created. */
 	private val rows = HashMap<Int, DbItem>()
 
 	/** Name -> kind -> candidate row ids. The merge lookups scan these. */
 	private val byName = HashMap<String, HashMap<ItemKind, ArrayList<Int>>>()
 
-	/** Child id -> its incoming links. */
 	private val parents = HashMap<Int, ArrayList<DbLink>>()
 
 	/** Parent id -> its outgoing links, in link order. */
 	private val children = HashMap<Int, ArrayList<DbLink>>()
 
-	/** Parent id -> the child ids linked under it (the [children] fast path). */
+	/** The fast path of [children], so a link check needs no list scan. */
 	private val childIds = HashMap<Int, HashSet<Int>>()
 
 	/** Parent id -> one past the current end of its child list. */
@@ -54,26 +53,24 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 	/** Links to insert, with placeholder ids where they touch new rows. */
 	private val pendingLinks = ArrayList<DbLink>()
 
-	/** Existing rows whose description a merge changed — the flush writes them. */
+	/** Existing rows whose description a merge changed, since the flush writes them. */
 	private val pendingDescriptions = HashMap<Int, DbItem>()
 
-	/** Rows whose counters a merge adopted — the counter phase refreshes their containers. */
+	/** Rows whose counters a merge adopted, since the counter phase refreshes their containers. */
 	internal val adopted = HashSet<Int>()
 
-	/** Next placeholder id — negative, counting down. Real rows are non-negative. */
+	/** Next placeholder id, negative and counting down. Real rows are non-negative. */
 	private var nextPlaceholder = -1
 
-	// ------------------------------------------------------------ lookups
-
-	/** The row behind [id], as the import sees it now (merges update it). */
+	/** The row behind [id], as the import sees it now, with merges applied. */
 	override suspend fun row(id: Int): DbItem? = rows[id]
 
-	/** Whether [id] is a row this session knows — the caller's SQL fallback gate. */
+	/** Whether [id] is a row that this session knows, the SQL fallback gate of the caller. */
 	fun knows(id: Int): Boolean = rows.containsKey(id)
 
 	/**
-	 * The subject containing an item — the nearest ancestor that is a child of
-	 * the root (the item itself included), a breadth-first pick.
+	 * - the item itself is included.
+	 * - the pick is breadth-first.
 	 */
 	override suspend fun subjectRootOf(itemId: Int): Int? {
 		if (isRootChild(itemId)) return itemId
@@ -95,9 +92,10 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 	}
 
 	/**
-	 * The first row of a kind and name that a scope reaches — the in-memory
-	 * form of the DAO's subject-scope lookup. Reachable = the scope sits
-	 * among the row's ancestors, reference links included.
+	 * The first row of a kind and name that [scope] reaches, the in-memory DAO lookup form.
+	 * - bulk adds must merge where live adds merge.
+	 * - plain links come first, so a referenced-in row keeps its home subject.
+	 * - a row without a plain home follows its references to a subject that shows it.
 	 */
 	override suspend fun findInSubject(scope: Int, name: String, kind: ItemKind): DbItem? {
 		val candidates = byName[name]?.get(kind) ?: return null
@@ -110,15 +108,14 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 		children[parentId]?.mapNotNull { rows[it.childId] } ?: emptyList()
 
 	/**
-	 * The plain children of [parentId] in link order — a reference holds no
-	 * name in its parent, the shown content is not the parent's own.
+	 * The plain children of [parentId] in link order.
+	 * A reference holds no name in its parent, since the shown content is not its own.
 	 */
 	private fun plainChildren(parentId: Int): List<DbItem> =
 		children[parentId]?.filter { !it.isReference }?.mapNotNull { rows[it.childId] } ?: emptyList()
 
 	/**
-	 * Whether [rowId] lies in [containerId]'s content — the session's links
-	 * included, so an import's own pending rows answer before the flush.
+	 * The pending rows of an import answer before the flush.
 	 */
 	fun contains(containerId: Int, rowId: Int): Boolean {
 		val seen = HashSet<Int>()
@@ -140,8 +137,8 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 	fun nextPosition(parentId: Int): Int = nextPositions[parentId] ?: 0
 
 	/**
-	 * [id]'s parents, plain links first — the counter refresh walks the first
-	 * one up. A reference parent leads only with no plain parent left.
+	 * The parents of [id], plain links first, and the counter refresh walks the first one up.
+	 * A reference parent leads only when no plain parent is left.
 	 */
 	fun parentsOf(id: Int): List<Int> {
 		val links = parents[id] ?: return emptyList()
@@ -150,9 +147,9 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 	}
 
 	/**
-	 * A container's success/fail derived from the word rows in its subgraph,
-	 * each word once — the in-memory form of the DAO's recursive sum. Plain
-	 * links only, like the SQL: referenced content never counts.
+	 * A container success/fail derived from the word rows in its subgraph, each word once.
+	 * - this is the in-memory form of the recursive sum of the DAO.
+	 * - plain links only, like the SQL, so referenced content never counts.
 	 */
 	fun subgraphWordCounters(containerId: Int): Counters {
 		var passed = 0
@@ -175,21 +172,19 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 		return Counters(passed, failed)
 	}
 
-	// ------------------------------------------------------------ merge writes
-
 	/**
-	 * A container under a parent — the container half of the add merge rule.
-	 * - file counters are never trusted — the counter phase derives them.
-	 * - a top-level merge lazily loads the joined subject's scope.
-	 * - the parent's plain children dedup — a reference shows content, it
-	 *   holds no name in the parent.
+	 * A container under a parent, the container half of the add merge rule.
+	 * - file counters are never trusted, since the counter phase derives them.
+	 * - a top-level merge lazily loads the scope of the joined subject.
+	 * - the plain children of the parent dedup.
+	 * - a reference shows content but holds no name in the parent.
 	 */
 	suspend fun insertContainer(parentId: Int, item: DbItem): DbItem {
 		val existing = plainChildren(parentId)
 			.firstOrNull { it.type == item.type && it.name == item.name }
 		if (existing != null) {
-			// a same-import placeholder has no scope to load — the flush
-			// remaps it, so only a pre-existing row's scope matters here
+			// a same-import placeholder has no scope to load, since the flush
+			// remaps it, so only a pre-existing row scope matters here
 			if (parentId == ROOT_ID && existing.id >= 0) loadScope(existing.id)
 			return mergeDescription(existing, item.description)
 		}
@@ -198,12 +193,11 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 		return row
 	}
 
-	// ------------------------------------------------------------ flush
-
 	/**
-	 * Writes everything the save phases collected — the new rows in one bulk
-	 * insert (with `id = 0`, auto-generated), their links in another, then
-	 * the merged descriptions of existing rows.
+	 * Writes everything the save phases collected.
+	 * - the new rows in one bulk insert with id 0, auto-generated.
+	 * - their links in another insert.
+	 * - then the merged descriptions of existing rows.
 	 */
 	suspend fun flush(): Map<Int, Int> {
 		if (pending.isEmpty() && pendingLinks.isEmpty() && pendingDescriptions.isEmpty())
@@ -221,16 +215,19 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 		return remap
 	}
 
-	// ------------------------------------------------------------ internals
-
 	private fun isRootChild(id: Int): Boolean =
 		parents[id]?.any { it.parentId == ROOT_ID } == true
 
-	/** Whether a scope sits among a row's ancestors (the row itself counts). */
+	/**
+	 * Whether [scope] sits among the ancestors of [rowId], the row included.
+	 * - it mirrors the DAO walk, so a session merge matches a later live one.
+	 * - plain links carry the chain, so a reference cannot move a home-holding row.
+	 * - a row without a plain home follows its references.
+	 */
 	private fun reaches(scope: Int, rowId: Int): Boolean {
 		if (scope == rowId) return true
-		// the root's scope is its direct children — the walk would otherwise span
-		// every subject, merging a bare root word with a subject's word
+		// the root scope is its direct children, since the walk would otherwise span
+		// every subject, merging a bare root word with a subject word
 		if (scope == ROOT_ID) return childIds[ROOT_ID]?.contains(rowId) == true
 		val visited = HashSet<Int>()
 		visited.add(rowId)
@@ -238,7 +235,9 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 		queue.add(rowId)
 		while (queue.isNotEmpty()) {
 			val links = parents[queue.removeFirst()] ?: continue
-			for (link in links) {
+			val plain = links.filter { !it.isReference }
+			// a reference carries the chain only when the row has no plain home
+			for (link in plain.ifEmpty { links }) {
 				val parent = link.parentId
 				if (parent == scope) return true
 				if (visited.add(parent)) queue.add(parent)
@@ -247,7 +246,7 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 		return false
 	}
 
-	/** Inserts [row] as a pending row under a negative placeholder id ([flush] remaps it). */
+	/** Inserts [row] as a pending row under a negative placeholder id, which [flush] remaps. */
 	override suspend fun insert(row: DbItem): DbItem {
 		val placeholder = row.copy(id = nextPlaceholder--)
 		pending.add(placeholder.id)
@@ -255,7 +254,6 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 		return placeholder
 	}
 
-	/** Indexes a just-created row into the session's lookups. */
 	private fun indexRow(row: DbItem) {
 		rows[row.id] = row
 		byName.getOrPut(row.name) { HashMap() }
@@ -263,10 +261,11 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 	}
 
 	/**
-	 * Joins a description into a row — the row object updates in place (a later merge
-	 * in the same import reads the joined value), the database write waits for the
-	 * flush — nothing to write for a pending row, [pendingDescriptions] collects an
-	 * existing one.
+	 * Joins a description into a row.
+	 * - the row object updates in place.
+	 * - a later merge in the same import then reads the joined value.
+	 * - the database write waits for the flush.
+	 * - a pending row writes nothing, and [pendingDescriptions] collects an existing one.
 	 */
 	override suspend fun mergeDescription(row: DbItem, incoming: String?): DbItem {
 		val merged = Descriptions.merge(row.description, incoming)
@@ -277,7 +276,7 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 		return updated
 	}
 
-	/** Writes a row's counters now — merged existing rows bypass the flush. */
+	/** Writes the counters of a row now, since merged existing rows bypass the flush. */
 	private suspend fun writeCounters(row: DbItem, passed: Int, failed: Int) {
 		rows[row.id] = row.copy(passedTests = passed, failedTests = failed)
 		if (row.id >= 0) dao.updateCounters(row.id, passed, failed)
@@ -296,7 +295,6 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 		pendingLinks.add(link)
 	}
 
-	/** Places a reference link of [target] under [parentId] at the end of its list. */
 	fun addReference(parentId: Int, target: Int) {
 		val link = DbLink(parentId, target, nextPosition(parentId), isReference = true)
 		indexLink(link)
@@ -306,9 +304,8 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 	private val loadedScopes = HashSet<Int>()
 
 	/**
-	 * Loads [scopeId]'s whole subgraph and the links touching it — once per
-	 * scope. A second load (a scope shared with an already-loaded one) is a
-	 * no-op.
+	 * Loads the whole subgraph of [scopeId] and the links touching it, once per scope.
+	 * A second load of a shared scope is a no-op.
 	 */
 	private suspend fun loadScope(scopeId: Int) {
 		if (!loadedScopes.add(scopeId)) return
@@ -317,7 +314,7 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 		sortChildren()
 	}
 
-	/** The children lists must match the live per-node query's order. */
+	/** The children lists must match the order of the live per-node query. */
 	private fun sortChildren() {
 		for (list in children.values) {
 			list.sortWith(compareBy({ it.position }, { it.childId }))
@@ -325,7 +322,7 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 		}
 	}
 
-	/** Indexes a loaded row — an already-known id (a shared scope) keeps its row. */
+	/** Indexes a loaded row, where an already-known id such as a shared scope keeps its row. */
 	private fun indexLoadedRow(row: DbItem) {
 		if (rows.containsKey(row.id)) return
 		rows[row.id] = row
@@ -333,13 +330,12 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 			.getOrPut(row.type) { ArrayList() }.add(row.id)
 	}
 
-	/** Indexes a loaded link — an already-known link (a shared scope) is skipped. */
+	/** Indexes a loaded link, and an already-known link such as a shared scope is skipped. */
 	private suspend fun indexLoadedLink(link: DbLink) {
 		if (linked(link.parentId, link.childId)) return
 		indexLink(link)
 	}
 
-	/** Records [link] in every adjacency index — the loads and the new links. */
 	private fun indexLink(link: DbLink) {
 		children.getOrPut(link.parentId) { ArrayList() }.add(link)
 		childIds.getOrPut(link.parentId) { HashSet() }.add(link.childId)
@@ -348,14 +344,13 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 	}
 
 	/**
-	 * The one writer of the next free position per parent — a max-merge, so
-	 * the sorted load and the appended links agree on the end of the list.
+	 * The one writer of the next free position per parent.
+	 * A max-merge lets the sorted load and the appended links agree on the end of the list.
 	 */
 	private fun claimNextPosition(parentId: Int, position: Int) {
 		nextPositions[parentId] = maxOf(nextPositions[parentId] ?: 0, position)
 	}
 
-	/** Re-keys every id-bearing index onto the real ids of [remap]. */
 	private fun remapIndexes(remap: Map<Int, Int>) {
 		if (remap.isEmpty()) return
 		for ((placeholder, real) in remap) {
@@ -366,8 +361,8 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 			for (ids in kinds.values)
 				for (index in ids.indices)
 					remap[ids[index]]?.let { ids[index] = it }
-		// the adopted set feeds the counter phase — its ids must be real
-		// by then, or the phase's row lookups skip them
+		// the adopted set feeds the counter phase, so its ids must be real
+		// by then, or the row lookups of the phase skip them
 		for (id in adopted.toList()) {
 			remap[id]?.let {
 				adopted.remove(id)
@@ -380,7 +375,6 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 		remapNextPositions(remap)
 	}
 
-	/** Rewrites the link objects and keys of [index] onto the real ids. */
 	private fun remapLinksInto(index: HashMap<Int, ArrayList<DbLink>>, remap: Map<Int, Int>) {
 		for ((key, links) in index.toList()) {
 			links.replaceAll { remapLink(it, remap) }

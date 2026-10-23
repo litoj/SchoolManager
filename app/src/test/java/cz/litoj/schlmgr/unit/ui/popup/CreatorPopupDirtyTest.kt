@@ -11,13 +11,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * Unit tests for the unsaved-changes guard ([CreatorPopup.isDirty]) — a fresh
- * dialog is clean, any edit dirties it, and reverting the edit cleans it again.
- *
- * Dialogs register on the shared stack on construction and the teardown
- * clears it, so none leak across tests.
- */
 class CreatorPopupDirtyTest {
 
 	@After

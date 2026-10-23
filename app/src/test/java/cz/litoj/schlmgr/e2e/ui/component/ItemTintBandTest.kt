@@ -20,16 +20,16 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * The success-ratio band spans the row's full height — the height the text
- * column sets, not the cell's own content height. The band is only drawn
- * (no layout filler), so the pin reads the row's rendered pixels: the tint
- * at the very bottom must match the tint at the top, and must not bleed
- * over the whole row.
+ * - the text column sets that height, not the content height of the cell.
+ * - the band is only drawn, with no layout filler.
+ * - the pin thus reads the rendered pixels of the row.
+ * - the tint at the very bottom must match the tint at the top.
+ * - it must not bleed over the whole row.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
-// captureToImage reads real pixels — Robolectric must render with the native
-// graphics pipeline for the row's bitmap to exist
+// captureToImage reads real pixels, so Robolectric must render with the native
+// graphics pipeline for the bitmap of the row to exist
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ItemTintBandTest {
 
@@ -43,7 +43,7 @@ class ItemTintBandTest {
 				item = ItemUiModel(
 					key = "k",
 					position = 1,
-					// a four-line parsed name — the text column towers over the cell
+					// a four-line parsed name, so the text column towers over the cell
 					name = "(an der ersten Stelle)\n(auf dem ersten Platz)" +
 						"\n(und noch eine Zeile)\n(die vierte Zeile)",
 					description = "",

@@ -4,9 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 
-/**
- * App options, backed by the `"settings"` SharedPreferences.
- */
 object AppSettings {
 	private val prefs: SharedPreferences
 		get() = GlobalDependencies.appContext.getSharedPreferences("settings", Context.MODE_PRIVATE)
@@ -22,8 +19,8 @@ object AppSettings {
 	@JvmStatic fun remove(key: String) { prefs.edit { remove(key) } }
 
 	/**
-	 * Writes one string synchronously — for a caller about to die (the
-	 * crash handler). An async write would not land.
+	 * Writes one string synchronously. A caller about to die needs the write to land,
+	 * and an async write would not.
 	 */
 	@JvmStatic fun setNow(key: String, value: String) { prefs.edit(commit = true) { putString(key, value) } }
 }

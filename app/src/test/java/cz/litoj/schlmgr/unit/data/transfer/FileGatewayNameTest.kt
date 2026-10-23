@@ -5,12 +5,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * The source-container name math of a picked word-list file
- * ([FileGateway.containerNameFrom]) — the suffix cut and its fallbacks. The
- * name only labels the parse errors — the content itself lands with no wrapper.
- *
- * Pure JVM — Robolectric's SAF query names no document, so the import workers
- * never reach a real name there.
+ * - the name only labels the parse errors.
+ * - the content itself lands with no wrapper.
+ * - the tests are pure JVM.
+ * - the SAF query of Robolectric names no document, so the workers never see a name.
  */
 class FileGatewayNameTest {
 
@@ -23,7 +21,7 @@ class FileGatewayNameTest {
 	@Test
 	fun `the suffix after the last dot is cut`() {
 		assertEquals("My words", FileGateway.containerNameFrom("My words.txt"))
-		// only the last dot splits — the rest of the name stays whole
+		// only the last dot splits, and the rest of the name stays whole
 		assertEquals("a.b", FileGateway.containerNameFrom("a.b.txt"))
 	}
 

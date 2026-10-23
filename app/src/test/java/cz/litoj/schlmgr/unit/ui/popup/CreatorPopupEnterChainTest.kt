@@ -13,14 +13,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Unit tests of the word editor's Enter chain — the word name leads to the
- * first translation, a translation's name to the next, and the last one
- * confirms (the OK button's commit) instead of adding a row. An accepted
- * confirm of a new word renews the editor for the next one through the Enter
- * chain alone — the OK button closes, like every other accepted commit.
- *
- * Dialogs register on the shared stack on construction and the teardown
- * clears it, so none leak across tests.
+ * - the word name leads to the first translation.
+ * - the name of a translation leads to the next one.
+ * - the last translation confirms through the commit of the OK button.
+ * - an accepted confirm of a new word renews the editor for the next one.
+ * - the OK button closes, like every other accepted commit.
+ * - dialogs register on the shared stack on construction.
+ * - the teardown clears the stack, so none leak across tests.
  */
 class CreatorPopupEnterChainTest {
 

@@ -9,20 +9,16 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * Unit tests for [TestEngine]: the content-selection heuristic (the "clever"
- * mode) and the direction-aware answer matching.
- */
 class TestEngineSelectionTest {
 
 	/**
-	 * A tested word with mutable success stats — a [DbItem] is immutable, so
-	 * the repeated-run simulations update them between rounds. [toEntry]
-	 * snapshots them into the plain rows the engine selects from.
+	 * A tested word with mutable success stats.
+	 * - a [DbItem] is immutable, so the repeated-run simulations update them.
+	 * - [toEntry] snapshots them into the plain rows the engine selects from.
 	 */
 	private class Item(val id: Int, var successes: Int, var fails: Int) {
 
-		/** The word row wrapped in a dummy one-subject chapter path (word last). */
+		/** The word row wrapped in a dummy one-subject chapter path, with the word last. */
 		fun toEntry(): TestEntry {
 			val word = DbItem(
 				id = id,
@@ -42,11 +38,6 @@ class TestEngineSelectionTest {
 		}
 	}
 
-	/**
-	 * Runs the clever selection over the given items.
-	 *
-	 * @return the picked sources, in test order
-	 */
 	private fun select(items: List<Item>, amount: Int): List<TestEntry> {
 		TestEngine.isClever = true
 		val test = TestEngine()
@@ -74,8 +65,8 @@ class TestEngineSelectionTest {
 	}
 
 	/**
-	 * Pins the exact requested amount when sources are plentiful (packs of
-	 * 3+2+2+1+1 fill 10 words).
+	 * Pins the exact requested amount when sources are plentiful.
+	 * - packs of 3+2+2+1+1 fill 10 words.
 	 */
 	@Test
 	fun `the exact requested amount comes from plentiful sources`() {
@@ -89,20 +80,17 @@ class TestEngineSelectionTest {
 		repeat(21) { all.add(Item(id++, 1, 0)) } // mastered filler
 		for (amount in 1..25)
 			assertEquals("wrong size for amount $amount", amount, select(all, amount).size)
-		// clamping — too big or "all" amounts must use everything
+		// clamping, so too big or "all" amounts must use everything
 		assertEquals(all.size, select(all, 999).size)
 		assertEquals(all.size, select(all, -1).size)
 	}
 
-	/**
-	 * When slots are scarce, untested and failing words must be preferred over
-	 * mastered ones.
-	 */
+	/** When slots are scarce, untested and failing words must be preferred over mastered ones. */
 	@Test
 	fun `the neediest words are preferred`() {
-		val fresh = Item(0, 0, 0)      // urgency 5 (untested)
-		val failing = Item(1, 0, 3)    // urgency 2 (0% ratio)
-		val mastered = Item(2, 1, 0)   // urgency -1 (100% ratio)
+		val fresh = Item(0, 0, 0)      // urgency 5, untested
+		val failing = Item(1, 0, 3)    // urgency 2, a ratio of 0%
+		val mastered = Item(2, 1, 0)   // urgency -1, a ratio of 100%
 		val picked = select(listOf(fresh, failing, mastered), 2)
 		assertEquals(2, picked.size)
 		assertTrue(contains(picked, fresh))
@@ -111,9 +99,10 @@ class TestEngineSelectionTest {
 	}
 
 	/**
-	 * Anti-starvation — a word answered correctly on the first try (100% success rate)
-	 * must eventually resurface as other words pile up more tests. Simulates repeated
-	 * test runs, updating stats after each run.
+	 * Anti-starvation.
+	 * - a word answered correctly on the first try must resurface later.
+	 * - other words meanwhile pile up more tests.
+	 * - the test simulates repeated runs and updates the stats after each one.
 	 */
 	@Test
 	fun `mastered words resurface`() {
@@ -141,8 +130,7 @@ class TestEngineSelectionTest {
 	}
 
 	/**
-	 * Equally urgent words should take turns rather than always picking the same
-	 * prefix of the source.
+	 * - the same prefix of the source must not always win.
 	 */
 	@Test
 	fun `equally urgent words take turns`() {
@@ -160,9 +148,9 @@ class TestEngineSelectionTest {
 	}
 
 	/**
-	 * The reversed direction shows the tested word and accepts one of its
-	 * translations, the default direction keeps accepting the word's own name.
-	 * Both compare through the `/()` variant forms.
+	 * The reversed direction shows the tested word and accepts one of its translations.
+	 * - the default direction keeps accepting the name of the word.
+	 * - both compare through the slash variant forms.
 	 */
 	@Test
 	fun `a reversed answer names a translation`() {
@@ -189,10 +177,10 @@ class TestEngineSelectionTest {
 	}
 
 	/**
-	 * A correct answer credits only the translation it named in a reversed test —
-	 * the others fail only when the answer names no correct translation at all.
-	 * The normal direction shows all translations, so a correct word answer
-	 * credits every one of them.
+	 * A correct answer credits only the translation it named in a reversed test.
+	 * - the others fail only when the answer names no correct translation.
+	 * - the normal direction shows all translations.
+	 * - a correct word answer there credits every one of them.
 	 */
 	@Test
 	fun `a reversed answer credits only the named translation`() {
@@ -203,16 +191,16 @@ class TestEngineSelectionTest {
 		TestEngine.isReversed = true
 		try {
 			assertEquals(listOf(dum), TestEngine.creditedTranslations(translations, "dům"))
-			// a `/()` variant of a translation counts as naming it
+			// a slash variant of a translation counts as naming it
 			assertEquals(listOf(dum), TestEngine.creditedTranslations(translations, "domov"))
 			assertEquals(listOf(stavba), TestEngine.creditedTranslations(translations, "stavba"))
-			// an answer naming no translation credits none (the engine fails all)
+			// an answer naming no translation credits none, so the engine fails all
 			assertEquals(emptyList<DbItem>(), TestEngine.creditedTranslations(translations, "house"))
 		} finally {
 			TestEngine.isReversed = false
 		}
 
-		// the normal direction — the translations were the shown prompt, all credited
+		// the normal direction, where the translations were the shown prompt, so all are credited
 		assertEquals(translations, TestEngine.creditedTranslations(translations, "house"))
 	}
 }

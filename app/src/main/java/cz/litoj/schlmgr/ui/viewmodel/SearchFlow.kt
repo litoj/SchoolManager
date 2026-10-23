@@ -1,7 +1,7 @@
 package cz.litoj.schlmgr.ui.viewmodel
 
-import cz.litoj.schlmgr.app.Startup
 import cz.litoj.schlmgr.app.UiNotice
+import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.ui.search.SearchEngine
@@ -12,8 +12,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * Search flow — query field, live run, back-restore snapshot.
- * - host owns list — this class decides search effects.
+ * The search flow: query field, live run and back-restore snapshot.
+ * - the host owns the list, and this class decides the search effects.
  * - mode writes pass through [Host.setSearchUi].
  * - stacked hop marks live search.
  */
@@ -36,7 +36,6 @@ internal class SearchFlow(
 
 		fun remap()
 
-		/** Drops the marks of rows outside the shown list — see [Selection.discard]. */
 		fun discardSelection(rows: List<ItemRow>)
 
 		fun load(content: List<ItemRow>, isSearch: Boolean, isPicker: Boolean)
@@ -83,28 +82,27 @@ internal class SearchFlow(
 	}
 
 	/**
-	 * Searches open container over preloaded index.
-	 * - walk streams in batches — a superseded run never publishes.
+	 * The walk streams in batches, and a superseded run never publishes.
 	 */
 	fun submitSearch(q: String) {
 		host.clearSelection()
 		val path = mutableListOf<DbItem>()
 		path.addAll(history.path)
-		// Stacked hop decides.
+		// a re-run on the same hop must not stack another search entry
 		val alreadySearching = history.onSearchHop()
 		run.abort()
 		val eng = SearchEngine(q)
 		if (!eng.valid) {
-			// Bad regex — the error shows.
+			// an invalid pattern cannot search, so report it and keep the current list
 			val detail = eng.regexError
-			if (detail != null) Startup.showNotice(UiNotice.BadPattern(detail))
+			if (detail != null) UserMessages.showNotice(UiNotice.BadPattern(detail))
 			return
 		}
-		// Live re-run keeps single stacked hop.
+		// a live re-run keeps a single stacked hop.
 		if (!alreadySearching) history.hop(null)
-		// Start empty — batches fill it.
+		// start empty, since batches fill the list.
 		host.load(ArrayList(), isSearch = true, isPicker = false)
-		// New strip starts at zero.
+		// a new strip starts at zero.
 		lastSearchInfo = InfoBar.Search(0, 0)
 		host.publishSearchInfoCollapsed(lastSearchInfo)
 		run.start(eng, path)
@@ -127,8 +125,7 @@ internal class SearchFlow(
 	}
 
 	/**
-	 * Leaves flow — aborts run, unwinds hops, restores browse list.
-	 * - [reload] off skips load — the caller loads itself.
+	 * A false [reload] skips the load, since the caller loads itself.
 	 */
 	internal fun leaveSearchFlow(reload: Boolean = true) {
 		searchInput.cancelPending()
@@ -151,13 +148,13 @@ internal class SearchFlow(
 	}
 
 	/**
-	 * Re-shows last results after back onto stacked run.
-	 * @return true when restored — the caller skips the browse load.
+	 * Re-shows the last results after a back press onto a stacked run.
+	 * @return true when restored, since the caller then skips the browse load
 	 */
 	fun restoreSearch(): Boolean {
-		// Mode decides, not variant.
+		// the mode decides, not the variant.
 		if (host.searchUi() == SearchUi.RESULTS || lastSearchRows.isEmpty() || !history.onSearchHop()) return false
-		// Pending browse read must not land over search strip.
+		// a pending browse read must not land over the search strip.
 		host.cancelPendingInfoRead()
 		host.discardSelection(lastSearchRows)
 		host.load(lastSearchRows, isSearch = true, isPicker = host.pickerMode())
@@ -166,30 +163,27 @@ internal class SearchFlow(
 		return true
 	}
 
-	/**
-	 * Re-reads shown search rows in place after mutation.
-	 * - reads run on [io].
-	 */
+	/** The reads run on [io]. */
 	fun refreshSearchRows() {
-		// Snapshot on main — the ids travel.
+		// snapshot on main, since the ids travel.
 		val rows = host.models.toList()
 		val ids = rows.map { it.item.id }
 		scope.launch {
 			val fresh = withContext(io) {
 				ids.map { id ->
 					val row = ItemRepository.get(id)
-					// a translation hit's flip content is its words
+					// the flip content of a translation hit is its words
 					row to (row?.let(ItemRow::flipContentOf) ?: emptyList())
 				}
 			}
-			// Apply on main — gone rows leave the list.
+			// apply on main, since gone rows leave the list.
 			val dead = ArrayList<ItemRow>()
 			rows.forEachIndexed { i, row ->
 				val (f, content) = fresh[i]
 				if (f == null) dead.add(row) else row.applyFresh(f, content)
 			}
 			if (dead.isNotEmpty()) host.removeRows(dead) else host.remap()
-			// Count follows drop.
+			// the count follows the drop.
 			host.refreshInfo()
 		}
 	}

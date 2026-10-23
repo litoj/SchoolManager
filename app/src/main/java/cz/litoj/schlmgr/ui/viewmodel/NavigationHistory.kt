@@ -6,9 +6,9 @@ val mainHistory = NavigationHistory()
 
 /**
  * The navigation history of the explorer list.
- * - [path]: the displayed container chain (root first, open container last).
-	 * - [onePath]: how many hops the current entry stacks — descent and search alike.
- * - a fresh instance is a valid empty position ([onePath] holds its base 0).
+ * - [path] holds the displayed container chain, root first and open container last.
+ * - [onePath] counts the hops the current entry stacks, descent and search alike.
+ * - a fresh instance is a valid empty position, where [onePath] holds its base 0.
  */
 class NavigationHistory {
 	var path: MutableList<DbItem> = mutableListOf()
@@ -19,8 +19,8 @@ class NavigationHistory {
 
 	/**
 	 * Kinds of the stacked same-path hops, oldest first.
-	 * - `true` = a descent (grew [path] by one).
-	 * - `false` = a search run (left [path] alone).
+	 * - true means a descent, which grew [path] by one.
+	 * - false means a search run, which left [path] alone.
 	 */
 	private val hopDescents = mutableListOf<Boolean>()
 
@@ -31,8 +31,7 @@ class NavigationHistory {
 	}
 
 	/**
-	 * Extends the current entry: [item] descends one level, `null` stacks
-	 * a search hop.
+	 * Extends the current entry: [item] descends one level, and null stacks a search hop.
 	 */
 	fun hop(item: DbItem?) {
 		if (item != null) path.add(item)
@@ -41,10 +40,10 @@ class NavigationHistory {
 	}
 
 	/**
-	 * Replaces the current entry's path without pushing a history entry —
-	 * a sibling switch (the explorer's horizontal swipe) is the same step
-	 * with its endpoint moved, so a back press pops the whole entry to the
-	 * previous path (a level up), not to the pre-switch sibling.
+	 * Replaces the path of the current entry without pushing a history entry.
+	 * - a sibling switch, the horizontal swipe of the explorer, is the same step.
+	 * - its endpoint moves, so a back press pops the whole entry to the previous path.
+	 * - that is a level up, not the pre-switch sibling.
 	 */
 	fun replaceCurrent(newPath: MutableList<DbItem>) {
 		path = newPath
@@ -52,20 +51,18 @@ class NavigationHistory {
 
 	/**
 	 * Pops one navigation step.
-	 * - a descent hop unwinds one path element — a search hop leaves the
-	 *   path alone.
+	 * - a descent hop unwinds one path element, and a search hop leaves the path alone.
 	 *
-	 * @return `true` when a hop was popped (a search hop leaves the caller
-	 *   in place, while a descent hop goes one level up — the caller reloads),
-	 *   `false` when an entry boundary was crossed
+	 * @return true when a hop was popped, or false when an entry boundary was crossed
+	 * - a search hop leaves the caller in place.
+	 * - a descent hop goes one level up, so the caller reloads.
 	 */
 	fun remove(): Boolean {
 		var ret: Boolean
 		if (onePath.last() > 0) {
 			onePath[onePath.lastIndex]--
-			// `removeAt(lastIndex)`, not `removeLast()`: the latter binds to the
-			// JDK 21 `java.util.List.removeLast`, which no Android version below
-			// 35 has
+			// removeAt on the last index, not removeLast: the latter binds to the JDK 21
+			// java.util.List.removeLast, which no Android version below 35 has
 			if (hopDescents.removeAt(hopDescents.lastIndex)) path.removeAt(path.lastIndex)
 			ret = true
 		} else {
@@ -82,17 +79,17 @@ class NavigationHistory {
 	}
 
 	/**
-	 * Pops the search hops stacked on top (they added no path element), stopping
-	 * at the first descent hop. The path is left unchanged.
+	 * Pops the search hops stacked on top, which added no path element.
+	 * - it stops at the first descent hop, and the path stays unchanged.
 	 */
 	fun removeSearchHops() {
 		while (onePath.last() > 0 && hopDescents.lastOrNull() == false) remove()
 	}
 
 	/**
-	 * Whether the position the last [remove] landed on is a stacked search run —
-	 * i.e. the screen being returned to was the search-result list, so the screen
-	 * restores it instead of loading the container's browse contents.
+	 * Whether the position the last [remove] landed on is a stacked search run.
+	 * - that means the screen being returned to was the search-result list.
+	 * - it then restores it instead of loading the browse contents of the container.
 	 */
 	fun onSearchHop(): Boolean =
 		onePath.last() > 0 && hopDescents.lastOrNull() == false

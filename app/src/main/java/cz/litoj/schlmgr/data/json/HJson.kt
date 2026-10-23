@@ -19,7 +19,6 @@ class JsonTranslation(
 	var failedTests: Int = 0,
 )
 
-/** One child entry of a chapter — a word, a note, a chapter or a reference. */
 sealed interface JsonChild
 
 class JsonWord(
@@ -34,9 +33,7 @@ class JsonWord(
 class JsonNote(var name: String, var description: String? = null) : JsonChild
 
 /**
- * One chapter node of the tree JSON file — its children in one ordered list.
- * No counters: a container's are derived from its words, so the format
- * carries none.
+ * The format carries no counters, since a container derives them from its words.
  */
 class JsonChapter(
 	var name: String,
@@ -46,27 +43,24 @@ class JsonChapter(
 }
 
 /**
- * A reference child — the target's path: an exported root's name, the
- * containers below it, the target's name last. The root alone names the root itself.
- *
- * Resolved once every row of the import is saved.
+ * - an exported root name comes first, then the containers below it.
+ * - the name of the target comes last, and the root alone names the root itself.
+ * - the path resolves once every row of the import is saved.
  */
 class JsonRef(val path: List<String>) : JsonChild
 
 /**
- * The tree JSON export (HJSON) — human-editable, carries the success counters
- * the `.txt` word list drops.
- * - one node shape everywhere: `children` marks a chapter (always written), `translations` a word.
- * - `ref` is a reference entry; neither is a note.
- * - the file is a list of entries landing in the import target — one object is a one-item array.
- * - pure codec — no database. The repository feeds it.
+ * The tree JSON export in HJSON form, human-editable.
+ * - it carries the success counters that the txt word list drops.
+ * - one node shape everywhere: children marks a chapter, translations a word.
+ * - ref marks a reference entry, and neither key marks a note.
+ * - the file is a list of entries landing in the import target.
+ * - pure codec, no database, and the repository feeds it.
  */
 object JsonWordList {
 
 	/**
-	 * Writes [chapters] as HJSON.
-	 * - one object for a single chapter, an array for several.
-	 * - the caller owns the tree — the exporter converts its stream into it.
+	 * - the caller owns the tree, and the exporter converts its stream into it.
 	 * - tests build it by hand.
 	 */
 	@JvmStatic
@@ -77,9 +71,7 @@ object JsonWordList {
 	}
 
 	/**
-	 * Parses HJSON or plain JSON into the file's entries. Accepts one object
-	 * or an array of them and always returns a list — one object is a
-	 * one-item array.
+	 * - it always returns a list, so one object is a one-item array.
 	 *
 	 * @throws IllegalArgumentException when the text is malformed or a value has the wrong type
 	 */
@@ -96,8 +88,6 @@ object JsonWordList {
 			else -> throw IllegalArgumentException("JSON root: expected an object or an array")
 		}
 	}
-
-	// ------------------------------------------------------------ writing
 
 	private fun chapterValue(chapter: JsonChapter): JsonObject {
 		val obj = JsonObject()
@@ -141,9 +131,8 @@ object JsonWordList {
 	}
 
 	/**
-	 * The shared `name`/`desc` fields and the counters a tested row carries —
-	 * unset optionals are omitted so the file stays clean. A re-import fills
-	 * them with the defaults.
+	 * - unset optionals are omitted, so the file stays clean.
+	 * - a re-import fills them with the defaults.
 	 */
 	private fun putCommon(
 		obj: JsonObject, name: String, description: String?,
@@ -155,11 +144,9 @@ object JsonWordList {
 		if (failedTests != 0) obj.add("f", failedTests)
 	}
 
-	// ------------------------------------------------------------ reading
-
 	private fun parseEntry(value: JsonValue, path: String): JsonChild {
 		val obj = asObject(value, path)
-		// the retired save format — its split keys lost the order and never
+		// the retired save format, whose split keys lost the order and never
 		// held notes, so a re-export from the database is the only fix
 		if (hasKey(obj, "words") || hasKey(obj, "chapters"))
 			throw IllegalArgumentException(
@@ -264,20 +251,20 @@ object JsonWordList {
 	}
 }
 
-/** The parser message without its own trailing "at line:col" suffix. */
+/** The parser message without its trailing "at line:col" suffix. */
 internal fun ParseException.describe(): String {
 	val reason = message?.substringBeforeLast(" at ") ?: "malformed input"
 	return "JSON line $line, column $column: $reason"
 }
 
 /**
- * The tree JSON format as an import source — the parsed file as a
- * [StreamItem] stream plus the reference entries as [StreamReference]s
- * (see [DataImporter]).
+ * - the reference entries arrive as [StreamReference]s.
+ * - see [DataImporter] for the stream contract.
  * - every top-level item lands in the import target as it is.
- * - a chapter becomes a subject at the root; a word or note joins the open container's rows.
- * - references resolve against saved rows after every item — a path may name rows reached later.
- * - a container's stored counters never enter the stream — only word/translation counters travel.
+ * - a chapter becomes a subject at the root, and a word or note joins the open container rows.
+ * - references resolve against saved rows after every item, so a path may name rows reached later.
+ * - the stored counters of a container never enter the stream.
+ * - only word and translation counters travel.
  */
 class HJsonImporter(text: String) : DataImporter {
 	override val items: List<StreamItem>
@@ -287,8 +274,8 @@ class HJsonImporter(text: String) : DataImporter {
 		val out = ArrayList<StreamItem>()
 		val refs = ArrayList<StreamReference>()
 		for (entry in JsonWordList.parse(text)) when (entry) {
-			// a reference names a target for a parent chapter of the file —
-			// the top level itself is no parent
+			// a reference names a target for a parent chapter of the file,
+			// since the top level itself is no parent
 			is JsonRef -> throw IllegalArgumentException(
 				"a reference needs a parent chapter in the file")
 			is JsonChapter -> addChapter(out, refs, entry, null)
@@ -332,8 +319,8 @@ class HJsonImporter(text: String) : DataImporter {
 class HJsonExporter : DataExporter {
 	override fun render(items: List<StreamItem>): String {
 		val childrenOf = StreamBuilder.childrenOf(items)
-		// the format's top level is chapters — a word or note root has no
-		// node and is skipped, not converted
+		// the top level of the format is chapters, so a word or note root
+		// has no node and is skipped, not converted
 		return JsonWordList.writeChapters(
 			items.filter { it.parent == null && it.item.type == ItemKind.CHAPTER }
 				.map { chapterOf(it, childrenOf) })
@@ -342,7 +329,7 @@ class HJsonExporter : DataExporter {
 	private fun chapterOf(item: StreamItem, childrenOf: Map<StreamItem, List<StreamItem>>): JsonChapter {
 		val chapter = JsonChapter(item.item.name, item.item.description.ifEmpty { null })
 		for (child in childrenOf[item] ?: emptyList()) when {
-			// a reference names its target — the plain home holds the row
+			// a reference names its target, and the plain home holds the row
 			child.refPath != null -> chapter.entries.add(JsonRef(child.refPath!!))
 			child.item.type == ItemKind.WORD -> chapter.entries.add(wordOf(child, childrenOf))
 			child.item.type == ItemKind.CHAPTER -> chapter.entries.add(chapterOf(child, childrenOf))

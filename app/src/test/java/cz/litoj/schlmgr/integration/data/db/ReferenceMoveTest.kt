@@ -16,17 +16,14 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The paste operations ([ItemRepository.reference], [ItemRepository.move]) on a real
- * in-memory database:
- * - any item can be referenced, a chapter included — its content shows in the new
- *   container through the link alone.
- * - nothing is placed into itself or into its own content — that link would close a
- *   cycle the graph walks could not leave.
- * - an item can still move into its own ancestor — a harmless reparent.
- * - a linked word's test counters follow it — a move refreshes both the
- *   losing and the gaining chain.
- * - a reference never counts — the referenced content shows in a container,
- *   its tests never enter its stored rate.
+ * - any item can be referenced, a chapter included.
+ * - a referenced chapter shows its content through the link alone.
+ * - nothing is placed into itself or into its own content.
+ * - such a link would close a cycle that the graph walks could not leave.
+ * - an item can still move into its own ancestor, a harmless reparent.
+ * - the test counters of a linked word follow it through a move.
+ * - a move refreshes both the losing and the gaining chain.
+ * - a reference never counts, so its tests never enter its stored rate.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -57,7 +54,6 @@ class ReferenceMoveTest {
 
 		assertTrue(ItemRepository.reference(c1.id, c2.id))
 
-		// the chapter shows in the new container and its content comes with it
 		assertTrue(ItemRepository.linkIsReference(c2.id, c1.id))
 		assertEquals(listOf("c1"), ItemRepository.children(c2.id).map { it.name })
 		assertEquals(listOf("dog"),
@@ -70,10 +66,10 @@ class ReferenceMoveTest {
 		val outer = ItemRepository.createChapter(subject.id, "outer", null)
 		val inner = ItemRepository.createChapter(outer.id, "inner", null)
 
-		// a reference would close a cycle — into itself and into its own child
+		// a reference would close a cycle, into itself and into its own child
 		assertFalse(ItemRepository.reference(outer.id, outer.id))
 		assertFalse(ItemRepository.reference(outer.id, inner.id))
-		// a move would close a cycle too — the existing link stays
+		// a move would close a cycle too, so the existing link stays
 		assertEquals(ItemRepository.MoveResult.REFUSED_CYCLE, ItemRepository.move(outer.id, subject.id, inner.id))
 		assertEquals(listOf("outer"), ItemRepository.children(subject.id).map { it.name })
 		assertEquals(listOf("inner"), ItemRepository.children(outer.id).map { it.name })
@@ -85,7 +81,7 @@ class ReferenceMoveTest {
 		val outer = ItemRepository.createChapter(subject.id, "outer", null)
 		val inner = ItemRepository.createChapter(outer.id, "inner", null)
 
-		// the target is an ancestor of the moved item — a reparent, not a cycle
+		// the target is an ancestor of the moved item, a reparent, not a cycle
 		assertEquals(ItemRepository.MoveResult.MOVED, ItemRepository.move(inner.id, outer.id, subject.id))
 		assertEquals(listOf("outer", "inner"), ItemRepository.children(subject.id).map { it.name })
 	}
@@ -98,7 +94,7 @@ class ReferenceMoveTest {
 		val word = ItemRepository.createWord(c1.id, "w", null, listOf("t" to (null as String?)))
 		assertTrue(ItemRepository.reference(word.id, c2.id))
 
-		// no crash on the duplicate link — the row is simply already there
+		// no crash on the duplicate link, because the row is already there
 		assertEquals(ItemRepository.MoveResult.ALREADY_PRESENT, ItemRepository.move(word.id, c1.id, c2.id))
 		assertEquals(listOf(word.id), ItemRepository.children(c1.id).map { it.id })
 		assertEquals(listOf(word.id), ItemRepository.children(c2.id).map { it.id })
@@ -112,7 +108,7 @@ class ReferenceMoveTest {
 		val word = ItemRepository.createWord(c1.id, "w", null, listOf("t" to (null as String?)))
 		assertTrue(ItemRepository.reference(word.id, c2.id))
 
-		// idempotent — the second reference reports placed and adds no link
+		// it is idempotent, so the second reference reports placed and adds no link
 		assertTrue(ItemRepository.reference(word.id, c2.id))
 		assertEquals(2, ItemRepository.parentIds(word.id).size)
 	}
@@ -126,8 +122,8 @@ class ReferenceMoveTest {
 		assertTrue(ItemRepository.reference(word.id, c2.id))
 
 		val links = ItemRepository.childLinksOf(c1.id)
-		// the word's parents — c1 plain, c2 reference, nothing deeper
-		// than the direct children leaks in
+		// the parents of the word: c1 plain and c2 a reference, with nothing
+		// deeper than the direct children
 		assertEquals(setOf(c1.id, c2.id), links.filter { it.childId == word.id }.map { it.parentId }.toSet())
 		assertTrue(links.all { it.childId == word.id })
 	}
@@ -143,10 +139,9 @@ class ReferenceMoveTest {
 
 		assertTrue(ItemRepository.reference(word.id, c2.id))
 
-		// the reference shows content, never tests — c2 keeps its own sums
+		// the reference shows content and never tests, so c2 keeps its own sums
 		assertEquals(0, ItemRepository.get(c2.id)!!.failedTests)
 		assertEquals(0, ItemRepository.get(c2.id)!!.passedTests)
-		// the plain home keeps its derivation
 		assertEquals(1, ItemRepository.get(c1.id)!!.failedTests)
 	}
 
@@ -154,7 +149,7 @@ class ReferenceMoveTest {
 	fun `a referencing parent never gains the referenced tests, the root never does`() {
 		val subject = ItemRepository.createSubject("s", null)
 		val c = ItemRepository.createChapter(subject.id, "c", null)
-		// d references c — c's content shows in d, its tests never count there
+		// d references c, so the content of c shows in d and its tests never count there
 		val d = ItemRepository.createChapter(subject.id, "d", null)
 		assertTrue(ItemRepository.reference(c.id, d.id))
 		val w1 = ItemRepository.createWord(c.id, "w1", null, listOf("t" to (null as String?)))
@@ -162,18 +157,17 @@ class ReferenceMoveTest {
 
 		// d shows w1 through the link but keeps its own empty sums
 		assertEquals(0, ItemRepository.get(d.id)!!.failedTests)
-		// the plain chain carries the fail
 		assertEquals(1, ItemRepository.get(subject.id)!!.failedTests)
 
-		// a word joins c through a reference — no stored sum changes above
+		// a word joins c through a reference, so no stored sum changes above
 		val outside = ItemRepository.createChapter(subject.id, "outside", null)
 		val w3 = ItemRepository.createWord(outside.id, "w3", null, listOf("t" to (null as String?)))
 		ItemRepository.bumpCounters(listOf(subject.id, outside.id, w3.id), true)
 		assertTrue(ItemRepository.reference(w3.id, c.id))
 		assertEquals(0, ItemRepository.get(c.id)!!.passedTests)
 		assertEquals(1, ItemRepository.get(subject.id)!!.passedTests)
-		// the invisible root row keeps its counters — the whole-database
-		// sum writes nowhere
+		// the invisible root row keeps its counters, so the whole-database sum
+		// writes nowhere
 		assertEquals(0, ItemRepository.get(ROOT_ID)!!.failedTests)
 		assertEquals(0, ItemRepository.get(ROOT_ID)!!.passedTests)
 	}
@@ -188,8 +182,8 @@ class ReferenceMoveTest {
 
 		assertEquals(ItemRepository.MoveResult.MOVED, ItemRepository.move(word.id, c1.id, c2.id))
 
-		// the word's tests left the source parent's derivation and joined the
-		// target's
+		// the tests of the word left the derivation of the source parent and joined
+		// the one of the target
 		assertEquals(0, ItemRepository.get(c1.id)!!.failedTests)
 		assertEquals(1, ItemRepository.get(c2.id)!!.failedTests)
 	}
@@ -206,8 +200,8 @@ class ReferenceMoveTest {
 
 		assertEquals(ItemRepository.MoveResult.MOVED, ItemRepository.move(word.id, a2.id, b2.id))
 
-		// the losing chain drops the word, the gaining one takes it, and the
-		// shared subject meets both deltas — its sum stays
+		// the losing chain drops the word, the gaining one takes it, and the shared
+		// subject meets both deltas, so its sum stays
 		assertEquals(0, ItemRepository.get(a2.id)!!.failedTests)
 		assertEquals(0, ItemRepository.get(a1.id)!!.failedTests)
 		assertEquals(1, ItemRepository.get(b2.id)!!.failedTests)
@@ -227,7 +221,6 @@ class ReferenceMoveTest {
 
 		assertEquals(ItemRepository.MoveResult.MOVED, ItemRepository.move(inner.id, a1.id, b1.id))
 
-		// the whole subtree's sums trade one chain for the other
 		assertEquals(0, ItemRepository.get(a1.id)!!.passedTests)
 		assertEquals(1, ItemRepository.get(b1.id)!!.passedTests)
 		assertEquals(1, ItemRepository.get(subject.id)!!.passedTests)
@@ -241,15 +234,15 @@ class ReferenceMoveTest {
 		val a2 = ItemRepository.createChapter(mid.id, "a2", null)
 		val b1 = ItemRepository.createChapter(subject.id, "b1", null)
 		val word = ItemRepository.createWord(a1.id, "w", null, listOf("t" to (null as String?)))
-		// a second plain holder — the word stays reachable through it
+		// a second plain holder, so the word stays reachable through it
 		ItemRepository.legacyLinkAtEnd(a2.id, word.id)
 		ItemRepository.recomputeCounters(a2.id)
 		ItemRepository.bumpCounters(listOf(word.id, subject.id, mid.id, a1.id, a2.id), false)
 
 		assertEquals(ItemRepository.MoveResult.MOVED, ItemRepository.move(word.id, a1.id, b1.id))
 
-		// the word left a1 and joined b1 but never left a2 — a plain delta
-		// would have deducted it from mid's and the subject's sums
+		// the word left a1 and joined b1 but never left a2, so a plain delta would
+		// have deducted it from the sums of mid and the subject
 		assertEquals(0, ItemRepository.get(a1.id)!!.failedTests)
 		assertEquals(1, ItemRepository.get(a2.id)!!.failedTests)
 		assertEquals(1, ItemRepository.get(mid.id)!!.failedTests)
@@ -267,7 +260,6 @@ class ReferenceMoveTest {
 
 		ItemRepository.remove(word.id, c2.id)
 
-		// the word's tests leave every container above it
 		assertEquals(0, ItemRepository.get(c2.id)!!.failedTests)
 		assertEquals(0, ItemRepository.get(c1.id)!!.failedTests)
 		assertEquals(0, ItemRepository.get(subject.id)!!.failedTests)
@@ -285,7 +277,7 @@ class ReferenceMoveTest {
 
 		ItemRepository.remove(word.id, a1.id)
 
-		// the word left a1 only — it stays in a2, so no sum above drops it
+		// the word left a1 only, because it stays in a2, so no sum above drops it
 		assertEquals(0, ItemRepository.get(a1.id)!!.failedTests)
 		assertEquals(1, ItemRepository.get(a2.id)!!.failedTests)
 		assertEquals(1, ItemRepository.get(subject.id)!!.failedTests)
@@ -299,13 +291,13 @@ class ReferenceMoveTest {
 		val word = ItemRepository.createWord(c1.id, "w", null, listOf("t" to (null as String?)))
 		val own = ItemRepository.createWord(c2.id, "own", null, listOf("t" to (null as String?)))
 		assertTrue(ItemRepository.reference(word.id, c2.id))
-		// both chapters carry their own plain words' tests
+		// both chapters carry the tests of their own plain words
 		ItemRepository.bumpCounters(listOf(word.id, subject.id, c1.id), false)
 		ItemRepository.bumpCounters(listOf(own.id, subject.id, c2.id), false)
 
 		ItemRepository.remove(word.id, c2.id)
 
-		// the severed reference never counted — no stored sum moves
+		// the severed reference never counted, so no stored sum moves
 		assertEquals(1, ItemRepository.get(c1.id)!!.failedTests)
 		assertEquals(1, ItemRepository.get(c2.id)!!.failedTests)
 		assertEquals(2, ItemRepository.get(subject.id)!!.failedTests)

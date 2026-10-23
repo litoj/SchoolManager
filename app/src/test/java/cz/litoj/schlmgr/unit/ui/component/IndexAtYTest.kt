@@ -7,22 +7,15 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
- * Unit tests for the pure finger-to-row mapping ([indexAtY]).
- * - the finger's row, the first row above the viewport, the last row only at
- *   the bottom edge.
- * - nothing for a gap or under a short list.
- * - three rows at non-zero indices prove the mapping returns the row's own
- *   index, not its position in the visible window.
- * - select auto-scroll is not covered — it lives in the gesture loop
- *   ([rememberListDragModifier] steps the selection while scrolling), so
- *   it needs a composed list.
+ * - the mapping returns the own index of the row, not the visible position.
+ * - select auto-scroll is not covered, because it lives in the gesture loop.
+ * - that case needs a composed list.
  */
 class IndexAtYTest {
 
 	private val viewportHeight = 1000f
 	private val zone = 100f
 
-	/** Three 100px rows at the top of a viewport with room to spare under them. */
 	private val rows = listOf(
 		RowGeometry(index = 5, offset = 0, size = 100),
 		RowGeometry(index = 6, offset = 100, size = 100),

@@ -6,11 +6,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * Unit tests for [widestPosition] — the position whose text takes the most
- * horizontal space among `1..maxPosition`, given a pixel width per digit. The
- * width, not the value, decides — the largest position is not always the
- * widest, the tie goes to the largest of equally wide positions, and the
- * randomized case is checked against a brute-force walk of every position.
+ * Unit tests for [widestPosition], the position whose text takes the most
+ * horizontal space among 1..maxPosition.
+ * - the tie goes to the largest of equally wide positions.
  */
 class WidestPositionTest {
 
@@ -29,13 +27,13 @@ class WidestPositionTest {
 
 	@Test
 	fun `a wide digit below the limit wins within the same length`() {
-		// only 4 is wide — 44 (40) beats 49 (25)
+		// only 4 is wide, so 44 with 40 beats 49 with 25
 		assertEquals(44, widestPosition(49) { if (it == 4) 20 else 5 })
 	}
 
 	@Test
 	fun `a short number wins when the leading digits are narrow`() {
-		// 1 and 0 narrow — 999 (60) beats 1000 (8) even though it is shorter
+		// 1 and 0 are narrow, so 999 with 60 beats 1000 with 8 even though it is shorter
 		assertEquals(999, widestPosition(1000) { if (it < 2) 2 else 20 })
 	}
 
@@ -47,18 +45,17 @@ class WidestPositionTest {
 			val max = random.nextInt(1, 2000)
 			fun width(n: Int) = n.toString().sumOf { widths[it - '0'] }
 			val widest = (1..max).maxOf(::width)
-			// the largest of the equally wide ones — the documented tie-break
+			// the largest of the equally wide ones, the documented tie-break
 			val expected = (1..max).filter { width(it) == widest }.max()
 			assertEquals(expected, widestPosition(max) { widths[it] })
 		}
 	}
 
 	/**
-	 * Exhaustive cross-check — every N in 1..3000 under seven width profiles
-	 * (tabular, dips, dominance-breaking, seeded random). The brute force runs
-	 * incrementally (one width per N), so the whole table costs milliseconds,
-	 * and it checks the tie-break too — largest of equally wide positions, as
-	 * [widestPosition] documents.
+	 * Exhaustive cross-check of every N in 1..3000 under seven width profiles.
+	 * - the brute force runs incrementally, with one width per N.
+	 * - the whole table thus costs milliseconds.
+	 * - it checks the tie-break too, the largest of equally wide positions.
 	 */
 	@Test
 	fun `matches brute force for every position up to 3000`() {

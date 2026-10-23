@@ -18,10 +18,8 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The row display state transitions ([ItemRow] construction, [ItemRow.flip],
- * [ItemRow.update], [ItemRow.setNew]): a word's display follows the
- * `defFlip` static and the flip state, a non-word row never flips. These pin
- * the assembly so a refactor of it must keep every outcome.
+ * - the display of a word follows the defFlip static and the flip state.
+ * - a non-word row never flips.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -40,7 +38,7 @@ class ItemRowDisplayTest {
 			.build()
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
-		// raw names — the parser's join behaviour has its own unit test
+		// raw names, because the join behaviour of the parser has its own unit test
 		ItemRow.parse = false
 	}
 
@@ -51,7 +49,6 @@ class ItemRowDisplayTest {
 		db.close()
 	}
 
-	/** A subject with one word carrying two translations, one with a description. */
 	private fun wordWithTranslations(): Pair<Int, DbItem> {
 		val subject = ItemRepository.createSubject("subject", null)
 		val word = ItemRepository.createWord(

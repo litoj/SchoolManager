@@ -22,14 +22,15 @@ import cz.litoj.schlmgr.ui.popup.MessagePopup
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 
 /**
- * The explorer content of the subjects screen — the scaffold with its
- * action strip and the floating New button, under the sibling swipe.
+ * The explorer content of the subjects screen.
+ * - the scaffold holds the action strip and the floating New button.
+ * - the sibling swipe sits over all of it.
  */
 @Composable
 internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifier = Modifier) {
 	val state by viewModel.state.collectAsStateWithLifecycle()
 	val listState by viewModel.listState.collectAsStateWithLifecycle()
-	// Horizontal swipe switches sibling.
+	// a horizontal swipe switches to the sibling.
 	val swipeThreshold = with(LocalDensity.current) { 40.dp.toPx() }
 	val searching = listState.variant == ExplorerRowVariant.Search
 	var swipe by remember { mutableFloatStateOf(0f) }
@@ -62,7 +63,6 @@ internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifie
 				listState.anySelected -> SelectionActionBar(
 					editEnabled = listState.singleSelected,
 					onTest = viewModel::prepareTest,
-					// a hit's cut is ambiguous — the search strip goes to its location instead
 					onCut = if (searching) null else ({ viewModel.move(false) }),
 					onEdit = viewModel::onEditAction,
 					onDelete = viewModel::onDeleteAction,
@@ -77,7 +77,7 @@ internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifie
 	}
 }
 
-/** Row intents — hits carry `trackPath`. Selection tap toggles. */
+/** The row intents, where hits carry their track path and a selection tap toggles. */
 private fun mainCallbacks(viewModel: MainExplorerViewModel, selectionActive: Boolean): ItemListCallbacks =
 	ItemListCallbacks(
 		onItemClick = { ui ->

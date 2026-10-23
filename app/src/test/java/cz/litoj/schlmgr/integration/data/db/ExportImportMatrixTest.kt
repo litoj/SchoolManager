@@ -27,17 +27,8 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * Every export kind round trips through every import anchor — the
- * repository's export takes a subject, a deep chapter or several selected
- * chapters, the import lands at the root or inside an open container. The
- * graph under test holds every row kind and every reference shape: a word
- * under the subject, a word under a chapter, a reference whose entry
- * precedes its home, a chapter referenced under a chapter.
- * - the real NJ fixture closes the matrix: the whole-database root export
- *   comes back with the same rows and links.
- *
- * The one documented fallback is pinned too: a reference whose home lies
- * outside the export writes its content in place, or the save would lose it.
+ * - a reference whose home lies outside the export writes its content in place.
+ * - without that fallback the save would lose the content.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -61,7 +52,6 @@ class ExportImportMatrixTest {
 		db.close()
 	}
 
-	/** Closes the export-side database and installs a fresh empty one. */
 	private fun freshDatabase() {
 		db.close()
 		val app = RuntimeEnvironment.getApplication()
@@ -72,13 +62,6 @@ class ExportImportMatrixTest {
 		ItemRepository.ensureRoot()
 	}
 
-	/**
-	 * The source graph — a subject with three chapters (the first holds no
-	 * own content), a word and a note under the subject, a word and a note
-	 * under the middle chapter, and three references: the chapter's word
-	 * into the empty first chapter, the subject's word into the middle
-	 * chapter, the middle chapter into the last.
-	 */
 	private fun buildRich(): DbItem {
 		val subject = ItemRepository.createSubject("S", null)
 		val c0 = ItemRepository.createChapter(subject.id, "c0", null)
@@ -94,10 +77,9 @@ class ExportImportMatrixTest {
 		return subject
 	}
 
-	/** The sole row of the given name and kind. */
 	private fun row(name: String, kind: ItemKind): DbItem = ItemRepository.getByName(name, kind).single()
 
-	/** The rich tree below a saved subject row — shape, order and links. */
+	/** The rich tree below a saved subject row, including shape, order and links. */
 	private fun assertRich(subject: DbItem) {
 		assertEquals("S", subject.name)
 		val children = ItemRepository.children(subject.id)
@@ -109,8 +91,8 @@ class ExportImportMatrixTest {
 		assertEquals(ItemKind.NOTE, children[4].type)
 		assertEquals("root note", children[4].description)
 
-		// the reference into c0 names a word whose home follows it in the
-		// file order — resolved after every row is saved
+		// the reference into c0 names a word whose home follows it in the file
+		// order, so it resolves after every row is saved
 		assertEquals(listOf("w1"), ItemRepository.children(c0.id).map { it.name })
 		assertTrue(ItemRepository.linkIsReference(c0.id, ItemRepository.children(c0.id).single().id))
 
@@ -122,7 +104,6 @@ class ExportImportMatrixTest {
 		assertFalse(ItemRepository.linkIsReference(c1.id, c1Children[0].id))
 		assertEquals(listOf("t1", "t2"), ItemRepository.translations(c1Children[0].id).map { it.name })
 
-		// a whole chapter shows in c2 through one reference link
 		assertTrue(ItemRepository.linkIsReference(c2.id, c1.id))
 		assertEquals(listOf("c1"), ItemRepository.children(c2.id).map { it.name })
 	}
@@ -152,13 +133,11 @@ class ExportImportMatrixTest {
 		freshDatabase()
 		ItemRepository.import(HJsonImporter(text))
 
-		// the chapter becomes a subject of its own
 		val back = ItemRepository.subjects().single()
 		assertEquals("c1", back.name)
 		val children = ItemRepository.children(back.id)
-		// w1 and note1 plain — and the referenced subject word written in
-		// place: its home lies outside the exported chapter, a plain copy
-		// keeps it
+		// w1 and note1 land plain, and the referenced subject word is written in
+		// place, because its home lies outside the exported chapter
 		assertEquals(listOf("w1", "note1", "wRoot"), children.map { it.name })
 		assertEquals(ItemKind.NOTE, children[1].type)
 		assertFalse(ItemRepository.linkIsReference(back.id, children[2].id))
@@ -173,14 +152,12 @@ class ExportImportMatrixTest {
 		freshDatabase()
 		ItemRepository.import(HJsonImporter(text))
 
-		// each selected chapter lands as a subject
 		val subjects = ItemRepository.subjects()
 		assertEquals(listOf("c1", "c2"), subjects.map { it.name })
-		// c2's reference names the exported root c1 itself — the root path,
+		// the reference of c2 names the exported root c1 itself, the root path, with
 		// no second copy of the chapter
 		assertTrue(ItemRepository.linkIsReference(subjects[1].id, subjects[0].id))
 		assertEquals(listOf("w1", "note1", "wRoot"), ItemRepository.children(subjects[0].id).map { it.name })
-		// c2 shows c1's content through the link only
 		assertEquals(listOf("c1"), ItemRepository.children(subjects[1].id).map { it.name })
 	}
 
@@ -193,9 +170,9 @@ class ExportImportMatrixTest {
 		freshDatabase()
 		ItemRepository.import(WordListImporter("c1", text))
 
-		// the file's own wrapper line IS the subject — its words, the note
-		// and the in-place copy come back; the reference link is this
-		// format's documented loss
+		// the own wrapper line of the file IS the subject:
+		// - its words and the note come back with the in-place copy.
+		// - the reference link is the documented loss of this format.
 		val back = ItemRepository.subjects().single()
 		assertEquals("c1", back.name)
 		assertEquals(listOf("w1", "note1", "wRoot"), ItemRepository.children(back.id).map { it.name })
@@ -219,8 +196,8 @@ class ExportImportMatrixTest {
 
 	@Test
 	fun `the root export of the real NJ data round trips exactly`() {
-		// the heaviest real subject — 204 chapters, shared words, a
-		// reference — plus a second subject referencing into it
+		// the heaviest real subject with 204 chapters, shared words and a reference,
+		// plus a second subject referencing into it
 		val dir = File(javaClass.getResource("/perf/legacy/NJ")!!.toURI())
 		val subject = LegacyJsonLoader.parseSubjectDir(
 			LegacyFileSource { rel -> File(dir, rel).takeIf { it.isFile && it.length() > 0 }?.readText() },
@@ -239,16 +216,16 @@ class ExportImportMatrixTest {
 		freshDatabase()
 		ItemRepository.import(HJsonImporter(text))
 
-		// the whole-database export is an array of subjects — every one
-		// comes back, with every row, every link and the reference
+		// the whole-database export is an array of subjects, so every one comes back
+		// with every row, every link and the reference
 		assertEquals(listOf("NJ", "Other"), ItemRepository.subjects().map { it.name })
 		assertEquals(rows, rowCount())
 		assertEquals(links, linkCount())
 		val backHolder = ItemRepository.children(ItemRepository.subjects()[1].id).single()
 		assertTrue(ItemRepository.linkIsReference(
 			backHolder.id, ItemRepository.getByName("der Imbissstand", ItemKind.WORD).single().id))
-		// the identity of the data — the heaviest real subject with its
-		// shared words re-exports to the very same file
+		// the identity of the data: the heaviest real subject with its shared words
+		// re-exports to the very same file
 		assertEquals(text, ItemRepository.export(HJsonExporter(), ItemRepository.subjects()))
 	}
 }

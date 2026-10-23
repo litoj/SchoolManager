@@ -15,8 +15,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * List store — live rows behind [ItemListState].
- * - host owns chrome — this class owns rows.
+ * The list store, the live rows behind [ItemListState].
+ * - the host owns the chrome, and this class owns the rows.
  */
 internal class ExplorerList(
 	private val scope: CoroutineScope,
@@ -60,9 +60,9 @@ internal class ExplorerList(
 	}
 
 	/**
-	 * Replaces items and publishes state.
-	 * - search starts empty — batches stream via append.
-	 * - drops drag-select — cancels the pending read.
+	 * Replaces the items and publishes state.
+	 * - search starts empty, since batches stream via append.
+	 * - it drops the drag-select and cancels the pending read.
 	 */
 	fun load(content: List<ItemRow>, isSearch: Boolean = false, isPicker: Boolean = false) {
 		loadJob?.cancel()
@@ -70,8 +70,8 @@ internal class ExplorerList(
 	}
 
 	/**
-	 * Publishes the caller-sorted order of the current rows — renumbering
-	 * stays with the list, like its own inserts and moves.
+	 * Publishes the caller-sorted order of the current rows.
+	 * - renumbering stays with the list, like its own inserts and moves.
 	 */
 	fun applyOrder(sorted: List<ItemRow>) {
 		sorted.forEachIndexed { i, row -> row.renumber(i + 1) }
@@ -88,7 +88,7 @@ internal class ExplorerList(
 				maxPosition = models.maxOfOrNull { it.position } ?: 1,
 				variant = if (isSearch) ExplorerRowVariant.Search else ExplorerRowVariant.Browse,
 				pickerMode = pickerMode,
-				// fresh content carries no selection — the picker always selects
+				// fresh content carries no selection, while the picker always selects
 				selectionActive = selectionActive(pickerMode),
 				contentStep = it.contentStep + 1,
 			)
@@ -98,8 +98,8 @@ internal class ExplorerList(
 	}
 
 	/**
-	 * Loads container open content from preloaded link set on [io].
-	 * - mid-read mutation retries once.
+	 * Loads the open content of a container from a preloaded link set on [io].
+	 * - a mid-read mutation retries once.
 	 */
 	fun loadContent(container: DbItem?) {
 		loadJob?.cancel()
@@ -113,7 +113,7 @@ internal class ExplorerList(
 				}
 				gen = listMutationGen
 			}
-			// the load landed — the null release lets the info refresh below publish
+			// the load landed, so the null release lets the info refresh below publish
 			loadJob = null
 			// the info strip reads the loaded list, so it must follow the load
 			host.refreshInfo()
@@ -124,8 +124,8 @@ internal class ExplorerList(
 		if (container != null && container.type != ItemKind.CHAPTER) return null
 		val parentId = container?.id ?: ROOT_ID
 		val children = ItemRepository.children(parentId)
-		// the default flip renders translations — one batch read for the
-		// whole container, not one per word
+		// the default flip renders translations, so one batch read covers the container.
+		// a read per word would be too slow
 		val translations =
 			if (ItemRow.defFlip && children.any { it.type == ItemKind.WORD })
 				ItemRepository.childTranslations(parentId) else emptyMap()
@@ -141,7 +141,7 @@ internal class ExplorerList(
 
 	private fun insertItem(index: Int, item: ItemRow) {
 		listMutationGen++
-		// Index ages with popup — clamp to the live list.
+		// the index ages with the popup, so clamp to the live list.
 		models.add(index.coerceIn(0, models.size), item)
 		models.forEachIndexed { i, row -> row.renumber(i + 1) }
 		_listState.update {
@@ -150,7 +150,7 @@ internal class ExplorerList(
 				items = List(models.size) { i ->
 					val row = models[i]
 					val old = it.items.getOrNull(i)
-					// Row kept slot — reuse the mapped item.
+					// the row kept its slot, so reuse the mapped item.
 					if (i < index && old?.payload === row && old.position == row.position &&
 						old.selected == row.selected
 					) {
@@ -181,7 +181,7 @@ internal class ExplorerList(
 	fun removeItems(items: Collection<ItemRow>) {
 		listMutationGen++
 		models.removeAll(items)
-		// the removal leaves number gaps — renumber like a reorder step does
+		// the removal leaves number gaps, so renumber like a reorder step does
 		models.forEachIndexed { i, row -> row.renumber(i + 1) }
 		host.resetDragSelect()
 		if (searching) host.onSearchRowsChanged()
@@ -195,13 +195,13 @@ internal class ExplorerList(
 	}
 
 	/**
-	 * Shared tap rule — flips a word's translations, a translation's words.
-	 * - reads run on [io] — flips publish on main.
+	 * The shared tap rule: a word flips to its translations, and a translation to its words.
+	 * - reads run on [io], and the flips publish on main.
 	 */
 	fun flipWord(item: ItemRow?) {
 		val row = item ?: return
 		scope.launch {
-			// Snapshot on main — the rows travel.
+			// snapshot on main, since the rows travel.
 			val toFlip = if (ItemRow.flipAllOnClick) {
 				val flip = !row.flipped
 				models.filter {
@@ -209,8 +209,7 @@ internal class ExplorerList(
 						it.flipped != flip
 				}
 			} else listOf(row)
-			// the flip content, read on io — a word's translations, a
-			// translation's words
+			// the flip content, read on io: the translations or the words.
 			val applied = withContext(io) {
 				toFlip.map { target -> target to ItemRow.flipContentOf(target.item) }
 			}

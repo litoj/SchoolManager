@@ -29,11 +29,6 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
-/**
- * Compose tests for the explorer list's pull-at-top — a swipe down while
- * the list already sits at its top opens the search field, the root
- * (no container to search) stays closed.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class SubjectsScreenTopPullTest {
@@ -58,7 +53,6 @@ class SubjectsScreenTopPullTest {
 		db.close()
 	}
 
-	/** A short list at its top — a subject with a chapter and one word to pull on. */
 	private fun show(): MainExplorerViewModel {
 		val a = ItemRepository.createSubject("A", null)
 		val c1 = ItemRepository.createChapter(a.id, "c1", null)
@@ -71,7 +65,6 @@ class SubjectsScreenTopPullTest {
 		return model
 	}
 
-	/** Drags the row named [name] down far past the pull threshold. */
 	private fun pullDown(name: String) {
 		val b = rule.onNodeWithText(name).getBoundsInRoot()
 		val px = with(rule.density) { ((b.left + b.right) / 2).toPx() }
@@ -79,7 +72,7 @@ class SubjectsScreenTopPullTest {
 		val by = with(rule.density) { 200.dp.toPx() }
 		rule.onRoot().performTouchInput {
 			down(Offset(px, y))
-			// one step past the slop, the rest is the pull itself
+			// one step past the slop, then the rest is the pull itself
 			moveTo(Offset(px, y + 10f))
 			moveTo(Offset(px, y + by))
 			up()
@@ -101,7 +94,7 @@ class SubjectsScreenTopPullTest {
 		rule.onNode(hasSetTextAction()).assertExists()
 	}
 
-	/** A subject with enough rows to scroll — the pull needs a list that leaves its top. */
+	/** A subject with enough rows to scroll, because the pull needs a list that leaves its top. */
 	private fun showLong(): MainExplorerViewModel {
 		val a = ItemRepository.createSubject("A", null)
 		ItemRepository.createChapter(a.id, "c1", null)
@@ -121,7 +114,6 @@ class SubjectsScreenTopPullTest {
 		val model = showLong()
 		rule.onNodeWithText("A").performClick()
 		rule.waitForIdle()
-		// leave the top — scroll down the list with one swipe up
 		rule.onRoot().performTouchInput { swipeUp() }
 		rule.waitForIdle()
 
@@ -140,7 +132,6 @@ class SubjectsScreenTopPullTest {
 			assertEquals("the gesture began mid-list — no pull", SearchUi.OFF, model.state.value.searchUi)
 		}
 
-		// the next gesture starts at the top and pulls
 		pullDown("c1")
 
 		rule.runOnIdle {

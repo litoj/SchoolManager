@@ -17,12 +17,9 @@ class Placement(
 )
 
 /**
- * One explorer list row — a [DbItem] plus parent id, 1-based position, flip
- * and selection — one shared object for composables and controller. A
- * reference-linked row keeps its type icon, with a jump to its source.
-	 * - the mutable fields are main-owned (an io read snapshots them on main first) — a main-thread write must not race the read.
- *
- * @param applyDefFlip whether the word takes the default flip state ([defFlip])
+ * One shared row object for composables and the controller.
+ * - a reference-linked row keeps its type icon, with a jump to its source.
+ * - the mutable fields are main-owned, since an io read snapshots them on main first.
  */
 class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean = true) {
 
@@ -43,16 +40,17 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		private set
 
 	/**
-	 * The per-translation lines of a flipped word — one entry per translation,
-	 * empty for every other row. Rendered under each translation when inline
-	 * descriptions are on, so a description stays with its translation.
+	 * The per-translation lines of a flipped word, one entry per translation.
+	 * - the list is empty for every other row.
+	 * - it renders under each translation when inline descriptions are on.
+	 * - so a description stays with its translation.
 	 */
 	var translationLines: List<TranslationLine> = emptyList()
 		private set
 
 	/**
-	 * The hit's container chain for a search row (root first, direct parent
-	 * last) — `null` for browse rows.
+	 * The container chain of the hit for a search row, with the root first.
+	 * - the direct parent comes last, and null marks a browse row.
 	 */
 	var path: MutableList<DbItem>? = null
 		private set
@@ -61,10 +59,9 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		private set
 
 	/**
-	 * Whether the referenced row still lives in a container besides this one —
-	 * its source can be gone (the home was deleted while this reference link
-	 * kept the row alive), and without another container there is nowhere to
-	 * jump to, so the reference icon stays hidden then.
+	 * Whether the referenced row still lives in a container besides this one.
+	 * - its source can be gone, since the home was deleted while the link kept the row alive.
+	 * - without another container there is nowhere to jump, so the icon stays hidden.
 	 */
 	var hasSource = false
 		private set
@@ -72,12 +69,12 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	val isSubject: Boolean
 		get() = parentId == ROOT_ID
 
-	/** The selection machine's mark write — see [Selection]. */
+	/** The mark write of the selection machine, see [Selection]. */
 	fun select(on: Boolean) {
 		selected = on
 	}
 
-	/** The list's renumber write — every insert, move and sort runs it. */
+	/** The renumber write of the list, which every insert, move and sort runs. */
 	fun renumber(to: Int) {
 		position = to
 	}
@@ -89,11 +86,6 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	@VisibleForTesting
 	fun setNew(item: DbItem, parentId: Int?) = setNew(item, parentId, true)
 
-	/**
-	 * Re-reads the row from [item] under [parentId].
-	 * - [applyDefFlip] true takes the default flip state ([defFlip]) — false
-	 *   always leaves the word unflipped.
-	 */
 	fun setNew(item: DbItem, parentId: Int?, applyDefFlip: Boolean) {
 		this.item = item
 		this.parentId = parentId
@@ -106,20 +98,13 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	}
 
 	/**
-	 * Flips this word — the blocking composed form. Production callers read
-	 * the flip content on io and land [applyFlip] on main instead.
+	 * The blocking form. Production callers read the flip content on io and land [applyFlip] on main.
 	 */
 	@VisibleForTesting
 	fun flip() = applyFlip(flipContent())
 
-	/** The items a flip shows below the row — see [flipContentOf]. */
 	private fun flipContent(): List<DbItem> = flipContentOf(item)
 
-	/**
-	 * Applies a flip with pre-read content — runs on the main thread.
-	 * A word shows its translations, a translation its words. Any other
-	 * row stays put.
-	 */
 	fun applyFlip(items: List<DbItem>) {
 		if (item.type != ItemKind.WORD && item.type != ItemKind.TRANSLATION) return
 		flipped = !flipped
@@ -127,11 +112,11 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	}
 
 	/**
-	 * Reads the moved row's placement for [parentId]: parent, reference
-	 * facts and the search chain (a browse row carries none). Up to three
-	 * database reads (two for a browse row), so callers stay off the main
-	 * thread with the fresh row in hand — [applyPlacement] lands the
-	 * result there, keeping the row's fields main-owned.
+	 * The io half of a placement change.
+	 * - it also reads the search chain, while a browse row carries none.
+	 * - that takes up to three database reads, two for a browse row, so callers stay off main.
+	 * - they hand the fresh row over, and [applyPlacement] lands the result there.
+	 * - so the fields of the row stay main-owned.
 	 */
 	fun readPlacement(parentId: Int, fresh: DbItem): Placement {
 		val reference = ItemRepository.linkIsReference(parentId, fresh.id)
@@ -150,8 +135,8 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	}
 
 	/**
-	 * The reference facts of the link into [parentId]: a reference is a fact
-	 * of the link, not of the item — the same row renders normal in its home.
+	 * A reference is a fact of the link, not of the item.
+	 * - so the same row renders normal in its home.
 	 */
 	private fun refreshReferenceFacts(parentId: Int?) {
 		isReference = parentId != null && ItemRepository.linkIsReference(parentId, item.id)
@@ -159,9 +144,9 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	}
 
 	/**
-	 * The default flip from preloaded translations — the browse build's
-	 * form. Called before the row is published, so the main-owned fields
-	 * stay single-threaded (see the class doc).
+	 * The browse build form of the default flip.
+	 * - it runs before the row is published, so the main-owned fields stay single-threaded.
+	 * - see the class doc.
 	 */
 	fun applyDefaultFlip(translations: List<DbItem>) {
 		if (item.type != ItemKind.WORD || !defFlip) return
@@ -170,18 +155,12 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	}
 
 	/**
-	 * Re-reads the row from the database, keeping the flip state (after
-	 * edits) — the blocking composed form. Production callers read on io
-	 * and land [applyFresh] on main instead.
+	 * The blocking form, while production callers read on io.
+	 * - they land [applyFresh] on main instead.
 	 */
 	@VisibleForTesting
 	fun update() = applyFresh(ItemRepository.get(item.id), flipContent())
 
-	/**
-	 * Applies a fresh read of the row — runs on the main thread, the reads
-	 * happened on the caller's io side (a `null` row, deleted meanwhile,
-	 * changes nothing).
-	 */
 	fun applyFresh(fresh: DbItem?, items: List<DbItem>) {
 		if (fresh == null) return
 		item = fresh
@@ -202,7 +181,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 
 	private fun renderTranslations(items: List<DbItem>): String {
 		val display = flippedDisplay(items)
-		// no joint description — each line carries its own
+		// no joint description, since each line carries its own
 		info = ""
 		translationLines = display.lines
 		return display.names
@@ -211,32 +190,28 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	companion object {
 
 		/**
-		 * The items a flip shows below [item] — a word's translations, a
-		 * translation's words (the actual words the translation translates,
-		 * each living in its own chapter).
+		 * A word shows its translations, and a translation its words.
+		 * - those are the actual words that the translation translates, each in its chapter.
 		 */
 		fun flipContentOf(item: DbItem): List<DbItem> =
 			if (item.type == ItemKind.TRANSLATION) ItemRepository.parentRows(item.id)
 			else ItemRepository.translations(item.id)
 
 		/**
-		 * The display settings below persist through `AppSettings` — toggling
-		 * code assigns them together with the `AppSettings.set` call.
+		 * The display settings below persist through AppSettings.
+		 * - the toggling code assigns them together with the AppSettings.set call.
 		 */
-		// descLines is Compose state so a settings change reaches a live
-		// explorer list without a reload
+		// descLines is Compose state, so a settings change reaches a live list without a reload
 		var descLines by mutableIntStateOf(DEFAULT_DESC_LINES)
 		var parse = true
 		var defFlip = true
 		var flipAllOnClick = false
 
-		/** The default line limit — descriptions at or under it show directly. */
 		const val DEFAULT_DESC_LINES = 5
 
 		/**
-		 * Whether a description shows directly under its row — a blank one never does.
-		 * At or under [descLines] non-empty lines it does, a longer one collapses
-		 * to its icon.
+		 * A blank description never shows, and a longer one collapses to its icon.
+		 * - at or under [descLines] non-empty lines it shows directly.
 		 */
 		@JvmStatic
 		fun showsDescription(description: String): Boolean {
@@ -244,10 +219,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 			return description.lines().count { it.isNotBlank() } <= descLines
 		}
 
-		/**
-		 * The row display's own half of the stored options — the app layer
-		 * applies the rest. This one reads the ui's settings from the ui.
-		 */
+		/** The app layer applies the rest, while this one reads the ui settings. */
 		@JvmStatic
 		fun applyStoredOptions() {
 			defFlip = AppSettings.getBool("flipWord", true)
@@ -256,10 +228,6 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 			descLines = AppSettings.getInt("descLines", DEFAULT_DESC_LINES)
 		}
 
-		/**
-		 * Expands a name's variant syntax for display — one alternative per line
-		 * (`\`-joined when short). Unparsable names stay as-is.
-		 */
 		@JvmStatic
 		fun nameParser(name: String): String {
 			if (parse && (name.contains("\\/") || name.contains(")") && name.contains("/"))) {
@@ -272,14 +240,10 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 			return name
 		}
 
-		/** A variant longer than this goes on its own display line instead of joining with `\`. */
 		private const val SINGLE_LINE_MAX = 18
 
 		/**
-		 * The flipped display of a word, assembled from its flip content — the
-		 * name block (one item per line) and the per-item lines for the
-		 * interleaved display. Each line keeps its own description — no joint
-		 * description text is assembled.
+		 * Each line keeps its own description, so no joint description text is assembled.
 		 */
 		@JvmStatic
 		fun flippedDisplay(items: List<DbItem>): FlippedDisplay {
@@ -291,15 +255,15 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 				lines.add(TranslationLine(name, trl.description))
 			}
 			return FlippedDisplay(
-			// a translation-less word (a mis-anchored import) has no names to cut apart
+			// a translation-less word from a mis-anchored import has no names to cut apart
 			if (trls.isNotEmpty()) trls.substring(1) else "", lines)
 		}
 
 		/**
-		 * Rows for a container's children from preloaded sets — the
-		 * reference facts come from [links], a default-flipped word's
-		 * translations from [translations] (keyed by word id), so the build
-		 * touches no database.
+		 * Rows for the children of a container from preloaded sets.
+		 * - the reference facts come from [links].
+		 * - the translations of a default-flipped word come from [translations], keyed by word id.
+		 * - so the build touches no database.
 		 */
 		@JvmStatic
 		fun convert(
@@ -318,9 +282,9 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		}
 
 		/**
-		 * A browse row with preloaded parent links and translations — as the
-		 * constructor row, but its reference facts come from [links] and its
-		 * default flip from [translations] instead of per-row queries.
+		 * A browse row with preloaded parent links and translations, as the constructor row.
+		 * - its reference facts come from [links] instead of per-row queries.
+		 * - so does its default flip, from [translations].
 		 */
 		@JvmStatic
 		fun ofBrowse(
@@ -339,9 +303,10 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		}
 
 		/**
-		 * A search-hit row carrying the hit's container chain ([path], root first) for
-		 * the "jump to directory" action — its reference facts come from the preloaded
-		 * [links], so a run with thousands of hits stays database-free after preload.
+		 * A search-hit row carrying the container chain of the hit, see [path].
+		 * - the chain serves the jump to directory action.
+		 * - its reference facts come from the preloaded [links].
+		 * - so a run with thousands of hits stays database-free after preload.
 		 */
 		@JvmStatic
 		fun ofSearchHit(item: DbItem, path: List<DbItem>, position: Int, links: List<DbLink>): ItemRow {
@@ -356,8 +321,6 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	}
 }
 
-/** One item of a flipped row's display — its display name and description. */
 class TranslationLine(val name: String, val description: String)
 
-/** The parts of a flipped word's display — see [ItemRow.flippedDisplay]. */
 class FlippedDisplay(val names: String, val lines: List<TranslationLine>)

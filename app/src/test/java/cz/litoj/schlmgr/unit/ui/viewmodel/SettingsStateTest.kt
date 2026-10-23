@@ -6,12 +6,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * Unit tests for [SettingsState]'s pure number-field rules — the digit filter
- * ([SettingsState.digitsOnly]) and the focus-lost restore rule
- * ([SettingsState.needsRestore]). The persistence behind them needs the app
- * context, so only the rules themselves are covered here.
- */
 class SettingsStateTest {
 
 	@Test

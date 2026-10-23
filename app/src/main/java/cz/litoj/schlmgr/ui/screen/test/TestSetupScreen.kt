@@ -54,12 +54,12 @@ import cz.litoj.schlmgr.ui.shell.TopBarTitle
 import cz.litoj.schlmgr.ui.shell.headerShadow
 
 /**
- * The test setup screen — top bar, the fresh-entry check over the shared
- * test state, the setup content below. The two navigation steps (start
- * test, open picker) go through the view model's requests.
+ * The test setup screen: top bar, the fresh-entry check and the setup content below.
+ * - the check runs over the shared test state.
+ * - the two navigation steps, start test and open picker, go through the view model requests.
  *
- * @param openPicker 'Add source' — navigate to the source picker
- * @param openDrawer the hamburger press — the shell owns the drawer
+ * @param openPicker Add source, which navigates to the source picker
+ * @param openDrawer the hamburger press, since the shell owns the drawer
  */
 @Composable
 fun TestSetupScreen(
@@ -69,8 +69,9 @@ fun TestSetupScreen(
 ) {
 	val context = LocalContext.current
 
-	// The fresh-entry check, once per entry — the saveable entered flag keeps
-	// a rotation from resetting the sources. The decision lives in the view model.
+	// the fresh-entry check, run once per entry.
+	// - the saveable entered flag keeps a rotation from resetting the sources.
+	// - the decision lives in the view model.
 	var entered by rememberSaveable { mutableStateOf(false) }
 	LaunchedEffect(viewModel) {
 		if (entered) return@LaunchedEffect
@@ -98,9 +99,8 @@ fun TestSetupScreen(
 }
 
 /**
- * The setup rows below the bar — amount/duration fields, the selected
- * sources and the Start button. Answers live in [TestSetupState],
- * behaviour in [TestSetupViewModel].
+ * The setup rows below the bar: amount and duration fields, the sources and the Start button.
+ * - answers live in [TestSetupState], and behaviour in [TestSetupViewModel].
  */
 @Composable
 private fun TestSetupContent(viewModel: TestSetupViewModel, modifier: Modifier = Modifier) {
@@ -117,20 +117,19 @@ private fun TestSetupContent(viewModel: TestSetupViewModel, modifier: Modifier =
 				viewModel::setTime,
 			) { viewModel.restoreTime(); keyboard?.hide() }
 			HairlineDivider()
-			// The reverse-test direction — on shows the word and asks for one of
-			// its translations — off keeps the default direction.
+			// the reverse-test direction: on shows the word and asks for a translation.
+			// off keeps the default direction
 			SettingSwitchRow(
 				stringResource(R.string.test_reverse),
 				TestSetupState.reverseTest,
 				viewModel::toggleReverse,
 			)
 			HairlineDivider()
-			// The shared list is a SnapshotStateList, so background-thread changes
-			// made by the picker's dedup thread recompose this directly.
+			// the shared list is a SnapshotStateList.
+			// so a background-thread change from the picker dedup recomposes this directly
 			LazyColumn(Modifier.weight(1f)) {
-				// the add action leads the list, so the sources can grow without
-				// scrolling past the ones already picked (the whole hierarchy
-				// picked hides it — nothing left to add)
+				// the add action leads the list, so sources grow without scrolling.
+				// a fully picked hierarchy hides it, since nothing is left to add
 				if (!viewModel.hierarchyPicked()) item { AddSourceTile(viewModel::openPicker) }
 				// the chains are dedup-distinct, so each list is its own collision-free key
 				items(TestSetupState.list, key = { it }) { chain ->
@@ -190,17 +189,16 @@ private fun SourceRow(row: SourceRowUi, onRemove: () -> Unit) {
 }
 
 /**
- * The add action leading the sources list — a full-width tile with a
- * dashed outline and a centered label, an action rather than a config
- * row.
+ * The add action leading the sources list: a full-width tile with a dashed outline.
+ * - it holds a centered label, since it is an action rather than a config row.
  */
 @Composable
 private fun AddSourceTile(onAdd: () -> Unit) {
 	val density = LocalDensity.current
 	val border = colorResource(R.color.colorPrimaryFg).copy(alpha = 0.5f)
 	val corner = with(density) { 8.dp.toPx() }
-	// keyed on density — its instance changes with configuration, and the
-	// dash lengths must re-scale with it
+	// keyed on density, since its instance changes with configuration.
+	// the dash lengths must re-scale with it
 	val stroke = remember(density) {
 		Stroke(
 			width = with(density) { 1.dp.toPx() },

@@ -4,8 +4,7 @@ import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 
 /**
- * Pre-order stream assembly — every file-format importer appends through here,
- * so the row shape stays identical.
+ * Every file-format importer appends through here, so the row shape stays identical.
  */
 object StreamBuilder {
 

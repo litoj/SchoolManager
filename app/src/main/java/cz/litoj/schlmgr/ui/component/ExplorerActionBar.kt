@@ -36,11 +36,12 @@ private class Action(
 )
 
 /**
- * The bottom-strip selection actions — test / cut / edit / delete, with the
- * search strip swapping cut for go-to.
-	 * - the strip renders only while rows are selected, so test/cut/delete stay enabled.
-	 * - edit follows [editEnabled] (the single-target rule).
-	 * - a hit's cut is ambiguous — the same word can live in several containers — so the search strip shows its go-to instead, disabled without the single target.
+ * The bottom-strip selection actions: test, cut, edit, delete.
+ * - the search strip swaps cut for go-to.
+ * - the strip renders only while rows are selected, so test, cut and delete stay enabled.
+ * - edit follows [editEnabled], the single-target rule.
+ * - the cut of a hit is ambiguous, since the same word can live in several containers.
+ * - so the search strip shows a go-to instead, disabled without the single target.
  */
 @Composable
 fun SelectionActionBar(
@@ -78,8 +79,8 @@ fun SelectionActionBar(
 }
 
 /**
- * The bottom-strip paste actions — cancel / paste. Always enabled — arming
- * the paste clears the selection first, so no state can ever disable it.
+ * The bottom-strip paste actions: cancel and paste. Both stay enabled, because
+ * arming the paste clears the selection first, so no state can disable them.
  */
 @Composable
 fun PasteActionBar(
@@ -99,7 +100,7 @@ fun PasteActionBar(
 	}
 }
 
-/** The picker strip — cancel / select-all / select. */
+/** The picker strip: cancel, select-all and select. */
 @Composable
 fun PickerActionBar(
 	selectEnabled: Boolean,
@@ -138,9 +139,7 @@ private fun ActionStrip(
 	)
 }
 
-/**
- * One icon-over-label button — `enabled` false dims the label and disables the click.
- */
+/** One icon-over-label button. A false enabled dims the label and disables the click. */
 @Composable
 private fun RowScope.ActionButton(action: Action, enabled: Boolean) {
 	Column(

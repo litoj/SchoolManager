@@ -34,11 +34,11 @@ import cz.litoj.schlmgr.ui.shell.headerShadow
 private val HeaderBackground @Composable get() = colorResource(R.color.colorSectionHeader)
 
 /**
- * The settings screen — the top bar above the settings list
- * (interface switches, the export splitter field, the test defaults).
+ * The settings screen: the top bar above the settings list.
+ * - the list holds the interface switches, the export splitter field and the test defaults.
  * - every edit applies and persists at once through [SettingsState].
  *
- * @param openDrawer the hamburger press — the shell owns the drawer
+ * @param openDrawer the hamburger press, since the shell owns the drawer
  */
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel, openDrawer: () -> Unit) {
@@ -71,7 +71,7 @@ private fun SettingsList(state: SettingsState, modifier: Modifier = Modifier) {
 		) { state.descLinesFocusLost(); keyboard?.hide() }
 		HairlineDivider()
 		WordSplitRow(state)
-		// no resource exists for the "Test" section label — it stays a literal
+		// no resource exists for the Test section label, so it stays a literal
 		SectionHeader("Test")
 		SettingNumberRow(
 			stringResource(R.string.setts_test_amount), state.amountText, state::setAmount,
@@ -85,7 +85,6 @@ private fun SettingsList(state: SettingsState, modifier: Modifier = Modifier) {
 	}
 }
 
-/** The translucent section title bars ("Interface" / "Test"). */
 @Composable
 private fun SectionHeader(title: String) {
 	Text(
@@ -98,7 +97,6 @@ private fun SectionHeader(title: String) {
 	)
 }
 
-/** The export word splitter — description and a free-text field for the exact string. */
 @Composable
 private fun WordSplitRow(state: SettingsState) {
 	Row(

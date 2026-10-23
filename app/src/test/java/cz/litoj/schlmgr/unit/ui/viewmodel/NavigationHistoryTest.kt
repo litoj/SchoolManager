@@ -9,10 +9,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Unit tests for [NavigationHistory]'s recorded hop kinds — a descent hop grows the path and its
- * back pops it, a search run leaves the path alone. The explorer's back navigation
- * reads a run carried by the position it returns to ([NavigationHistory.onSearchHop]) to restore
- * the filtered list — so these kinds must survive the open/back round trip.
+ * - a descent hop grows the path and its back pops it.
+ * - a search run leaves the path alone.
+ * - back navigation reads a run carried by the position it returns to.
  */
 class NavigationHistoryTest {
 
@@ -72,13 +71,13 @@ class NavigationHistoryTest {
 		val history = NavigationHistory()
 		val subject = item(1)
 		val chapter = item(2)
-		history.hop(subject) // open the subject
-		history.hop(null) // search inside it
-		history.push(pathOf(subject, chapter)) // open a hit's container
+		history.hop(subject) // a browse path must sit under the search run
+		history.hop(null) // null is the search marker, so no path element grows
+		history.push(pathOf(subject, chapter)) // a pushed entry is not a search hop
 
 		assertFalse("the opened container is not a search", history.onSearchHop())
 
-		history.remove() // back out of the container
+		history.remove() // the back crosses the entry boundary
 
 		assertEquals(1, history.path.size)
 		assertTrue("the position returned to carries the search run", history.onSearchHop())
@@ -98,10 +97,10 @@ class NavigationHistoryTest {
 		val subject = item(1)
 		val chapterX = item(2)
 		val chapterY = item(3)
-		history.hop(subject) // open the subject
-		history.push(pathOf(subject, chapterX)) // open its chapter
+		history.hop(subject) // the browse path under the sibling switch
+		history.push(pathOf(subject, chapterX)) // back must pop the whole switched entry
 
-		history.replaceCurrent(pathOf(subject, chapterY)) // the sibling swipe
+		history.replaceCurrent(pathOf(subject, chapterY))
 
 		assertEquals(chapterY.id, history.path.lastOrNull()?.id)
 		assertFalse("back leaves the whole switched entry", history.remove())

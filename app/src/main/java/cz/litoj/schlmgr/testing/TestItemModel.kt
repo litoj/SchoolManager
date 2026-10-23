@@ -4,14 +4,12 @@ import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.ItemRepository
 
 /**
- * One answered item of a test run — the tested word ([TestEntry]) plus the
- * run's per-item results — typed [answer], [correct], stats re-read after
- * grading so the results popup shows the just-finished state.
+ * The stats re-read after grading, so the results popup shows the just-finished state.
  */
 class TestItemModel(val entry: TestEntry) {
 
 	/**
-	 * The translations shown as the test hint — fixed for the whole run.
+	 * The translations shown as the test hint, fixed for the whole run.
 	 */
 	val translations: List<DbItem> = entry.translations()
 
@@ -20,8 +18,8 @@ class TestItemModel(val entry: TestEntry) {
 	var answer = ""
 
 	/**
-	 * The tested word's row — replaced by [refreshStats] after grading, because the
-	 * entry's snapshot (and its tested count and ratio) predates the test.
+	 * The row of the tested word, replaced by [refreshStats] after grading.
+	 * The snapshot of the entry, with its tested count and ratio, predates the test.
 	 */
 	var word: DbItem = entry.word
 		private set

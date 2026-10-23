@@ -5,30 +5,28 @@ import cz.litoj.schlmgr.data.StreamItem
 import cz.litoj.schlmgr.data.StreamBuilder
 
 /**
- * Writes the word-list text from an item stream — the syntax [WordListReader]
- * parses.
- * - chapter roots become `Name { ... }` wrappers.
+ * Writes the word-list text from an item stream, in the syntax that [WordListReader] parses.
+ * - chapter roots become a name and braces wrapper.
  * - a bare word or note root writes as its own top-level line.
- * - an interior `\` before an ordinary character has no encoding.
- * - a leading `}` or a newline has no encoding.
+ * - an interior backslash before an ordinary character has no encoding.
+ * - a leading closing brace or a newline has no encoding.
  * - an odd backslash run before a separator gains one on first export, then stays stable.
  * - the reader trims every name and description.
- * - a lone `\r` normalizes to `\n`, losing leading or trailing whitespace.
- * - a word or note with a blank name has no line — the write refuses it.
- * - a reference link has no line — its content writes at the plain home only.
+ * - a lone CR normalizes to a newline, losing leading or trailing whitespace.
+ * - a word or note with a blank name has no line, so the write refuses it.
+ * - a reference link has no line, since its content writes at the plain home only.
  */
 object WordListWriter {
 
-	// written on main (the settings), read on export worker threads
+	// written on main for the settings, read on export worker threads
 	@Volatile
 	@JvmStatic
 	var wordTranslationSplitter: String = "="
 		private set
 
 	/**
-	 * Sets the word-translations separator. One of `;`, `=` or `→` — the
-	 * reader parses only those three, so anything else (empty included)
-	 * keeps the current one.
+	 * - the reader parses only those three.
+	 * - anything else, empty included, keeps the current one.
 	 */
 	@JvmStatic
 	fun setWordTranslationSplitter(splitter: String) {
@@ -36,13 +34,8 @@ object WordListWriter {
 		wordTranslationSplitter = splitter
 	}
 
-	/**
-	 * Writes [items] as word-list text — every root item in stream order
-	 * (the class doc's root rules).
-	 */
 	@JvmStatic
 	fun write(items: List<StreamItem>): String {
-		// the children of one parent, in stream order
 		val childrenOf = StreamBuilder.childrenOf(items)
 		val sb = StringBuilder()
 		for (root in items) if (root.parent == null) when (root.item.type) {
@@ -57,15 +50,15 @@ object WordListWriter {
 		sb: StringBuilder, word: StreamItem,
 		childrenOf: Map<StreamItem, List<StreamItem>>, tabs: Int,
 	) {
-		// an empty name writes a bare splitter — the reader would take the
-		// line for a note (a silent kind change) or fail it outright
+		// an empty name writes a bare splitter, and the reader would take the
+		// line for a note, a silent kind change, or fail it outright
 		require(word.item.name.isNotBlank()) { "A word without a name has no word-list line" }
 		indentation(sb, tabs)
 		writeData(sb, word.item.name, word.item.description)
 		sb.append(wordTranslationSplitter)
 		var first = true
-		// only translations have a place on a word line — the repository's
-		// own export walk filters the same way
+		// only translations have a place on a word line, since the export walk
+		// of the repository filters the same way
 		for (trl in (childrenOf[word] ?: emptyList()).filter { it.item.type == ItemKind.TRANSLATION }) {
 			if (first) first = false
 			else sb.append('\\')
@@ -74,9 +67,9 @@ object WordListWriter {
 		sb.append('\n')
 	}
 
-	/** One note line — the separator leads because there is no word before it. */
+	/** The separator leads because no word comes before it. */
 	private fun writeNoteLine(sb: StringBuilder, note: StreamItem, tabs: Int) {
-		// an empty name writes a bare splitter — the reader fails the line
+		// an empty name writes a bare splitter, and the reader fails the line
 		require(note.item.name.isNotBlank()) { "A note without a name has no word-list line" }
 		indentation(sb, tabs)
 		sb.append(wordTranslationSplitter)
@@ -94,7 +87,7 @@ object WordListWriter {
 		writeData(sb, item.item.name, item.item.description)
 		sb.append(" {\n")
 		for (child in childrenOf[item] ?: emptyList()) {
-			// a reference has no line of its own — its content sits at the
+			// a reference has no line of its own, since its content sits at the
 			// plain home, which the walk already wrote
 			if (child.refPath != null) continue
 			when (child.item.type) {
@@ -110,10 +103,9 @@ object WordListWriter {
 	}
 
 	/**
-	 * One name and its optional description.
-	 * - a `\` in a word name is variant syntax, not a literal — it stays raw.
-	 * - a name-final backslash run doubles — the reader halves it back.
-	 * - a note name escapes every backslash — notes carry no variant syntax.
+	 * - a backslash in a word name is variant syntax, not a literal, so it stays raw.
+	 * - a name-final backslash run doubles, and the reader halves it back.
+	 * - a note name escapes every backslash, since notes carry no variant syntax.
 	 */
 	private fun writeData(sb: StringBuilder, name: String, description: String, note: Boolean = false) {
 		var escaped = if (note) name.replace("\\", "\\\\") else evenOutBackslashRuns(name)
@@ -139,10 +131,9 @@ object WordListWriter {
 	}
 
 	/**
-	 * Doubles a backslash run of odd length that directly precedes a
-	 * separator — an odd run would merge with the escape's own backslash
-	 * and turn the separator live. No exact odd encoding exists — the
-	 * written name gains one backslash and stays stable from then on.
+	 * - an odd run would merge with the backslash of the escape and turn the separator live.
+	 * - no exact odd encoding exists.
+	 * - the written name gains one backslash and stays stable from then on.
 	 */
 	private fun evenOutBackslashRuns(name: String): String {
 		val sb = StringBuilder(name.length)

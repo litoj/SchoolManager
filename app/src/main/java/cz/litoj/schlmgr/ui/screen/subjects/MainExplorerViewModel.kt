@@ -6,11 +6,11 @@ import android.content.Context
 import android.net.Uri
 import cz.litoj.schlmgr.R
 import androidx.lifecycle.viewModelScope
-import cz.litoj.schlmgr.app.FileProgress
 import cz.litoj.schlmgr.app.GlobalDependencies
-import cz.litoj.schlmgr.app.Startup
 import cz.litoj.schlmgr.app.UiNotice
+import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.data.db.FlipAnalysis
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ROOT_ID
@@ -18,6 +18,7 @@ import cz.litoj.schlmgr.data.db.WordEdit
 import cz.litoj.schlmgr.data.db.ratio
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.ui.viewmodel.CreatorResult
+import cz.litoj.schlmgr.ui.viewmodel.FlipConflictsResult
 import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
 import cz.litoj.schlmgr.ui.screen.test.TestSetupState
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
@@ -31,48 +32,41 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 /**
- * Subjects content, row intents, `more_*` dispatch.
- * See [SubjectsPaste], [SubjectsWordEdit], [SubjectsTransfer], [SubjectsNavigation].
- *
- * File pickers stay behind [Request]s.
+ * The subjects content, the row intents and the more menu dispatch.
+ * - see [SubjectsPaste], [SubjectsWordEdit], [SubjectsFlip], [SubjectsDelete],
+ *   [SubjectsTransfer] and [SubjectsNavigation].
+ * - the file pickers stay behind [Request]s.
  */
 class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher = Dispatchers.IO) :
 	ExplorerViewModel<MainExplorerViewModel.Request>(history, io = io) {
 
-	/** View-only step — picker, navigation, dialog. */
+	/** A view-only step: picker, navigation or dialog. */
 	sealed interface Request {
-		/** Open test setup screen. */
 		data object OpenTest : Request
 
-		/** Pick subject directory. */
 		data object PickImportDir : Request
 
-		/** Pick importable file. */
 		data object PickImportFile : Request
 
-		/** Pick word-list export target. */
 		data class PickWordExport(val fileName: String) : Request
 
-		/** Pick tree-JSON export target. */
 		data class PickJsonExport(val fileName: String) : Request
 
-		/** Word editor input. */
 		data class EditWord(val row: ItemRow, val rows: List<TranslationRow>) : Request
 
-		/** Name/description editor input. */
 		data class EditItem(val row: ItemRow) : Request
 
 		/**
-		 * Creator input — the created item appends, the database places it.
+		 * The created item appends, and the database places it.
 		 */
 		data class CreateItem(val kind: RowKind) : Request
 
-		/** Pick references following forked word. */
 		data class ForkReferences(val row: ItemRow, val edit: WordEdit, val references: List<DbItem>) : Request
+
+		data class ResolveFlipConflicts(val analysis: FlipAnalysis) : Request
 
 		data class ConfirmDelete(val doomed: List<ItemRow>) : Request
 
-		/** Pick container to jump to — the chains plus the search's own position. */
 		data class PickSource(val paths: List<List<DbItem>>, val origin: List<DbItem>) : Request
 	}
 
@@ -116,23 +110,47 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		override fun addItem(index: Int, item: ItemRow) = this@MainExplorerViewModel.addItem(index, item)
 	}
 
-	/**
-	 * Runs [work] on main. Drops work outliving cleared model.
-	 */
+	private val flip = SubjectsFlip(viewModelScope, io, FlipHost())
+
+	private inner class FlipHost : SubjectsFlip.Host {
+		override fun items() = this@MainExplorerViewModel.items()
+		override val searching get() = this@MainExplorerViewModel.searching
+		override val path get() = history.path
+		override fun emitRequest(request: Request) = this@MainExplorerViewModel.emitRequest(request)
+		override fun postToUi(work: Runnable) {
+			this@MainExplorerViewModel.postToUi(work)
+		}
+		override fun clearSelection() = this@MainExplorerViewModel.clearSelection()
+		override fun reloadContent() = this@MainExplorerViewModel.reloadContent()
+		override fun refreshInfo() = this@MainExplorerViewModel.refreshInfo()
+	}
+
+	private val delete = SubjectsDelete(viewModelScope, io, DeleteHost())
+
+	private inner class DeleteHost : SubjectsDelete.Host {
+		override fun items() = this@MainExplorerViewModel.items()
+		override val searching get() = this@MainExplorerViewModel.searching
+		override val path get() = history.path
+		override fun emitRequest(request: Request) = this@MainExplorerViewModel.emitRequest(request)
+		override fun postToUi(work: Runnable) {
+			this@MainExplorerViewModel.postToUi(work)
+		}
+		override fun removeItems(items: Collection<ItemRow>) = this@MainExplorerViewModel.removeItems(items)
+		override fun refreshSearchRows() = this@MainExplorerViewModel.refreshSearchRows()
+		override fun refreshInfo() = this@MainExplorerViewModel.refreshInfo()
+	}
+
+	/** Work that outlives the model drops. */
 	private fun postToUi(work: Runnable) = viewModelScope.launch { work.run() }
 
 	private val ctx get() = GlobalDependencies.appContext
 
 	private var pendingAfterPermission: (() -> Unit)? = null
 
-	/**
-	 * Hands [action] to the permission flow — it runs after the grant dialog.
-	 * A second request while one waits is refused and reported, so none is
-	 * silently lost.
-	 */
+	/** A second request while one waits is refused and reported, so none is lost silently. */
 	fun requestWithPermission(action: () -> Unit) {
 		if (pendingAfterPermission != null) {
-			Startup.showMsg(ctx.getString(R.string.permission_pending), ctx.getString(R.string.permission_pending))
+			UserMessages.showMsg(ctx.getString(R.string.permission_pending), ctx.getString(R.string.permission_pending))
 			return
 		}
 		pendingAfterPermission = action
@@ -143,14 +161,10 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		pendingAfterPermission = null
 	}
 
-	// Starts at the shared position — survives rotation.
+	// starts at the shared position, which survives rotation.
 	init {
 		setContent(history.path.lastOrNull())
 	}
-
-	// ==========================================================================
-	//  content loading
-	// ==========================================================================
 
 	private fun reloadContent() {
 		if (searching) {
@@ -160,18 +174,10 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		setContent(history.path.lastOrNull())
 	}
 
-	// ==========================================================================
-	//  back dispatch
-	// ==========================================================================
-
-	// See [ExplorerViewModel.onBackRequested].
-
-	// ==========================================================================
-	//  top-bar menu dispatch
-	// ==========================================================================
+	// see [ExplorerViewModel.onBackRequested].
 
 	/**
-	 * Dispatches `more_*` menu. New actions refuse during search.
+	 * The New actions refuse during search.
 	 */
 	fun onMenuItemClick(itemId: Int): Boolean = when (itemId) {
 		MenuId.SORT_ALPHA_AZ -> { sort(compareBy { it.toShow.lowercase() }); true }
@@ -195,14 +201,13 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		else -> false
 	}
 
-	/** Runs New action outside search. Returns handled flag. */
 	private fun newAction(action: () -> Unit): Boolean {
 		if (searching) return false
 		action()
 		return true
 	}
 
-	/** Reorders live list 1..n. Refuses during pending navigation read. */
+	/** A pending navigation read refuses a reorder. */
 	private fun sort(comparator: Comparator<ItemRow>) {
 		if (loadJob?.isActive == true) return
 		val items = items().toMutableList()
@@ -216,11 +221,6 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		setContent(container)
 	}
 
-	// ==========================================================================
-	//  row intents
-	// ==========================================================================
-
-	/** Word flips, chapter opens, note copies. Reference opens target directly. */
 	fun onItemClick(item: ItemRow?) {
 		val row = item ?: return
 		when (row.item.type) {
@@ -239,19 +239,14 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		val text = item.item.description.ifEmpty { item.item.name }
 		val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 		clipboard.setPrimaryClip(ClipData.newPlainText(item.item.name, text))
-		Startup.showNotice(UiNotice.NoteCopied)
+		UserMessages.showNotice(UiNotice.NoteCopied)
 	}
 
-	/** Starts selection unless paste armed. */
 	fun onItemLongClick(item: ItemRow?) {
 		val row = item ?: return
 		if (!pasteArmed) toggleSelect(row)
 	}
 
-	/**
-	 * Search hit tap — a word flips to its translations, a note copies.
-	 * A chapter opens its chain. Otherwise ends search.
-	 */
 	fun onSearchHitClick(ui: ItemUiModel) {
 		val row = ui.payload ?: return
 		if (row.item.type == ItemKind.WORD) {
@@ -272,7 +267,7 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		openChain(path)
 	}
 
-	/** Opens container of selected hit — one home opens, several show the picker. */
+	/** The container of the selected hit: one home opens and several pick. */
 	private fun goToSelectedHit() {
 		val row = items().singleOrNull(ItemRow::selected) ?: return
 		navigation.goToSelectedHit(row)
@@ -309,18 +304,14 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		viewModelScope.launch(io) {
 			ItemRepository.setOrder(parentId, ordered)
 			postToUi {
-				// Late read retries via moved generation.
+				// a late read retries via the moved generation.
 				orderPersisted()
-				// Drop ends drag-start selection.
+				// the drop ends the selection the drag started.
 				clearSelection()
 				refreshInfo()
 			}
 		}
 	}
-
-	// ==========================================================================
-	//  file / edit actions (cut/paste/reference, rename, delete)
-	// ==========================================================================
 
 	fun move(reference: Boolean) = paste.move(reference)
 
@@ -330,109 +321,36 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 	fun onEditAction() = wordEdit.onEditAction()
 
-	/** 'Go to location' of the selected hit — one home opens, several pick. */
 	fun onGoToAction() = goToSelectedHit()
 
 	/**
-	 * `false` keeps popup open. See [SubjectsWordEdit.commitWordEdit].
+	 * A false verdict keeps the popup open, see [SubjectsWordEdit.commitWordEdit].
 	 */
 	fun commitWordEdit(row: ItemRow, result: CreatorResult): Boolean = wordEdit.commitWordEdit(row, result)
 
 	fun commitForkReferences(row: ItemRow, edit: WordEdit, kept: List<Int>) = wordEdit.commitForkReferences(row, edit, kept)
 
 	/**
-	 * `false` keeps popup open. See [SubjectsWordEdit.commitItemEdit].
+	 * A false verdict keeps the popup open, see [SubjectsWordEdit.commitItemEdit].
 	 */
 	fun commitItemEdit(row: ItemRow, result: CreatorResult): Boolean = wordEdit.commitItemEdit(row, result)
 
-	fun onDeleteAction() {
-		val doomed = items().filter(ItemRow::selected)
-		if (doomed.isEmpty()) return
-		emitRequest(Request.ConfirmDelete(doomed))
-	}
+	fun onDeleteAction() = delete.onDeleteAction()
 
-	/**
-	 * Deletes the doomed rows — from their shown parent, or in search from
-	 * every parent inside the searched region.
-	 * - a search at the subject level clears every occurrence in the subject,
-	 *   a deeper search only the occurrences inside that chapter's subtree.
-	 * - occurrences outside the region survive, so a hit may outlive its
-	 *   deletion and stay in the results.
-	 */
-	fun performDelete(doomed: List<ItemRow>, title: String? = null) {
-		val searchNow = searching
-		// snapshot on main — the io pass must not read the live rows
-		val regionRoot = if (searchNow) history.path.lastOrNull() else null
-		val marks = doomed.map { it.item.id to it.parentId }
-		viewModelScope.launch(io) {
-			val links = if (regionRoot == null) marks
-			else {
-				// every parent inside the searched region — one subgraph read,
-				// then the doomed rows' own parent links
-				val region = ItemRepository.subgraph(regionRoot.id).mapTo(HashSet()) { it.id }
-				marks.flatMap { (id, _) ->
-					ItemRepository.parentIds(id).filter { it in region }.map { id to it }
-				}
-			}
-			if (title == null) for ((id, parent) in links) ItemRepository.remove(id, parent)
-			else FileProgress(title).use { progress ->
-				// Count unknown before the walk — the bar shows the running count.
-				progress.rows(0)
-				for ((id, parent) in links) ItemRepository.remove(id, parent, progress)
-			}
-			postToUi {
-				// Search re-reads — the region deletion takes more than the selection.
-				if (searchNow) refreshSearchRows() else removeItems(doomed)
-				refreshInfo()
-			}
-		}
-	}
+	fun performDelete(doomed: List<ItemRow>, title: String? = null) = delete.performDelete(doomed, title)
 
-	/**
-	 * Flips selected words — a chapter stands for its words.
-	 * Outside living word blocks via [flipConflicts].
-	 */
-	fun flipSelected() {
-		val selected = items().filter(ItemRow::selected)
-		if (selected.isEmpty()) return
-		val ids = selected.map { it.item.id }
-		// Open container, or every hit parent in search.
-		val actingParents = if (searching) selected.mapNotNull { it.parentId }.distinct()
-		else listOf(history.path.lastOrNull()?.id ?: ROOT_ID)
-		viewModelScope.launch(io) {
-			val conflicts = ItemRepository.flipConflicts(actingParents, ids)
-			if (conflicts.isNotEmpty()) {
-				postToUi {
-					Startup.showNotice(
-						UiNotice.FlipConflicts(
-							conflicts.map { conflict ->
-								conflict.word.name + " — " +
-									conflict.parents.joinToString(", ") { it.name }
-							},
-						)
-					)
-				}
-				return@launch
-			}
-			ItemRepository.flip(ids)
-			postToUi {
-				clearSelection()
-				reloadContent()
-				refreshInfo()
-			}
-		}
-	}
+	fun flipSelected() = flip.flipSelected()
 
-	/**
-	 * Selected rows become test sources. Selection stays armed for export.
-	 */
+	fun commitFlipResolutions(analysis: FlipAnalysis, result: FlipConflictsResult): Boolean = flip.commitFlipResolutions(analysis, result)
+
+	/** Selection stays armed for export. */
 	fun prepareTest() {
 		val seeds = items().filter(ItemRow::selected).map(TestSetupState::seedOf)
 		if (seeds.isEmpty()) return
 		viewModelScope.launch(io) {
 			val refused = TestSetupState.fillFromSelection(seeds)
 			if (refused.isNotEmpty()) {
-				postToUi { Startup.showNotice(UiNotice.OneSubjectOnly(TestSetupState.pickedSubject()?.name)) }
+				postToUi { UserMessages.showNotice(UiNotice.OneSubjectOnly(TestSetupState.pickedSubject()?.name)) }
 				return@launch
 			}
 			postToUi {
@@ -441,10 +359,6 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 			}
 		}
 	}
-
-	// ==========================================================================
-	//  creation (menu)
-	// ==========================================================================
 
 	private fun newSubject() = wordEdit.newSubject()
 
@@ -455,13 +369,9 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 	private fun newWord() = wordEdit.newWord()
 
 	/**
-	 * `false` keeps popup open. See [SubjectsWordEdit.commitNewItem].
+	 * A false verdict keeps the popup open, see [SubjectsWordEdit.commitNewItem].
 	 */
 	fun commitNewItem(kind: RowKind, result: CreatorResult): Boolean = wordEdit.commitNewItem(kind, result)
-
-	// ==========================================================================
-	//  import / export
-	// ==========================================================================
 
 	private val transfer = SubjectsTransfer(viewModelScope, io, TransferHost())
 

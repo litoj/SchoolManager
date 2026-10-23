@@ -13,14 +13,12 @@ import org.junit.Assert.fail
 import org.junit.Test
 
 /**
- * Round-trip tests for the word-list format — what [WordListWriter] writes
- * must parse back into the same item stream ([WordListImporter]). Plain
- * stream items, no database.
- * - every word carries a translation — the format has no line for a translation-less word.
+ * - no database is involved.
+ * - every word carries a translation, because the format has no line for none.
  */
 class WordListRoundTripTest {
 
-	/** The splitter must return to what it was — later classes read the default. */
+	/** The splitter must return to its earlier value, because later classes read the default. */
 	private val splitterWas = WordListWriter.wordTranslationSplitter
 
 	@After
@@ -28,7 +26,7 @@ class WordListRoundTripTest {
 		WordListWriter.setWordTranslationSplitter(splitterWas)
 	}
 
-	/** Collects the stream while the tree is built — parent first, children after. */
+	/** Collects the stream while the tree is built, parent first and children after. */
 	private class StreamBuilder {
 		val items = ArrayList<StreamItem>()
 
@@ -52,7 +50,6 @@ class WordListRoundTripTest {
 		}
 	}
 
-	/** Renders [builder]'s stream and parses the text back into a new stream. */
 	private fun roundTrip(builder: StreamBuilder): List<StreamItem> =
 		WordListImporter("root", WordListWriter.write(builder.items)).items
 
@@ -72,7 +69,7 @@ class WordListRoundTripTest {
 	@Test
 	fun `variant-syntax names round trip`() {
 		val b = StreamBuilder()
-		// a `\` in a name is variant syntax, not a literal — it stays raw
+		// a backslash in a name is variant syntax, not a literal, so it stays raw
 		b.word("word\\/syn\\(onym)", b.chapter("subject"), "", "trl" to "")
 		assertEquals("word\\/syn\\(onym)",
 			roundTrip(b).first { it.item.type == ItemKind.WORD }.item.name)
@@ -136,7 +133,7 @@ class WordListRoundTripTest {
 		b.add(StreamItem(DbItem(name = "bare note", description = "note description",
 			type = ItemKind.NOTE), null))
 		val back = roundTrip(b)
-		// a root word keeps its line and its kind — no empty chapter wrapper
+		// a root word keeps its line and its kind, with no empty chapter wrapper
 		val word = back.first { it.item.type == ItemKind.WORD }
 		assertEquals(null, word.parent)
 		assertEquals("bare word", word.item.name)
@@ -171,13 +168,13 @@ class WordListRoundTripTest {
 		val b = StreamBuilder()
 		b.word("ends\\", b.chapter("subject"), "", "a\\" to "", "b" to "")
 		val back = roundTrip(b)
-		// the trailing run doubles on the way out and halves on the way
-		// back — the exact names survive
+		// the trailing run doubles on the way out and halves on the way back, so
+		// the exact names survive
 		assertEquals("ends\\", back.first { it.item.type == ItemKind.WORD }.item.name)
 		assertEquals(listOf("a\\", "b"),
 			back.filter { it.item.type == ItemKind.TRANSLATION }.map { it.item.name })
 
-		// the second cycle halves what the first doubled — nothing drifts
+		// the second cycle halves what the first doubled, so nothing drifts
 		val back2 = WordListImporter("subject", WordListWriter.write(back)).items
 		assertEquals("ends\\", back2.first { it.item.type == ItemKind.WORD }.item.name)
 		assertEquals(listOf("a\\", "b"),
@@ -203,14 +200,12 @@ class WordListRoundTripTest {
 
 	@Test
 	fun `note lines carry exactly one name`() {
-		// a second separator on a note line is malformed
 		try {
 			WordListReader.parse("ch {\n=named=again\n}\n", "c")
 			fail("a note line with a second separator must fail the parse")
 		} catch (e: IllegalArgumentException) {
 			// expected
 		}
-		// a note line without a name is malformed too
 		try {
 			WordListReader.parse("ch {\n=\n}\n", "c")
 			fail("a nameless note line must fail the parse")
@@ -251,7 +246,7 @@ class WordListRoundTripTest {
 
 	@Test
 	fun `a lone cr is a line ending`() {
-		// a lone `\r` ends the line without eating the next character
+		// a lone CR ends the line without eating the next character
 		val root = WordListReader.parse("ch {\rword;t\r}\r", "c")
 		val ch = root.children.single()
 		assertEquals("word", ch.words.single().name)
@@ -269,8 +264,8 @@ class WordListRoundTripTest {
 
 	@Test
 	fun `an empty word name refuses the write`() {
-		// a bare splitter line would read back as a note (a silent kind
-		// change) or fail the parse
+		// a bare splitter line would read back as a note, a silent kind change,
+		// or fail the parse
 		val word = StreamItem(DbItem(name = "", description = "", type = ItemKind.WORD), null)
 		val trl = StreamItem(DbItem(name = "t", description = "", type = ItemKind.TRANSLATION), word)
 		try {
@@ -294,7 +289,7 @@ class WordListRoundTripTest {
 
 	@Test
 	fun `a whitespace name refuses the write`() {
-		// the reader trims the line — a blank name would read back as a note
+		// the reader trims the line, so a blank name would read back as a note
 		val word = StreamItem(DbItem(name = " ", description = "", type = ItemKind.WORD), null)
 		val trl = StreamItem(DbItem(name = "t", description = "", type = ItemKind.TRANSLATION), word)
 		try {
@@ -307,16 +302,16 @@ class WordListRoundTripTest {
 
 	@Test
 	fun `a whitespace piece adds nothing at the line end`() {
-		// `t\ ` splits the translations, the blank piece trims to no name —
-		// the word keeps its real translation alone
+		// a trailing backslash splits the translations and the blank piece trims to
+		// no name, so the word keeps its real translation alone
 		val root = WordListReader.parse("w;t\\ \n", "c")
 		assertEquals(listOf("t"), root.words.single().translations.map { it.name })
 	}
 
 	@Test
 	fun `a whitespace word piece fails the parse`() {
-		// `word\ ` splits, and the blank piece then meets the description —
-		// it must fail, not land a blank-named word the writers refuse
+		// a trailing split leaves a blank piece that then meets the description, so
+		// it must fail rather than land a blank-named word
 		try {
 			WordListReader.parse("word\\ [d]=trl\n", "c")
 			fail("a whitespace-only word piece must fail the parse")
@@ -327,7 +322,7 @@ class WordListRoundTripTest {
 
 	@Test
 	fun `a lone divider in a chapter name fails instead of truncating`() {
-		// `a\b {` splits into the name "a" and the pending text "b" — the
+		// a backslash splits into the name "a" and the pending text "b", so the
 		// chapter must not import as "a" with "b" silently lost
 		try {
 			WordListReader.parse("a\\b {\nword;t\n}\n", "c")
@@ -339,8 +334,8 @@ class WordListRoundTripTest {
 
 	@Test
 	fun `an interleaved file keeps its line order`() {
-		// words, notes and chapters interleave in the file — the stream
-		// keeps that order, so the import's link positions match the file
+		// words, notes and chapters interleave in the file, so the stream keeps
+		// that order and the link positions of the import match the file
 		val importer = WordListImporter("c", "ch {\nw1;t1\n= n1\nw2;t2\n}\n")
 		val names = importer.items.map { it.item.type.kindPrefix() + it.item.name }
 		assertEquals(listOf("c:ch", "w:w1", "t:t1", "n:n1", "w:w2", "t:t2"), names)
@@ -348,9 +343,10 @@ class WordListRoundTripTest {
 
 	@Test
 	fun `an odd backslash run before a separator stays parseable and stable`() {
-		// a stored name with one backslash before an escaped separator has
-		// no exact encoding — the write evens the run (one backslash more),
-		// the file parses, and the next cycle writes the same text
+		// a stored name with one backslash before an escaped separator has no exact
+		// encoding:
+		// - the write evens the run.
+		// - the next cycle writes the same text.
 		fun stream(name: String): List<StreamItem> {
 			val word = StreamItem(DbItem(name = name, description = "", type = ItemKind.WORD), null)
 			return listOf(word,
@@ -358,10 +354,9 @@ class WordListRoundTripTest {
 		}
 		val text1 = WordListWriter.write(stream("a\\;"))
 		val parsed = WordListReader.parse(text1, "c")
-		// the run became even — the name carries two backslashes now
+		// the run became even, so the name carries two backslashes now
 		assertEquals("a\\\\;", parsed.words.single().name)
 
-		// the second write reproduces the same text — the cycle is stable
 		assertEquals(text1, WordListWriter.write(stream(parsed.words.single().name)))
 	}
 

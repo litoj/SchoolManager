@@ -21,13 +21,9 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The performance floor of every import kind, on the heaviest real subject
- * (NJ, 204 chapters, 3282 words, 3327 translations — 6813 stream items).
- *
- * - the whole import stack sits behind [ItemRepository.import] — pure codecs,
- *   the real in-memory Room database, nothing else.
- * - each test times its import (`PERF <name>`) against a ceiling — a per-item
- *   query storm fails the suite instead of only feeling slow.
+ * - NJ has 204 chapters, 3282 words and 3327 translations.
+ * - the stack holds pure codecs and the real in-memory Room database.
+ * - a per-item query storm fails the suite instead of only feeling slow.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -50,19 +46,18 @@ class ImportPerformanceTest {
 	}
 
 	/**
-	 * The NJ saved-row counts — the subject-wide name merge folds the
-	 * repeated word entries (3282 entries, 3023 rows: the names trim
-	 * before the merge, so every format lands the same rows).
+	 * The saved-row counts of NJ.
+	 * - the subject-wide name merge folds the repeated word entries.
+	 * - 3282 entries become 3023 rows.
+	 * - the names trim before the merge, so every format lands the same rows.
 	 */
 	private val njWords = 3023
 	private val njChapters = 204
 	private val njRows = 6251
 
-	/** The fixture file at [path] — a committed test resource. */
 	private fun fixture(path: String): File =
 		File(javaClass.getResource(path)!!.toURI())
 
-	/** The NJ directory as the pipeline hands it to the repository. */
 	private fun legacyImporter(): LegacySubjectImporter {
 		val dir = fixture("/perf/legacy/NJ")
 		val subject = LegacyJsonLoader.parseSubjectDir(
@@ -73,9 +68,10 @@ class ImportPerformanceTest {
 	}
 
 	/**
-	 * The wall-clock budget of one NJ import through the repository. The
-	 * fixed save loop runs in well under a second, with tenfold headroom for
-	 * machine variance — per-item database reads fail loudly.
+	 * The wall-clock budget of one NJ import through the repository.
+	 * - the fixed save loop runs in well under a second.
+	 * - tenfold headroom covers machine variance.
+	 * - per-item database reads fail loudly.
 	 */
 	private val budgetMs = 5_000
 
@@ -88,7 +84,6 @@ class ImportPerformanceTest {
 		return result
 	}
 
-	/** The one import's row count, everything the root reaches. */
 	private fun rowCount(): Int = db.openHelper.readableDatabase
 		.query("SELECT COUNT(*) FROM item WHERE id != $ROOT_ID").use { cursor ->
 			cursor.moveToFirst()
@@ -132,9 +127,9 @@ class ImportPerformanceTest {
 		}
 		assertEquals(njWords, result.words)
 		assertEquals(njChapters, result.chapters)
-		// the deck row plus the word list's trimmed row count
+		// the deck row plus the trimmed row count of the word list
 		assertEquals(njRows + 1, rowCount())
-		// the stream's NJ wrapper becomes a chapter of the deck
+		// the NJ wrapper of the stream becomes a chapter of the deck
 		val children = ItemRepository.children(deck.id)
 		assertEquals(listOf("NJ"), children.map { it.name })
 	}
@@ -143,7 +138,7 @@ class ImportPerformanceTest {
 	fun `re-importing NJ merges under the time budget and adds nothing`() {
 		ItemRepository.import(legacyImporter())
 		val importer = legacyImporter()
-		// the merge path — every name lookup hits an existing row, nothing doubles
+		// the merge path, where every name lookup hits an existing row and nothing doubles
 		val result = timed("legacy-dir-reimport") { ItemRepository.import(importer) }
 		assertEquals(njWords, result.words)
 		assertEquals(njChapters, result.chapters)
@@ -155,8 +150,8 @@ class ImportPerformanceTest {
 	fun `re-importing into a container merges under the time budget and adds nothing`() {
 		val deck = ItemRepository.createSubject("Deck", null)
 		ItemRepository.import(WordListImporter("Deck", fixture("/perf/nj.txt").readText()), deck.id)
-		// the subject being added to already holds the whole stream — every
-		// lookup hits a row of the preloaded scope, nothing doubles
+		// the subject being added to already holds the whole stream, so every lookup
+		// hits a row of the preloaded scope and nothing doubles
 		val importer = WordListImporter("Deck", fixture("/perf/nj.txt").readText())
 		val result = timed("word-into-container-reimport") { ItemRepository.import(importer, deck.id) }
 		assertEquals(njWords, result.words)

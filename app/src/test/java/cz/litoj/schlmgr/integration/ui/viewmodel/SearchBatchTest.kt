@@ -18,11 +18,9 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * Integration tests of the search-run batching ([SearchRun.drainBatches], driven
- * through the view model so the host wiring is covered too): a run longer
- * than [SearchRun.SEARCH_BATCH] streams in full batches plus a tail, keeping
- * every row in order with the running result count on the info strip. An
- * empty drain leaves the list alone.
+ * - the view model drives the run, so the host wiring is covered too.
+ * - a run longer than [SearchRun.SEARCH_BATCH] streams full batches and a tail.
+ * - the running result count stays on the info strip.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -74,8 +72,8 @@ class SearchBatchTest {
 	@Test
 	fun `a batch after a renumbered list continues the sequence`() {
 		val vm = vm()
-		// a mid-stream sort renumbers the shown rows 1..n — the next batch
-		// must continue from the live size, not its stale run-global positions
+		// a mid-stream sort renumbers the shown rows 1..n, so the next batch must
+		// continue from the live size, not its stale run-global positions
 		vm.load(rows(2), isSearch = true)
 		val batch = rows(2).map { it.item.copy(id = 100 + it.item.id.toInt()) }
 			.map { ItemRow(it, null, 99, false) }

@@ -5,13 +5,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * Unit tests for the pure auto-scroll ramp ([scrollStep]).
- * - no step away from either edge — inside the edge zone the step grows
- *   with the finger's depth, capped at the given maximum.
- * - on an overlapping viewport the nearer edge wins, with an exact tie
- *   scrolling up.
- * - select auto-scroll is not covered — it lives in
- *   [rememberListDragModifier], so it needs a composed list.
+ * - select auto-scroll is not covered, because it lives in [rememberListDragModifier].
+ * - that case needs a composed list.
  */
 class ScrollStepTest {
 
@@ -48,7 +43,7 @@ class ScrollStepTest {
 		assertEquals(maxStep, step(height + 20f), 0f)
 	}
 
-	/** A viewport shorter than both zones keeps the lean direction — nearer edge wins. */
+	/** A viewport shorter than both zones keeps the lean direction, where the nearer edge wins. */
 	@Test
 	fun `an overlapping viewport follows the nearer edge`() {
 		val small = 150f
@@ -57,7 +52,6 @@ class ScrollStepTest {
 		assertEquals(maxStep * 0.4f, smallStep(90f), 0.001f)
 	}
 
-	/** An exact tie in an overlapping viewport keeps scrolling up. */
 	@Test
 	fun `an overlapping tie scrolls up`() {
 		val small = 150f

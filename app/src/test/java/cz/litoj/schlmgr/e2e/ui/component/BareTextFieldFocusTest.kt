@@ -14,10 +14,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The field's focus contract on the composed wrapper — the loss callback
- * fires on leaving, never on entering (the wrapper is only the ancestor of
- * the focus holder — its `isFocused` stays false, `hasFocus` carries the
- * truth).
+ * - the loss callback fires on leaving and never on entering.
+ * - the wrapper is only the ancestor of the focus holder.
+ * - its isFocused stays false while hasFocus carries the truth.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -39,8 +38,8 @@ class BareTextFieldFocusTest {
 			}
 		}
 
-		// the window's focus traversal touches the first field during the
-		// setup — let it settle, then count from zero
+		// the focus traversal of the window touches the first field during setup,
+		// so let it settle and count from zero
 		rule.waitForIdle()
 		lost = 0
 
@@ -48,7 +47,6 @@ class BareTextFieldFocusTest {
 		rule.onNodeWithText("first").performClick()
 		rule.runOnIdle { assertEquals(0, lost) }
 
-		// tapping away does
 		rule.onNodeWithText("second").performClick()
 		rule.runOnIdle { assertEquals(1, lost) }
 	}

@@ -4,15 +4,16 @@ import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.DbLink
 
 /**
- * One container's whole content, preloaded for a search run — rows, per-parent
- * children in link order, and every incoming link (outside parents included).
+ * The whole content of one container, preloaded for a search run.
+ * - rows and per-parent children in link order.
+ * - every incoming link, outside parents included.
  */
 class SearchIndex(rows: List<DbItem>, links: List<DbLink>, childLinks: List<DbLink> = emptyList()) {
 
 	private val byId: Map<Int, DbItem> = rows.associateBy { it.id }
 	private val children: Map<Int, List<DbItem>>
 
-	/** child id → every link into it, parents outside the subgraph included. */
+	/** The links into a child id, with parents outside the subgraph included. */
 	private val intoChild: Map<Int, List<DbLink>>
 
 	init {
@@ -23,13 +24,13 @@ class SearchIndex(rows: List<DbItem>, links: List<DbLink>, childLinks: List<DbLi
 		intoChild = childLinks.groupBy { it.childId }
 	}
 
-	/** Children of a container in link order — chapters, or a word's translations. */
+	/** The children of a container in link order, chapters or the translations of a word. */
 	fun childrenOf(parentId: Int): List<DbItem> = children[parentId] ?: emptyList()
 
 	/**
-	 * Every link into an item — its whole parent set with the reference flags.
-	 * A hit row's reference facts come from these, so building thousands of
-	 * hit rows costs no per-row database round-trip.
+	 * Every link into an item, its whole parent set with the reference flags.
+	 * - the reference facts of a hit row come from these.
+	 * - so building thousands of hit rows costs no per-row database round-trip.
 	 */
 	fun linksOf(childId: Int): List<DbLink> = intoChild[childId] ?: emptyList()
 }

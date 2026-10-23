@@ -47,15 +47,22 @@ import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 
 /**
- * The scroll floor of the explorer list under the fastest real scroll: one maximum-velocity fling pass
- * through a whole list, one hand-stepped frame at a time, against the same count of one-line rows.
- * - a frame's wall time is composition, layout and draw of the rows on screen.
- * - the harness cost per frame is the same for both lists — the pass DIFFERENCE is scroll work in frames.
- * - the NJ pass loads the legacy fixture and runs the production `\W/` search — matched words have variant slashes.
- * - the height pass builds a synthetic sample of all row shapes — half one-line, half multi-line, interleaved.
- * - interleaving makes a recycled row composition change height almost every time.
- * - the kind pass interleaves the four row kinds, all one-line — only the icon differs.
- * - `PERF scroll-*` lines carry the numbers — the budget assertion fails loudly on regression.
+ * The scroll floor of the explorer list under the fastest real scroll.
+ * - one maximum-velocity fling pass crosses a whole list.
+ * - the pass steps one frame at a time by hand.
+ * - it runs against the same count of one-line rows.
+ * - the wall time of a frame is composition, layout and draw of the rows.
+ * - the harness cost per frame is the same for both lists.
+ * - the difference between passes is thus scroll work in frames.
+ * - the NJ pass loads the legacy fixture and runs the production search.
+ * - matched words carry a variant slash.
+ * - the height pass builds a synthetic sample of all row shapes.
+ * - that sample is half one-line, half multi-line and interleaved.
+ * - interleaving makes a recycled row change height almost every time.
+ * - the kind pass interleaves the four row kinds, all one-line.
+ * - only the icon differs there.
+ * - PERF scroll lines carry the numbers.
+ * - the budget assertion fails loudly on regression.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -67,7 +74,7 @@ class ItemListScrollPerformanceTest {
 	private lateinit var db: ItemDatabase
 	private val descLinesWas = ItemRow.descLines
 
-	/** The host list — a swap exchanges the measured population. */
+	/** The host list, where a swap exchanges the measured population. */
 	private val state = mutableStateOf(ItemListState())
 
 	@Before
@@ -92,8 +99,9 @@ class ItemListScrollPerformanceTest {
 		private const val FRAME_MS = 16L
 
 		/**
-		 * The swipe's end velocity — above every fling clamp, so each list
-		 * flings at the system maximum: the fastest scroll possible.
+		 * The end velocity of the swipe, above every fling clamp.
+		 * - each list thus flings at the system maximum.
+		 * - that is the fastest scroll possible.
 		 */
 		private const val FLING_VELOCITY = 15_000f
 
@@ -103,7 +111,7 @@ class ItemListScrollPerformanceTest {
 		/** Consecutive near-empty frames that mean a fling settled. */
 		private const val SETTLED_STREAK = 4
 
-		/** A fling guard — a pass that cannot reach the end fails, not hangs. */
+		/** A fling guard: a pass that cannot reach the end fails instead of hanging. */
 		private const val MAX_FLINGS = 40
 
 		/** Both measured NJ passes together must stay under this wall clock. */
@@ -116,7 +124,7 @@ class ItemListScrollPerformanceTest {
 		private const val KINDS_BUDGET_MS = 20_000.0
 	}
 
-	/** The NJ words whose names carry a variant slash — the production `\W/` search over the fixture. */
+	/** The NJ words whose names carry a variant slash, from the production search. */
 	private fun njVariantRows(): List<ItemUiModel> {
 		val dir = File(javaClass.getResource("/perf/legacy/NJ")!!.toURI())
 		val subject = LegacyJsonLoader.parseSubjectDir(
@@ -138,8 +146,8 @@ class ItemListScrollPerformanceTest {
 	}
 
 	/**
-	 * The height control — every row the same two-line shape, so the mixed
-	 * pass's extra cost separates "rows are tall" from "heights change".
+	 * The height control, with every row in the same two-line shape.
+	 * - the extra cost of the mixed pass separates tall rows from height changes.
 	 */
 	private fun uniformTwoLineRows(): List<ItemUiModel> = List(300) { i ->
 		ItemUiModel(
@@ -155,8 +163,7 @@ class ItemListScrollPerformanceTest {
 	}
 
 	/**
-	 * A kind-mixed list — subjects, chapters, words and notes interleaved,
-	 * all one-line — so the only per-row difference is the kind (its icon).
+	 * - only the kind differs per row, through its icon.
 	 */
 	private fun mixedKindRows(): List<ItemUiModel> {
 		val kinds = listOf(RowKind.SUBJECT, RowKind.CHAPTER, RowKind.WORD, RowKind.NOTE)
@@ -174,7 +181,7 @@ class ItemListScrollPerformanceTest {
 		}
 	}
 
-	/** The comparison floor — one line, no description, the same row count. */
+	/** The comparison floor: one line, no description, the same row count. */
 	private fun oneLineRows(count: Int): List<ItemUiModel> = List(count) { i ->
 		ItemUiModel(
 			key = "base$i",
@@ -189,9 +196,7 @@ class ItemListScrollPerformanceTest {
 	}
 
 	/**
-	 * Half one-line, half multi-line, interleaved — a recycled row composition
-	 * lands on content of a different height almost every time, which is what
-	 * a real mixed list does to the rows' size springs.
+	 * - a recycled row lands on content of a different height almost every time.
 	 */
 	private fun variableHeightRows(): List<ItemUiModel> {
 		val wrapName = "Die Landesverteidigung hat den Auftrag die Souveränität " +
@@ -221,10 +226,10 @@ class ItemListScrollPerformanceTest {
 		}
 	}
 
-	/** Composes the host list once — every pass swaps [state] instead. */
+	/** Composes the host list once: every pass swaps [state] instead. */
 	private fun composeHost(reorderable: Boolean) {
 		rule.setContent {
-			// the test window is 320x480 — the column fills it, a phone-height viewport
+			// the test window is 320x480, so the column fills a phone-height viewport
 			Column(Modifier.size(320.dp, 480.dp)) {
 				ItemList(state = state.value, callbacks = ItemListCallbacks(), reorderable = reorderable)
 			}
@@ -235,8 +240,9 @@ class ItemListScrollPerformanceTest {
 	private fun list() = rule.onNode(hasScrollToIndexAction())
 
 	/**
-	 * One population's measurement — swaps [models] in, flings once unmeasured
-	 * for the JIT, then runs [passes] measured fling passes, top to end.
+	 * One measurement of one population.
+	 * - it swaps [models] in and flings once unmeasured for the JIT.
+	 * - it then runs [passes] measured fling passes, top to end.
 	 */
 	private fun flingThrough(
 		models: List<ItemUiModel>,
@@ -263,10 +269,10 @@ class ItemListScrollPerformanceTest {
 	}
 
 	/**
-	 * Flings to the row named [lastName] at maximum velocity, stepping the
-	 * clock one frame at a time. Frames with work land in [frames] when
-	 * given; a frame cheaper than 0.5ms four times in a row ends a settled
-	 * fling, and such idle frames never count.
+	 * Flings to the row named [lastName] at maximum velocity, one frame at a time.
+	 * - frames with work land in [frames] when given.
+	 * - four frames under 0.5ms in a row end a settled fling.
+	 * - such idle frames never count.
 	 */
 	private fun flingToEnd(lastName: String, frames: ArrayList<Double>? = null): Int {
 		var flings = 0
@@ -300,7 +306,6 @@ class ItemListScrollPerformanceTest {
 		return flings
 	}
 
-	/** The pass's numbers — average, 95th percentile, worst frames, total. */
 	private fun report(label: String, rows: Int, flings: Int, frames: List<Double>) {
 		val sorted = frames.sorted()
 		val p95 = sorted[(sorted.size * 0.95).toInt().coerceAtMost(sorted.lastIndex)]
@@ -313,8 +318,9 @@ class ItemListScrollPerformanceTest {
 	}
 
 	/**
-	 * The verdict — the target's frame cost over the one-line floor, and the
-	 * overtime as a count of lost frames across the whole scroll.
+	 * The verdict.
+	 * - the frame cost of the target over the one-line floor.
+	 * - the overtime as a count of lost frames across the whole scroll.
 	 */
 	private fun reportLostFrames(label: String, target: List<Double>, base: List<Double>) {
 		assertTrue("no frames measured for $label", target.isNotEmpty() && base.isNotEmpty())
@@ -350,7 +356,7 @@ class ItemListScrollPerformanceTest {
 	fun `fast-scrolling the NJ variant-word results stays under its time budget`() {
 		ItemRow.descLines = Int.MAX_VALUE
 		val target = njVariantRows()
-		// NJ's word rows carrying a variant slash — 138 after the subject-wide name merge
+		// the word rows of NJ that carry a variant slash, 138 after the subject-wide name merge
 		assertEquals(138, target.size)
 		composeHost(reorderable = false)
 

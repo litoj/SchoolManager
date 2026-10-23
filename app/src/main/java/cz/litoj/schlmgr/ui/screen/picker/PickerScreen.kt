@@ -22,24 +22,24 @@ import cz.litoj.schlmgr.ui.shell.headerShadow
 import cz.litoj.schlmgr.ui.viewmodel.SearchUi
 
 /**
- * The source picker screen — top bar with the up arrow (a pushed
- * destination, not a drawer sibling) and the search field in the title
- * slot, the explorer content below, the back chain over it. The exit
- * pops back to the test setup.
+ * The source picker screen: a pushed destination, not a drawer sibling.
+ * - the top bar holds the up arrow and the search field in the title slot.
+ * - the explorer content sits below, with the back chain over it.
+ * - the exit pops back to the test setup.
  *
- * @param onExit the up arrow / the exit back outcome — pops this destination
+ * @param onExit the up arrow and the exit back outcome, which pops this destination
  */
 @Composable
 fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 	val state by viewModel.state.collectAsStateWithLifecycle()
-	// the toolbar title is derived — the open container's crumb, the picker label at the root
+	// the toolbar title is derived: the crumb of the open container, the picker label at the root
 	val title = state.breadcrumbs.lastOrNull() ?: stringResource(R.string.test_add)
 	val query by viewModel.query.collectAsStateWithLifecycle()
-	// chrome derives from the one search mode (see [SearchUi])
+	// chrome derives from the one search mode, see [SearchUi]
 	val fieldOpen = state.searchUi == SearchUi.TYPING
 	val searchVisible = state.breadcrumbs.isNotEmpty()
 
-	// the picker's one navigation step — confirm or cancel closes it
+	// the one navigation step of the picker, where confirm or cancel closes it
 	LaunchedEffect(viewModel) {
 		viewModel.requests.collect { request ->
 			if (request is PickerViewModel.Request.Close) onExit()
@@ -64,10 +64,8 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 }
 
 /**
- * The picker's explorer content — the scaffold (breadcrumbs, info strip,
- * item list) with the picker's bottom strip. The Select button's
- * enablement derives from the list state, so it recomposes as rows get
- * (un)selected.
+ * The explorer content of the picker: the scaffold with the bottom strip of the picker.
+ * - the scaffold holds the breadcrumbs, the info strip and the item list.
  */
 @Composable
 private fun PickerContent(viewModel: PickerViewModel, modifier: Modifier = Modifier) {
@@ -90,11 +88,6 @@ private fun PickerContent(viewModel: PickerViewModel, modifier: Modifier = Modif
 	}
 }
 
-/**
- * The picker's row intents — a browse row opens its container (a word
- * flips), a long-press toggles the selection (a search hit included),
- * the drag-select covers ranges.
- */
 private fun pickerCallbacks(viewModel: PickerViewModel): ItemListCallbacks = ItemListCallbacks(
 	onItemClick = { ui -> viewModel.onItemClick(ui.payload) },
 	onItemLongClick = { ui -> viewModel.onItemLongClick(ui.payload) },

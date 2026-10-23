@@ -14,9 +14,10 @@ import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.ui.popup.MessagePopup
 
 /**
- * Renders [GlobalDependencies.messages] as snackbars — the short text with a
- * 'full text' action opening the [MessagePopup] dialog.
-	 * - composed by every activity — a worker-thread report shows on whichever screen is in the foreground (the flow delivers only while collected).
+ * Renders [GlobalDependencies.messages] as snackbars, with a full text action.
+ * - the action opens the [MessagePopup] dialog with the whole text.
+ * - every activity composes it, so a worker-thread report shows on the foreground screen.
+ * - the flow delivers only while it is collected.
  */
 @Composable
 fun messageSnackbarHost(): SnackbarHostState {
@@ -39,7 +40,7 @@ fun messageSnackbarHost(): SnackbarHostState {
 	return snackbar
 }
 
-/** The one place a notice becomes display strings — kept next to the surface that shows them. */
+/** The one place where a notice becomes display strings, kept next to its surface. */
 private fun noticeMessage(ctx: Context, notice: UiNotice): Triple<String, String, String?> =
 	when (notice) {
 		is UiNotice.PasteInsideItself ->
@@ -54,12 +55,8 @@ private fun noticeMessage(ctx: Context, notice: UiNotice): Triple<String, String
 			ctx.getString(R.string.note_copied).let { Triple(it, it, null) }
 		is UiNotice.BadPattern ->
 			ctx.getString(R.string.pattern_err, notice.detail).let { Triple(it, it, null) }
-		is UiNotice.FlipConflicts -> Triple(
-			ctx.resources.getQuantityString(
-				R.plurals.flip_conflicts, notice.lines.size, notice.lines.size),
-			notice.lines.joinToString("\n"),
-			ctx.getString(R.string.flip_conflict_view),
-		)
+		is UiNotice.FlipBlankName ->
+			ctx.getString(R.string.flip_conflicts_blank).let { Triple(it, it, null) }
 		is UiNotice.OneSubjectOnly -> {
 			// the named form tells the user which subject to return to
 			val text = if (notice.subject != null)

@@ -6,11 +6,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * The display form of a variant-syntax name ([ItemRow.nameParser]): the name
- * parses only when it carries variant syntax an escaped reader would hit
- * (`\\/` or `)` with `/`), the variants join on one line while short, and a
- * variant longer than 18 characters goes on its own line. Pins the join
- * rule and the trigger so both stay as they are.
+ * The display form of a variant-syntax name through [ItemRow.nameParser].
+ * - the name parses only when it carries variant syntax an escaped reader meets.
+ * - that syntax is an escaped slash or a closing parenthesis with a slash.
+ * - the variants join on one line while short.
+ * - a variant longer than 18 characters goes on its own line.
  */
 class NameParserTest {
 
@@ -43,7 +43,7 @@ class NameParserTest {
 
 	@Test
 	fun `a name whose only variant collapses stays single`() {
-		// a stray `)` is text now — the single variant keeps it
+		// a stray closing parenthesis is text now, and the single variant keeps it
 		assertEquals("word/syn(onym)", ItemRow.nameParser("word\\/syn\\(onym)"))
 	}
 
@@ -55,7 +55,7 @@ class NameParserTest {
 
 	@Test
 	fun `a name with a bare slash but no group or escape stays as written`() {
-		// no `\\/` and no `)`+`/`: the parser never runs
+		// no escaped slash and no closing parenthesis with a slash, so the parser never runs
 		assertEquals("/I/You smile.", ItemRow.nameParser("/I/You smile."))
 	}
 }

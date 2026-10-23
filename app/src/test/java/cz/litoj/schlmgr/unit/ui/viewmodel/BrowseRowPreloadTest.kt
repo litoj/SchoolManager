@@ -11,12 +11,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Unit tests of the preloaded browse rows ([ItemRow.convert] with links /
- * [ItemRow.ofBrowse]): a browse load takes its reference facts
- * (`isReference` / `hasSource`) from one preloaded link set, and a
- * default-flipped word takes its translations from one preloaded map,
- * instead of per-row repository queries — building the rows must touch no
- * database. Chapter rows build fully detached, so they pin this without one.
+ * - a browse load takes its reference facts from one preloaded link set.
+ * - a default-flipped word takes its translations from one preloaded map.
+ * - building the rows must touch no database.
  */
 class BrowseRowPreloadTest {
 
@@ -84,8 +81,8 @@ class BrowseRowPreloadTest {
 	@Test
 	fun `a whole word batch builds flipped without a database`() {
 		ItemRow.defFlip = true
-		// every word row renders its translations from the map — a per-row
-		// query would throw here, no repository is initialized
+		// every word row renders its translations from the map, while a per-row query
+		// would throw here since no repository is initialized
 		val words = (1..20).map { DbItem(id = it, name = "w$it", description = "", type = ItemKind.WORD) }
 		val translations = words.associate {
 			it.id to listOf(DbItem(id = 1000 + it.id, name = "t${it.id}", description = "", type = ItemKind.TRANSLATION))

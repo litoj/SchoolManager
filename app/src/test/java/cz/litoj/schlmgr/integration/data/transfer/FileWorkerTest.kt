@@ -30,19 +30,16 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * The file workers ([ImporterFactory]'s import workers and [ExportPipeline])
- * on a real in-memory database. Every way a picked file can land (a tree
- * JSON at the root or inside the open container, a word list as the root's
- * rows — its own wrapper chapter a subject, bare words root rows — as the
- * open container's content, or into a container that closed before the
- * run) pins the anchor the worker persists with, the reload it posts,
- * and what a failed import leaves behind.
- *
- * The exports pin the bytes both formats write and the empty-selection no-op.
- * - the picked documents are shadow-registered content uris — Robolectric's
- * SAF query names no document, so the name resolves to the fallback.
- * - the posts run inline, so the worker thread's join settles every
- * follow-up before the assertions.
+ * - every way a picked file can land pins the anchor the worker persists with.
+ * - the tree JSON lands at the root or inside the open container.
+ * - a word list lands as the rows of the root.
+ * - its own wrapper chapter counts as a subject and bare words as root rows.
+ * - a word list can also land as the content of the open container.
+ * - a container that closed before the run pins its own reload and failure.
+ * - the exports pin the bytes both formats write and the empty-selection no-op.
+ * - the picked documents are shadow-registered content uris.
+ * - the SAF query of Robolectric names no document, so the name falls back.
+ * - the posts run inline, so the join of the worker thread settles every follow-up.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -51,14 +48,13 @@ class FileWorkerTest {
 	private lateinit var db: ItemDatabase
 	private var nextPick = 0
 
-	/** The reloads the open screen ran — the worker's posted follow-up. */
+	/** The reloads the open screen ran, the posted follow-up of the worker. */
 	private class Reloads {
 		var root = 0
 		var current = 0
 		var container = 0
 	}
 
-	/** A tree JSON of two top-level chapters, the first with one word. */
 	private val tree = """
 		[
 		  {
@@ -99,11 +95,10 @@ class FileWorkerTest {
 		db.close()
 	}
 
-	/** A picked text document — the resolver hands its bytes to a read. */
 	private fun picked(text: String): Uri {
 		val uri = Uri.parse("content://schlmgr.test/pick/${nextPick++}")
-		// the shadow serves one instance for every open — the format peek
-		// closes it, so it resets and the import read starts clean
+		// the shadow serves one instance for every open, and the format peek closes
+		// it, so it resets and the import read starts clean
 		val bytes = text.toByteArray(StandardCharsets.UTF_8)
 		shadowOf(RuntimeEnvironment.getApplication().contentResolver)
 			.registerInputStream(uri, object : java.io.ByteArrayInputStream(bytes) {
@@ -112,7 +107,7 @@ class FileWorkerTest {
 		return uri
 	}
 
-	/** The `onAnyFilePicked` dispatch, the backlog resolvers live as the view model hands them over. */
+	/** The onAnyFilePicked dispatch, with the resolvers as the view model hands them over. */
 	private fun importPicked(fileName: String, open: () -> DbItem?, text: String): Reloads {
 		val reloads = Reloads()
 		val uri = picked(text)
@@ -126,7 +121,7 @@ class FileWorkerTest {
 		return reloads
 	}
 
-	/** The picked export target — the shadow collects the written bytes. */
+	/** The picked export target: the shadow collects the written bytes. */
 	private fun exportPicked(format: ExportFormat, selected: () -> List<DbItem>): Pair<String, Boolean> {
 		val uri = Uri.parse("content://schlmgr.test/out/${nextPick++}")
 		val out = ByteArrayOutputStream()
@@ -152,8 +147,8 @@ class FileWorkerTest {
 
 	@Test
 	fun `a tree file whose name resolves to nothing imports as a tree`() {
-		// some providers report no document name — the empty fallback
-		// must not send the tree JSON to the word-list parser
+		// some providers report no document name, so the empty fallback must not
+		// send the tree JSON to the word-list parser
 		val reloads = importPicked("", { null }, tree)
 
 		val subjects = ItemRepository.subjects()
@@ -166,7 +161,7 @@ class FileWorkerTest {
 	fun `a word list with a json-sounding name imports as a word list`() {
 		val reloads = importPicked("list.hjson", { null }, "Kapitel {\nHaus;home\n}")
 
-		// the document's own shape decides — the name never does
+		// the shape of the document decides, and the name never does
 		val subject = ItemRepository.subjects().single()
 		assertEquals("Kapitel", subject.name)
 		assertEquals(listOf("Haus"), ItemRepository.children(subject.id).map { it.name })
@@ -180,10 +175,9 @@ class FileWorkerTest {
 
 		val reloads = importPicked("tree.hjson", { lektion }, tree)
 
-		// no new subject — the file's chapters joined the open container's content
+		// no new subject, because the chapters of the file joined the content of the open container
 		assertEquals(listOf("Deutsch"), ItemRepository.subjects().map { it.name })
 		assertEquals(listOf("A", "B"), ItemRepository.children(lektion.id).map { it.name })
-		// the word is reachable through the open chapter
 		val a = ItemRepository.children(lektion.id).first { it.name == "A" }
 		assertEquals(listOf("w1"), ItemRepository.children(a.id).map { it.name })
 		assertEquals(0, reloads.root)
@@ -198,7 +192,7 @@ class FileWorkerTest {
 		importPicked("tree.hjson", { lektion }, tree)
 		importPicked("tree.hjson", { lektion }, tree)
 
-		// the container merge rule — a same-named chapter of the same parent joins
+		// the container merge rule, where a same-named chapter of the same parent joins
 		assertEquals(listOf("A", "B"), ItemRepository.children(lektion.id).map { it.name })
 		val a = ItemRepository.children(lektion.id).first { it.name == "A" }
 		val w1 = ItemRepository.children(a.id).single()
@@ -226,14 +220,13 @@ class FileWorkerTest {
 	fun `a word list import whose container is gone lands at the root instead`() {
 		val deutsch = ItemRepository.createSubject("Deutsch", null)
 		val lektion = ItemRepository.createChapter(deutsch.id, "Lektion 1", null)
-		// the container closes between the pick and the worker's run — the
-		// root takes the words then, like the JSON import's fallback
+		// the container closes between the pick and the run of the worker, so the
+		// root takes the words then, like the fallback of the JSON import
 		var open: DbItem? = lektion
 
 		val reloads = importPicked("list.txt", { open.also { open = null } }, "Haus;home")
 
 		assertEquals(0, ItemRepository.children(lektion.id).size)
-		// the words landed as the root's own rows
 		assertTrue(ItemRepository.children(ROOT_ID).any { it.name == "Haus" && it.type == ItemKind.WORD })
 		assertEquals(1, reloads.root)
 	}
@@ -242,7 +235,7 @@ class FileWorkerTest {
 	fun `a word list at the root becomes its top-level chapters as subjects and reloads the root`() {
 		val reloads = importPicked("list.txt", { null }, "Kapitel {\nHaus;home\n}")
 
-		// the file's own top-level chapter IS the subject — the file name
+		// the own top-level chapter of the file IS the subject, so the file name
 		// never becomes a row
 		val subject = ItemRepository.subjects().single()
 		assertEquals("Kapitel", subject.name)
@@ -254,7 +247,7 @@ class FileWorkerTest {
 	fun `a bare word list at the root lands its words as the root's own rows`() {
 		val reloads = importPicked("words.txt", { null }, "Haus;home")
 
-		// the content lands as it is — no wrapper container of the file's name
+		// the content lands as it is, with no wrapper container of the file name
 		val row = ItemRepository.subjects().single()
 		assertEquals("Haus", row.name)
 		assertEquals(ItemKind.WORD, row.type)
@@ -306,8 +299,8 @@ class FileWorkerTest {
 	@Test
 	fun `a rejected directory pick imports nothing and reloads nothing`() {
 		var rootReloads = 0
-		// a tree uri Robolectric's SAF query answers no children for — not
-		// a subject directory
+		// a tree uri for which the SAF query of Robolectric answers no children,
+		// not a subject directory
 		LegacyDirImport(
 			GlobalDependencies.appContext, { it.run() },
 			Uri.parse("content://schlmgr.test/tree/1"),

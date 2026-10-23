@@ -12,6 +12,8 @@ import cz.litoj.schlmgr.ui.screen.subjects.MenuId
 import cz.litoj.schlmgr.ui.viewmodel.CreatorResult
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
+import cz.litoj.schlmgr.ui.viewmodel.FlipConflictsResult
+import cz.litoj.schlmgr.ui.viewmodel.FlipKeptRow
 import cz.litoj.schlmgr.ui.viewmodel.InfoBar
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
@@ -36,18 +38,6 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
-/**
- * The subjects screen's shell-state and back-dispatch logic on a real
- * in-memory database.
- * - back clears the selection before it pops a path level. The double-press
- *   exit window works off the injected clock, an armed paste cancels cleanly.
- * - the paste rules ride on the same harness — move within the subject,
- *   refuse another subject with a notice, merge a cut subject on open.
- * - the search-result behaviours — the search-mode ladder, a word hit
- *   flipping in place, the go-to-location action, refresh in place.
- * - the destructive and shaping flows — delete through a request, flip of
- *   the selected words, the sorts, the creator's commits.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class MainExplorerViewModelTest {
@@ -71,15 +61,14 @@ class MainExplorerViewModelTest {
 	}
 
 	private fun vm(): MainExplorerViewModel {
-		// the repository reads run inline (an unconfined dispatcher), so the
+		// the repository reads run inline on an unconfined dispatcher, so the
 		// construction-time load lands before the assertions
 		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		// the exit window reads the injected clock — deterministic, no sleeps
+		// the exit window reads the injected clock, so no sleeps are needed
 		model.clock = { now }
 		return model
 	}
 
-	/** Opens the subject and returns the view model sitting inside it. */
 	private fun vmIn(subject: String): MainExplorerViewModel {
 		// the model loads the current content on construction, so callers seed first
 		val model = vm()
@@ -88,18 +77,13 @@ class MainExplorerViewModelTest {
 	}
 
 	private fun seed(): Pair<Int, Int> {
-		// subject A holds chapter c1 — subject B is the paste target
 		val a = ItemRepository.createSubject("A", null)
 		val b = ItemRepository.createSubject("B", null)
 		ItemRepository.createChapter(a.id, "c1", null, 0)
 		return a.id to b.id
 	}
 
-	/**
-	 * A one-word search-result list — the word hit lives in A/c1, and the model
-	 * shows it as a search list (no engine run, so the behaviours under test
-	 * start from a shown result list).
-	 */
+	/** Builds a shown search list without an engine run, so the behaviours start there. */
 	private fun searchedWord(): Pair<MainExplorerViewModel, ItemRow> {
 		val (aId, _) = seed()
 		val model = vmIn("A")
@@ -117,7 +101,7 @@ class MainExplorerViewModelTest {
 		val c1 = model.items().single { it.item.name == "c1" }
 		model.setSelected(c1, true)
 		assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
-		// the selection is gone, the path is not — one press does one thing
+		// one press does one thing: the selection is gone, the path is not
 		assertFalse(model.items().any { it.selected })
 
 		assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
@@ -129,7 +113,7 @@ class MainExplorerViewModelTest {
 		seed()
 		val model = vmIn("A")
 		val c1 = model.items().single { it.item.name == "c1" }
-		// the list is reorderable, and the press still selects — selection entry
+		// the list is reorderable, and the press still selects, so selection entry
 		// must not depend on the drag mode the same press arms
 		model.onItemLongClick(c1)
 		assertTrue(c1.selected)
@@ -191,15 +175,13 @@ class MainExplorerViewModelTest {
 		model.openSearchField()
 		model.onQuerySubmit("w1")
 
-		// back out of the results' hit, then click the subject crumb —
-		// the stacked search hop must not swallow the level
+		// back out of the hit in the results, then click the subject crumb,
+		// because the stacked search hop must not swallow the level
 		model.onBackRequested()
 
 		assertEquals(SearchUi.RESULTS, model.state.value.searchUi)
-		// the click lands on the subject crumb, not the hit's chapter
 		model.breadcrumbClick(0)
 
-		// the subject itself (crumb 0), one level up from the hit
 		assertEquals(listOf("A"), model.history.path.map { it.name })
 		assertEquals(SearchUi.OFF, model.state.value.searchUi)
 	}
@@ -221,15 +203,15 @@ class MainExplorerViewModelTest {
 	@Test
 	fun `a swipe onto a bare root word stays put`() {
 		seed()
-		// a bare word under the root (a mis-anchored import) — opening it
-		// would freeze the list on the stale pane, its read is a leaf's null
+		// a bare word under the root, a mis-anchored import, would freeze the list
+		// on the stale pane when opened, because its read is the null of a leaf
 		val bare = ItemRepository.legacyInsert("bare", null, ItemKind.WORD, 0, 0)
 		val trl = ItemRepository.legacyInsert("tr", null, ItemKind.TRANSLATION, 0, 0)
 		ItemRepository.legacyLinkAtEnd(ROOT_ID, bare)
 		ItemRepository.legacyLinkAtEnd(bare, trl)
 		val model = vm()
 
-		// B is the last subject — its next sibling is the bare word
+		// the subject B is the last one, so its next sibling is the bare word
 		model.onItemClick(model.items().single { it.item.name == "B" })
 		model.openSibling(1)
 
@@ -271,7 +253,6 @@ class MainExplorerViewModelTest {
 		assertEquals(listOf("A", "c2"), model.history.path.map { it.name })
 		assertTrue("the armed move survived the switch", model.pasteArmed)
 
-		// the paste lands on the switched chapter
 		model.doPaste()
 
 		assertFalse(model.pasteArmed)
@@ -287,7 +268,7 @@ class MainExplorerViewModelTest {
 
 		model.setSelected(model.items().single(), true)
 
-		// from the deepest layer out — the selection leaves, then the search
+		// from the deepest layer out: the selection leaves, then the search
 		assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
 		assertEquals("the selection left, the results stayed", SearchUi.TYPING, model.state.value.searchUi)
 		assertFalse(model.items().any { it.selected })
@@ -341,7 +322,7 @@ class MainExplorerViewModelTest {
 			listOf(TranslationValue("xyz\\def", "", trl)), emptyList())
 		assertTrue(model.commitWordEdit(row, result))
 
-		// the split replaced the row — not two new ones beside the original
+		// the split replaced the row, and did not add two new ones beside the original
 		assertEquals(listOf("xyz", "def"),
 			ItemRepository.translations(word.id).map { it.name })
 	}
@@ -355,9 +336,8 @@ class MainExplorerViewModelTest {
 		model.move(false)
 		assertFalse("the paste freezes the reorder", model.state.value.reorderable)
 
-		// a browse publish (a navigation landing while the paste is armed)
-		// must not undo the freeze — the drag would persist an order the
-		// paste is about to change
+		// a navigation landing while the paste is armed must not undo the freeze,
+		// because the drag would persist an order the paste is about to change
 		model.load(ArrayList(), isSearch = false)
 		assertFalse("the freeze survives the publish", model.state.value.reorderable)
 
@@ -376,7 +356,6 @@ class MainExplorerViewModelTest {
 		model.move(false)
 		assertTrue(model.pasteArmed)
 
-		// the range drag over the still-shown results selects nothing
 		model.selectRange(0, 0)
 		assertFalse("no row selected under the paste strip",
 			model.items().any { it.selected })
@@ -390,7 +369,6 @@ class MainExplorerViewModelTest {
 		model.setSelected(model.items().single { it.item.name == "c1" }, true)
 		model.move(false)
 
-		// the paste target is the open chapter, the way the user browses to it
 		model.onItemClick(model.items().single { it.item.name == "c2" })
 		model.doPaste()
 
@@ -405,7 +383,6 @@ class MainExplorerViewModelTest {
 		model.setSelected(model.items().single { it.item.name == "c1" }, true)
 		model.move(false)
 
-		// walk out of A and open B, the way the user browses to the target
 		model.onBackRequested()
 		model.onItemClick(model.items().single { it.item.id == bId })
 		runBlocking {
@@ -436,7 +413,6 @@ class MainExplorerViewModelTest {
 
 		assertFalse(model.pasteArmed)
 		assertEquals(listOf("A"), ItemRepository.subjects().map { it.name })
-		// the moved subject became a chapter of A, next to A's own
 		assertEquals(listOf("c1", "B"), ItemRepository.children(aId).map { it.name })
 		assertEquals("the open list re-read with the merged chapter",
 			listOf("c1", "B"), model.items().map { it.item.name })
@@ -470,8 +446,8 @@ class MainExplorerViewModelTest {
 		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
 		val model = vmIn("A")
 		model.openSearchField()
-		// the query matches the translation, not the word — the WORD
-		// is the hit, carrying its own row and path
+		// the query matches the translation, not the word, but the WORD is the hit,
+		// carrying its own row and path
 		model.onQuerySubmit("t1")
 
 		val hit = model.items().single()
@@ -480,14 +456,12 @@ class MainExplorerViewModelTest {
 
 		model.onSearchHitClick(hit.toUi())
 
-		// the click flipped it to its translations — the search never left
 		assertTrue("the hit flipped to its translations", hit.flipped)
 		assertEquals(listOf("t1"), hit.translationLines.map { it.name })
 		assertEquals(ExplorerRowVariant.Search, model.listState.value.variant)
 		assertEquals(SearchUi.TYPING, model.state.value.searchUi)
 		assertEquals(listOf(hit), model.items())
 
-		// the second click toggles back to the word's name
 		model.onSearchHitClick(hit.toUi())
 		assertFalse(hit.flipped)
 	}
@@ -510,7 +484,7 @@ class MainExplorerViewModelTest {
 		val c1 = ItemRepository.children(aId).single()
 		val c2 = ItemRepository.createChapter(aId, "c2", null, 1)
 		val word = ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
-		// the word's second home — the go-to picker's second source
+		// the second home of the word, the second source of the go-to picker
 		ItemRepository.legacyLinkAtEnd(c2.id, word.id)
 		val model = vmIn("A")
 		model.openSearchField()
@@ -532,7 +506,7 @@ class MainExplorerViewModelTest {
 		val c1 = ItemRepository.children(aId).single()
 		val c2 = ItemRepository.createChapter(aId, "c2", null, 1)
 		val word = ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
-		// the word's second home — the reference jump's target
+		// the second home of the word, the target of the reference jump
 		ItemRepository.legacyLinkAtEnd(c2.id, word.id)
 		val model = vmIn("A")
 		model.onItemClick(model.items().single { it.item.name == "c1" })
@@ -605,7 +579,6 @@ class MainExplorerViewModelTest {
 		model.onQuerySubmit("c1")
 		model.setSelected(model.items().single(), true)
 
-		// the hit's chapter opens (the search suspends), then back restores the results
 		model.onSearchHitClick(model.items().single { it.item.name == "c1" }.toUi())
 		assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
 		assertEquals(SearchUi.RESULTS, model.state.value.searchUi)
@@ -613,8 +586,6 @@ class MainExplorerViewModelTest {
 		assertFalse("the selection belonged to the left list — none carries over",
 			model.items().any { it.selected })
 	}
-
-	// ------------------------------------------------------------ delete and flip
 
 	@Test
 	fun `onDeleteAction asks the view to confirm the selected rows`() {
@@ -625,8 +596,8 @@ class MainExplorerViewModelTest {
 		val c1 = model.items().single { it.item.name == "c1" }
 		val c2 = model.items().single { it.item.name == "c2" }
 
-		// nothing is selected yet — a request here would surface as the
-		// first flow value below and fail the doomed assertion
+		// nothing is selected yet, so a request here would surface as the first
+		// flow value below and fail the doomed assertion
 		model.onDeleteAction()
 
 		model.setSelected(c1, true)
@@ -634,9 +605,7 @@ class MainExplorerViewModelTest {
 		model.onDeleteAction()
 		val request = runBlocking { withTimeout(100) { model.requests.first() } }
 
-		// the rows travel to the dialog, not only their ids — the view
-		// reports the very objects back in performDelete. c3 stayed
-		// unselected — only the selected pair is doomed, not the container
+		// the rows travel to the dialog, not only their ids
 		assertEquals(listOf(c1, c2), (request as MainExplorerViewModel.Request.ConfirmDelete).doomed)
 	}
 
@@ -662,7 +631,7 @@ class MainExplorerViewModelTest {
 		val model = vm()
 		val a = model.items().single { it.item.id == aId }
 
-		// a whole subject's graph is the blocking case the bar exists for
+		// the graph of a whole subject is the blocking case the bar exists for
 		model.performDelete(listOf(a), "deleting")
 
 		assertEquals(listOf("B"), model.items().map { it.item.name })
@@ -681,7 +650,7 @@ class MainExplorerViewModelTest {
 
 		model.performDelete(listOf(model.items().single { it.item.name == "c1" }))
 
-		// the cascade took the hit under the chapter too — the refresh drops
+		// the cascade took the hit under the chapter too, so the refresh drops
 		// every dead row, not only the selected one
 		assertTrue("the cascade emptied the results", model.items().isEmpty())
 		assertTrue("the results stay a search list",
@@ -701,7 +670,6 @@ class MainExplorerViewModelTest {
 
 		model.flipSelected()
 
-		// the translation took the word's place in the chapter
 		assertEquals(listOf("t1"), model.items().map { it.item.name })
 		assertFalse("the flip consumed the selection", model.items().any { it.selected })
 		assertEquals("the old word translates the new one",
@@ -714,7 +682,7 @@ class MainExplorerViewModelTest {
 		val c1 = ItemRepository.children(aId).single()
 		val c2 = ItemRepository.createChapter(aId, "c2", null, 1)
 		val word = ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
-		// the word's second home — inside the searched subject
+		// the second home of the word, inside the searched subject
 		ItemRepository.legacyLinkAtEnd(c2.id, word.id)
 		val model = vmIn("A")
 		model.openSearchField()
@@ -736,7 +704,7 @@ class MainExplorerViewModelTest {
 		val c2 = ItemRepository.createChapter(c1.id, "c2", null, 0)
 		val c3 = ItemRepository.createChapter(aId, "c3", null, 1)
 		val word = ItemRepository.createWord(c2.id, "w1", null, listOf("t1" to null))
-		// the word's other home — outside the searched chapter, inside the subject
+		// the other home of the word, outside the searched chapter but inside the subject
 		ItemRepository.legacyLinkAtEnd(c3.id, word.id)
 		val model = vmIn("A")
 		model.onItemClick(model.items().single { it.item.name == "c1" })
@@ -754,32 +722,109 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
-	fun `a word shared outside the selection blocks the flip with a notice`() {
+	fun `a word shared outside the selection asks through the conflict popup`() {
 		val (aId, _) = seed()
 		val c1 = ItemRepository.children(aId).single()
 		val c2 = ItemRepository.createChapter(aId, "c2", null, 1)
 		val word = ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
-		// a plain second home — flipping w1 would change it there too
+		// a plain second home, so flipping w1 would change it there too
 		ItemRepository.legacyLinkAtEnd(c2.id, word.id)
 		val model = vmIn("A")
 		model.onItemClick(model.items().single { it.item.name == "c1" })
 		model.setSelected(model.items().single { it.item.name == "w1" }, true)
 
+		model.flipSelected()
+
+		// the conflict round asks before anything changes
+		val request = runBlocking { withTimeout(100) { model.requests.first() } }
+		assertTrue("the shared word opened the popup", request is MainExplorerViewModel.Request.ResolveFlipConflicts)
+		val analysis = (request as MainExplorerViewModel.Request.ResolveFlipConflicts).analysis
+		val conflict = analysis.conflicts.single()
+		assertEquals("w1", conflict.row.name)
+		assertEquals(listOf("c2"), conflict.outside.map { it.name })
+
+		// a refused popup leaves the pending flip for a retry
+		assertEquals(listOf("w1"), model.items().map { it.item.name })
+		assertTrue(model.items().single().selected)
+
+		// a blank name refuses the commit, so the popup stays open for a retry
 		runBlocking {
 			val notice = async(start = CoroutineStart.UNDISPATCHED) {
 				GlobalDependencies.messages.first()
 			}
-			model.flipSelected()
+			assertFalse(model.commitFlipResolutions(analysis, FlipConflictsResult(
+				kept = listOf(FlipKeptRow(conflict.row, " ", "")), removed = emptyList())))
 			withTimeout(1_000) {
-				assertEquals(
-					GlobalDependencies.UiMessage.Notice(UiNotice.FlipConflicts(listOf("w1 — c2"))),
-					notice.await())
+				assertEquals(GlobalDependencies.UiMessage.Notice(UiNotice.FlipBlankName), notice.await())
 			}
 		}
 
-		// the refused flip left the list and the selection for a retry
-		assertEquals(listOf("w1"), model.items().map { it.item.name })
-		assertTrue(model.items().single().selected)
+		// a keep adds the outside chapter, so the flip runs through it
+		assertTrue(model.commitFlipResolutions(analysis, FlipConflictsResult(
+			kept = listOf(FlipKeptRow(conflict.row, conflict.row.name, conflict.row.description)),
+			removed = emptyList())))
+		assertEquals("the flip ran after the resolution", listOf("t1"), model.items().map { it.item.name })
+	}
+
+	@Test
+	fun `a removed conflict row drops its words from the flip`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "cat", null, listOf("pes" to null))
+		ItemRepository.createWord(c1.id, "dog", null, listOf("pes" to null))
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		model.setSelected(model.items().single { it.item.name == "dog" }, true)
+
+		model.flipSelected()
+
+		// the shared translation spans the selection, so the round asks
+		val request = runBlocking { withTimeout(100) { model.requests.first() } }
+		val analysis = (request as MainExplorerViewModel.Request.ResolveFlipConflicts).analysis
+		assertEquals("pes", analysis.conflicts.single().row.name)
+
+		// a remove drops the linked word, so nothing flips
+		assertTrue(model.commitFlipResolutions(analysis, FlipConflictsResult(
+			kept = emptyList(), removed = listOf(analysis.conflicts.single().row))))
+		assertEquals(listOf("cat", "dog"), model.items().map { it.item.name })
+		assertEquals("dog kept its translation",
+			listOf("pes"), ItemRepository.translations(model.items().single { it.item.name == "dog" }.item.id)
+				.map { it.name })
+	}
+
+	@Test
+	fun `each kept round asks again until the plan is clean`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "dog", null, listOf("pes" to null))
+		ItemRepository.createWord(c1.id, "cat", null, listOf("pes" to null, "kocka" to null))
+		ItemRepository.createWord(c1.id, "lv", null, listOf("kocka" to null))
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		model.setSelected(model.items().single { it.item.name == "dog" }, true)
+
+		model.flipSelected()
+
+		// keeping "pes" pulls cat in. the "kocka" of cat spans outside, so ask again
+		val first = runBlocking { withTimeout(100) { model.requests.first() } }
+		val firstRound = (first as MainExplorerViewModel.Request.ResolveFlipConflicts).analysis
+		assertEquals("pes", firstRound.conflicts.single().row.name)
+		assertTrue(model.commitFlipResolutions(firstRound, FlipConflictsResult(
+			kept = firstRound.conflicts.map { FlipKeptRow(it.row, it.row.name, it.row.description) },
+			removed = emptyList())))
+
+		val second = runBlocking { withTimeout(100) { model.requests.first() } }
+		val secondRound = (second as MainExplorerViewModel.Request.ResolveFlipConflicts).analysis
+		assertEquals("kocka", secondRound.conflicts.single().row.name)
+		assertTrue(model.commitFlipResolutions(secondRound, FlipConflictsResult(
+			kept = secondRound.conflicts.map { FlipKeptRow(it.row, it.row.name, it.row.description) },
+			removed = emptyList())))
+
+		// a clean plan commits, so the shared translations become words
+		assertEquals(setOf("kocka", "pes"), model.items().map { it.item.name }.toSet())
+		assertEquals(setOf("cat", "dog"),
+			ItemRepository.translations(model.items().single { it.item.name == "pes" }.item.id)
+				.map { it.name }.toSet())
 	}
 
 	@Test
@@ -793,14 +838,10 @@ class MainExplorerViewModelTest {
 
 		model.flipSelected()
 
-		// the chapter row stays in the parent — opening it shows the flipped
-		// words in place
 		assertEquals(listOf("c1"), model.items().map { it.item.name })
 		model.onItemClick(model.items().single())
 		assertEquals(listOf("t1", "t2"), model.items().map { it.item.name })
 	}
-
-	// ------------------------------------------------------------ sorting
 
 	@Test
 	fun `an alphabetical sort reorders the shown rows renumbered`() {
@@ -814,7 +855,7 @@ class MainExplorerViewModelTest {
 		assertEquals(listOf("alpha", "beta", "c1"), model.items().map { it.item.name })
 		assertEquals("the renumbering follows the new order", listOf(1, 2, 3),
 			model.items().map { it.position })
-		// the sort reorders the live list only — the stored order waits for
+		// the sort reorders the live list only, so the stored order waits for
 		// a drag or SORT_DEFAULT
 		assertEquals(listOf("c1", "beta", "alpha"), ItemRepository.children(aId).map { it.name })
 	}
@@ -846,9 +887,8 @@ class MainExplorerViewModelTest {
 	@Test
 	fun `the default sort reloads the stored order`() {
 		val (aId, _) = seed()
-		// the stored order (c1, zeta, alpha) is neither the alphabetical
-		// order (alpha, c1, zeta) nor its reverse — a flip of the sorted
-		// list would not reproduce it
+		// the stored order c1, zeta, alpha is neither alphabetical nor reversed,
+		// so a flip of the sorted list would not reproduce it
 		ItemRepository.createChapter(aId, "zeta", null, 1)
 		ItemRepository.createChapter(aId, "alpha", null, 2)
 		val model = vmIn("A")
@@ -879,8 +919,6 @@ class MainExplorerViewModelTest {
 		assertTrue("the sorted results stay a search list",
 			model.listState.value.variant == ExplorerRowVariant.Search)
 	}
-
-	// ------------------------------------------------------------ creation
 
 	@Test
 	fun `commitNewItem appends a new subject`() {
@@ -942,8 +980,8 @@ class MainExplorerViewModelTest {
 		ItemRepository.createChapter(aId, "c2", null, 1)
 		val model = vmIn("A")
 		val c2 = model.items().single { it.item.name == "c2" }
-		// c1 stays unselected ahead of it — the request must carry the
-		// selected row, not simply the first one in the list
+		// c1 stays unselected ahead of it, so the request must carry the selected
+		// row, not simply the first one in the list
 		model.setSelected(c2, true)
 
 		model.onEditAction()
@@ -951,8 +989,6 @@ class MainExplorerViewModelTest {
 
 		assertEquals(c2, (request as MainExplorerViewModel.Request.EditItem).row)
 	}
-
-	// ------------------------------------------------------------ export targets
 
 	@Test
 	fun `an export without a selection carries the open container and names the file after it`() {
@@ -969,8 +1005,8 @@ class MainExplorerViewModelTest {
 	@Test
 	fun `an export without a selection at the root carries every subject and the generic name`() {
 		seed()
-		// a bare word under the root (a mis-anchored import) has no wrapper
-		// of its own in either format — the export skips it
+		// a bare word under the root, a mis-anchored import, has no wrapper of its
+		// own in either format, so the export skips it
 		val bare = ItemRepository.legacyInsert("bare", null, ItemKind.WORD, 0, 0)
 		val trl = ItemRepository.legacyInsert("tr", null, ItemKind.TRANSLATION, 0, 0)
 		ItemRepository.legacyLinkAtEnd(ROOT_ID, bare)

@@ -14,19 +14,9 @@ import org.junit.Assert.assertTrue
 import org.junit.After
 import org.junit.Test
 
-/**
- * Unit tests for [TestSetupState]'s pure source-list logic — the prefix match
- * ([TestSetupState.within]), the dedup pass ([TestSetupState.dedup])
- * and the row-to-chain mapping ([TestSetupState.chainOfSeed]), plus the one-subject
- * rule of the mutation doors (a pick or a selection mixing subjects is refused
- * whole). The dedup runs on the caller-supplied list and the chain mapping is
- * covered on the branches that need no database (search rows carry their chain,
- * parentless browse rows stand alone) — the parent-lookup branch stays
- * database-bound.
- */
 class TestSetupStateTest {
 
-	/** Process-wide state — every test leaves it empty, failure included. */
+	/** Process-wide state: every test leaves it empty, failure included. */
 	@After
 	fun resetState() {
 		TestSetupState.reset()
@@ -43,10 +33,10 @@ class TestSetupStateTest {
 		TestSetupState.setAmount("0")
 		TestSetupState.setTime("")
 
-		// committed as typed — the field can be emptied and refilled
+		// committed as typed, and the field can be emptied and refilled
 		assertEquals("0", TestSetupState.amountText)
 		assertEquals("", TestSetupState.timeText)
-		// the fresh-entry reset re-reads the engine's settings
+		// the fresh-entry reset re-reads the settings of the engine
 		TestSetupState.reset()
 		assertEquals(TestEngine.amount.toString(), TestSetupState.amountText)
 		assertEquals(TestEngine.getDefaultTime().toString(), TestSetupState.timeText)
@@ -64,7 +54,6 @@ class TestSetupStateTest {
 		assertEquals(TestEngine.amount.toString(), TestSetupState.amountText)
 		assertEquals(TestEngine.getDefaultTime().toString(), TestSetupState.timeText)
 
-		// a usable value keeps itself
 		TestSetupState.setAmount("7")
 		model.restoreAmount()
 		assertEquals("7", TestSetupState.amountText)
@@ -160,7 +149,7 @@ class TestSetupStateTest {
 	fun `fillFromSelection replaces the sources deduped`() {
 		val subject = item(1, "subject")
 		val chapter = item(2, "chapter")
-		// the deeper chain is covered by its ancestor — the subject alone suffices
+		// the deeper chain is covered by its ancestor, so the subject alone suffices
 		val coveredWord = ItemRow.ofSearchHit(item(3, "word"), listOf(subject, chapter), 1, emptyList())
 		val wholeSubject = ItemRow.ofSearchHit(subject, emptyList(), 1, emptyList())
 
@@ -182,7 +171,6 @@ class TestSetupStateTest {
 		TestSetupState.addPicked(listOf(TestSetupState.seedOf(first)))
 		TestSetupState.addPicked(listOf(TestSetupState.seedOf(second)))
 
-		// the later pick leads the list
 		assertEquals(listOf(subject, item(3, "note")), TestSetupState.list[0])
 		assertEquals(listOf(subject, item(2, "chapter")), TestSetupState.list[1])
 		assertEquals(2, TestSetupState.list.size)
@@ -214,7 +202,7 @@ class TestSetupStateTest {
 		val refused = TestSetupState.addPicked(listOf(TestSetupState.seedOf(foreign)))
 
 		assertEquals(listOf(foreign), refused)
-		// the whole pick is refused — the kept sources stay unchanged
+		// the whole pick is refused, so the kept sources stay unchanged
 		assertEquals(1, TestSetupState.list.size)
 		TestSetupState.reset()
 	}

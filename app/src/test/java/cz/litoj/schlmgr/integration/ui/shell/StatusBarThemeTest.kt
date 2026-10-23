@@ -11,11 +11,11 @@ import org.robolectric.annotation.Config
 import kotlin.math.pow
 
 /**
- * The status band, in both palettes — the icons are white, and the band is
- * the primary green darkened far enough for them to read. The two facts
- * belong together — a light band at night would wash the icons out.
- * - the contrast is the WCAG ratio — 4.5 is the AA threshold, and white on
- *   the band clears it in both palettes.
+ * - the icons are white.
+ * - the band is the primary green darkened far enough for them to read.
+ * - the two facts belong together, because a light band at night washes out the icons.
+ * - the contrast is the WCAG ratio, where 4.5 is the AA threshold.
+ * - white on the band clears it in both palettes.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -23,13 +23,12 @@ class StatusBarThemeTest {
 
 	private val app get() = RuntimeEnvironment.getApplication()
 
-	/** The band behind the status icons. */
 	private fun bandColor(): Int = app.getColor(R.color.colorStatusBar)
 
 	/** The header green the band is derived from. */
 	private fun headerColor(): Int = app.getColor(R.color.colorPrimaryHeader)
 
-	/** The WCAG relative luminance of an sRGB colour, 0 (black) to 1 (white). */
+	/** The WCAG relative luminance of an sRGB colour, from 0 for black to 1 for white. */
 	private fun luminance(color: Int): Double {
 		fun channel(v: Int): Double {
 			val s = v / 255.0
@@ -40,14 +39,13 @@ class StatusBarThemeTest {
 			0.0722 * channel(Color.blue(color))
 	}
 
-	/** The WCAG contrast ratio of two colours, 1 (equal) to 21 (black on white). */
+	/** The WCAG contrast ratio of two colours, from 1 for equal to 21 for black on white. */
 	private fun contrast(a: Int, b: Int): Double {
 		val la = luminance(a)
 		val lb = luminance(b)
 		return (maxOf(la, lb) + 0.05) / (minOf(la, lb) + 0.05)
 	}
 
-	/** The band is dark enough for the white icons in both palettes. */
 	private fun assertWhiteOnDarkenedPrimary() {
 		val contrast = contrast(Color.WHITE, bandColor())
 		assertTrue("white must read on the band (was $contrast)", contrast >= 4.5)

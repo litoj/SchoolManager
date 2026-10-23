@@ -7,11 +7,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/**
- * Unit tests for the dialog stack removals ([Dialogs.dismiss]/[Dialogs.clear]):
- * a dismissal notifies exactly once even when requested twice, and a clear
- * notifies top first.
- */
 class DialogsTest {
 
 	private val log = mutableListOf<String>()

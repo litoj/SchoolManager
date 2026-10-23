@@ -25,19 +25,17 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The performance floor of one browse open — the read behind tapping a row:
- * children + links + row build (a default-flipped word reads its translations
- * per row), through the production [MainExplorerViewModel] path, to the
- * published list.
- *
- * - the heaviest real subject (NJ) covers both open shapes: the subject
- *   itself (204 chapter rows, no words) and a chapter of word rows.
+ * - the path covers children, links and the row build.
+ * - a default-flipped word reads its translations per row.
+ * - it runs through the production [MainExplorerViewModel] path to the list.
+ * - the heaviest real subject NJ covers the subject and chapter open shapes.
+ * - the subject open shows 204 chapter rows and no words.
  * - a synthetic 300-word chapter models the wide end.
- * - the info strip's counter read runs after the list lands — timed apart,
- *   its budget is a report line's, not the open's.
- * - `PERF open-*` lines carry the numbers; the open budget is the edge of
- *   what a user notices on a navigation (a quarter second), so a per-row
- *   query storm fails the suite instead of only feeling slow.
+ * - the counter read of the info strip runs after the list lands.
+ * - that read is timed apart, since its budget is a report line.
+ * - PERF open lines carry the numbers.
+ * - the open budget is the edge of what a user notices, a quarter second.
+ * - a per-row query storm thus fails the suite instead of only feeling slow.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -46,13 +44,13 @@ class BrowseOpenPerformanceTest {
 	private lateinit var db: ItemDatabase
 	private val defFlipWas = ItemRow.defFlip
 
-	/** Counting gate — the callback counts only while an open is measured. */
+	/** Counting gate: the callback counts only while an open is measured. */
 	private var counting = false
 
-	/** The queries of the last counted open — a per-row storm is countable, not just slow. */
+	/** The queries of the last counted open: a per-row storm is countable, not just slow. */
 	private val queries = AtomicInteger()
 
-	/** A statement the open owes its data to — Room's own bookkeeping stays out. */
+	/** A statement the open owes its data to, while the bookkeeping of Room stays out. */
 	private fun isDataStatement(sql: String): Boolean =
 		!sql.startsWith("BEGIN") && !sql.startsWith("END") &&
 			!sql.startsWith("TRANSACTION") && !sql.contains("room_table_modification_log")
@@ -63,9 +61,9 @@ class BrowseOpenPerformanceTest {
 		GlobalDependencies.appContext = app
 		db = Room.inMemoryDatabaseBuilder(app, ItemDatabase::class.java)
 			.allowMainThreadQueries()
-			// the direct executor runs the callback on the querying thread, so
-			// the count is exact once the inline open returns; transaction
-			// plumbing and Room's invalidation log are not data statements
+			// the direct executor runs the callback on the querying thread:
+			// - the count is exact once the inline open returns.
+			// - transaction plumbing and the invalidation log of Room are not data.
 			.setQueryCallback({ sql, _ -> if (counting && isDataStatement(sql)) queries.incrementAndGet() },
 				Executor(Runnable::run))
 			.build()
@@ -77,7 +75,7 @@ class BrowseOpenPerformanceTest {
 			"NJ",
 		) ?: throw IllegalStateException("missing legacy NJ fixture")
 		ItemRepository.import(LegacySubjectImporter(subject))
-		// the open path renders flipped words — the user's setting
+		// the open path renders flipped words, according to the setting of the user
 		ItemRow.defFlip = true
 	}
 
@@ -90,7 +88,7 @@ class BrowseOpenPerformanceTest {
 	/** The edge of what a user notices on one navigation. */
 	private val openBudgetMs = 250
 
-	/** The strip read runs after the list — tenfold headroom, it blocks nothing. */
+	/** The strip read runs after the list, with tenfold headroom, so it blocks nothing. */
 	private val stripBudgetMs = 1_000
 
 	private fun <T> timed(name: String, budgetMs: Int, block: () -> T): T {
@@ -102,15 +100,16 @@ class BrowseOpenPerformanceTest {
 		return result
 	}
 
-	/** Starts counting the open's queries. */
 	private fun countQueries() {
 		queries.set(0)
 		counting = true
 	}
 
 	/**
-	 * Stops counting and asserts the ceiling — children, links, one batch
-	 * translations read, and the info strip's read and write.
+	 * Stops counting and asserts the ceiling.
+	 * - children and links.
+	 * - one batch translations read.
+	 * - the read and write of the info strip.
 	 */
 	private fun assertQueryBudget(label: String, budget: Int) {
 		counting = false
@@ -119,16 +118,16 @@ class BrowseOpenPerformanceTest {
 		assertTrue("$label issued $count queries (budget $budget)", count <= budget)
 	}
 
-	// Unconfined io on Robolectric's main thread — the open runs inline, so
-	// the measurement covers read to publish.
+	// unconfined io on the main thread of Robolectric, so the open runs inline and
+	// the measurement covers read to publish
 	private fun model() = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
 
 	private fun njId(): Int = ItemRepository.subjects().single { it.name == "NJ" }.id
 
 	/**
-	 * The NJ descendant holding the most word rows — the strongest word-open
-	 * shape. NJ nests chapters inside chapters, so the search walks the
-	 * whole subgraph for the busiest word holder.
+	 * The NJ descendant holding the most word rows, the strongest word-open shape.
+	 * - NJ nests chapters inside chapters.
+	 * - the search thus walks the whole subgraph for the busiest word holder.
 	 */
 	private fun busiestChapterId(): Int {
 		val nj = njId()
@@ -153,12 +152,12 @@ class BrowseOpenPerformanceTest {
 
 		countQueries()
 		timed("open-subject", openBudgetMs) { model.onItemClick(nj) }
-		// children, links and the strip's read and write — no word rows, so
+		// children, links and the read and write of the strip, with no word rows, so
 		// no translations read may appear
 		assertQueryBudget("open-subject", 4)
 
-		// the subject-wide name merge folds NJ's 204 chapter entries into
-		// distinct names — the children the open really shows
+		// the subject-wide name merge folds the 204 chapter entries of NJ into
+		// distinct names, the children the open really shows
 		assertEquals(34, model.items().size)
 	}
 
@@ -184,7 +183,7 @@ class BrowseOpenPerformanceTest {
 
 		countQueries()
 		timed("open-wide-chapter", openBudgetMs) { model.onItemClick(chapter) }
-		// one batch translations read, whatever the word count — a per-word
+		// one batch translations read, whatever the word count, because a per-word
 		// read storms this budget
 		assertQueryBudget("open-wide-chapter", 5)
 

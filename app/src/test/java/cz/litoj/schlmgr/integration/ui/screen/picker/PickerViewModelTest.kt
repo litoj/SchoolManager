@@ -22,12 +22,8 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The picker's back dispatch on a real in-memory database — the picker is the
- * explorer core permanently in selection mode and nothing more — the back
- * ladder is the core's own (selection, search, directory, exit), with no
- * rule that reads the test's state, and no selection survives a list change.
- * - a search-hit chapter opens through the hit's chain with the search hop
- * left stacked — back returns the results, and they come back unselected.
+ * - the picker is the explorer core permanently in selection mode.
+ * - a search hop stays stacked, so back returns the unselected results.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -48,7 +44,7 @@ class PickerViewModelTest {
 
 	@After
 	fun tearDown() {
-		// the picker's saved position is process-wide — leave the root for the next class
+		// the saved position of the picker is process-wide, so leave the root for the next class
 		PickerViewModel.resetSavedHistory()
 		db.close()
 	}
@@ -56,8 +52,8 @@ class PickerViewModelTest {
 	private fun vm(): PickerViewModel {
 		val model = PickerViewModel(Dispatchers.Unconfined)
 		model.clock = { now }
-		// the picker's browsing position survives its screens by design —
-		// walk it back to the root so every test starts at the subjects list
+		// the browsing position of the picker survives its screens by design, so walk
+		// it back to the root where every test starts at the subjects list
 		while (model.history.path.isNotEmpty()) model.onBackRequested()
 		return model
 	}
@@ -99,7 +95,6 @@ class PickerViewModelTest {
 		model.onItemClick(model.items().single { it.item.name == "A" && it.item.type == ItemKind.CHAPTER })
 		model.setSelected(model.items().single { it.item.name == "c1" }, true)
 
-		// the chapter opens through its own row — a plain tap
 		model.onItemClick(model.items().single { it.item.name == "c1" })
 
 		assertFalse("a new list starts unselected", model.items().any { it.selected })
@@ -109,7 +104,7 @@ class PickerViewModelTest {
 	@Test
 	fun `a search-hit chapter opens its chain and back restores the results`() {
 		val aId = seed()
-		// a chapter inside c1 — the hit's chain runs two levels under the
+		// a chapter inside c1, where the chain of the hit runs two levels under the
 		// searched subject, so a plain hop onto the hit would lose c1
 		val c1 = ItemRepository.children(aId).single()
 		ItemRepository.createChapter(c1.id, "c2", null, 0)
@@ -118,15 +113,14 @@ class PickerViewModelTest {
 		model.openSearchField()
 		model.onQuerySubmit("c2")
 
-		// the hit's chapter opens through its own row — a plain tap on the result
 		model.onItemClick(model.items().single { it.item.name == "c2" })
 
 		assertEquals(listOf("A", "c1", "c2"), model.history.path.map { it.name })
 		assertEquals(listOf("A", "c1", "c2"), model.state.value.breadcrumbs)
 		assertEquals("the open left the search for browsing", SearchUi.OFF, model.state.value.searchUi)
 
-		// the search hop stayed stacked under the opened chain — the back press
-		// returns the results, not the subject's browse list
+		// the search hop stayed stacked under the opened chain, so the back press
+		// returns the results, not the browse list of the subject
 		assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
 		assertEquals(SearchUi.RESULTS, model.state.value.searchUi)
 		assertEquals(listOf("c2"), model.items().map { it.item.name })
@@ -141,7 +135,6 @@ class PickerViewModelTest {
 		model.onQuerySubmit("c1")
 		model.setSelected(model.items().single { it.item.name == "c1" }, true)
 
-		// the hit's chapter opens (the search suspends), then back restores the results
 		model.onItemClick(model.items().single { it.item.name == "c1" })
 		assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
 		assertEquals(SearchUi.RESULTS, model.state.value.searchUi)

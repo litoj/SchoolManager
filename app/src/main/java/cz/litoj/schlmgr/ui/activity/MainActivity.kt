@@ -12,22 +12,21 @@ import cz.litoj.schlmgr.ui.shell.SchlMgrApp
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 
 /**
- * The app's only shell activity.
-	 * - starts the program state (repository, option statics, crash handler) before the first composition reads the database.
-	 * - hands the window to [SchlMgrApp]: drawer, navigation, top bars, dialogs, messages — all composed there.
+ * The only shell activity of the app.
+ * - starts the program state before the first composition reads the database.
+ * - hands the window to [SchlMgrApp].
  */
 class MainActivity : ComponentActivity() {
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		Startup.init(this)
-		// the row display's settings are the ui's own stored half
+		// the row display options have their own stored half in the ui
 		ItemRow.applyStoredOptions()
-		// the navigation bar stays black in both palettes — a solid
-		// dark scrim keeps it that way under edge-to-edge
+		// a solid dark scrim keeps the navigation bar black in both palettes
 		enableEdgeToEdge(
-			// the status band is the darkened green in both palettes — the
-			// dark style keeps its icons white whatever the system theme does
+			// the status band is dark green in both palettes, so the dark style
+			// keeps its icons white whatever the system theme does
 			statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
 			navigationBarStyle = SystemBarStyle.dark(Color.BLACK),
 		)

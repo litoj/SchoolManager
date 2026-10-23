@@ -5,7 +5,6 @@ import cz.litoj.schlmgr.data.db.Descriptions
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/** The import-time description merge ([Descriptions.merge]). */
 class DescriptionMergeTest {
 
 	@Test
@@ -28,8 +27,8 @@ class DescriptionMergeTest {
 
 	@Test
 	fun `a substring of a stored line is still distinct content`() {
-		// containment is line-based, not substring-based — "phab" of
-		// "alphabet" is different content and joins
+		// containment is line-based, not substring-based, so "phab" of "alphabet"
+		// is different content and joins
 		assertEquals("alphabet\nphab", Descriptions.merge("alphabet", "phab"))
 	}
 

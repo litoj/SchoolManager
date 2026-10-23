@@ -23,9 +23,9 @@ import cz.litoj.schlmgr.ui.component.HairlineDivider
 
 /**
  * The source picker of a referenced row living in several containers.
- * - one button per source, its chain rendered like the titlebar's breadcrumbs.
- * - the chains show the descent below the searched chapter — not the
- *   absolute chain from the subject root.
+ * - one button per source, its chain rendered like the breadcrumbs of the titlebar.
+ * - the chains show the descent below the searched chapter.
+ * - they do not show the absolute chain from the subject root.
  * - picking hands the whole chain to [onPick].
  */
 class SourcePickPopup(
@@ -77,10 +77,10 @@ class SourcePickPopup(
 }
 
 /**
- * The chain as shown against the search's [origin] — the descent below the
- * searched chapter, with the chapter itself dropped. The location equal to the
- * searched chapter shows itself; a chain from outside the origin's subject
- * shows whole.
+ * The chain as shown against the [origin] of the search.
+ * - it holds the descent below the searched chapter, with the chapter itself dropped.
+ * - the location equal to the searched chapter shows itself.
+ * - a chain from outside the subject of the origin shows whole.
  */
 internal fun List<DbItem>.relativeTo(origin: List<DbItem>): List<DbItem> {
 	if (origin.isEmpty()) return this

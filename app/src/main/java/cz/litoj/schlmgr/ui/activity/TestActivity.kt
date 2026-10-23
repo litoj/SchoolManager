@@ -62,11 +62,9 @@ import cz.litoj.schlmgr.ui.shell.messageSnackbarHost
 
 
 /**
- * The running test — a countdown header, the words to answer, and the Done
- * button (submits the answers, shows the results popup). A plain Compose
- * [ComponentActivity] rendering [TestRunState]: the run's state and logic
- * are process-wide, so a rotation re-attaches and the double-back exit
- * resets.
+ * - a countdown header, the words to answer and the Done button.
+ * - a plain Compose [ComponentActivity] rendering [TestRunState].
+ * - the run state is process-wide, so a rotation re-attaches and the double-back exit resets.
  */
 class TestActivity : ComponentActivity(), TestRunState.Host {
 
@@ -96,8 +94,8 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 				// the transient user messages, above the tested words
 				SnackbarHost(
 					hostState = snackbar,
-					// like the shell's host — without the insets the bar rests on the
-					// raw window bottom, under the navigation buttons and keyboard
+					// without the insets the bar rests on the raw window bottom,
+					// under the navigation buttons
 					modifier = Modifier
 						.align(Alignment.BottomCenter)
 						.navigationBarsPadding()
@@ -110,8 +108,8 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 
 	@Composable
 	private fun TestScreen() {
-		// Double-back-press to exit. A showing dialog takes the back key itself
-		// (its own focused window), so it never reaches this handler.
+		// a showing dialog takes the back key in its own focused window.
+		// so the double-press exit never sees it.
 		BackHandler {
 			if (TestRunState.pressExit()) {
 				Toast.makeText(applicationContext, R.string.press_exit, Toast.LENGTH_SHORT).show()
@@ -120,14 +118,13 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 				finish()
 			}
 		}
-		// imePadding — edge-to-edge never resizes the window for the keyboard.
-		// Without it the keyboard overlays the lower words and the Done button
+		// edge-to-edge never resizes the window for the keyboard.
+		// imePadding keeps the lower words and the Done button clear of it.
 		Column(Modifier.fillMaxSize().systemBarsPadding().imePadding()) {
 			TimerHeader()
-			// The items to answer, then the Done button as the list's last item:
-			// - it sits below the tested words, so it never takes height from them.
-			// - one focus handle per answer row, so the keyboard's Next key walks
-			//   the chain. A row not yet composed is scrolled to and focused on arrival.
+			// the Done button closes the list, so it never takes height from the words.
+			// - one focus handle per answer row walks the keyboard chain.
+			// - a row not yet composed is scrolled to and focused once it composes.
 			val answerFocus = remember { HashMap<Int, FocusRequester>() }
 			val listState = rememberLazyListState()
 			var pendingAnswer by remember { mutableIntStateOf(-1) }
@@ -143,8 +140,7 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 						listState, { pendingAnswer = it })
 				}
 				item {
-					// Primary (header-green) background, white text, 5dp rounded corners.
-					// Small, centered, and hugging its label — does not span the full width.
+					// the app header colours mark the one commit action of the screen.
 					Button(
 						onClick = { TestRunState.submit(this@TestActivity) },
 						colors = ButtonDefaults.buttonColors(
@@ -165,7 +161,7 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 		}
 	}
 
-	/** The countdown banner — blinks dark red/light gray for the last 30 seconds (as before). */
+	/** The countdown banner. It blinks dark red and light gray for the last 30 seconds. */
 	@Composable
 	private fun TimerHeader() {
 		val sl = TestRunState.secondsLeft
@@ -179,7 +175,7 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 			style = TextStyle(
 				fontSize = 40.sp,
 				color = when {
-					// white on the green header — the timer flash takes over at <=30s
+					// white on the green header until the timer flash takes over at 30s or less
 					sl > 30 -> colorResource(R.color.colorOnHeader)
 					sl % 2 == 0 -> TimerRed
 					else -> Color(0xFFDDDDDD)
@@ -196,8 +192,8 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 		listState: LazyListState, setPendingAnswer: (Int) -> Unit,
 	) {
 		Column(Modifier.fillMaxWidth()) {
-			// The prompt — the translations by default, the word itself in the reversed
-			// direction. Both are parsed like the explorer rows.
+			// the translations prompt by default, the word itself in the reversed direction.
+			// both are parsed like the explorer rows.
 			Column(Modifier.fillMaxWidth().padding(5.dp)) {
 				val prompt = if (TestEngine.isReversed) ItemRow.nameParser(item.word.name)
 				else item.translations.joinToString("\n") { ItemRow.nameParser(it.name) }
@@ -211,15 +207,14 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 				AnswerField(index, R.string.data_translate, answerFocus, isLast,
 					listState, setPendingAnswer)
 			}
-			// Edge-to-edge (outside the content padding) so it reads as a clear
-			// line between items, same style as the setup screen's source list.
-			// The last row has none, so the list does not end in a line above
-			// the Done button.
+			// the line sits outside the content padding, so it reads clearly between items.
+			// - the style matches the source list of the setup screen.
+			// - the last row has none, so no line sits above the Done button.
 			if (!isLast) HairlineDivider(Modifier.padding(top = 2.dp))
 		}
 	}
 
-	/** One answer field — `isLast` hides the keyboard on submit instead of advancing focus. */
+	/** One answer field. [isLast] hides the keyboard on submit instead of advancing focus. */
 	@Composable
 	private fun AnswerField(
 		index: Int, hintRes: Int,
@@ -235,22 +230,20 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 			onValueChange = { TestRunState.setAnswer(index, it) },
 			fontSize = 15.sp,
 			hint = stringResource(hintRes),
-			// The whole field area takes taps and focus. The keyboard action
-			// walks to the next answer, and on the last one just hides the
-			// keyboard (grading stays on the Done button below).
+			// the whole field area takes taps and focus.
+			// - the keyboard action walks to the next answer.
+			// - the last answer only hides the keyboard, since grading stays on Done.
 			focusRequester = focusRequester,
 			imeAction = if (isLast) ImeAction.Done else ImeAction.Next,
 			onImeAction = {
 				if (isLast) keyboard?.hide()
 				else {
-					// a detached requester (its row left the viewport) throws — the
-					// scroll fallback takes over then
+					// a requester whose row left the viewport throws, so the scroll fallback runs
 					val next = answerFocus[index + 1]
 					val landed = next != null && runCatching { next.requestFocus() }.isSuccess
 					if (!landed) {
-						// the next row is beyond the viewport (or its requester went
-						// stale) — scroll to it, the pending index focuses it once
-						// composed
+						// the next row sits beyond the viewport or lost its requester.
+						// scroll to it, then the pending index focuses it once composed.
 						setPendingAnswer(index + 1)
 						scope.launch { listState.animateScrollToItem(index + 1) }
 					}

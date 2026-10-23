@@ -28,10 +28,10 @@ import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.ui.component.HairlineDivider
 
 /**
- * Pre-fork reference picker, the items referencing the word, in no
- * particular order. Kept rows follow the new word, X-ed ones keep the
- * original.
- * - carries a pending decision — a scrim tap cannot drop it (the back key still can).
+ * The pre-fork reference picker: the items referencing the word, in no particular order.
+ * - kept rows follow the new word, and the X-ed ones keep the original.
+ * - it carries a pending decision, so a scrim tap cannot drop it.
+ * - the back key still can.
  */
 class ReferencePopup(
 	references: List<DbItem>,
@@ -87,7 +87,7 @@ class ReferencePopup(
 				PopupButton(stringResource(R.string.cancel), Modifier.weight(1f)) { dismiss() }
 				VerticalButtonSeparator()
 				PopupButton(stringResource(R.string.ok), Modifier.weight(1f)) {
-				// one shot — a double-tap must not commit the fork twice
+				// one shot, so a double-tap must not commit the fork twice
 				val listener = okListener ?: return@PopupButton
 				okListener = null
 				listener(following.map { it.id })

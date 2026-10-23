@@ -1,24 +1,23 @@
 package cz.litoj.schlmgr.ui.component
 
 /**
- * The position in `1..maxPosition` with the widest text (digit widths differ,
- * so the longest number is not always the widest).
-	 * - chosen without walking the list.
-	 * - ties go to the larger position.
+ * The position up to maxPosition with the widest text, since digit widths differ.
+ * - the longest number is not always the widest.
+ * - chosen without walking the list.
  */
 internal fun widestPosition(maxPosition: Int, digitWidth: (Int) -> Int): Int {
 	val max = maxPosition.coerceAtLeast(1)
 	val digits = max.toString()
 	val count = digits.length
 
-	// The widest digit for a leading slot (never 0) and for any slot after it.
+	// the widest digit for a leading slot, which is never 0, and for any slot after it.
 	val lead = widestDigit(1..9, digitWidth)
 	val rest = widestDigit(0..9, digitWidth)
 
 	var best = max
 	var bestWidth = digits.sumOf { digitWidth(it - '0') }
 
-	// Keeps the widest candidate seen so far — the larger number wins a width tie.
+	// keeps the widest candidate, and the larger number wins a width tie.
 	fun consider(candidate: Int, width: Int) {
 		if (width > bestWidth || (width == bestWidth && candidate > best)) {
 			bestWidth = width
@@ -26,7 +25,7 @@ internal fun widestPosition(maxPosition: Int, digitWidth: (Int) -> Int): Int {
 		}
 	}
 
-	// A shorter number can still be the widest — a narrow 1 lets 999 outrun 1000.
+	// a shorter number can still be widest, since a narrow 1 lets 999 outrun 1000.
 	for (length in 1 until count) {
 		consider(
 			("$lead" + "$rest".repeat(length - 1)).toInt(),
@@ -34,7 +33,7 @@ internal fun widestPosition(maxPosition: Int, digitWidth: (Int) -> Int): Int {
 		)
 	}
 
-	// Same-length numbers below max — keep max's prefix, dip below its digit once,
+	// same-length numbers below max keep the prefix of max, dip once below its digit,
 	// then take the widest digits freely.
 	var prefixWidth = 0
 	for (i in 0 until count) {

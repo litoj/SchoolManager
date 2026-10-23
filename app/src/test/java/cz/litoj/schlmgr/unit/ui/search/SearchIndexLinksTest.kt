@@ -9,10 +9,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Unit tests of [SearchIndex.linksOf]: a hit row's reference facts come from
- * the preloaded child links (one query per run), including parents outside
- * the searched subgraph — a reference placed elsewhere still points at a
- * subgraph item, and its jump-to-source must survive the preload.
+ * - the reference facts of a hit row come from the preloaded child links.
+ * - that costs one query per run.
+ * - parents outside the searched subgraph are included.
  */
 class SearchIndexLinksTest {
 
@@ -26,7 +25,8 @@ class SearchIndexLinksTest {
 		val index = SearchIndex(
 			rows = listOf(item(1), item(2)),
 			links = listOf(link(1, 2)),
-			childLinks = listOf(link(1, 2), link(9, 2, reference = true)), // 9 lies outside the subgraph
+			// 9 lies outside the subgraph
+			childLinks = listOf(link(1, 2), link(9, 2, reference = true)),
 		)
 		assertEquals(listOf(1, 9), index.linksOf(2).map { it.parentId })
 	}

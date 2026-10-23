@@ -8,22 +8,19 @@ import cz.litoj.schlmgr.data.StreamItem
 import cz.litoj.schlmgr.data.StreamReference
 
 /**
- * One import or subject-merge run.
- * - three save phases over accumulator and session.
- * - stateless — repository owns transaction. Maps stream to rows.
+ * - three save phases over the accumulator and the session.
+ * - stateless: the repository owns the transaction.
  */
 internal object ImportService {
 
 	/**
-	 * One import run outcome — public result plus row each stream item became.
-	 * - subject merge re-linking reads map.
+	 * - the subject merge reads the map for re-linking.
 	 */
 	internal class ImportOutcome(
 		val result: ItemRepository.ImportResult,
 		val savedRows: Map<StreamItem, Int>,
 	)
 
-	/** Saves an item stream within the caller's transaction. */
 	suspend fun run(
 		dao: ItemDao, importer: DataImporter, anchorId: Int,
 	): ImportOutcome {
@@ -39,8 +36,8 @@ internal object ImportService {
 	}
 
 	/**
-	 * Stream shape valid — word children are named translations only, at least one.
-	 * Violating file fails whole import before anything written.
+	 * Stream shape valid: word children are named translations only, at least one.
+	 * A violating file fails the whole import before anything is written.
 	 */
 	private fun requireWordsTranslated(importer: DataImporter) {
 		val childrenOf = importer.items.groupBy({ it.parent }, { it.item })
@@ -56,22 +53,22 @@ internal object ImportService {
 	}
 
 	/**
-	 * Save phase — every stream entry becomes row linked under parent, `null`
-	 * parents anchor to the import target.
+	 * Save phase: every stream entry becomes a row linked under its parent.
+	 * Entries with a null parent anchor to the import target.
 	 */
 	private suspend fun saveImportStream(
 		session: ImportSession, importer: DataImporter, anchorId: Int, acc: ImportAccumulator,
 	) {
 		for (entry in importer.items) {
-			// first, before the row work — a skipped entry (an empty
-			// translation) must not fall behind the bar's total
+			// first, before the row work, since a skipped entry such as an empty
+			// translation must not fall behind the total of the bar
 			importer.onItem(entry)
 			val parent = entry.parent?.let(acc.saved::get) ?: anchorId
 			val row = when (entry.item.type) {
-				ItemKind.WORD -> ItemRepository.insertWord(session, InsertWordParams(parent, entry.item.name,
+				ItemKind.WORD -> WordMerge.insertWord(session, InsertWordParams(parent, entry.item.name,
 					entry.item.description, emptyList(),
 					entry.item.passedTests, entry.item.failedTests))
-				ItemKind.TRANSLATION -> ItemRepository.addTranslations(session, AddTranslationsParams(
+				ItemKind.TRANSLATION -> WordMerge.addTranslations(session, AddTranslationsParams(
 					session.subjectRootOf(parent) ?: parent, parent,
 					listOf(NewTranslation(entry.item.name, entry.item.description,
 						entry.item.passedTests, entry.item.failedTests)))).firstOrNull()
@@ -100,21 +97,20 @@ internal object ImportService {
 		for (ref in importer.references) {
 			val parentRow = acc.saved[ref.parent] ?: continue
 			val target = resolveTargetRow(ref, acc) ?: continue
-			// File may name ancestor of own position — cycle pre-order walks cannot leave.
-			// Session graph knows pending links — database does not yet.
+			// a file may name an ancestor of its own position, a cycle the pre-order
+			// walks cannot leave. The session graph knows pending links, the database does not.
 			if (parentRow != target && !session.linked(parentRow, target) &&
 				!session.contains(target, parentRow))
 				session.addReference(parentRow, target)
 		}
 	}
 
-	/** The saved row a reference path names — `null` when no row matches. */
 	private fun resolveTargetRow(ref: StreamReference, acc: ImportAccumulator): Int? {
-		// an empty path names a root itself — the target is a top-level row
+		// an empty path names a root itself, so the target is a top-level row
 		if (ref.path.isEmpty())
 			return acc.topLevel.firstOrNull { it.name == ref.targetName }?.id
-		// a multi-root file resolves through any of them — the export
-		// anchors each path at the target's own root
+		// a multi-root file resolves through any of them, since the export
+		// anchors each path at the root of the target
 		var cur = acc.topLevel.firstOrNull { it.name == ref.path.first() }?.id
 			?: acc.topLevel.firstOrNull()?.id ?: return null
 		for (i in 1 until ref.path.size) {
@@ -124,18 +120,18 @@ internal object ImportService {
 	}
 
 	/**
-	 * Counter phase — every touched container derives counters from words below.
-	 * - bottom-up through saved chapters, then anchor and containers above.
-	 * - merged chapter outside holders follow.
-	 * - counter adoption touches holders.
-	 * - sums come from session graph — unloaded rows fall back to SQL.
+	 * Counter phase: every touched container derives counters from the words below.
+	 * - bottom-up through the saved chapters, then the anchor and the containers above.
+	 * - merged chapter holders outside the stream follow.
+	 * - counter adoption touches the holders.
+	 * - sums come from the session graph, and unloaded rows fall back to SQL.
 	 */
 	private suspend fun refreshImportCounters(
 		session: ImportSession, dao: ItemDao, importer: DataImporter,
 		acc: ImportAccumulator, anchorId: Int,
 	) {
 		val sums = SessionSums(session, dao)
-		// built upfront — the bottom-up walk meets stream parents before visiting them,
+		// built upfront, since the bottom-up walk meets stream parents before visiting them,
 		// so a guard fed by the loop itself never fires
 		val streamIds = HashSet<Int>()
 		for (entry in importer.items) {
@@ -148,22 +144,22 @@ internal object ImportService {
 			recomputeContainerCounters(dao, sums.counts, id)
 			for (parent in dao.parentsPlainFirst(id))
 				if (parent != anchorId && parent !in streamIds)
-					ItemRepository.recomputeCounterChain(dao, parent, sums.counts, sums.parents)
+					CounterChain.recomputeCounterChain(dao, parent, sums.counts, sums.parents)
 		}
 		for (id in session.adopted) {
 			if (dao.get(id)?.type != ItemKind.WORD) continue
 			for (parent in dao.parentsPlainFirst(id))
 				if (parent != anchorId && parent !in streamIds)
-					ItemRepository.recomputeCounterChain(dao, parent, sums.counts, sums.parents)
+					CounterChain.recomputeCounterChain(dao, parent, sums.counts, sums.parents)
 		}
-		// never the root — its recursive sum spans the whole database, its
-		// counters show nowhere, and root-level subjects are stream chapters
+		// never the root: its recursive sum spans the whole database, its counters
+		// show nowhere, and root-level subjects are stream chapters
 		if (anchorId != ROOT_ID)
-			ItemRepository.recomputeCounterChain(dao, anchorId, sums.counts, sums.parents)
+			CounterChain.recomputeCounterChain(dao, anchorId, sums.counts, sums.parents)
 	}
 
 	/**
-	 * Session-or-SQL pair for chain walks — in-memory sums for loaded rows, SQL for rest.
+	 * Session-or-SQL pair for chain walks: in-memory sums for loaded rows, SQL for the rest.
 	 */
 	private class SessionSums(session: ImportSession, dao: ItemDao) {
 		val counts: suspend (Int) -> Counters =
@@ -173,8 +169,7 @@ internal object ImportService {
 	}
 
 	/**
-	 * Stores container success/fail derived from word rows in subgraph.
-	 * Incoming pick cannot diverge.
+	 * The counters come from the rows below, so the incoming pick cannot diverge.
 	 */
 	private suspend fun recomputeContainerCounters(
 		dao: ItemDao, counts: suspend (Int) -> Counters, containerId: Int,

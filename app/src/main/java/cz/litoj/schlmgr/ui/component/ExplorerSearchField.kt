@@ -25,11 +25,12 @@ import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 
 /**
- * The explorer search field, fully stateless — the text mirrors the
- * screen's collected query, closing it the screen's decision.
+ * The explorer search field, fully stateless.
+ * - the text mirrors the query of the screen, which decides when to close.
  * - threshold, debounce and clearing policy live in the view model.
-	 * - both explorers render it against their own state.
-	 * - the keyboard’s dismissal closes the field — the system hides the keyboard on the first back press without the app seeing it, so the field leaves with the keyboard instead of waiting for a second press.
+ * - both explorers render it against their own state.
+ * - a dismissed keyboard closes the field, since the system hides it on the first back press.
+ * - so the field leaves with the keyboard instead of waiting for a second press.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -43,8 +44,8 @@ fun ExplorerSearchField(
 	val keyboard = LocalSoftwareKeyboardController.current
 	val focus = remember { FocusRequester() }
 	LaunchedEffect(Unit) { focus.requestFocus() }
-	// The submit hides the keyboard on purpose, so its own hiding must not
-	// close the field — every other dismissal does.
+	// the submit hides the keyboard on purpose, so its own hiding must not close
+	// the field, while every other dismissal does.
 	var shown by remember { mutableStateOf(false) }
 	var ownHide by remember { mutableStateOf(false) }
 	val imeVisible = WindowInsets.isImeVisible
@@ -57,9 +58,9 @@ fun ExplorerSearchField(
 			if (!ownHide) onClose()
 		}
 	}
-	// Bare on the toolbar and centered like the title, inverted text.
-	// Cursor, handles and selection follow the text — the green defaults
-	// stay invisible on the green bar.
+	// bare on the toolbar and centered like the title, with inverted text.
+	// - the cursor, handles and selection follow the text color.
+	// - the green defaults would stay invisible on the green bar.
 	val onBar = colorResource(R.color.colorOnHeader)
 	val selection = TextSelectionColors(
 		handleColor = onBar,
@@ -85,7 +86,7 @@ fun ExplorerSearchField(
 				hint = stringResource(R.string.search),
 				onImeAction = {
 					onSubmit(value)
-					// the results are the point now — drop the keyboard, keep the field
+					// the results are the point now, so drop the keyboard but keep the field
 					ownHide = true
 					keyboard?.hide()
 				},

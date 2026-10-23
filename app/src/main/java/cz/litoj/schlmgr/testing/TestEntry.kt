@@ -6,11 +6,10 @@ import cz.litoj.schlmgr.data.db.ratio
 import cz.litoj.schlmgr.data.db.testedCount
 
 /**
- * One tested word with its chapter path — subject root first, the tested
- * word LAST.
+ * One tested word with its chapter path, subject root first and the tested word last.
  *
  * @property testedCount snapshot at pick time, not live
- * @property ratio snapshot success percent, `-1` when untested
+ * @property ratio snapshot success percent, -1 when untested
  */
 class TestEntry(val word: DbItem, val path: List<DbItem>) {
 

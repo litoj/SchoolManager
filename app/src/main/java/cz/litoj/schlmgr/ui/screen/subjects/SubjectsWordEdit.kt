@@ -17,7 +17,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * Word edit/creation — popup commits, New actions.
+ * The word editing and creation of the subjects screen.
+ * - it covers the popup commits and the New actions.
  */
 internal class SubjectsWordEdit(
 	private val scope: CoroutineScope,
@@ -30,18 +31,15 @@ internal class SubjectsWordEdit(
 
 		fun selectionCount(): Int
 
-		/** Open chain — the new item lands in last. */
+		/** The open chain, where the new item lands in the last entry. */
 		val path: List<DbItem>
 
-		/** Enqueues view request. */
 		fun emitRequest(request: Request)
 
-		/** Runs [work] on main. */
 		fun postToUi(work: Runnable)
 
 		fun clearSelection()
 
-		/** Re-reads open container. */
 		fun reloadContent()
 
 		fun refreshInfo()
@@ -51,7 +49,6 @@ internal class SubjectsWordEdit(
 		fun addItem(index: Int, item: ItemRow)
 	}
 
-	/** Opens editor for single selection. */
 	fun onEditAction() {
 		if (host.selectionCount() != 1) return
 		val row = host.items().firstOrNull(ItemRow::selected) ?: return
@@ -70,7 +67,8 @@ internal class SubjectsWordEdit(
 	}
 
 	/**
-	 * `false` keeps popup open. Fork emits [Request.ForkReferences].
+	 * A false verdict keeps the popup open.
+	 * - a fork emits [Request.ForkReferences].
 	 */
 	fun commitWordEdit(row: ItemRow, result: CreatorResult): Boolean {
 		val edit = wordEditOf(result, row) ?: return false
@@ -86,7 +84,7 @@ internal class SubjectsWordEdit(
 		return true
 	}
 
-	/** Commits fork — only kept references follow. */
+	/** Commits the fork, where only the kept references follow. */
 	fun commitForkReferences(row: ItemRow, edit: WordEdit, kept: List<Int>) {
 		val rowId = row.item.id
 		val rowParent = row.parentId
@@ -95,7 +93,7 @@ internal class SubjectsWordEdit(
 		}
 	}
 
-	/** Lands edit and re-reads list. Join re-reads placement here. */
+	/** An edit that changes the word id also changes its place, so read it again. */
 	private suspend fun commitWordEditNow(row: ItemRow, edit: WordEdit, rowId: Int, rowParent: Int?) {
 		val word = ItemRepository.editWord(edit)
 		val placement = if (word.id != rowId && rowParent != null) row.readPlacement(rowParent, word) else null
@@ -107,7 +105,6 @@ internal class SubjectsWordEdit(
 		}
 	}
 
-	/** Commits simple editor. `false` on empty name. */
 	fun commitItemEdit(row: ItemRow, result: CreatorResult): Boolean {
 		if (result.name.isEmpty()) return false
 		val description = result.description.replace("\\t", "\t")
@@ -127,8 +124,9 @@ internal class SubjectsWordEdit(
 	}
 
 	/**
-	 * Commits new word per `\`-split name. `false` on incomplete input or closed container.
-	 * Each name appends — the database links at the end.
+	 * Commits a new word per backslash-split name, and false on incomplete input.
+	 * - a closed container also returns false.
+	 * - each name appends, so the database links it at the end.
 	 */
 	private fun applyWord(result: CreatorResult): Boolean {
 		if (result.name.isEmpty() || result.translations.isEmpty()) return false
@@ -147,15 +145,11 @@ internal class SubjectsWordEdit(
 				)
 				created.add(ItemRow(w, parentId, 0))
 			}
-			// the live list renumbers on insert — the rows append in order
+			// the live list renumbers on insert, so the rows append in order
 			host.postToUi { created.forEach { host.addItem(it) } }
 		}
 		return true
 	}
-
-	// ==========================================================================
-	//  creation (menu)
-	// ==========================================================================
 
 	fun newSubject() {
 		host.emitRequest(Request.CreateItem(RowKind.SUBJECT))
@@ -173,7 +167,6 @@ internal class SubjectsWordEdit(
 		host.emitRequest(Request.CreateItem(RowKind.WORD))
 	}
 
-	/** Commits new item. `false` on incomplete input. */
 	fun commitNewItem(kind: RowKind, result: CreatorResult): Boolean {
 		if (result.name.isEmpty()) return false
 		when (kind) {
@@ -181,7 +174,7 @@ internal class SubjectsWordEdit(
 				val description = result.description.replace("\\t", "\t")
 				scope.launch(io) {
 					val mch = ItemRepository.createSubject(result.name, description)
-					// Row builds here — reads the database.
+					// the row builds here, since this reads the database.
 					val row = ItemRow(mch, ROOT_ID, 0)
 					host.postToUi { host.addItem(row) }
 				}

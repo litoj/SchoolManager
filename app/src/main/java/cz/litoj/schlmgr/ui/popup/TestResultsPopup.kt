@@ -36,19 +36,18 @@ import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 
 /**
- * Post-test results — the success percentage and one explorer-style row
- * per tested item.
-	 * - translations replace the description.
-	 * - the tested count replaces the position.
- * - the typed answer below, `passed/total` at the row's end.
+ * Post-test results: the success percentage and one explorer-style row per tested item.
+ * - translations replace the description.
+ * - the tested count replaces the position.
+ * - the typed answer shows below, with passed/total at the end of the row.
  *
- * @param success success percentage 0–100 (not a fraction)
+ * @param success success percentage from 0 to 100, not a fraction
  */
 class TestResultsPopup(items: List<TestItemModel>, private val success: Float) : DialogSpec {
 
 	private class ResultRow(val item: TestItemModel, val model: ItemUiModel)
 
-	// built eagerly — reset() clears the tested list right after this constructor
+	// built eagerly, since reset clears the tested list right after this constructor
 	private val rows: List<ResultRow> = items.map { ResultRow(it, toModel(it)) }
 
 	init {
@@ -58,8 +57,8 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 	@Composable
 	override fun Content() {
 		val successText = stringResource(R.string.success_rate, success.toString())
-		// One width for every count cell (the widest count shown), so the rows render at
-		// the browse number size, and the widest count can lie below the largest one.
+		// one width for every count cell, so the rows render at the browse number size.
+		// the widest count can lie below the largest one, since digit widths differ.
 		val positionWidth = positionColumnWidth(
 			rows.maxOfOrNull { it.model.position } ?: 1,
 			ExplorerRowVariant.Browse,
@@ -86,8 +85,7 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 			}
 			Button(
 				onClick = { Dialogs.dismiss(this@TestResultsPopup) },
-				// The app theme colours (header green background, white text) — the
-				// Material default would be the Compose purple, not this app's theme.
+				// the theme colours of the app, since the Material default is the Compose purple.
 				colors = ButtonDefaults.buttonColors(
 					backgroundColor = colorResource(R.color.colorPrimaryHeader),
 					contentColor = colorResource(R.color.colorOnHeader),
@@ -129,7 +127,7 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 		)
 	}
 
-	/** The explorer-row model of one result — the word as a plain, unflipped word row. */
+	/** The explorer-row model of one result, the word as a plain unflipped row. */
 	private fun toModel(item: TestItemModel) = ItemUiModel(
 		key = item,
 		position = item.word.testedCount,

@@ -4,7 +4,8 @@ import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.shell.MenuEntry
 
 /**
- * Menu kind for shown content. Search list takes the search menu — depth picks the browse kind.
+ * The menu kind for the shown content.
+ * - the search list takes the search menu, and the depth picks the browse kind.
  */
 fun menuKindFor(searching: Boolean, pathSize: Int): MainExplorerViewModel.MenuKind = when {
 	searching -> MainExplorerViewModel.MenuKind.SEARCH
@@ -12,9 +13,6 @@ fun menuKindFor(searching: Boolean, pathSize: Int): MainExplorerViewModel.MenuKi
 	else -> MainExplorerViewModel.MenuKind.CONTAINER
 }
 
-/**
- * More-options menu.
- */
 fun subjectsMenu(
 	kind: MainExplorerViewModel.MenuKind,
 	selecting: Boolean,
@@ -58,7 +56,7 @@ private val rootMenu = listOf(
 
 private val containerMenu = listOf(
 	MenuEntry(0, R.string.sort, icon = R.drawable.ic_sort_black, children = sortMenu),
-	// Single import needs no submenu.
+	// single import needs no submenu.
 	MenuEntry(MenuId.IMPORT_FILE, R.string.more_import, icon = R.drawable.ic_import_black),
 	MenuEntry(0, R.string.more_export, icon = R.drawable.ic_export_black, children = exportMenu, always = true),
 	MenuEntry(MenuId.FLIP, R.string.more_flip, icon = R.drawable.ic_flip_black, selectionAction = true),
@@ -70,7 +68,7 @@ private fun searchMenu() = listOf(
 	MenuEntry(MenuId.FLIP, R.string.more_flip, icon = R.drawable.ic_flip_black, selectionAction = true),
 	MenuEntry(MenuId.REFERENCE, R.string.more_reference, icon = R.drawable.ic_reference_black, selectionAction = true),
 	MenuEntry(0, R.string.more_export, icon = R.drawable.ic_export_black, children = exportMenu, always = true),
-	// No sort-default — search has no browse order.
+	// no sort-default, since search has no browse order.
 	MenuEntry(0, R.string.sort, icon = R.drawable.ic_sort_black,
 		children = sortMenu.filter { it.id != MenuId.SORT_DEFAULT }),
 )

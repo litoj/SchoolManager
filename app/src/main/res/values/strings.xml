@@ -201,11 +201,9 @@
     <string name="more_export_json">JSON file (success rates included)</string>
     <string name="more_flip">Flip words and translations</string>
     <string name="more_go_to">Go to location</string>
-    <string name="flip_conflict_view">View List</string>
-    <plurals name="flip_conflicts">
-        <item quantity="one">Flip cancelled: %1$d word also lives in another chapter.</item>
-        <item quantity="other">Flip cancelled: %1$d words also live in other chapters.</item>
-    </plurals>
+    <string name="flip_conflicts_title">Conflicting words</string>
+    <string name="flip_conflicts_ok">Flip</string>
+    <string name="flip_conflicts_blank">Every conflicting word needs a name</string>
     <string name="json_export_ext">.hjson</string>
     <string name="json_import_types">application/hjson</string>
     <string name="new_chapter">New chapter</string>

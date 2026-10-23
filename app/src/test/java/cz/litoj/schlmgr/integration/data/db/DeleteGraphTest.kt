@@ -16,10 +16,10 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The graph deletion behind [ItemRepository.remove] on a real in-memory database:
- * - a subject wider than SQLite's 999 parameter cap deletes fine — the walk handles one row at a time.
- * - an item shared by several parents survives the deletion of all but one of them.
- * - a removed word's tests leave its chapter's stored counters with it.
+ * - a subject wider than the 999 parameter cap of SQLite deletes fine.
+ * - the walk handles one row at a time.
+ * - an item shared by several parents survives the deletion of all but one.
+ * - the tests of a removed word leave the stored counters of its chapter.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -47,7 +47,7 @@ class DeleteGraphTest {
 		ItemRepository.legacyLinkAtEnd(ROOT_ID, subject)
 		val chapter = ItemRepository.legacyInsert("c", null, ItemKind.CHAPTER, 0, 0)
 		ItemRepository.legacyLinkAtEnd(subject, chapter)
-		// one breadth of 1001 children — past the 999 sqlite parameter cap
+		// one breadth of 1001 children, past the 999 sqlite parameter cap
 		repeat(1001) { i ->
 			val word = ItemRepository.legacyInsert("w$i", null, ItemKind.WORD, 0, 0)
 			ItemRepository.legacyLinkAtEnd(chapter, word)
@@ -70,7 +70,6 @@ class DeleteGraphTest {
 
 		ItemRepository.remove(c1.id, subject.id)
 
-		// the word and its translation live on through the other chapter
 		assertEquals(listOf("dog"), ItemRepository.children(c2.id).map { it.name })
 		assertEquals(listOf("pes"), ItemRepository.translations(word.id).map { it.name })
 	}
@@ -84,7 +83,7 @@ class DeleteGraphTest {
 		var removed = 0
 		ItemRepository.remove(subject.id, ROOT_ID) { removed++ }
 
-		// the subject, the chapter, the word and its translation — the count a
+		// the subject, the chapter, the word and its translation, the count a
 		// deletion bar shows
 		assertEquals(4, removed)
 	}
@@ -100,7 +99,6 @@ class DeleteGraphTest {
 
 		ItemRepository.remove(word.id, c1.id)
 
-		// the word's tests left the chapter's derivation with the word
 		val stored = ItemRepository.get(c1.id)!!
 		assertEquals(0, stored.failedTests)
 		assertEquals(0, stored.passedTests)
@@ -113,24 +111,24 @@ class DeleteGraphTest {
 		val word = ItemRepository.createWord(c1.id, "w", null, listOf("t1" to null, "t2" to null))
 		val t1 = ItemRepository.translations(word.id).first { it.name == "t1" }
 		val t2 = ItemRepository.translations(word.id).first { it.name == "t2" }
-		// a second word shares t2 — the row keeps serving it
+		// a second word shares t2, so the row keeps serving it
 		val word2 = ItemRepository.createWord(c1.id, "w2", null, listOf("t2" to null))
 
 		// a non-last translation removes alone, the word stays
 		ItemRepository.remove(t1.id, word.id)
 		assertEquals(listOf("t2"), ItemRepository.translations(word.id).map { it.name })
 
-		// the last one goes, the word with it — the shared row survives
+		// the last one goes, and the word with it, while the shared row survives
 		ItemRepository.remove(t2.id, word.id)
 		assertEquals(null, ItemRepository.get(word.id))
 		assertEquals(listOf("t2"), ItemRepository.translations(word2.id).map { it.name })
 
-		// and word2's own last translation cascades it away too, the
-		// chapter's derivation following the dying words down
+		// the last translation of word2 cascades it away too, with the derivation
+		// of the chapter following the dying words down
 		ItemRepository.bumpCounters(listOf(word2.id, c1.id), true)
 		ItemRepository.remove(t2.id, word2.id)
 		assertEquals(null, ItemRepository.get(word2.id))
-		// t2's last parent died with word2 — the unshared row goes too,
+		// the last parent of t2 died with word2, so the unshared row goes too,
 		// not orphaned
 		assertEquals(null, ItemRepository.get(t2.id))
 		assertEquals(0, ItemRepository.get(c1.id)!!.passedTests)

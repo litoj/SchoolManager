@@ -15,38 +15,40 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 /**
- * Process-wide state of one running test — the engine, the item models,
- * the typed answers and the grading.
- * - written only through this object's doors — a rotation re-attaches to the same run; the double-back exit resets it.
- * - the io halves (the source walk, the grading) run on the host screen's scope; a landing after the host's death drops, so a run never outlives the screen that would show it.
+ * Process-wide state of one running test.
+ * - it holds the engine, the item models, the typed answers and the grading.
+ * - written only through the doors of this object.
+ * - a rotation re-attaches to the same run, and the double-back exit resets it.
+ * - the io halves run on the scope of the host screen, so a landing after its death drops.
+ * - so a run never outlives the screen that would show it.
  */
 object TestRunState {
 
-	/** The run's screen — supplies the lifetime and the screen-owned events. */
+	/** The screen of the run, which supplies the lifetime and the screen events. */
 	interface Host {
 		val scope: CoroutineScope
 
 		fun isAlive(): Boolean
 
-		/** The walk found nothing testable — the screen reports and leaves. */
+		/** The walk found nothing testable, so the screen reports and leaves. */
 		fun onNoObjects()
 
-		/** The grading landed — the screen shows the results and leaves. */
+		/** The grading landed, so the screen shows the results and leaves. */
 		fun onResults(items: List<TestItemModel>, ratio: Float)
 	}
 
-	// the timer thread reads it — the flag must be visible across threads
+	// the timer thread reads it, so the flag must be visible across threads
 	@Volatile
 	private var test: TestEngine? = null
 
 	private val _items = mutableStateListOf<TestItemModel>()
 
-	/** The run's items — a snapshot list, so the run's landing recomposes. */
+	/** The items of the run, a snapshot list, so a landing recomposes. */
 	val items: List<TestItemModel> = _items
 
 	private val _answers = mutableStateMapOf<Int, String>()
 
-	/** The typed answers, keyed by item index (survives scrolling). */
+	/** The typed answers, keyed by item index, which survive scrolling. */
 	val answers: Map<Int, String> = _answers
 
 	var secondsLeft by mutableIntStateOf(0)
@@ -54,21 +56,19 @@ object TestRunState {
 
 	private var backTime = 0L
 
-	// the timer thread posts through it — the posts must outlive any one
-	// screen, like the old runOnUiThread on the activity
+	// the timer thread posts through it, so the posts must outlive any one screen.
+	// this works like the old runOnUiThread on the activity
 	private val mainHandler = Handler(Looper.getMainLooper())
 
-	/** Whether a run is showing — a fresh screen starts one when not. */
+	/** Whether a run is showing, since a fresh screen starts one when not. */
 	fun hasRun(): Boolean = test != null
 
-	/** One typed answer — the answer fields' write door. */
 	fun setAnswer(index: Int, text: String) {
 		_answers[index] = text
 	}
 
 	/**
-	 * One back press of the double-press window.
-	 * @return true for the first press (the hint shows), false for the second (the exit).
+	 * @return true for the first press, which shows the hint, and false for the exit
 	 */
 	fun pressExit(): Boolean =
 		if (System.currentTimeMillis() - backTime > ExplorerViewModel.EXIT_WINDOW_MS) {
@@ -77,21 +77,20 @@ object TestRunState {
 		} else false
 
 	/**
-	 * Builds and starts the run. The blocking half (the source walk and the
-	 * per-word model reads) runs off the main thread — the state lands and
-	 * the countdown starts once it does, and only into a living screen (a
-	 * rotated screen walks again, an exited one leaves nothing behind).
+	 * The blocking walk runs off main, and the state lands only into a living screen.
+	 * - a rotated screen walks again, and an exited screen leaves nothing behind.
 	 */
 	fun start(host: Host) {
-		// an empty or below-1 field falls back to the engine's setting
+		// an empty or below-1 field falls back to the setting of the engine
 		val amount = (TestSetupState.amountText.toIntOrNull() ?: 0)
 			.takeIf { it >= 1 } ?: TestEngine.amount
 		val timeSec = (TestSetupState.timeText.toIntOrNull() ?: 0)
 			.takeIf { it >= 1 } ?: TestEngine.getDefaultTime()
 		host.scope.launch(Dispatchers.IO) {
-			// The picked sources are container chains (root first, the selected
-			// item last) — TestEngine.convertAll turns a selected word into a
-			// direct entry and a selected chapter into its words.
+			// the picked sources are container chains, with the root first.
+			// - the selected item comes last.
+			// - the engine turns a selected word into a direct entry.
+			// - it turns a selected chapter into its words
 			val src = TestEngine.convertAll(TestSetupState.list)
 			if (src.isEmpty()) {
 				mainHandler.post { host.onNoObjects() }
@@ -114,7 +113,7 @@ object TestRunState {
 			val models = newTest.getTestSrc().map { TestItemModel(it) }
 			mainHandler.post {
 				if (!host.isAlive()) return@post
-				// a rotation during grading skipped reset() — start from empty
+				// a rotation during grading skipped reset, so start from empty
 				_items.clear()
 				_answers.clear()
 				_items.addAll(models)
@@ -124,20 +123,16 @@ object TestRunState {
 		}
 	}
 
-	/**
-	 * Grades the run and hands the results to [Host.onResults]. The per-item
-	 * checks and stat re-reads run off the main thread — the results follow
-	 * once they land.
-	 */
+	/** The per-item checks and stat re-reads run off the main thread. */
 	fun submit(host: Host) {
 		val current = test ?: return
-		// the run is over for the engine — a second submit or a late timer
-		// tick finds nothing to grade
+		// the run is over for the engine.
+		// so a second submit or a late timer tick finds nothing to grade
 		test = null
 		current.stopTest()
 		val typed = _answers.toMap()
-		// snapshot on main — the io grading must not iterate the live list
-		// (a back-press exit during grading clears it here)
+		// snapshot on main, since the io grading must not iterate the live list.
+		// a back-press exit during grading clears it here
 		val items = _items.toList()
 		host.scope.launch(Dispatchers.IO) {
 			var success = 0
@@ -147,7 +142,8 @@ object TestRunState {
 				if (correct) success++
 				tim.correct = correct
 				tim.answer = text
-				// the engine wrote the answer's counter updates itself — re-read for the results
+				// the engine wrote the counter updates of the answer itself.
+				// so re-read for the results
 				tim.refreshStats()
 			}
 			mainHandler.post {
@@ -159,9 +155,9 @@ object TestRunState {
 	}
 
 	/**
-	 * The run is over — stop the countdown outright instead of letting the
-	 * thread exit on its next tick (up to a second later, still holding a
-	 * dead screen's callback).
+	 * The run is over: stop the countdown outright.
+	 * - the timer thread would exit on its next tick, up to a second later.
+	 * - until then it still holds a callback of a dead screen.
 	 */
 	fun reset() {
 		test?.stopTest()

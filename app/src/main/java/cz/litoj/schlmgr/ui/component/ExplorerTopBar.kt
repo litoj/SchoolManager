@@ -38,7 +38,7 @@ private val CrumbColor @Composable get() = ExplorerColors.onHeader
 private val InfoColor @Composable get() = ExplorerColors.body
 
 /**
- * The explorer's top chrome — the breadcrumb strip and the info strip,
+ * The top chrome of the explorer: the breadcrumb strip and the info strip,
  * stacked. Stateless, both hosts drive it from their state.
  */
 @Composable
@@ -60,9 +60,9 @@ fun ExplorerTopBar(
 @Composable
 private fun Breadcrumbs(breadcrumbs: List<String>, onClick: (Int) -> Unit) {
 	val scroll = rememberScrollState()
-	// keep the newest crumb visible. Keyed on the list, not its size — a
-	// same-length change (a sibling switch, a crumb rename) still scrolls
-	// the longer crumb into view.
+	// keep the newest crumb visible.
+	// - keyed on the list, not its size.
+	// - a same-length change such as a crumb rename still scrolls the longer crumb into view.
 	LaunchedEffect(breadcrumbs) { scroll.animateScrollTo(scroll.maxValue) }
 	Row(
 		Modifier
@@ -77,9 +77,9 @@ private fun Breadcrumbs(breadcrumbs: List<String>, onClick: (Int) -> Unit) {
 }
 
 /**
- * One crumb chain — the shared rendering of the titlebar's breadcrumbs and
- * the source picker's paths.
- * @param onCrumbClick a crumb's tap — `null` renders a plain chain
+ * One crumb chain, shared by the breadcrumbs of the titlebar and the paths of
+ * the source picker.
+ * @param onCrumbClick a tap on a crumb, null renders a plain chain
  */
 @Composable
 fun CrumbChain(
@@ -100,9 +100,8 @@ fun CrumbChain(
 					.padding(horizontal = 4.dp),
 			)
 			if (index < names.size - 1) {
-				// scaled content stays centered. The tint carries the palette — the
-				// drawable's own fill is a fixed grey, which would read the same in
-				// both palettes
+				// scaled content stays centered. The tint carries the palette, because
+				// the fixed grey fill of the drawable would read the same in both.
 				Image(
 					painterResource(R.drawable.ic_bread_crumbs),
 					contentDescription = null,
@@ -114,9 +113,8 @@ fun CrumbChain(
 }
 
 /**
- * The info strip — reads the laid-out line count, so a wrapped
- * description expands too. Counting '\n' would stick it at the 2-line
- * height, hiding the rest.
+ * The info strip, which reads the laid-out line count so a wrapped description
+ * expands too. Counting '\n' would stick it at the 2-line height, hiding the rest.
  */
 @Composable
 private fun InfoStrip(
@@ -124,8 +122,8 @@ private fun InfoStrip(
 	isExpanded: Boolean,
 	onClick: () -> Unit,
 ) {
-	// The strip resolves the display text from the semantics — the resource
-	// formatting (the description line riding the percent sign) belongs here.
+	// the strip resolves the display text from the semantics, because the resource
+	// formatting belongs here, with the description line riding the percent sign
 	val text = when (info) {
 		null -> ""
 		is InfoBar.Root -> stringResource(R.string.data_child_count, info.count)
@@ -135,7 +133,7 @@ private fun InfoStrip(
 		)
 		is InfoBar.Search -> stringResource(R.string.data_search_chapters, info.count, info.chapters)
 	}
-	// The laid-out line count of the current text. The wrapper Box always gives
+	// the laid-out line count of the current text. The wrapper Box always gives
 	// the text its full width, so the count is stable whatever the strip height.
 	var lines by remember { mutableIntStateOf(1) }
 	val expandable = lines > 2

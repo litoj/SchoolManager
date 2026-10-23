@@ -14,8 +14,8 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The child-order rules against gapped link positions — deletions leave
- * gaps in the raw positions, and the callers speak visual indexes.
+ * - deletions leave gaps in the raw positions.
+ * - the callers speak visual indexes.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -56,7 +56,7 @@ class ChildOrderTest {
 
 		ItemRepository.createChapter(subject.id, "c4", null, 2)
 
-		// the visual end index is 2 — the row lands after everything
+		// the visual end index is 2, so the row lands after everything
 		assertEquals(listOf("c1", "c3", "c4"), names())
 	}
 
@@ -79,7 +79,7 @@ class ChildOrderTest {
 
 		ItemRepository.createChapter(subject.id, "c4", null, 1)
 
-		// the raw positions are gapped — the visual slot 1 belongs to c3
+		// the raw positions are gapped, so the visual slot 1 belongs to c3
 		assertEquals(listOf("c1", "c4", "c3"), names())
 	}
 
@@ -91,12 +91,11 @@ class ChildOrderTest {
 		remove("c2")
 		val c4 = ItemRepository.createChapter(subject.id, "c4", null, 2)
 
-		// moving the end row onto its own visual slot is a no-op — the
+		// moving the end row onto its own visual slot is a no-op, because the
 		// gapped raw position behind it must not shift anything
 		ItemRepository.reorder(subject.id, c4.id, 2)
 		assertEquals(listOf("c1", "c3", "c4"), names())
 
-		// and a real move across the gap
 		ItemRepository.reorder(subject.id, c4.id, 0)
 		assertEquals(listOf("c4", "c1", "c3"), names())
 	}

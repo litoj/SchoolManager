@@ -2,9 +2,7 @@ package cz.litoj.schlmgr.data.db
 import cz.litoj.schlmgr.data.StreamItem
 
 /**
- * Mutable save state for one import run.
- * - saved row ids plus name indexes for reference phase.
- * - one run owns one instance, phases mutate in order.
+ * Mutable save state for one import run, and the phases mutate it in order.
  */
 internal class ImportAccumulator {
 
@@ -20,23 +18,21 @@ internal class ImportAccumulator {
 	private val chapterRows = HashSet<Int>()
 
 	/**
-	 * The distinct rows the stream's words and chapters became — a shared
-	 * word's every entry merges into one row, so the counts match the
-	 * export's own row counts of the same content.
+	 * The distinct rows the stream words and chapters became.
+	 * - every entry of a shared word merges into one row.
+	 * - the counts then match the row counts of the export of the same content.
 	 */
 	val words: Int get() = wordRows.size
 	val chapters: Int get() = chapterRows.size
 
-	/** Counts one saved row into the report — merges land on one id. */
 	fun countRow(id: Int, type: ItemKind) {
 		if (type == ItemKind.WORD) wordRows.add(id)
 		else if (type == ItemKind.CHAPTER) chapterRows.add(id)
 	}
 
 	/**
-	 * Indexes one saved row for the reference phase — the first row of a name
-	 * wins, and a chapter also lands in the chapter-only index the reference
-	 * paths walk.
+	 * - the first row of a name wins.
+	 * - a chapter also lands in the chapter-only index that the reference paths walk.
 	 */
 	fun indexSavedRow(parent: Int, name: String, id: Int, type: ItemKind) {
 		val names = rowsByParent.getOrPut(parent) { HashMap() }
@@ -46,8 +42,8 @@ internal class ImportAccumulator {
 	}
 
 	/**
-	 * Re-keys every row id onto the real ids the import's bulk flush
-	 * assigned — the phases before it worked with placeholder ids.
+	 * Re-keys every row id onto the real ids that the bulk flush of the import assigned.
+	 * The phases before it worked with placeholder ids.
 	 */
 	fun remapIds(remap: Map<Int, Int>) {
 		if (remap.isEmpty()) return

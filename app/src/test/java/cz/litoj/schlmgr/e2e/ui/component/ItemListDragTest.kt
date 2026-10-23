@@ -33,14 +33,9 @@ import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 
 /**
- * Compose tests for the explorer list's reorder drag.
- * - the dragged row stays an ordinary list row — drawn once under the finger.
+ * - the dragged row stays an ordinary list row, drawn once under the finger.
  * - a self-drawn copy fails.
- * - a reorder from the top row moves the row a slot down instead of scrolling.
- * - the press's selection republish leaves the armed drag alone.
- * - a round trip onto the row's own slot keeps the selection — no drop fires.
- *
- * Every assertion reads the rendered rows, or the host's recorded steps, selection flags and published state.
+ * - every assertion reads the rendered rows or the records of the host.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -52,13 +47,12 @@ class ItemListDragTest {
 	/** The live reorder steps the list reported, in order. */
 	private val steps = mutableListOf<Pair<Int, Int>>()
 
-	/** The rows the host keeps in order — every reorder step is applied to it. */
+	/** The rows kept in order by the host, to which every reorder step is applied. */
 	private val items = mutableStateListOf<ItemUiModel>()
 
-	/** The state the last composition published — how a test reads the republish back. */
+	/** The state published by the last composition, the way a test reads the republish back. */
 	private var published = ItemListState()
 
-	/** `count` unselected subject rows named `item n`, in list order. */
 	private fun rows(count: Int): List<ItemUiModel> = List(count) { i ->
 		ItemUiModel(
 			key = "k$i",
@@ -72,7 +66,6 @@ class ItemListDragTest {
 		)
 	}
 
-	/** Composes a reorderable list of [count] rows named `item n`, all visible at once. */
 	private fun show(count: Int) {
 		items += rows(count)
 		rule.setContent {
@@ -86,29 +79,23 @@ class ItemListDragTest {
 		}
 	}
 
-	/**
-	 * The host's live reorder step, exactly as the explorer's view model applies it — the
-	 * row leaves [from] and lands on [to], and the positions are renumbered. Without
-	 * this the list would only hear the step and the dragged row would never move.
-	 */
+	/** Mirrors the live reorder step of the view model, or the dragged row never moves. */
 	private fun moveRow(from: Int, to: Int) {
 		steps += from to to
 		items.add(to, items.removeAt(from))
 		for (i in items.indices) items[i] = items[i].copy(position = i + 1)
 	}
 
-	/** The rendered bounds of the one row named [name]. */
 	private fun row(name: String): DpRect = rule.onNodeWithText(name).getBoundsInRoot()
 
-	/** The vertical center of the row named [name]. */
 	private fun centerY(name: String): Dp = row(name).let { it.top + (it.bottom - it.top) / 2 }
 
 	/**
-	 * Long-presses the row named [name] — the press arms the drag — and moves
-	 * the finger onto the row named [onto]: the first move past the slop claims
-	 * the drag, the next one steps it.
-	 *
-	 * @return the finger's x in px — a later leg of the same drag stays on it
+	 * Long-presses the row named [name], then moves the finger onto [onto].
+	 * - the press arms the drag.
+	 * - the first move past the slop claims it.
+	 * - the next move steps it.
+	 * - returns the x of the finger in px, where a later leg of the same drag stays.
 	 */
 	private fun pressAndDrag(name: String, onto: String): Float {
 		rule.mainClock.autoAdvance = false
@@ -130,9 +117,10 @@ class ItemListDragTest {
 	}
 
 	/**
-	 * Long-presses the row named [name], drags it onto the row named [onto] and calls
-	 * [check] while the finger is still down — the moment the defect was reported at —
-	 * with the dragged row's bounds and the finger's y. The release ends the drag.
+	 * Long-presses the row named [name], drags it onto [onto] and calls [check]
+	 * while the finger is still down.
+	 * - the check receives the bounds of the dragged row and the y of the finger.
+	 * - the release ends the drag.
 	 */
 	private fun drag(name: String, onto: String, check: (DpRect, Dp) -> Unit) {
 		val toY = centerY(onto)
@@ -143,8 +131,9 @@ class ItemListDragTest {
 	}
 
 	/**
-	 * Runs the frames the drag needs by hand — the clock cannot auto-advance, because the
-	 * list's auto-scroll loop never stops asking for frames while the finger is down.
+	 * Runs the frames the drag needs by hand.
+	 * - the clock cannot auto-advance.
+	 * - the auto-scroll loop of the list never stops asking for frames while down.
 	 */
 	private fun settle() {
 		rule.mainClock.advanceTimeBy(1000)
@@ -154,16 +143,15 @@ class ItemListDragTest {
 
 	/**
 	 * Composes a reorderable list of [count] rows whose long-press starts a
-	 * selection — the production press shape: the press arms the pre-selection
-	 * drag mode, and the selection's republish must not eat the arm.
-	 * - the rows live in a state list the composition reads, so a selection
-	 *   toggle or a reorder step recomposes a fresh [ItemListState] — the
-	 *   republish the explorer's view model performs.
-	 * - the fresh state keeps [ItemListState.contentStep], which [ItemList]'s
-	 *   arm reset keys on — a bumped step would eat the arm and silently
-	 *   turn these into plain reorder tests.
-	 * - each composition records its state in [published], so a test reads
-	 *   the republish back.
+	 * selection, the production press shape.
+	 * - the press arms the pre-selection drag mode.
+	 * - the republish of the selection must not eat the arm.
+	 * - the rows live in a state list read by the composition.
+	 * - a toggle or a reorder step thus recomposes a fresh [ItemListState].
+	 * - the fresh state keeps [ItemListState.contentStep].
+	 * - the arm reset of [ItemList] keys on that step.
+	 * - a bumped step would eat the arm and turn these into reorder tests.
+	 * - each composition records its state in [published].
 	 */
 	private fun showSelecting(count: Int, onDrop: () -> Unit) {
 		items += rows(count)
@@ -191,15 +179,16 @@ class ItemListDragTest {
 		}
 	}
 
-	/** The production drop's selection clear, as the harness applies it. */
+	/** The selection clear of the production drop, as the harness applies it. */
 	private fun clearSelection() {
 		for (i in items.indices) items[i] = items[i].copy(selected = false)
 	}
 
 	/**
-	 * Long-presses the row named [name], drags it onto the row named [onto]
-	 * and back onto the pressed row's own slot, then releases. The slot keeps
-	 * the press's y — held after the first leg by the row that slid up into it.
+	 * Long-presses the row named [name] and drags it onto [onto] and back onto
+	 * the slot of the pressed row, then releases.
+	 * - the slot keeps the y of the press.
+	 * - the row that slid up into it holds that y after the first leg.
 	 */
 	private fun roundTrip(name: String, onto: String) {
 		val startY = centerY(name)
@@ -245,10 +234,12 @@ class ItemListDragTest {
 	}
 
 	/**
-	 * The production press republishes the list — the long-press arms the drag
-	 * with the pre-selection mode and then toggles the row's selection, whose
-	 * remap lands as a new list instance. The arm must survive its own press —
-	 * a reset eating it kills both drag modes.
+	 * The production press republishes the list.
+	 * - the long-press arms the drag with the pre-selection mode.
+	 * - it then toggles the selection of the row.
+	 * - that remap lands as a new list instance.
+	 * - the arm must survive its own press.
+	 * - a reset that eats it kills both drag modes.
 	 */
 	@Test
 	fun `a long-press that republishes the list still drags`() {
@@ -278,9 +269,9 @@ class ItemListDragTest {
 	}
 
 	/**
-	 * The round-trip fallback — a reorder drag ending back on the row's own
-	 * slot is indistinguishable from a long-press meant to select: no drop
-	 * fires (so no persist, no selection clear) and the selection stands.
+	 * The round-trip fallback.
+	 * - a reorder drag ending on the slot of the same row matches a long-press.
+	 * - no drop fires, so nothing persists and the selection stands.
 	 */
 	@Test
 	fun `a round trip back onto the row's own slot keeps the selection`() {

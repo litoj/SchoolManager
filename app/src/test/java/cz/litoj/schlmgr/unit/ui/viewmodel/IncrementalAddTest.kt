@@ -9,10 +9,10 @@ import org.junit.Assert.assertSame
 import org.junit.Test
 
 /**
- * Unit tests of the incremental list add ([ExplorerViewModel.addItem]): one
- * new row must extend the mapped UI list by one entry, keep the existing UI
- * items' identity (no full rebuild of a thousands-row list) and keep positions
- * sequential — an insert renumbers the list like a move does.
+ * - one new row must extend the mapped UI list by one entry.
+ * - it must keep the identity of the existing UI items, with no full rebuild.
+ * - positions must stay sequential.
+ * - an insert thus renumbers the list like a move does.
  */
 class IncrementalAddTest {
 
@@ -25,7 +25,7 @@ class IncrementalAddTest {
 		val after = vm.listState.value.items
 		assertEquals(4, after.size)
 		assertEquals(added, after.last().payload)
-		// identity, not equality — a rebuild would map every row again
+		// identity, not equality, because a rebuild would map every row again
 		before.forEachIndexed { i, _ -> assertSame(before[i], after[i]) }
 	}
 

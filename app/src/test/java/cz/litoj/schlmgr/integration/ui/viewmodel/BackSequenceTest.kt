@@ -19,17 +19,17 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * Integration tests of the folded back-sequence ([ExplorerViewModel.changedPath]):
- * popping the hops and then either re-showing the stacked search run (the
- * mode lands on its results) or reloading the browse list through the
- * screen's content switch. No database is needed — word rows build detached
- * and every info-strip read below lands on an empty path.
+ * - it pops the hops.
+ * - it then re-shows the stacked search run, so the mode lands on its results.
+ * - or it reloads the browse list through the content switch of the screen.
+ * - no database is needed, since word rows build detached.
+ * - every info-strip read below lands on an empty path.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class BackSequenceTest {
 
-	/** The test screen — records the content switches, the rest stays inert. */
+	/** The test screen that records the content switches, while the rest stays inert. */
 	private class RecordingVm(history: NavigationHistory) : TestExplorerViewModel(history) {
 		val contents = ArrayList<DbItem?>()
 		override fun setContent(container: DbItem?) {
@@ -63,7 +63,7 @@ class BackSequenceTest {
 	fun `a back hop onto a stacked search run restores the filtered list`() {
 		val vm = vm()
 		val hits = listOf(row("hit1", 1), row("hit2", 2))
-		// a shown search run — the streamed rows cached, the hop stacked
+		// a shown search run, with the streamed rows cached and the hop stacked
 		vm.load(ArrayList())
 		runBlocking {
 			val rows = Channel<ItemRow>(Channel.UNLIMITED)
@@ -72,8 +72,8 @@ class BackSequenceTest {
 			vm.run.drainBatches(rows)
 		}
 		vm.history.hop(null)
-		// ... then the user opened a container from a hit (a new path entry)
-		// and the screen switched to its browse list
+		// then the user opened a container from a hit, a new path entry, and the
+		// screen switched to its browse list
 		val container = DbItem(id = 7, name = "c", description = "", type = ItemKind.CHAPTER)
 		vm.history.push(mutableListOf(container))
 		vm.load(listOf(row("browse", 1)))

@@ -7,9 +7,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * The source picker's display chain ([relativeTo]) — from the chapter the
- * search runs in, not from the subject root. A chain from outside the
- * search's subject shows whole.
+ * - the chain starts at the chapter the search runs in, not at the subject root.
+ * - a chain from outside the subject of the search shows whole.
  */
 class RelativePathTest {
 

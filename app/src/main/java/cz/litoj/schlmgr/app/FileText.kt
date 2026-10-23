@@ -2,26 +2,24 @@ package cz.litoj.schlmgr.app
 
 import android.net.Uri
 import java.io.FilterInputStream
-import java.io.FilterOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.InputStreamReader
-import java.io.OutputStream
 import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
 
 
 /**
- * The app's SAF text transport — whole documents as UTF-8, with byte counts
- * for a progress bar.
-	 * - pure platform I/O — no file format here.
-	 * - codecs live behind `ItemRepository`; the UI hands documents and text across.
+ * The SAF text transport of the app: whole documents as UTF-8.
+ * - reads count their bytes for the import progress bar.
+ * - pure platform I/O, no file format here.
+ * - codecs live behind ItemRepository, and the UI hands documents and text across.
  */
 object FileText {
 
 	/**
 	 * Reads the whole document as UTF-8 text, reporting bytes to [progress].
-	 * Null on failure (via [Startup.onLoadFail]) — the caller skips the file.
+	 * Returns null on failure through [Startup.onLoadFail], and the caller skips the file.
 	 */
 	@JvmStatic
 	@JvmOverloads
@@ -33,7 +31,8 @@ object FileText {
 				var amount: Int
 				var first = true
 				while (isr.read(buffer).also { amount = it } != -1) {
-					// the reader does not consume a BOM — strip it or the first name gains one
+					// the reader does not consume a BOM, so strip it
+					// or the first name gains one
 					val start = if (first && amount > 0 && buffer[0] == '\uFEFF') 1 else 0
 					first = false
 					sb.append(buffer, start, amount - start)
@@ -47,19 +46,15 @@ object FileText {
 	}
 
 	/**
-	 * Writes text as UTF-8 into the document, reporting bytes to [progress].
-	 * False on failure (via [Startup.onSaveFail]).
+	 * Writes text as UTF-8 into the document in one pass, with nothing counted.
+	 * Returns false on failure through [Startup.onSaveFail].
 	 */
 	@JvmStatic
-	fun writeText(
-		target: Uri,
-		content: String,
-		progress: Progress? = null,
-	): Boolean {
+	fun writeText(target: Uri, content: String): Boolean {
 		try {
-			OutputStreamWriter(openCountedOut(target, progress), StandardCharsets.UTF_8).use { osw ->
-				osw.write(content)
-			}
+			val stream = GlobalDependencies.appContext.contentResolver.openOutputStream(target, "wt")
+				?: throw IOException("No stream for $target")
+			OutputStreamWriter(stream, StandardCharsets.UTF_8).use { it.write(content) }
 			return true
 		} catch (e: IOException) {
 			Startup.onSaveFail(e, target.toString())
@@ -67,41 +62,17 @@ object FileText {
 		}
 	}
 
-	/** Opens the document's input stream, counting bytes when [progress] is set. */
 	private fun openCounted(source: Uri, progress: Progress?): InputStream {
 		val stream = GlobalDependencies.appContext.contentResolver.openInputStream(source)
 			?: throw IOException("No stream for $source")
 		return if (progress == null) stream else ProgressInputStream(stream, progress)
 	}
 
-	/** Opens the document's output stream, counting bytes when [progress] is set. */
-	private fun openCountedOut(target: Uri, progress: Progress?): OutputStream {
-		val stream = GlobalDependencies.appContext.contentResolver.openOutputStream(target, "wt")
-			?: throw IOException("No stream for $target")
-		return if (progress == null) stream else ProgressOutputStream(stream, progress)
-	}
-
-	/** Counts input bytes and reports each to [progress]. */
 	private class ProgressInputStream(wrapped: InputStream, private val progress: Progress) :
 		FilterInputStream(wrapped) {
 		override fun read(): Int = super.read().also { if (it >= 0) progress.advance(1) }
 		override fun read(b: ByteArray, off: Int, len: Int): Int = super.read(b, off, len).also {
 			if (it > 0) progress.advance(it)
-		}
-	}
-
-	/** Counts output bytes and reports each to [progress]. */
-	private class ProgressOutputStream(wrapped: OutputStream, private val progress: Progress) :
-		FilterOutputStream(wrapped) {
-		// straight to out — FilterOutputStream's bulk write loops through the
-		// single-byte write, which would count every byte twice
-		override fun write(b: Int) {
-			out.write(b)
-			progress.advance(1)
-		}
-		override fun write(b: ByteArray, off: Int, len: Int) {
-			out.write(b, off, len)
-			progress.advance(len)
 		}
 	}
 }

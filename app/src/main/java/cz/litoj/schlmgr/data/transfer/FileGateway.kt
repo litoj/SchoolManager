@@ -9,28 +9,21 @@ import cz.litoj.schlmgr.app.Progress
 import cz.litoj.schlmgr.app.Startup
 import cz.litoj.schlmgr.data.legacy.LegacyFileSource
 import cz.litoj.schlmgr.data.legacy.LegacyJsonLoader
-import java.nio.charset.StandardCharsets
 
 /**
- * The import/export document boundary:
- * - name lookups.
- * - the titled progress bars.
- * - the export write with its success report.
+ * The import/export document boundary.
  */
 object FileGateway {
 
 	/**
-	 * The picked document's name, or a fallback when the provider names nothing — the
-	 * empty name for an import file (the suffix math tolerates it), the raw uri for a
-	 * human-facing report.
+	 * - an import file takes the empty name, since the suffix math tolerates it.
+	 * - a human-facing report takes the raw uri.
 	 */
 	fun displayName(ctx: Context, uri: Uri, fallback: String = uri.toString()): String =
 		DocumentFile.fromSingleUri(ctx, uri)?.name ?: fallback
 
 	/**
-	 * The source-container name of a picked word-list file — the name without
-	 * its suffix, `"subject"` when the name is null or empty. It only labels
-	 * the parse errors — the content lands with no wrapper of its own.
+	 * - the name only labels the parse errors, and the content lands with no wrapper.
 	 */
 	fun containerNameFrom(pickedName: String?): String {
 		if (pickedName.isNullOrEmpty()) return "subject"
@@ -39,10 +32,9 @@ object FileGateway {
 	}
 
 	/**
-	 * The picked document's own shape — its first non-whitespace byte is `[` or `{`.
-	 * The tree JSON always starts there; a word list starts with a name.
-	 *
-	 * An unreadable document reads as a word list — the worker's own read reports the failure.
+	 * The shape of the picked document, read from its first non-whitespace byte.
+	 * - a word list starts with a name.
+	 * - an unreadable document reads as a word list, and the worker read reports the failure.
 	 */
 	fun startsAsJson(ctx: Context, uri: Uri): Boolean {
 		val stream = try {
@@ -68,8 +60,7 @@ object FileGateway {
 		FileProgress(ctx.getString(labelRes) + name)
 
 	/**
-	 * Parses one subject directory from its files — the texts come off [dir]
-	 * through [FileText], so the bytes that flow report to [progress].
+	 * The texts come off [dir] through [FileText], so the bytes that flow report to [progress].
 	 */
 	fun loadLegacySubject(
 		dir: DocumentFile, progress: FileProgress,
@@ -79,15 +70,14 @@ object FileGateway {
 	}
 
 	/**
-	 * One subject directory from its files as a [LegacyFileSource] — a missing or
-	 * empty file reads as nothing, an unreadable one reports its own failure.
+	 * A missing or empty file reads as nothing, and an unreadable one reports its own failure.
 	 */
 	private class DocSource(
 		private val dir: DocumentFile,
 		private val progress: Progress,
 	) : LegacyFileSource {
 		override fun read(relativePath: String): String? {
-			// findFile, never a creating lookup — a missing file must not be born here
+			// findFile, never a creating lookup, since a missing file must not be born here
 			var file = dir
 			for (segment in relativePath.split('/')) {
 				if (segment.isEmpty()) continue
@@ -98,21 +88,14 @@ object FileGateway {
 		}
 	}
 
-	fun utf8Size(text: String): Long =
-		text.toByteArray(StandardCharsets.UTF_8).size.toLong()
-
 	/**
-	 * Writes one finished export to the picked target — the bytes that flow
-	 * out re-target the bar from the walked rows to the write, and the
-	 * success report follows only a written file — a failure already went
-	 * out through `onSaveFail`.
+	 * - nothing counts the text.
+	 * - the bar follows the walked objects, see [FileProgress.exporter].
+	 * - the success report follows only a written file.
+	 * - a failure already went out through onSaveFail.
 	 */
-	fun writeExport(
-		progress: FileProgress, uri: Uri, name: String,
-		text: String, words: Int, chapters: Int,
-	) {
-		progress.bytes(utf8Size(text))
-		if (FileText.writeText(uri, text, progress = progress)) {
+	fun writeExport(uri: Uri, name: String, text: String, words: Int, chapters: Int) {
+		if (FileText.writeText(uri, text)) {
 			Startup.onExportSuccess(name, words, chapters)
 		}
 	}

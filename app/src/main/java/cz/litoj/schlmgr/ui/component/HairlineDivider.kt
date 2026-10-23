@@ -11,8 +11,8 @@ import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.R
 
 /**
- * The app's one separator — a full-width hairline between stacked rows
- * and strips, always in the app's divider gray. No per-surface variants.
+ * The one separator of the app, a full-width hairline between stacked rows and strips.
+ * - always in the divider gray of the app, with no per-surface variants.
  */
 @Composable
 fun HairlineDivider(modifier: Modifier = Modifier) {

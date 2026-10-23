@@ -8,55 +8,51 @@ import cz.litoj.schlmgr.data.db.testedCount
 import java.util.regex.Pattern
 
 /**
- * Pure query-parsing + matching engine — no Views, threads or history.
- * - matches against a preloaded [SearchIndex], synchronously on the caller thread.
+ * The pure query parsing and matching engine, with no Views, threads or history.
+ * - it matches against a preloaded [SearchIndex], synchronously on the caller thread.
  * - a superseded run aborts via [abort].
- * - a leading `\` selects structured search: `[W|T|C]? [D|S|F|N|R]? OP TAIL` (type, value source, op) — see the `resolve` cases below.
+ * - a leading backslash selects structured search: type, value source and op tail.
+ * - the type is W, T or C, and the value source D, S, F, N or R.
+ * - see the resolve cases below.
  */
 class SearchEngine(query: String) {
 
-	/** `false` when [query] had a bad `\ … r` regex. */
+	/** False when [query] had a bad backslash r regex. */
 	var valid = true
 		private set
 
 	/**
-	 * The regex failure detail when [valid] is `false` (the exception message
-	 * of the failed compile), `null` otherwise. The engine shows nothing
-	 * itself — the caller turns this into the user-facing message.
+	 * The caller turns this into the user message, since the engine shows nothing.
 	 */
 	var regexError: String? = null
 		private set
 
-	/** All items already reported — dedups the emitted results, by row id. */
+	/** All items already reported, which dedups the emitted results by row id. */
 	private val found = HashSet<Int>()
 
 	/**
-	 * Containers already walked this run. An item placed in more containers
-	 * is emitted under the first container walked only — [correct] dedups by
-	 * row id — and the subtree of a shared chapter is walked once.
+	 * Containers already walked this run.
+	 * - an item placed in more containers is emitted under the first one walked only.
+	 * - [correct] dedups by row id, and the subtree of a shared chapter is walked once.
 	 */
 	private val visited = HashSet<Int>()
 
-	/** Chapters the last search walked — the run reports it with its count. */
 	val visitedChapters: Int get() = visited.size
 
 	/**
-	 * Live-run flag — the walk abandons itself the moment the user navigates
-	 * away or starts a new search. The view model lowers it when the search
-	 * stops displaying.
+	 * The walk abandons itself when the user navigates away or starts a new search.
+	 * - the view model lowers it when the search stops displaying.
 	 */
 	@Volatile
 	private var active = true
 
-	/** Whether the run still displays — a superseded walk abandons itself. */
 	val isActive: Boolean get() = active
 
-	/** Marks the run superseded — the walk ends at its next check. */
+	/** Marks the run superseded, so the walk ends at its next check. */
 	fun abort() {
 		active = false
 	}
 
-	// ------------------------------------------------------------ matchers
 	private fun interface Correct {
 		fun verify(item: DbItem): Boolean
 	}
@@ -69,17 +65,10 @@ class SearchEngine(query: String) {
 		fun verify(str: String): Boolean
 	}
 
-	/** Prefix resolver's compare text. */
 	private var compareText: String = ""
 
 	private val matcher: Correct = resolve(query)
 
-	/**
-	 * Resolves the query into a matcher — an optional type prefix (`\W`,
-	 * `\T`, `\C`), an optional value-source prefix (`D`, `S`, `F`, `N`,
-	 * `R`), then the operation selector with its tail as the compare text.
-	 * `emptyCompare()` is the early exit for a prefix-only query.
-	 */
 	private fun resolve(query: String): Correct {
 		var kind: Correct = Correct { _ -> true }
 		var numeric: Correct? = null
@@ -93,17 +82,18 @@ class SearchEngine(query: String) {
 			return nameMatcher(kind, strCor)
 		}
 
-		// an empty query simply matches everything (`compareText` stays empty)
+		// an empty query matches everything, since compareText stays empty
 		if (query.isNotEmpty() && query[start] == '\\' && query.length > 1) {
-			when (query[++start]) { // select the type of searched object
+			when (query[++start]) { // the type marker first, since a query may target one kind
 				'W' -> kind = Correct { item -> item.type == ItemKind.WORD }
 				'T' -> kind = Correct { item -> item.type == ItemKind.TRANSLATION }
 				'C' -> kind = Correct { item -> item.type == ItemKind.CHAPTER }
 				else -> start-- // no type selection prefix found
 			}
 			if (start + 1 >= query.length) return emptyCompare()
-			when (query[++start]) { // select the source of comparing
-				'D' -> searchDescription = true // the tested value is the object's description
+			when (query[++start]) { // then the value marker, since one query tests one source
+				// d compares the description, so text queries can target it
+				'D' -> searchDescription = true
 				'S' -> sfm = SFManipulation { item -> item.passedTests }
 				'F' -> sfm = SFManipulation { item -> item.failedTests }
 				'N' -> sfm = SFManipulation { item -> item.testedCount }
@@ -117,13 +107,14 @@ class SearchEngine(query: String) {
 				-10
 			}
 			compareText = query.substring(start + 2)
-			when (query[start + 1]) { // the main select operation prefix selector
+			// the operator marker, since text and number tests share one syntax
+			when (query[start + 1]) {
 				// number operations
 				'>' -> numeric = numberCompare(sfm, count) { a, b -> a > b }
 				'<' -> numeric = numberCompare(sfm, count) { a, b -> a < b }
 				'=' -> numeric = numberCompare(sfm, count) { a, b -> a == b }
 				// text operations
-				'r' -> { // if the object's name (or description) matches given regex
+				'r' -> { // r compiles the text, since a pattern may match either field
 					val p: Pattern = try {
 						Pattern.compile(compareText)
 					} catch (e: Exception) {
@@ -136,7 +127,8 @@ class SearchEngine(query: String) {
 				's' -> strCor = StringFinder { name -> name.startsWith(compareText) }
 				'e' -> strCor = StringFinder { name -> name.endsWith(compareText) }
 				'c' -> strCor = StringFinder { name -> name.contains(compareText) }
-				'\\' -> compareText = compareText.lowercase() // must contain the written text, ignores case
+				// must contain the written text, ignores case
+				'\\' -> compareText = compareText.lowercase()
 				else -> compareText = query.lowercase().substring(start + 1)
 			}
 		} else compareText = query.lowercase()
@@ -159,7 +151,6 @@ class SearchEngine(query: String) {
 		return Correct { item -> test(source.value(item), count) }
 	}
 
-	/** Matches an item's name, then each parsed variant of it. */
 	private fun nameMatcher(kind: Correct, sc: StringFinder): Correct = Correct { item ->
 		if (!kind.verify(item)) return@Correct false
 		if (sc.verify(item.name)) return@Correct true
@@ -168,10 +159,8 @@ class SearchEngine(query: String) {
 	}
 
 	/**
-	 * Validates one item and emits it once on a new match.
-	 *
 	 * @param path container chain, direct parent last
-	 * @param onMatch called once per new match with a copy of `path`
+	 * @param onMatch called once per new match with a copy of path
 	 * @return whether the item matched, even if already emitted
 	 */
 	fun correct(item: DbItem, path: List<DbItem>, onMatch: (DbItem, List<DbItem>) -> Unit): Boolean {
@@ -181,8 +170,6 @@ class SearchEngine(query: String) {
 	}
 
 	/**
-	 * Searches the whole content of the currently opened container.
-	 *
 	 * @param basePath container chain, root first, opened container last
 	 */
 	fun search(
@@ -212,8 +199,8 @@ class SearchEngine(query: String) {
 					walk(index, index.childrenOf(item.id), list, onMatch)
 				}
 				ItemKind.WORD -> if (!foundIt) {
-					// A word that did not match its own name is retried through its
-					// translations — the WORD is the hit, so its own row and path show.
+					// a word that missed its own name is retried through its translations.
+					// the WORD is the hit, so its own row and path show
 					if (index.childrenOf(item.id).any { matcher.verify(it) } && found.add(item.id))
 						onMatch(item, ArrayList(path))
 				}

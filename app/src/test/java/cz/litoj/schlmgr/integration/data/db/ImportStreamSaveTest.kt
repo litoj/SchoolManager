@@ -23,11 +23,8 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The save phase of a hand-made item stream ([ItemRepository.import]):
- * chapters, words, translations and notes each land as the right row shape,
- * and the result counts words and chapters only. Pins the per-kind save
- * behaviour, notes included, and the reference phase's cycle guard (an
- * ancestor reference adds no link).
+ * - the result counts words and chapters only.
+ * - the cycle guard of the reference phase adds no link for an ancestor.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -60,10 +57,8 @@ class ImportStreamSaveTest {
 		val home = ItemRepository.createChapter(subject.id, "home", null)
 		val holder = ItemRepository.createChapter(subject.id, "holder", null)
 		val chapter = ItemRepository.createChapter(home.id, "c1", null)
-		// the chapter shows in the holder through a reference
 		assertTrue(ItemRepository.reference(chapter.id, holder.id))
 
-		// a plain c1 lands in the holder from a stream
 		val plain = StreamItem(item("c1", ItemKind.CHAPTER), null)
 		val word = StreamItem(item("w", ItemKind.WORD), plain)
 		val trl = StreamItem(item("t", ItemKind.TRANSLATION), word)
@@ -72,15 +67,13 @@ class ImportStreamSaveTest {
 			override val references: List<StreamReference> = emptyList()
 		}, holder.id)
 
-		// the holder shows both: the reference and its own plain row
 		val kids = ItemRepository.children(holder.id).filter { it.name == "c1" }
 		assertEquals(2, kids.size)
-		// the reference still points at the home's chapter — the plain row
-		// is the holder's own
+		// the reference still points at the chapter of the home, while the plain
+		// row belongs to the holder
 		assertTrue(ItemRepository.linkIsReference(holder.id, chapter.id))
 		val own = kids.single { it.id != chapter.id }
 		assertFalse(ItemRepository.linkIsReference(holder.id, own.id))
-		// the plain row carried its own content
 		assertEquals(listOf("w"), ItemRepository.children(own.id).map { it.name })
 	}
 
@@ -95,7 +88,7 @@ class ImportStreamSaveTest {
 			override val references: List<StreamReference> = emptyList()
 		})
 
-		// the stream counts its own rows — one word, one chapter
+		// the stream counts its own rows, one word and one chapter
 		assertEquals(1, result.words)
 		assertEquals(1, result.chapters)
 
@@ -103,7 +96,6 @@ class ImportStreamSaveTest {
 		val subject = ItemRepository.subjects().single()
 		assertEquals("chapter", subject.name)
 
-		// the word and the note both landed under it, the translation under the word
 		val children = ItemRepository.children(subject.id)
 		assertEquals(listOf("word", "note"), children.map { it.name })
 		assertEquals("word description", children[0].description)
@@ -122,10 +114,9 @@ class ImportStreamSaveTest {
 			})
 			fail("a translation-less word must fail the import")
 		} catch (e: IllegalArgumentException) {
-			// the message names the offending word
 			assertTrue(e.message!!.contains("word"))
 		}
-		// the transaction rolled back — not even the chapter landed
+		// the transaction rolled back, so not even the chapter landed
 		assertTrue(ItemRepository.subjects().isEmpty())
 	}
 
@@ -152,10 +143,8 @@ class ImportStreamSaveTest {
 		val subject = ItemRepository.createSubject("english", null)
 		ItemRepository.createWord(subject.id, "w", null, listOf("t" to null))
 
-		// a root-anchored stream — its top-level chapter merges into the
-		// subject (loading its scope), and the bare word of the same name
-		// must stay the root's own row — the root scope is its direct
-		// children, not every subject
+		// a root-anchored stream merges its top-level chapter into the subject, so
+		// the bare word of the same name must stay the own row of the root
 		val chapter = StreamItem(item("chapter", ItemKind.CHAPTER), null)
 		val word = StreamItem(item("w", ItemKind.WORD), null)
 		val trl = StreamItem(item("t2", ItemKind.TRANSLATION), word)
@@ -164,9 +153,8 @@ class ImportStreamSaveTest {
 			override val references: List<StreamReference> = emptyList()
 		})
 
-		// the bare word landed as its own root row
 		assertEquals(1, ItemRepository.children(ROOT_ID).count { it.name == "w" })
-		// the subject's word kept its own translation, not the bare word's
+		// the word of the subject kept its own translation, not the one of the bare word
 		val subjectWord = ItemRepository.children(subject.id).single { it.type == ItemKind.WORD }
 		assertEquals(listOf("t"), ItemRepository.translations(subjectWord.id).map { it.name })
 	}
@@ -181,7 +169,7 @@ class ImportStreamSaveTest {
 		repeat(2) { ItemRepository.bumpCounters(listOf(existing.id, c2.id), false) }
 		assertEquals(2, ItemRepository.get(c2.id)!!.failedTests)
 
-		// a file's word of the same name merges onto the existing row with
+		// a word of the file with the same name merges onto the existing row with
 		// more tests, anchored at the sibling chapter
 		val word = StreamItem(
 			DbItem(name = "w", description = "", type = ItemKind.WORD, passedTests = 9), null)
@@ -213,9 +201,8 @@ class ImportStreamSaveTest {
 			override val references = listOf(StreamReference(chapterD, listOf("s"), "c"))
 		})
 
-		// the import succeeded — the root item merged onto the subject
 		assertEquals(subject.id, result.topLevel.single().id)
-		// the ancestor reference added no d→c link — it is no reference, and
+		// the ancestor reference added no d→c link, since it is no reference
 		// c keeps the subject as its only parent, so the tree stays a tree
 		assertFalse(ItemRepository.linkIsReference(d.id, c.id))
 		assertEquals(listOf(subject.id), ItemRepository.parentIds(c.id))
@@ -226,8 +213,8 @@ class ImportStreamSaveTest {
 		val subject = ItemRepository.createSubject("s", null)
 		val c = ItemRepository.createChapter(subject.id, "c", null)
 
-		// the self case — the reference resolves to d itself (a self-loop the
-		// export walk could never leave)
+		// the self case, where the reference resolves to d itself, a self-loop the
+		// export walk could never leave
 		val root = StreamItem(item("s", ItemKind.CHAPTER), null)
 		val chapterC = StreamItem(item("c", ItemKind.CHAPTER), root)
 		ItemRepository.import(object : DataImporter {

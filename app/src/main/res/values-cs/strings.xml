@@ -208,13 +208,9 @@
     <string name="more_export_json">Soubor JSON (včetně úspěšnosti)</string>
     <string name="more_flip">Obrátit slova a překlady</string>
     <string name="more_go_to">Přejít na umístění</string>
-    <string name="flip_conflict_view">Zobrazit seznam</string>
-    <plurals name="flip_conflicts">
-        <item quantity="one">Obrácení zrušeno: %1$d slovíčko je i v jiné kapitole.</item>
-        <item quantity="few">Obrácení zrušeno: %1$d slovíčka jsou i v jiných kapitolách.</item>
-        <item quantity="many">Obrácení zrušeno: %1$d slovíček je i v jiných kapitolách.</item>
-        <item quantity="other">Obrácení zrušeno: %1$d slovíček je i v jiných kapitolách.</item>
-    </plurals>
+    <string name="flip_conflicts_title">Kolidující slova</string>
+    <string name="flip_conflicts_ok">Obrátit</string>
+    <string name="flip_conflicts_blank">Každé kolidující slovo potřebuje název</string>
     <string name="json_export_ext">.hjson</string>
     <string name="json_import_types">application/hjson</string>
     <string name="new_chapter">Nová kapitola</string>

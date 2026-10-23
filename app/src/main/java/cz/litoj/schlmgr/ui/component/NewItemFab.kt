@@ -50,12 +50,13 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 
 /**
- * The floating New-action button — bottom right, a rounded square in the
- * title bar's colouring. The screen drives [visible] with the list's scroll
- * (down hides, up shows) and offers the [kinds] of the open screen.
- * - one offered kind opens its creator when the press releases — a click and a drag alike.
- * - several kinds open a circular palette around the button: dragging onto an icon commits it, as does clicking it.
- * - a plain tap leaves the palette standing; a tap outside the icons, or on the button again, closes it.
+ * The floating New-action button, bottom right, a rounded square in the title bar colouring.
+ * - the screen drives [visible] with the scroll of the list, down hides and up shows.
+ * - it offers the [kinds] of the open screen.
+ * - one offered kind opens its creator when the press releases, by click or drag alike.
+ * - several kinds open a circular palette around the button, where a drag or a click commits.
+ * - a plain tap leaves the palette standing.
+ * - a tap outside the icons, or on the button again, closes it.
  */
 @Composable
 fun NewItemFab(
@@ -65,14 +66,11 @@ fun NewItemFab(
 	modifier: Modifier = Modifier,
 ) {
 	if (kinds.isEmpty()) return
-	// the button's center in root coordinates — the palette circles it
+	// the center of the button in root coordinates, which the palette circles
 	var center by remember { mutableStateOf(Offset.Zero) }
 	var root by remember { mutableStateOf(Offset.Zero) }
-	// the palette lives while the finger holds the button, and stays
-	// standing after a plain tap released it
 	var pressed by remember { mutableStateOf(false) }
 	var standing by remember { mutableStateOf(false) }
-	// the icon the finger's drag hovers — commits on the release
 	var hovered by remember { mutableIntStateOf(-1) }
 	val radius = with(LocalDensity.current) { PaletteRadius.toPx() }
 	val dragThreshold = with(LocalDensity.current) { DragThreshold.toPx() }
@@ -83,11 +81,10 @@ fun NewItemFab(
 	}
 
 	Box(modifier.onGloballyPositioned { root = it.positionInRoot() }) {
-		// a hidden button must not leave its palette floating — the icons
-		// follow the button's visibility
+		// a hidden button must not leave its palette floating.
+		// so the icons follow the visibility of the button
 		if ((pressed || standing) && visible && kinds.size > 1) {
 			if (standing && !pressed) {
-				// a tap anywhere outside the icons closes the standing palette
 				Box(
 					Modifier.matchParentSize().clickable(
 						interactionSource = remember { MutableInteractionSource() },
@@ -108,14 +105,14 @@ fun NewItemFab(
 							)
 						}
 						.size(IconSize)
-						// the hovered icon carries the header colour, the rest
-						// the strip's grey wash
+						// the hovered icon carries the header colour, and the rest
+						// the grey wash of the strip
 						.background(
 							if (i == hovered) ExplorerColors.header else ExplorerColors.actionBar,
 							CircleShape,
 						)
 						.padding(IconPadding)
-						// the standing palette's icons take plain taps
+						// the icons of the standing palette take plain taps
 						.then(if (standing && !pressed) {
 							Modifier.clickable(
 								interactionSource = remember { MutableInteractionSource() },
@@ -141,15 +138,14 @@ fun NewItemFab(
 						center = it.positionInRoot() +
 							Offset(it.size.width / 2f, it.size.height / 2f)
 					}
-					// the kinds list is a fresh instance per caller recomposition —
+					// the kinds list is a fresh instance per caller recomposition.
 					// the count is the stable key the gesture depends on
 					.pointerInput(kinds.size) {
 						awaitEachGesture {
 							val down = awaitFirstDown(requireUnconsumed = false)
 							down.consume()
 							if (kinds.size == 1) {
-								// one kind — the release commits it, wherever
-								// the finger travelled
+								// one kind, so the release commits it wherever the finger travelled
 								waitForRelease(down.id)
 								onPick(kinds[0])
 								return@awaitEachGesture
@@ -165,8 +161,8 @@ fun NewItemFab(
 										break
 									}
 									change.consume()
-									// the drag runs from the press point — wherever on the
-									// button the finger landed, only the movement counts
+									// the drag starts at the press point.
+									// so only the movement counts, not the landing spot
 									hovered = paletteHover(
 										change.position.x - down.position.x,
 										change.position.y - down.position.y,
@@ -179,7 +175,7 @@ fun NewItemFab(
 								hovered = -1
 							}
 							if (pick >= 0) commit(pick)
-							// a plain tap toggles the standing palette
+							// no item was picked, so the palette stays reachable
 							else standing = !standing
 						}
 					},
@@ -195,7 +191,7 @@ fun NewItemFab(
 	}
 }
 
-/** Waits for [pointer] to lift — consuming the moves so nothing below scrolls. */
+/** Waits for [pointer] to lift, consuming the moves so nothing below scrolls. */
 private suspend fun AwaitPointerEventScope.waitForRelease(pointer: PointerId) {
 	while (true) {
 		val change = nextChange(pointer) ?: continue
@@ -204,33 +200,33 @@ private suspend fun AwaitPointerEventScope.waitForRelease(pointer: PointerId) {
 	}
 }
 
-/** The tracked pointer's next change, or null while another finger acts. */
+/** The next change of the tracked pointer, or null while another finger acts. */
 private suspend fun AwaitPointerEventScope.nextChange(pointer: PointerId): PointerInputChange? =
 	awaitPointerEvent().changes.firstOrNull { it.id == pointer }
 
-/** The button — a rounded square of the title bar's colour. Every size below derives from it. */
+/** The button: a rounded square in the title bar colour. Every size below derives from it. */
 internal val FabSize = 50.dp
-/** The palette icons' cell — the button's own size, the type icon at its kind's spot. */
+/** The cell of a palette icon: the size of the button, the type icon at its spot. */
 private val IconSize = FabSize
-/** The icons drawn inside the button and the cells — the room the padding leaves. */
 private val IconPadding = 10.dp
 private val FabIconSize = FabSize - IconPadding * 2
-/** The palette icons sit one button-size off the button's own edge. */
+/** The palette icons sit one button size off the edge of the button. */
 internal val PaletteRadius = FabSize * 2
 private val FabCorner = 10.dp
 internal val FabMargin = 15.dp
 private val FabElevation = 6.dp
 
 /**
- * True while the list idles or scrolls up — the New button hides on the
- * way down the way a browser's search bar does, and returns on the way up.
+ * True while the list idles or scrolls up.
+ * - the New button hides on the way down the way a browser search bar does.
+ * - it returns on the way up.
  */
 @Composable
 internal fun rememberScrollUpVisible(list: LazyListState): Boolean {
 	var shown by remember { mutableStateOf(true) }
 	LaunchedEffect(list) {
-		// a packed scroll position — the index times a bound no single
-		// item's offset can reach, so the two move as one number
+		// a packed scroll position, so the index and the offset move as one number.
+		// the bound is larger than any offset a single item can reach
 		var previous = 0L
 		snapshotFlow { list.firstVisibleItemIndex.toLong() * 100_000L + list.firstVisibleItemScrollOffset }
 			.collect { position ->
@@ -242,21 +238,20 @@ internal fun rememberScrollUpVisible(list: LazyListState): Boolean {
 }
 
 /**
- * The arc the palette icons fan over — from straight up to straight left,
- * away from the button's bottom-right corner.
+ * The arc the palette icons fan over, from straight up to straight left,
+ * away from the bottom-right corner of the button.
  */
 private const val PaletteStart = 90f
 private const val PaletteArc = 90f
 /**
- * A finger that moved less than half the button from its press point is a
- * tap, not a drag — beyond it the direction picks, however short and
- * wherever the finger sits.
+ * A finger that moved less than half the button from its press point is a tap.
+ * - beyond the threshold the direction picks, however short and wherever the finger sits.
  */
 private val DragThreshold = FabSize / 2
 
 /**
- * The palette icon's center offset from the button's center — [index] of
- * [count], fanned over the arc (see [PaletteStart]).
+ * The center offset of a palette icon from the center of the button.
+ * - [index] of [count] icons, fanned over the arc, see [PaletteStart].
  */
 internal fun paletteOffset(index: Int, count: Int, radius: Float): Offset {
 	val step = if (count > 1) PaletteArc / (count - 1) else 0f
@@ -268,25 +263,24 @@ internal fun paletteOffset(index: Int, count: Int, radius: Float): Offset {
 }
 
 /**
- * The hovered palette icon for a drag of `[dx, dy]` from the press point —
- * the icon whose sector the direction falls into. The corner icons are the
- * easy reaches, so every middle one claims two thirds of the gap to each
- * neighbour; the space behind the arc splits at its midpoint between the
- * two ends. `-1` while the drag stays under [threshold] — a tap, not a
- * direction.
+ * The hovered palette icon for a drag of dx, dy from the press point.
+ * - the icon whose sector the direction falls into.
+ * - the corner icons are the easy reaches, so every middle one claims two thirds of the gap.
+ * - the space behind the arc splits at its midpoint between the two ends.
+ * - returns -1 while the drag stays under [threshold], since that is a tap.
  */
 internal fun paletteHover(dx: Float, dy: Float, count: Int, threshold: Float): Int {
 	if (hypot(dx, dy) < threshold) return -1
 	if (count == 1) return 0
-	// compose's y grows down — negate for the math angle, up is 90°; the
-	// wrap keeps the left direction at 180° instead of atan2's -180°
+	// y grows down in Compose, so negate it for the math angle, where up is 90°.
+	// the wrap keeps the left direction at 180° instead of -180° from atan2
 	val angle = ((Math.toDegrees(atan2(-dy, dx).toDouble()) + 360.0) % 360.0).toFloat()
 	val step = PaletteArc / (count - 1)
-	// the sector boundary at the gap's start plus [share] of it — the
-	// corner icons weigh one, the middle ones two
+	// the sector boundary at the start of the gap plus [share] of it.
+	// the corner icons weigh one, and the middle ones two
 	fun boundary(i: Int): Float {
 		if (i == count)
-			// the wrap behind the arc — the ends' circular midpoint
+			// the wrap behind the arc, at the circular midpoint of the ends
 			return PaletteStart + step * (count - 1) + (360f - PaletteArc) / 2
 		fun weight(i: Int) = if (i == 0 || i == count - 1) 1f else 2f
 		val share = weight(i - 1) / (weight(i - 1) + weight(i))

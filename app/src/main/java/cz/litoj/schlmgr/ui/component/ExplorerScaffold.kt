@@ -27,10 +27,9 @@ import cz.litoj.schlmgr.ui.viewmodel.ItemListState
 import cz.litoj.schlmgr.ui.viewmodel.SiblingSwitch
 
 /**
- * The explorer screen — top chrome + item list, plus a slot for the
- * bottom action strip. Stateless, the screen collects the state and
- * maps the row intents back through [callbacks].
- * - only a [SiblingSwitch] ([ExplorerScreenState.sibling]) animates the list.
+ * The explorer screen: top chrome and item list, plus a slot for the bottom action strip.
+ * - stateless, the screen collects the state and maps row intents through [callbacks].
+ * - only a [SiblingSwitch], the [ExplorerScreenState.sibling], animates the list.
  */
 @Composable
 fun ExplorerScaffold(
@@ -40,12 +39,12 @@ fun ExplorerScaffold(
 	onInfoClick: () -> Unit,
 	callbacks: ItemListCallbacks,
 	modifier: Modifier = Modifier,
-	/** The owning screen's list state — kept so it can watch the scroll. */
+	/** The list state of the owning screen, shared so the screen can watch the scroll. */
 	scrollState: LazyListState = rememberLazyListState(),
 	actionBar: @Composable () -> Unit = {},
 ) {
-	// The displayed list — browse content and search results alike — comes from
-	// the caller. The scaffold renders it as-is, no search side channel.
+	// the displayed list, browse content and search results alike, comes from
+	// the caller. The scaffold renders it as-is, with no search side channel.
 	Column(modifier.fillMaxSize()) {
 		ExplorerTopBar(
 			breadcrumbs = state.breadcrumbs,
@@ -54,24 +53,24 @@ fun ExplorerScaffold(
 			isInfoExpanded = state.isInfoExpanded,
 			onInfoClick = onInfoClick,
 		)
-		// The slide waits for the incoming list, because the target advances only once a
-		// content load lands — a remap republishes without loading and must not
-		// trigger it. The list left behind is frozen from the last in-sync frame,
-		// so even a same-frame load still freezes the stale list.
+		// the slide waits for the incoming list: the target advances only after a load lands.
+		// - a remap republishes without loading, so it must not trigger the slide.
+		// - the list left behind is frozen from the last in-sync frame.
+		// - so even a same-frame load still freezes the stale list.
 		val switch = state.sibling
 		var target by remember { mutableStateOf(switch) }
 		var lastSyncList by remember { mutableStateOf(listState) }
 		var lastSyncStep by remember { mutableIntStateOf(state.contentStep) }
-		// post-composition — while in sync, the holder follows the list
-		// (during a pending switch it holds the last in-sync pair)
+		// post-composition: while in sync, the holder follows the list, and during
+		// a pending switch it keeps the last in-sync pair
 		SideEffect {
 			if (target == state.sibling) {
 				lastSyncList = listState
 				lastSyncStep = state.contentStep
 			}
 		}
-		// captured at the switch recomposition itself — the outgoing pane reads
-		// it that very frame, before any effect could assign it
+		// captured at the switch recomposition itself, because the outgoing pane
+		// reads it that very frame, before any effect could assign it
 		val frozen = remember(switch) { lastSyncList }
 		val frozenStep = remember(switch) { lastSyncStep }
 		LaunchedEffect(target, switch, state.contentStep) {

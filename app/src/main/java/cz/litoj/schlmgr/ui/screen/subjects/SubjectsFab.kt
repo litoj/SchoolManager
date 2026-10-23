@@ -11,9 +11,10 @@ import cz.litoj.schlmgr.ui.viewmodel.ItemListState
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 
 /**
- * The subjects explorer's floating New button — the screen's half of the
- * wiring: which kinds the open screen offers and where the pick
- * dispatches. The button and its palette are [NewItemFab].
+ * The floating New button of the subjects explorer.
+ * - it holds the screen half of the wiring: the kinds the open screen offers.
+ * - the same wiring covers where the pick dispatches.
+ * - the button and its palette are [NewItemFab].
  */
 @Composable
 internal fun SubjectsFab(
@@ -33,7 +34,7 @@ internal fun SubjectsFab(
 	)
 }
 
-/** The kinds the floating New button offers — none hides it. */
+/** The kinds the floating New button offers, where none hides it. */
 private fun newKinds(
 	selecting: Boolean,
 	pasteArmed: Boolean,
@@ -49,7 +50,6 @@ private fun newKinds(
 	}
 }
 
-/** The New-menu id the picked kind dispatches through. */
 private fun newMenuIdOf(kind: RowKind): Int = when (kind) {
 	RowKind.SUBJECT -> MenuId.NEW_SUBJECT
 	RowKind.CHAPTER -> MenuId.NEW_CHAPTER

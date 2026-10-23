@@ -8,10 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Unit tests of the shared double-press exit window
- * ([ExplorerViewModel.registerExitPress]): the first root back press arms the
- * exit, a second press inside the window exits, a late one arms again. The
- * clock is injected, so no sleep is needed.
+ * - the clock is injected, so no sleep is needed.
  */
 class ExitWindowTest {
 

@@ -2,28 +2,23 @@ package cz.litoj.schlmgr.data
 import cz.litoj.schlmgr.data.db.DbItem
 
 /**
- * One conversion-stream item — the row id is ignored, saving assigns one.
- * A `null` parent anchors to the import target or the exported container.
- *
- * The import's indexes key on the instance, never value equality.
- *
- * A reference child carries its target's plain-home path ([refPath]).
- * Names run from the exported root down, the target's name last.
- *
- * The exporter writes it as a reference entry instead of the row content.
- * A `null` path means plain content — or the save loses the row.
+ * - the row id is ignored, since saving assigns one.
+ * - a null parent anchors to the import target or the exported container.
+ * - the import indexes key on the instance, never on value equality.
+ * - a reference child carries the plain-home path of its target in [refPath].
+ * - names run from the exported root down, with the target name last.
+ * - the exporter writes it as a reference entry instead of the row content.
+ * - a null path means plain content, or the save loses the row.
  */
 class StreamItem(val item: DbItem, val parent: StreamItem?, val refPath: List<String>? = null)
 
 /**
- * One child of a walked row on the export side — the row plus, for a
- * reference link, the [StreamItem.refPath] of the same shape.
+ * The row plus, for a reference link, the [StreamItem.refPath] of the same shape.
  */
 class StreamChild(val row: DbItem, val refPath: List<String>? = null)
 
 /**
- * A link from [parent] to the [targetName] item under [path] — container
- * names from the first root item down. Resolved once every stream item is saved.
+ * The path holds container names from the first root item down, and resolves after the save.
  */
 class StreamReference(
 	val parent: StreamItem,
@@ -33,9 +28,9 @@ class StreamReference(
 
 /**
  * A parsed import source:
- * - [StreamItem]s in pre-order (parents before children).
- * - references to resolve after saving.
- * - implemented per file format in `cz.litoj.schlmgr.data`.
+ * - [StreamItem] entries in pre-order, parents before children.
+ * - references to resolve after the save.
+ * - one implementation per file format in cz.litoj.schlmgr.data.
  */
 interface DataImporter {
 	val items: List<StreamItem>
@@ -49,15 +44,17 @@ interface DataImporter {
 }
 
 /**
- * Renders the walked [StreamItem]s of one export (the repository reads the
- * rows and hands the stream over). The stream's `null`-parent items are the
- * exported containers themselves.
+ * - the repository reads the rows and hands the stream over.
+ * - the items with a null parent are the exported containers themselves.
  */
 interface DataExporter {
 	fun render(items: List<StreamItem>): String
 
 	/**
-	 * Reports each walked item onto the stream. A plain codec ignores this.
+	 * Hands the whole walked stream over, before [render].
+	 * - the stream size sets the target of the progress bar.
+	 * - each item counts as one written.
+	 * - a plain codec ignores this.
 	 */
-	fun onItem(item: StreamItem) {}
+	fun onStream(items: List<StreamItem>) {}
 }

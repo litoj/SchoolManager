@@ -36,9 +36,9 @@ internal val DrawerWidth = 250.dp
 private val ScrimColor = Color(0x99000000)
 
 /**
- * The app's modal drawer, drawn by the shell — content, full-screen close
- * scrim, 250dp panel.
-	 * - not M2's `ModalDrawer` — its gesture surface would eat the close taps under this transparent panel.
+ * The modal drawer of the app, drawn by the shell.
+ * - it holds the content, a full-screen close scrim and the 250dp panel.
+ * - it is not the M2 ModalDrawer, whose gesture surface would eat the close taps.
  */
 @Composable
 fun DrawerLayer(
@@ -48,22 +48,21 @@ fun DrawerLayer(
 ) {
 	val drag = remember { DraggableState { state.dragBy(it) } }
 	Box(Modifier.fillMaxSize()) {
-		// The content takes no drawer gestures — the drawer opens only through
-		// the bar's icon, and the explorer's own horizontal swipe (the sibling
-		// switch) stays fully the content's.
+		// the content takes no drawer gestures.
+		// - the drawer opens only through the bar icon.
+		// - the horizontal swipe of the explorer, the sibling switch, stays with the content
 		Box(Modifier.fillMaxSize()) { content() }
 
-		// The drawer owns its back press while it is open — composed after the
-		// content, so it outranks every screen's own back ladder, and the
-		// press closes the topmost state instead of acting behind the drawer.
-		// derivedStateOf — the raw reads flip the booleans at most once per
-		// drag, instead of recomposing this layer every animation frame
+		// the drawer owns its back press while it is open.
+		// - it sits after the content, so it outranks the back ladder of every screen.
+		// - the press closes the topmost state instead of acting behind the drawer.
+		// - derivedStateOf keeps the raw reads to one flip per drag, not one per frame
 		val open by remember { derivedStateOf { state.isOpen } }
 		val scrimmed by remember { derivedStateOf { state.scrimFraction > 0f } }
 		BackHandler(enabled = open) { state.close() }
 
-		// The scrim exists only while the panel is out. Its tap is the fix —
-		// every point beside the panel closes, not only the far edge.
+		// the scrim exists only while the panel is out.
+		// a tap anywhere beside the panel closes it, not only the far edge
 		if (scrimmed) {
 			Box(
 				Modifier
@@ -89,10 +88,9 @@ fun DrawerLayer(
 }
 
 /**
- * The drawer's position — the panel's x offset.
- * - animates between the closed park (-[DrawerWidth]) and the open rest (0).
- * - a drag snaps along, then [settle] picks the nearer anchor — or the
- *   flung one.
+ * The drawer position, the x offset of the panel.
+ * - it animates between the closed park at -[DrawerWidth] and the open rest at 0.
+ * - a drag snaps along, and then [settle] picks the nearer anchor or the flung one.
  */
 @Composable
 fun rememberDrawerLayerState(): DrawerLayerState {
@@ -122,19 +120,19 @@ class DrawerLayerState internal constructor(
 	private var dragJob: Job? = null
 
 	internal fun dragBy(delta: Float) {
-		// one live drag job — a newer delta cancels the pending snap and
-		// applies the fresh total
+		// one live drag job, so a newer delta cancels the pending snap.
+		// it applies the fresh total
 		dragJob?.cancel()
 		dragJob = scope.launch { offset.snapTo((offset.value + delta).coerceIn(-panelWidth, 0f)) }
 	}
 
 	/**
 	 * Ends a drag.
-	 * - a fling settles its way, else the nearer anchor wins — faster than
-	 *   `panelWidth` px/s flings, otherwise the halfway rule applies.
+	 * - a fling settles its way, and a slow drag takes the nearer anchor.
+	 * - a speed above panelWidth px/s counts as a fling, otherwise the halfway rule applies.
 	 */
 	internal fun settle(velocity: Float) {
-		val fling = panelWidth // px/s — a modest fling overtakes the halfway rule
+		val fling = panelWidth // px/s, since a modest fling overtakes the halfway rule
 		val target = when {
 			velocity > fling -> 0f
 			velocity < -fling -> -panelWidth

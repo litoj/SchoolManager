@@ -8,8 +8,8 @@ import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
 
 /**
- * The explorer back chain — the view model decides, the view shows the
- * exit hint and exits.
+ * The explorer back chain: the view model decides.
+ * - the view shows the exit hint and exits.
  */
 @Composable
 fun ExplorerBackHandler(viewModel: ExplorerViewModel<*>, onExitApp: () -> Unit) {

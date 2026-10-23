@@ -10,11 +10,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Unit tests for the long-press-to-drag handoff ([LongPressDragHandler]) and
- * the list's drag-mode choice ([listDragMode]). The arm survives until claimed
- * or reset — a claim takes it exactly once with the mode the press snapshotted,
- * a reset drops it, so no stale press leaks into the next gesture, and a
- * search-result list always drags a selection, never an order.
+ * - a claim takes it exactly once with the mode snapshotted by the press.
+ * - a reset drops it, so no stale press leaks into the next gesture.
+ * - a search-result list always drags a selection, never an order.
  */
 class LongPressDragHandlerTest {
 
@@ -65,7 +63,7 @@ class LongPressDragHandlerTest {
 			ListDragMode.Select,
 			listDragMode(pickerMode = false, selectionActive = false, searchList = true, reorderable = false),
 		)
-		// a reorderable container behind the results changes nothing — the list is a result list
+		// a reorderable container behind the results changes nothing, the list is a result list
 		assertEquals(
 			ListDragMode.Select,
 			listDragMode(pickerMode = false, selectionActive = false, searchList = true, reorderable = true),

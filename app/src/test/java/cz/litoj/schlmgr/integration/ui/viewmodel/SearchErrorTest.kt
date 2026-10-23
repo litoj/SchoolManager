@@ -19,12 +19,6 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
-/**
- * Integration tests of the search error return — a bad regex aborts the run before it
- * starts ([ExplorerViewModel.submitSearch] shows the engine's
- * [cz.litoj.schlmgr.ui.search.SearchEngine.regexError]), stacking no hop and
- * showing no list. The message travels through the shared message flow.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class SearchErrorTest {
@@ -35,16 +29,16 @@ class SearchErrorTest {
 		val vm = TestExplorerViewModel(NavigationHistory())
 		val latch = CountDownLatch(1)
 		var message: GlobalDependencies.UiMessage? = null
-		// the flow buffers, so the collector may attach after the emit
 		thread(isDaemon = true) {
 			runBlocking {
 				message = GlobalDependencies.messages.first()
 				latch.countDown()
 			}
 		}
-		// the shared flow has no replay — an emit before the collector's
-		// subscription lands is lost, so wait for the subscription first
-		// (bounded — a collector that never starts fails the test, not hangs it)
+		// the shared flow has no replay:
+		// - an emit before the subscription of the collector lands is lost.
+		// - wait for the subscription first.
+		// - the wait is bounded, so a collector that never starts fails the test.
 		var waits = 0
 		while (GlobalDependencies.messages.subscriptionCount.value == 0) {
 			assertTrue("the collector never subscribed", waits++ < 500)

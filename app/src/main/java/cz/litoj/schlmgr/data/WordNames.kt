@@ -2,28 +2,24 @@ package cz.litoj.schlmgr.data
 
 /**
  * Stored-name parsing:
- * - `/` alternatives and `()` groups expand ([parseVariants]).
- * - `\`-separated editor fields split ([splitEscaped]).
+ * - slash alternatives and group parentheses expand through [parseVariants].
+ * - backslash-separated editor fields split through [splitEscaped].
  */
 object WordNames {
 
 	/**
-	 * Reads a word string and gives back all its name possibilities.
-	 *
-	 * Examples (the actual parser results):
-	 *  - `"They/(He and she) moved."` → `[They moved., He and she moved.]`
-	 *  - `"/I/You smile."` → `[smile., I smile., You smile.]`
-	 *  - `"(I/You smile.)/(Smile!)"` → `[I smile., You smile., Smile!]`
-	 *  - `"I 'm/am here/there."` → `[I 'm here., I 'm there., I am here., I am there.]`
+	 * - a slash separates alternative forms, so each form appears once.
+	 * - a group in parentheses expands each alternative with the surrounding text.
+	 * - an escaped slash, parenthesis or backslash stays literal.
 	 */
 	@JvmStatic
 	fun parseVariants(name: String): List<String> =
 		if (name.contains("/")) NameVariantParser(name).result else listOf(name)
 
 	/**
-	 * Splits an editor field into words/translations. A `\` starts a new
-	 * word, unless it escapes the next character (`\\`, `\/`, `\(`, `\)`) —
-	 * a trailing `\` stays.
+	 * - a backslash starts a new word, unless it escapes the next character.
+	 * - the escaped syntax characters are backslash, slash and both parentheses.
+	 * - a trailing backslash stays.
 	 */
 	@JvmStatic
 	fun splitEscaped(name: String): List<String> {
@@ -36,7 +32,7 @@ object WordNames {
 				if (next != null && next != '\\' && next != '/' && next != '(' && next != ')') {
 					words.add(name.substring(start, i))
 					start = i + 1
-				} else i++ // an escape pair stays in the word, a trailing `\` too
+				} else i++
 			}
 			i++
 		}
@@ -46,8 +42,8 @@ object WordNames {
 }
 
 /**
- * Variant parser for `/` alternatives and `(...)` groups — `\` escapes.
- * Segments break on `. ! ? ,` and space.
+ * Variant parser for slash alternatives and parenthesized groups, with backslash escapes.
+ * Segments break on a period, an exclamation mark, a question mark, a comma and a space.
  */
 private class NameVariantParser(private val str: String) {
 
@@ -140,7 +136,7 @@ private class NameVariantParser(private val str: String) {
 					}
 					lastSplitter = i
 				}
-				// a closing paren inside a group ends it — a stray one is text
+				// a closing paren inside a group ends it, and a stray one is text
 				')' -> if (group) break@renderer else sb.append(now)
 				'(' -> {
 					i++
@@ -153,13 +149,13 @@ private class NameVariantParser(private val str: String) {
 						else sb = recursiveParts[0]
 						recursiveParts = null
 					} else if (recursiveParts.isEmpty()) {
-						// an empty group carries nothing — the pending text goes on
+						// an empty group carries nothing, so the pending text goes on
 						recursiveParts = null
 					}
 				}
 				'\\' -> {
 					i++
-					// a trailing `\` escapes nothing — dropped, not crashed on
+					// a trailing backslash escapes nothing, so it is dropped, not crashed on
 					if (i < length) sb.append(str[i])
 				}
 				else -> sb.append(now)
@@ -190,8 +186,8 @@ private class NameVariantParser(private val str: String) {
 			} else if (recursiveParts != null) {
 				for (part in recursiveParts) parts.add(part)
 			} else if (parts.isEmpty()) parts.add(sb)
-			// a pending-empty tail after real parts adds nothing — a
-			// trailing separator or empty group is not an empty variant
+			// a pending-empty tail after real parts adds nothing, since a trailing
+			// separator or empty group is not an empty variant
 			if (ret.isEmpty()) for (part in parts) ret.add(part)
 			else {
 				val size = ret.size

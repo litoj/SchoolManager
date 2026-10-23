@@ -23,17 +23,12 @@ import org.robolectric.annotation.Config
 import kotlin.coroutines.CoroutineContext
 import kotlin.concurrent.thread
 
-/**
- * The list contracts of [ExplorerViewModel.loadContent], driven by a
- * hand-fed dispatcher — a create that lands while the container's read is
- * in flight keeps its row (the read retries), and a synchronous load
- * cancels a pending read (its publish never runs).
- */
+/** The list contracts of [ExplorerViewModel.loadContent], driven by a hand-fed dispatcher. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class MidReadMutationTest {
 
-	/** A dispatcher the test feeds by hand — the read stays queued until [drain]. */
+	/** A dispatcher the test feeds by hand, where the read stays queued until [drain]. */
 	internal class ManualDispatcher : CoroutineDispatcher() {
 		private val queue = ArrayDeque<Runnable>()
 
@@ -77,21 +72,20 @@ class MidReadMutationTest {
 		val io = ManualDispatcher()
 		val vm = ManualLoadViewModel(NavigationHistory(), io)
 
-		// the container's read queues on the manual dispatcher
 		vm.loadContent(subject)
 
-		// the READ runs on a worker thread, so its continuation queues on
-		// the main looper instead of running inline — the create can land
-		// between the read and its publish, exactly the race the retry
-		// exists for
+		// the READ runs on a worker thread, so its continuation queues on the
+		// main looper instead of running inline:
+		// - the create can land between the read and its publish.
+		// - the retry exists for that race.
 		thread { io.drain() }.join()
 
-		// the create lands mid-read, in commitNewItem's order — the database
-		// row first, then the UI row
+		// the create lands mid-read, in the order of commitNewItem, with the
+		// database row first and the UI row second
 		val created = ItemRepository.createChapter(subject.id, "c2", null)
 		vm.addItem(ItemRow(created, subject.id, 2, false))
 
-		// the continuation runs — its snapshot predates the create, so the
+		// the continuation runs, and its snapshot predates the create, so the
 		// read retries and lands the fresh database state
 		shadowOf(RuntimeEnvironment.getApplication().mainLooper).idle()
 		io.drain()
@@ -109,14 +103,11 @@ class MidReadMutationTest {
 		val io = ManualDispatcher()
 		val vm = ManualLoadViewModel(NavigationHistory(), io)
 
-		// the container's read queues on the manual dispatcher
 		vm.loadContent(subject)
 
-		// the synchronous search load replaces the list and cancels the job
 		vm.load(ArrayList(), isSearch = true)
 		assertEquals(0, vm.listState.value.items.size)
 
-		// the queued read runs — the cancelled job publishes nothing
 		io.drain()
 		shadowOf(RuntimeEnvironment.getApplication().mainLooper).idle()
 

@@ -10,12 +10,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * Unit tests for the subjects more-options menu ([subjectsMenu]): a selection
- * keeps only the rows that act on it (flip, reference) plus the always-present
- * export rows, while no selection keeps every other row — the PopupMenu's
- * visibility rule with the export available in both forms.
- */
 class SubjectsMenuTest {
 
 	@Test
@@ -83,7 +77,7 @@ class SubjectsMenuTest {
 
 	@Test
 	fun `the search menu's sort offers no default order`() {
-		// sort-default reloads the browse order — a search list has none,
+		// sort-default reloads the browse order, which a search list has none of,
 		// and the entry would leave the search mode on a browse list
 		val sort = subjectsMenu(MainExplorerViewModel.MenuKind.SEARCH, selecting = false)
 			.single { it.children.isNotEmpty() && !it.always }
@@ -93,7 +87,7 @@ class SubjectsMenuTest {
 
 	@Test
 	fun `every menu kind's sort offers the priority sort`() {
-		// the test-urgency ordering stays in every kind — only the default
+		// the test-urgency ordering stays in every kind, and only the default
 		// position has no search meaning
 		for (kind in MainExplorerViewModel.MenuKind.entries) {
 			val sort = subjectsMenu(kind, selecting = false)
@@ -106,11 +100,11 @@ class SubjectsMenuTest {
 	@Test
 	fun `the root menu groups both imports under one submenu`() {
 		val plain = subjectsMenu(MainExplorerViewModel.MenuKind.ROOT, selecting = false)
-		// no import leaf sits at the root's top level — both hide in the submenu
+		// no import leaf sits at the top level of the root, because both hide in the submenu
 		assertTrue(plain.none { it.id == MenuId.IMPORT_DIR || it.id == MenuId.IMPORT_FILE })
 		val imports = plain.single { submenu -> submenu.children.any { it.id == MenuId.IMPORT_DIR } }
 		assertEquals(listOf(MenuId.IMPORT_DIR, MenuId.IMPORT_FILE), imports.children.map { it.id })
-		// the submenu is not a selection action — a selection drops it with the rest
+		// the submenu is not a selection action, so a selection drops it with the rest
 		assertTrue(subjectsMenu(MainExplorerViewModel.MenuKind.ROOT, selecting = true)
 			.none { it.children == imports.children })
 	}
@@ -118,8 +112,8 @@ class SubjectsMenuTest {
 	@Test
 	fun `the container menu offers the plain file import only`() {
 		val plain = subjectsMenu(MainExplorerViewModel.MenuKind.CONTAINER, selecting = false)
-		// the only import a container offers is the file import, as a plain
-		// row — no submenu needed to tell it apart
+		// the only import a container offers is the file import, as a plain row,
+		// so no submenu tells it apart
 		assertEquals(1, plain.count { it.id == MenuId.IMPORT_FILE || it.id == MenuId.IMPORT_DIR })
 		assertTrue(plain.any { it.id == MenuId.IMPORT_FILE && it.children.isEmpty() })
 		assertTrue("a container offers no folder import", plain.none { it.id == MenuId.IMPORT_DIR })
@@ -136,12 +130,11 @@ class SubjectsMenuTest {
 
 	@Test
 	fun `the select-all button shows wherever the search button does, and always in selection mode`() {
-		// the subjects screen — the search button stays hidden there, but a
-		// selection still gets its select-all
+		// on the subjects screen the search button stays hidden, but a selection
+		// still gets its select-all
 		assertTrue(selectAllButtonVisible(selecting = true, searchVisible = false))
 		assertTrue(selectAllButtonVisible(selecting = true, searchVisible = true))
 		assertTrue(selectAllButtonVisible(selecting = false, searchVisible = true))
-		// the plain subjects screen without a selection shows neither
 		assertFalse(selectAllButtonVisible(selecting = false, searchVisible = false))
 	}
 }

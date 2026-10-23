@@ -8,8 +8,8 @@ import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 
 /**
- * Word-specific queries. The parsing of the stored word strings lives in
- * `WordNames` (pure string logic, no persistence) — this is SQL only.
+ * Word-specific queries. The parsing of stored word strings lives in WordNames,
+ * which is pure string logic without persistence, so this is SQL only.
  */
 
 data class WordTranslation(@ColumnInfo(name = "word_id") val wordId: Int, @Embedded val item: DbItem)
@@ -24,8 +24,8 @@ abstract class WordDao {
 	abstract suspend fun getTranslations(wordId: Int): List<DbItem>
 
 	/**
-	 * The translation rows of every word child of [parentId], each with its
-	 * word — one batch read for a browse load, in link order within a word.
+	 * The translation rows of every word child of [parentId], each with its word.
+	 * One batch read for a browse load, in link order within a word.
 	 */
 	@Query(
 		"SELECT l.parent_id AS word_id, i.* FROM item i " +
@@ -34,14 +34,4 @@ abstract class WordDao {
 			"AND i.type = 'translation' ORDER BY l.position, l.child_id"
 	)
 	abstract suspend fun childTranslations(parentId: Int): List<WordTranslation>
-
-	/** A row of one kind with one name in a subject scope, `null` when
-	 * none — arbitrary among several (the `LIMIT 1` pick). */
-	@Query(
-		"WITH RECURSIVE des(id) AS (SELECT :rootId " +
-			"UNION SELECT l.child_id FROM item_link l INNER JOIN des d ON l.parent_id = d.id) " +
-			"SELECT i.* FROM item i WHERE i.id IN (SELECT id FROM des) " +
-			"AND i.name = :name AND i.type = :kind LIMIT 1"
-	)
-	abstract suspend fun findWordInSubject(rootId: Int, name: String, kind: ItemKind = ItemKind.WORD): DbItem?
 }

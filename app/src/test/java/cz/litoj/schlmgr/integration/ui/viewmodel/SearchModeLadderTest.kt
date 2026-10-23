@@ -16,18 +16,11 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
-/**
- * Integration tests of the search-mode ladder ([ExplorerViewModel]'s [SearchUi]):
- * closing the field over results keeps them, closing it with no run behind
- * it falls back to browsing, ending the search closes the field with the
- * flow, and clearing the query leaves the flow but keeps the field. The
- * ladder is one published state — these pin its transitions.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class SearchModeLadderTest {
 
-	/** The test screen — counts the content switches the doors drive, the rest stays inert. */
+	/** The test screen: counts the content switches the doors drive, the rest stays inert. */
 	private class RecordingVm(history: NavigationHistory) : TestExplorerViewModel(history) {
 		var contentReloads = 0
 		override fun setContent(container: DbItem?) {
@@ -40,13 +33,12 @@ class SearchModeLadderTest {
 
 	private fun recordingVm(): RecordingVm {
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
-		// the field opens only inside a container — seed one into the path
+		// the field opens only inside a container, so seed one into the path
 		return RecordingVm(NavigationHistory()).apply {
 			history.push(mutableListOf(DbItem(name = "c", description = "", type = ItemKind.CHAPTER)))
 		}
 	}
 
-	/** A shown search — the field open, the hop stacked, a hit row loaded. */
 	private fun vmWithSearchShown(vm: RecordingVm): RecordingVm {
 		vm.openSearchField()
 		vm.history.hop(null)
@@ -62,7 +54,7 @@ class SearchModeLadderTest {
 		vm.closeSearchField()
 
 		assertEquals("the field closed onto its results", SearchUi.RESULTS, vm.state.value.searchUi)
-		// nothing ended — the stacked search hop stays for back
+		// nothing ended, so the stacked search hop stays for back
 		assertTrue(vm.history.onSearchHop())
 		assertEquals("nothing reloaded", 0, vm.contentReloads)
 	}
@@ -85,9 +77,9 @@ class SearchModeLadderTest {
 		vm.endSearch()
 
 		assertEquals(SearchUi.OFF, vm.state.value.searchUi)
-		// the content was reloaded — the explorer was reset
+		// the content was reloaded, so the explorer was reset
 		assertEquals(1, vm.contentReloads)
-		// the stacked search hop is gone — another back leaves the container
+		// the stacked search hop is gone, so another back leaves the container
 		assertFalse(vm.history.onSearchHop())
 	}
 
@@ -98,7 +90,7 @@ class SearchModeLadderTest {
 		vm.onQueryChange("")
 
 		assertEquals(SearchUi.TYPING, vm.state.value.searchUi)
-		// the flow left — the hop unwound and the browse content reloaded
+		// the flow left, the hop unwound and the browse content reloaded
 		assertFalse(vm.history.onSearchHop())
 		assertEquals(1, vm.contentReloads)
 	}

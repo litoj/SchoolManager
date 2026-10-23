@@ -28,9 +28,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The search-click variants across the screens — the picker's results, the
- * closed field's results and the flip-all setting all keep the search on a
- * word toggle: the row flips in place, the list never reloads.
+ * - all variants flip the row in place and never reload the list.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -41,7 +39,7 @@ class SearchClickVariantsTest {
 
 	private lateinit var db: ItemDatabase
 
-	/** The flip-all static must leave with the test — later classes read it. */
+	/** The flip-all static must leave with the test, because later classes read it. */
 	private val flipAllWas = ItemRow.flipAllOnClick
 
 	@Before
@@ -60,7 +58,7 @@ class SearchClickVariantsTest {
 	@After
 	fun tearDown() {
 		ItemRow.flipAllOnClick = flipAllWas
-		// the picker's saved position is process-wide — leave the root for the next class
+		// the saved position of the picker is process-wide, so leave the root for the next class
 		PickerViewModel.resetSavedHistory()
 		db.close()
 	}
@@ -110,7 +108,7 @@ class SearchClickVariantsTest {
 	@Test
 	fun `flip-all - clicking a word of the results keeps the search`() {
 		ItemRow.flipAllOnClick = true
-		// one more matching word — a single-row flip must not satisfy the assertion
+		// one more matching word, so a single-row flip must not satisfy the assertion
 		val a = ItemRepository.subjects().single()
 		val c1 = ItemRepository.children(a.id).single()
 		ItemRepository.createWord(c1.id, "xy2", null, listOf("t2" to null))

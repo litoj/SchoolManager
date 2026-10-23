@@ -21,12 +21,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The position column is only as wide as the widest number the list shows. The measure
- * is the only source — a fixed minimum would hold the number far from its type icon
- * and take half the row on a short list.
- *
- * The cell is read through the rendered `n.` text, because that is what the width is
- * applied to.
+ * - the measure is the only source.
+ * - a fixed minimum would hold the number far from its type icon.
+ * - it would also take half the row on a short list.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -35,7 +32,6 @@ class PositionColumnWidthTest {
 	@get:Rule
 	val rule = createComposeRule()
 
-	/** One row whose position cell is measured for a list of [maxPosition] rows. */
 	@Composable
 	private fun RowOf(position: Int, maxPosition: Int, variant: ExplorerRowVariant) {
 		Item(
@@ -57,7 +53,6 @@ class PositionColumnWidthTest {
 		)
 	}
 
-	/** The rendered width of the `8.` cell. */
 	private fun cellWidth(variant: ExplorerRowVariant): Dp {
 		val bounds = rule.onNodeWithText("8.", useUnmergedTree = true).getUnclippedBoundsInRoot()
 		return bounds.right - bounds.left

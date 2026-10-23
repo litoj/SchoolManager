@@ -39,11 +39,11 @@ import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 
 /**
- * The top bar's chrome — the status strip's height above the 55dp row on the
- * header colour.
- * - the screen supplies the row's pieces ([TopBarNav], title, icon buttons, more button) — all tinted with the on-header colour.
+ * The chrome of the top bar: the status strip above the 55dp row on the header colour.
+ * - the screen supplies the pieces of the row, all tinted with the on-header colour.
+ * - that covers [TopBarNav], the title, the icon buttons and the more button.
  *
- * @param content the row's pieces, with `Modifier.weight(1f)` on the middle child
+ * @param content the pieces of the row, with a weighted middle child
  */
 @Composable
 fun TopBar(content: @Composable RowScope.() -> Unit) {
@@ -64,7 +64,7 @@ fun TopBar(content: @Composable RowScope.() -> Unit) {
 }
 
 /**
- * Navigation slot — `up` shows the up arrow instead of the drawer hamburger.
+ * The navigation slot: [up] shows the up arrow instead of the drawer hamburger.
  */
 @Composable
 fun RowScope.TopBarNav(up: Boolean = false, onNavigate: () -> Unit) {
@@ -94,8 +94,8 @@ fun RowScope.TopBarTitle(title: String) {
 }
 
 /**
- * A 50dp bar button — `visible` false leaves the slot out (the search button hides
- * while the search field takes the title's place).
+ * A 50dp bar button, where a false [visible] leaves the slot out.
+ * - the search button hides while the search field takes the place of the title.
  */
 @Composable
 fun RowScope.TopBarIconButton(
@@ -122,7 +122,7 @@ fun RowScope.TopBarIconButton(
 }
 
 /**
- * The more-options button — a press opens the entries as a dropdown under it.
+ * The more-options button, where a press opens the entries as a dropdown under it.
  * The button owns its dropdown, so no screen carries the open state.
  */
 @Composable
@@ -146,8 +146,8 @@ fun RowScope.TopBarMoreButton(entries: List<MenuEntry>, onPick: (Int) -> Unit) {
 }
 
 /**
- * The bar's elevation shadow over the content's top. Must end at [ShadowHeight] —
- * the default ramp end collapses these few pixels into one flat band.
+ * The elevation shadow of the bar over the top of the content.
+ * - it must end at [ShadowHeight], since the default ramp end collapses these pixels.
  */
 fun Modifier.headerShadow(): Modifier = drawWithContent {
 	drawContent()

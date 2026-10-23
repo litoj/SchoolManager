@@ -8,18 +8,13 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * Unit tests of [SearchEngine]'s query parsing — the grammar is fixed, so these
- * pin it, including the empty query.
- */
 class SearchEngineParseTest {
 
-	/** Runs [query] over one item per name and returns the matching names, in order. */
 	private fun hits(query: String, vararg names: String): List<String> {
 		val engine = SearchEngine(query)
 		val matched = ArrayList<String>()
 		for ((i, name) in names.withIndex()) {
-			// distinct ids — the engine dedups emitted hits by row id
+			// distinct ids, because the engine dedups emitted hits by row id
 			engine.correct(DbItem(id = i + 1, name = name, description = "", type = ItemKind.CHAPTER), emptyList()) { bd, _ ->
 				matched.add(bd.name)
 			}
@@ -39,11 +34,10 @@ class SearchEngineParseTest {
 
 	@Test
 	fun `the search matches each parsed variant of a name`() {
-		// the queries are no substrings of the raw name — only the parsed
-		// variant can match (the display parses the same way)
+		// the queries are no substrings of the raw name, so only the parsed variant
+		// can match, and the display parses the same way
 		assertEquals(listOf("(I/You smile.)"), hits("I smile.", "(I/You smile.)", "die Schule"))
 		assertEquals(listOf("(I/You smile.)"), hits("You smile.", "(I/You smile.)", "die Schule"))
-		// the whole raw name matches too
 		assertEquals(listOf("(I/You smile.)"), hits("(I/You smile.)", "(I/You smile.)", "die Schule"))
 	}
 
@@ -89,7 +83,6 @@ class SearchEngineParseTest {
 
 	@Test
 	fun `a numeric operation without a source compares against zero`() {
-		// a missing source compares zero against the count
 		val word = DbItem(name = "w", description = "", type = ItemKind.WORD)
 		assertEquals("0 > 5 is false", false, SearchEngine("\\W>5").correct(word, emptyList()) { _, _ -> })
 		assertEquals("0 < 5 is true", true, SearchEngine("\\W<5").correct(word, emptyList()) { _, _ -> })

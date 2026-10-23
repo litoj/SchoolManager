@@ -22,22 +22,22 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 /**
- * One dialog of the app — a state holder rendered by [DialogHost] as a Compose
- * [Dialog] — its own window above the hosting activity.
- * - survives rotation (only the window re-creates) — editor state stays intact.
+ * One dialog of the app: a state holder rendered by [DialogHost] as a Compose [Dialog].
+ * - it gets its own window above the hosting activity.
+ * - it survives rotation, since only the window re-creates, so editor state stays intact.
  */
 interface DialogSpec {
 
 	/**
-	 * Whether an outside tap on the dimmed area may close this dialog.
-	 * - unsaved-changes guards return `false` once edited.
+	 * Unsaved-changes guards return false once edited.
 	 * - the back key always closes.
 	 */
 	fun canDismissByOutsideTouch(): Boolean = true
 
 	/**
-	 * Called after the dialog left the screen, whatever dismissed it (back key,
-	 * scrim tap, a button) — the place to consume one-time data.
+	 * Called after the dialog left the screen, whatever dismissed it.
+	 * - that covers the back key, a scrim tap and a button.
+	 * - it is the place to consume one-time data.
 	 */
 	fun onDismissed() {}
 
@@ -46,9 +46,9 @@ interface DialogSpec {
 }
 
 /**
- * The app's dialog stack — the process-wide dialog list as observable state.
+ * The dialog stack of the app: the process-wide dialog list as observable state.
  * - every activity composing a [DialogHost] renders the same dialogs.
- * - rotation needs no repaint machinery (the stack survives, recomposition re-renders).
+ * - rotation needs no repaint machinery, since the stack survives and recomposition re-renders.
  */
 object Dialogs {
 
@@ -57,18 +57,14 @@ object Dialogs {
 
 	inline fun <reified T : DialogSpec> isShowing(): Boolean = stack.value.any { it is T }
 
-	/**
-	 * Shows the dialog on top of the stack, from any thread (the flow
-	 * update is atomic).
-	 */
+	/** The flow update is atomic, so any thread may call it. */
 	fun show(spec: DialogSpec) {
 		_stack.update { it + spec }
 	}
 
-	/** Removes the dialog from the stack and notifies it (see [DialogSpec.onDismissed]). */
 	fun dismiss(spec: DialogSpec) {
-		// The removal decision reads the pre-update value, never a side effect of an
-		// update lambda (which may re-run under contention) — CAS retries until it wins.
+		// the removal decision reads the pre-update value, never a side effect of an update lambda.
+		// a lambda may re-run under contention, so the CAS retries until it wins.
 		while (true) {
 			val current = _stack.value
 			if (spec !in current) return
@@ -79,7 +75,7 @@ object Dialogs {
 		}
 	}
 
-	/** Removes every dialog from the stack, top first — tests only. */
+	/** Removes every dialog from the stack, top first, for tests only. */
 	@VisibleForTesting
 	fun clear() {
 		while (true) {
@@ -99,15 +95,16 @@ object Dialogs {
  */
 @Composable
 fun DialogHost() {
-	// Deliberately not lifecycle-aware — a dialog opened before the app goes to
-	// the background must stay on screen when it comes back.
+	// deliberately not lifecycle-aware, since a dialog opened before the app goes to the
+	// background must stay on screen when it comes back
 	val stack by Dialogs.stack.collectAsState()
 	stack.forEach { spec ->
 		key(spec) {
 			Dialog(
 				onDismissRequest = { Dialogs.dismiss(spec) },
 				properties = DialogProperties(
-					dismissOnClickOutside = false, // the scrim below decides, guarding dirty dialogs
+					// the scrim below decides, guarding dirty dialogs
+					dismissOnClickOutside = false,
 					usePlatformDefaultWidth = false,
 					decorFitsSystemWindows = false,
 				),

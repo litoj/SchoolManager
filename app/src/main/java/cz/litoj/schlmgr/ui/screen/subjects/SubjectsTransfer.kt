@@ -16,7 +16,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * Import/export — target picks, dispatch, landing.
+ * The import and export of the subjects screen.
+ * - it covers the target picks, the dispatch and the landing.
  */
 internal class SubjectsTransfer(
 	private val scope: CoroutineScope,
@@ -78,8 +79,8 @@ internal class SubjectsTransfer(
 		val atRoot = host.path.isEmpty()
 		scope.launch(io) {
 			val name = FileGateway.displayName(host.ctx, uri, "")
-			// the document's own shape decides its format — the name may
-			// resolve to nothing on some providers
+			// the shape of the document decides its format.
+			// the name may resolve to nothing on some providers
 			val jsonContent = FileGateway.startsAsJson(host.ctx, uri)
 			val worker = ImporterFactory.create(
 				host.ctx, host::postToUi, uri, name, jsonContent, target, { open }, { atRoot },

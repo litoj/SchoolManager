@@ -1,6 +1,6 @@
 package cz.litoj.schlmgr.data.db
 
-/** A `null` counter pair inherits the word's counters — only set them explicitly when they differ. */
+/** A null counter pair inherits the counters of the word, so set them only when they differ. */
 internal class NewTranslation(
 	val name: String,
 	val description: String?,
@@ -44,8 +44,6 @@ data class KeptTranslation(
 )
 
 /**
- * Committed word edit.
- * - kept rows, removed rows, new translations, plus references that follow fork.
  * - fork decision lives with repository.
  */
 data class WordEdit(

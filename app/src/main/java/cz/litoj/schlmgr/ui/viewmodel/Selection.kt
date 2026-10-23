@@ -1,8 +1,8 @@
 package cz.litoj.schlmgr.ui.viewmodel
 
 /**
- * Selection machine — row marks and drag-select baseline.
- * - host owns rows — this class decides marks.
+ * The selection machine: row marks and the drag-select baseline.
+ * - the host owns the rows, and this class decides the marks.
  */
 internal class Selection(private val host: Host) {
 
@@ -35,7 +35,7 @@ internal class Selection(private val host: Host) {
 	}
 
 	fun selectRange(from: Int, to: Int) {
-		// Drag over results would select under paste strip.
+		// a drag over the results would select under the paste strip.
 		if (host.pasteArmed()) return
 		setRangeSelected(from, to)
 	}
@@ -63,16 +63,16 @@ internal class Selection(private val host: Host) {
 	}
 
 	/**
-	 * Drops the marks of rows outside the shown list — a restore loads them
-	 * fresh right after, so no remap runs here.
+	 * Drops the marks of rows outside the shown list.
+	 * - a restore loads them fresh right after, so no remap runs here.
 	 */
 	fun discard(rows: List<ItemRow>) {
 		rows.forEach { it.select(false) }
 	}
 
 	/**
-	 * One drag-select step — the range is [anchor]..[to].
-	 * - pulled-back rows return to pre-drag state.
+	 * One drag-select step, where the range is [anchor]..[to].
+	 * - pulled-back rows return to their pre-drag state.
 	 */
 	fun setRangeSelected(anchor: Int, to: Int) {
 		val models = host.models

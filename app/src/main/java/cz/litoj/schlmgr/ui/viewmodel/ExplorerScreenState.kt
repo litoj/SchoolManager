@@ -1,8 +1,6 @@
 package cz.litoj.schlmgr.ui.viewmodel
 
-/**
- * Immutable screen state — the query lives in [SearchInput].
- */
+/** Immutable screen state, where the query lives in [SearchInput]. */
 data class ExplorerScreenState(
 	val breadcrumbs: List<String> = emptyList(),
 	val info: InfoBar? = null,
@@ -10,8 +8,9 @@ data class ExplorerScreenState(
 	val reorderable: Boolean = false,
 	val searchUi: SearchUi = SearchUi.OFF,
 	val sibling: SiblingSwitch? = null,
-	/** How many content loads landed.
-	 * - slide waits on this, not list identity.
+	/**
+	 * How many content loads landed, which the slide waits on.
+	 * - the slide does not wait on list identity.
 	 */
 	val contentStep: Int = 0,
 )
@@ -19,8 +18,8 @@ data class ExplorerScreenState(
 data class SiblingSwitch(val step: Int, val dir: Int)
 
 /**
- * Search mode — decides what the user sees of the search.
- * - field renders while [TYPING].
+ * The search mode, which decides what the user sees of the search.
+ * - the field renders while [TYPING].
  */
 enum class SearchUi {
 	OFF,
@@ -30,7 +29,7 @@ enum class SearchUi {
 	RESULTS,
 }
 
-/** Info strip semantics — the view resolves text. */
+/** The info strip semantics, where the view resolves the text. */
 sealed interface InfoBar {
 	data class Children(val count: Int, val ratio: Int, val description: String) : InfoBar
 

@@ -22,15 +22,15 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * The progress-bar notification of the file imports and exports.
- * - it appears only once the operation ran the show delay — a quick one
- *   never flashes a notification, and a quiet stretch past the delay still
- *   gets its bar from the pending self-post.
- * - the throttled advances keep it one notification and closing removes it.
- * - the stream proxies of the middleware re-target the bar to the saved or
- *   walked rows and count them through the boundary hooks.
- * - every test drives the injectable clock across the show delay
- *   explicitly — the bar's lifetime is the clock's, not the wall's.
+ * - it appears only after the operation ran the show delay.
+ * - a quick operation never flashes a notification.
+ * - a quiet stretch past the delay still gets a bar from the pending post.
+ * - the throttled advances keep it one notification.
+ * - closing removes it.
+ * - the stream proxies re-target the bar to the saved or walked rows.
+ * - they count those rows through the boundary hooks.
+ * - every test drives the injectable clock across the show delay.
+ * - the lifetime of the bar belongs to the clock, not to the wall time.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -45,25 +45,24 @@ class FileProgressTest {
 		manager = GlobalDependencies.appContext.getSystemService(NotificationManager::class.java)!!
 	}
 
-	/** The latest posted notification — every test drives one bar only. */
+	/** The latest posted notification: every test drives one bar only. */
 	private fun bar(): Notification = shadowOf(manager).allNotifications.single()
 
-	/** A bar over the injectable clock, already past the show delay. */
 	private fun barShownAfterDelay(): FileProgress =
 		FileProgress("test") { now }.also { now = 5_000 }
 
 	@Test
 	fun `the bar appears only past the show delay of runtime and closes`() {
 		FileProgress("test") { now }.use { progress ->
-			progress.bytes(100)
-			progress.advance(40)
-			// under the show delay — nothing posted, however the phase moves
+			progress.bytes(1000)
+			progress.advance(400)
+			// under the show delay, so nothing posts however the phase moves
 			assertEquals(0, shadowOf(manager).allNotifications.size)
 			now = 200
-			progress.advance(10)
+			progress.advance(100)
 			assertEquals(1, shadowOf(manager).allNotifications.size)
-			// the throttle keeps it a single notification until the step passes
-			progress.advance(10)
+			// a small move stays throttled, so only a fill step or the time step posts
+			progress.advance(5)
 			assertEquals(1, shadowOf(manager).allNotifications.size)
 		}
 		assertEquals(0, shadowOf(manager).allNotifications.size)
@@ -76,7 +75,7 @@ class FileProgressTest {
 			progress.advance(100) // the completion post, still under the delay
 			assertEquals(0, shadowOf(manager).allNotifications.size)
 		}
-		// the close removed the pending self-post — nothing fires late
+		// the close removed the pending self-post, so nothing fires late
 		shadowOf(Looper.getMainLooper()).runToEndOfTasks()
 		assertEquals(0, shadowOf(manager).allNotifications.size)
 	}
@@ -85,12 +84,11 @@ class FileProgressTest {
 	fun `a quiet stretch past the delay still shows its bar`() {
 		FileProgress("test") { now }.use { progress ->
 			progress.bytes(100)
-			// every caller lands under the delay — none posts
+			// every caller lands under the delay, so none posts
 			progress.advance(10)
 			assertEquals(0, shadowOf(manager).allNotifications.size)
 
-			// the delay passes with no further call — the pending self-post
-			// carries the bar
+			// the delay passes with no further call, so the pending self-post carries the bar
 			now = 5_000
 			shadowOf(Looper.getMainLooper()).runToEndOfTasks()
 			assertEquals(1, shadowOf(manager).allNotifications.size)
@@ -103,14 +101,15 @@ class FileProgressTest {
 		barShownAfterDelay().use { progress ->
 			val item = StreamItem(DbItem(name = "w", description = "", type = ItemKind.WORD), null)
 			val proxy = progress.importer(FakeImporter(List(3) { item }))
-			// the re-target restarts the bar over the stream's size
+			// the re-target restarts the bar over the size of the stream
 			assertEquals("0 / 3", bar().extras.getCharSequence(Notification.EXTRA_TEXT))
 			assertEquals(3, bar().extras.getInt(Notification.EXTRA_PROGRESS_MAX))
-			// mid-stream advances stay throttled away — the shown count lags
+			// every row is a third of the bar, a fill step each, posted on its own
 			proxy.onItem(item)
+			assertEquals(1, bar().extras.getInt(Notification.EXTRA_PROGRESS))
 			proxy.onItem(item)
-			assertEquals(0, bar().extras.getInt(Notification.EXTRA_PROGRESS))
-			// the completion post skips the throttle — the final state shows
+			assertEquals(2, bar().extras.getInt(Notification.EXTRA_PROGRESS))
+			// the completion post skips the throttle too, so the final state shows
 			proxy.onItem(item)
 			assertEquals(3, bar().extras.getInt(Notification.EXTRA_PROGRESS))
 			assertEquals("3 / 3", bar().extras.getCharSequence(Notification.EXTRA_TEXT))
@@ -118,11 +117,18 @@ class FileProgressTest {
 	}
 
 	@Test
-	fun `the exporter proxy counts walked rows on the indeterminate bar`() {
+	fun `the exporter proxy targets the bar at the walked stream and counts it`() {
 		barShownAfterDelay().use { progress ->
-			progress.exporter(FakeExporter())
+			val item = StreamItem(DbItem(name = "w", description = "", type = ItemKind.WORD), null)
+			val proxy = progress.exporter(FakeExporter())
+			// before the stream hands over, the count is unknown, so the spinner
 			assertTrue(bar().extras.getBoolean(Notification.EXTRA_PROGRESS_INDETERMINATE))
 			assertEquals("0 items", bar().extras.getCharSequence(Notification.EXTRA_TEXT))
+			// the handover re-targets the bar to the object count and fills it
+			proxy.onStream(List(3) { item })
+			assertEquals(3, bar().extras.getInt(Notification.EXTRA_PROGRESS_MAX))
+			assertEquals(3, bar().extras.getInt(Notification.EXTRA_PROGRESS))
+			assertEquals("3 / 3", bar().extras.getCharSequence(Notification.EXTRA_TEXT))
 		}
 	}
 
@@ -140,7 +146,7 @@ class FileProgressTest {
 	@Test
 	fun `the rows phase targets the bar for the deletion`() {
 		barShownAfterDelay().use { progress ->
-			// an unknown row total — the indeterminate bar with the count text
+			// an unknown row total, the indeterminate bar with the count text
 			progress.rows(0)
 			assertTrue(bar().extras.getBoolean(Notification.EXTRA_PROGRESS_INDETERMINATE))
 			assertEquals("0 items", bar().extras.getCharSequence(Notification.EXTRA_TEXT))
@@ -162,6 +168,23 @@ class FileProgressTest {
 			progress.advance(2)
 			assertEquals(2, bar().extras.getInt(Notification.EXTRA_PROGRESS))
 			assertEquals("2 / 4", bar().extras.getCharSequence(Notification.EXTRA_TEXT))
+		}
+	}
+
+	@Test
+	fun `a fast phase sweeps the bar with its real progress`() {
+		barShownAfterDelay().use { progress ->
+			progress.bytes(1000)
+			// within the time step and below the fill step, so nothing posts
+			progress.advance(20)
+			assertEquals(0, bar().extras.getInt(Notification.EXTRA_PROGRESS))
+			// the worth of a fill step posts on its own, so a phase shorter than one
+			// time step still sweeps to its real state
+			progress.advance(40)
+			assertEquals(60, bar().extras.getInt(Notification.EXTRA_PROGRESS))
+			// a small move after it stays throttled within the time step
+			progress.advance(5)
+			assertEquals(60, bar().extras.getInt(Notification.EXTRA_PROGRESS))
 		}
 	}
 

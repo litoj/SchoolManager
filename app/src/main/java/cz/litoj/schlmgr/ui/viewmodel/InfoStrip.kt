@@ -9,8 +9,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * Info strip machine — browse read, search count refresh, toggle.
- * - host owns state — this class decides strip content.
+ * The info strip machine: browse read, search count refresh and toggle.
+ * - the host owns the state, and this class decides the strip content.
  */
 internal class InfoStrip(
 	private val scope: CoroutineScope,
@@ -41,10 +41,7 @@ internal class InfoStrip(
 
 	private var infoJob: Job? = null
 
-	/**
-	 * Refreshes strip — browse re-reads stats, search only count.
-	 * - shown results keep search strip.
-	 */
+	/** The shown results keep the search strip. */
 	fun refreshInfo() {
 		if (host.isSearching()) {
 			val info = (host.lastSearchInfo as? InfoBar.Search)?.copy(count = host.listSize())
@@ -57,9 +54,9 @@ internal class InfoStrip(
 	}
 
 	/**
-	 * Rebuilds strip from list size and container stats.
-	 * - runs on [io] — a newer refresh cancels the stale one.
-	 * - pending load defers strip.
+	 * Rebuilds the strip from the list size and the container stats.
+	 * - it runs on [io], and a newer refresh cancels the stale one.
+	 * - a pending load defers the strip.
 	 */
 	fun setInfo(container: DbItem?) {
 		infoJob?.cancel()
@@ -67,7 +64,7 @@ internal class InfoStrip(
 			host.publishCrumbs()
 			return
 		}
-		// Count reads on main.
+		// the count reads on main.
 		val count = host.listSize()
 		infoJob = scope.launch {
 			val info = withContext(io) { infoBarOf(container, count) }

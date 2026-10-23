@@ -17,9 +17,10 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * [TestEngine.isAnswer] on a real in-memory database: the answer bump
- * covers the word and every container whose sums hold it — a shared plain
- * holder included, a reference holder never.
+ * [TestEngine.isAnswer] on a real in-memory database.
+ * - the answer bump covers the word and every container whose sums hold it.
+ * - a shared plain holder counts.
+ * - a reference holder never counts.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -41,7 +42,6 @@ class TestEngineAnswerTest {
 		db.close()
 	}
 
-	/** Answers the entry's only word through a one-word run. */
 	private fun answer(entry: TestEntry, text: String?): Boolean {
 		val engine = TestEngine()
 		engine.setTested(1, null, 1, listOf(entry))
@@ -54,7 +54,7 @@ class TestEngineAnswerTest {
 		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
 		val c2 = ItemRepository.createChapter(subject.id, "c2", null)
 		val word = ItemRepository.createWord(c1.id, "w", null, listOf("t" to (null as String?)))
-		// the word is shared — c2 holds it through a second plain link
+		// the word is shared, so c2 holds it through a second plain link
 		ItemRepository.legacyLinkAtEnd(c2.id, word.id)
 
 		assertTrue(answer(TestEntry(word, listOf(subject, c1, word)), "w"))
@@ -79,7 +79,6 @@ class TestEngineAnswerTest {
 		// the reference shows the word but never counts it
 		assertEquals(0, ItemRepository.get(ref.id)!!.passedTests)
 		assertEquals(0, ItemRepository.get(ref.id)!!.failedTests)
-		// the plain chain took the result
 		assertEquals(1, ItemRepository.get(subject.id)!!.passedTests)
 	}
 

@@ -6,7 +6,6 @@ import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/** The flipped-word display assembly ([ItemRow.flippedDisplay]). */
 class ItemRowFlipTest {
 
 	private fun trl(name: String, description: String = "") =
@@ -25,8 +24,8 @@ class ItemRowFlipTest {
 
 	@Test
 	fun `several descriptions each stay on their own line`() {
-		// no joint text is assembled — each line keeps its own description,
-		// so nothing needs a name prefix to stay attributable
+		// no joint text is assembled, because each line keeps its own description, so
+		// nothing needs a name prefix to stay attributable
 		val display = ItemRow.flippedDisplay(listOf(trl("ano", "neuter"), trl("yes", "formal")))
 		assertEquals("neuter", display.lines[0].description)
 		assertEquals("formal", display.lines[1].description)
@@ -34,8 +33,8 @@ class ItemRowFlipTest {
 
 	@Test
 	fun `a word without translations renders an empty flip`() {
-		// a mis-anchored import can leave a word row without translations —
-		// the flip must not crash on the empty list
+		// a mis-anchored import can leave a word row without translations, so the
+		// flip must not crash on the empty list
 		val display = ItemRow.flippedDisplay(emptyList())
 		assertEquals("", display.names)
 		assertEquals(0, display.lines.size)

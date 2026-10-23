@@ -6,18 +6,17 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Unit tests for the pure pull-at-top accumulator ([TopPullAccumulator]).
- * - the pull fires once past the threshold, then not again until the
- *   gesture ends.
- * - scrolls the list can still take, opposite deltas and non-drag scrolls
- *   never fire.
+ * - the pull fires once past the threshold.
+ * - it does not fire again until the gesture ends.
+ * - scrolls the list can still take never fire.
+ * - opposite deltas and non-drag scrolls never fire.
  */
 class TopPullAccumulatorTest {
 
 	private val threshold = 100f
 	private val pull = TopPullAccumulator(threshold)
 
-	/** One pull delta at the top — a pull down arrives positive. */
+	/** One pull delta at the top: a pull down arrives positive. */
 	private fun atTop(dy: Float) = pull.scroll(dy, canScrollBackward = false, drag = true)
 
 	@Test

@@ -18,11 +18,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 
-// The shared settings-style rows — the switch row and the number row the settings and test-setup screens both render.
-// One place, so the two screens cannot drift apart in padding, font size or switch colours.
+// the shared settings-style rows that the settings and test-setup screens both render.
+// one place keeps the two from drifting apart in padding, font size or switch colours.
 
 
-/** A label with a trailing switch — the whole row toggles. */
+/** A label with a trailing switch. */
 @Composable
 fun SettingSwitchRow(label: String, checked: Boolean, onToggle: () -> Unit) {
 	Row(
@@ -44,10 +44,7 @@ fun SettingSwitchRow(label: String, checked: Boolean, onToggle: () -> Unit) {
 	}
 }
 
-/**
- * A label with a trailing digits-only number field — [onFocusLost] typically
- * restores an empty field.
- */
+/** [onFocusLost] typically restores an empty field. */
 @Composable
 fun SettingNumberRow(
 	label: String,
@@ -62,8 +59,8 @@ fun SettingNumberRow(
 		verticalAlignment = Alignment.CenterVertically,
 	) {
 		Text(label, Modifier.weight(1f), style = TextStyle(fontSize = 18.sp, color = DefaultTextColor))
-		// Same font size as the row label. The component enforces its own square
-		// minimum width, so no fixed width is needed here.
+		// the field takes the font size of the row label.
+		// the component enforces its own square minimum width, so no fixed width is needed.
 		BareTextField(
 			value = value,
 			onValueChange = onValueChange,

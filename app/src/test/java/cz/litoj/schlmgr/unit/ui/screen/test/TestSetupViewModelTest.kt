@@ -18,10 +18,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * Unit tests of [TestSetupViewModel]'s start gate — no sources, no request, and
- * the empty source closes the activity with a message instead.
- */
 class TestSetupViewModelTest {
 
 	@After

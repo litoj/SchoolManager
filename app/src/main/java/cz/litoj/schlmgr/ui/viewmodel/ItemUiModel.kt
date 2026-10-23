@@ -5,15 +5,14 @@ import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.db.ratio
 
 /**
- * One explorer list row for Compose — presentation only, built in [toUi]
- * (test results build it directly).
+ * One explorer list row for Compose, presentation only and built in [toUi].
+ * - test results build it directly.
  *
- * @property key stable `LazyColumn` key ([stableKey] string, the item itself in test results)
+ * @property key a stable LazyColumn key, the [stableKey] string or the item in test results
  * @property position 1-based index, or the tested count in test results
- * @property name parsed display name (a flipped word's translations)
- * @property description line under the name, empty when none
- * @property payload the backing [ItemRow], or `null`
- * @property trackPath a hit's container chain, null otherwise
+ * @property name the parsed display name, the translations of a flipped word
+ * @property description the line under the name, empty when none
+ * @property trackPath the container chain of a hit, null otherwise
  */
 data class ItemUiModel(
 	val key: Any,
@@ -33,8 +32,9 @@ data class ItemUiModel(
 enum class ExplorerRowVariant { Browse, Search }
 
 /**
- * Stable string keys for `LazyColumn` items.
-	 * - [ItemUiModel.key] must be Bundle-storable (row objects are not) and stable across recompositions (`ItemUiModel` rebuilds on every change).
+ * Stable string keys for the LazyColumn items.
+ * - [ItemUiModel.key] must be Bundle-storable, since row objects are not.
+ * - it must stay stable across recompositions, where [ItemUiModel] rebuilds on every change.
  */
 private val keyRegistry = java.util.WeakHashMap<Any, String>()
 private val keyCounter = java.util.concurrent.atomic.AtomicLong()
@@ -44,9 +44,8 @@ fun Any.stableKey(): String = synchronized(keyRegistry) {
 }
 
 /**
- * Which kind of thing one row shows. The semantic identity the UI maps to
- * its type icon — the state layer never resolves drawables (see `RowKind.iconRes`
- * in the component layer).
+ * Which kind of thing one row shows, the semantic identity that the UI maps to an icon.
+ * - the state layer never resolves drawables, see RowKind.iconRes in the component layer.
  */
 enum class RowKind { SUBJECT, NOTE, CHAPTER, WORD }
 

@@ -24,10 +24,10 @@ import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.R
 
 /**
- * @property icon the row's leading icon — `0` renders none
- * @property children non-empty opens a second menu level (parents carry a placeholder id)
+ * @property icon the leading icon of the row, where 0 renders none
+ * @property children a non-empty list opens a second menu level
  * @property selectionAction acts on selected rows, keeping the resource order
- * @property always stays in both menu forms (the export rows)
+ * @property always stays in both menu forms, as the export rows do
  * @property enabled false keeps the place but mutes the row and ignores taps
  */
 data class MenuEntry(
@@ -41,14 +41,14 @@ data class MenuEntry(
 )
 
 /**
- * More-options dropdown — flat rows and one-level submenus, one visible
- * level. A parent tap swaps the menu to its children, the back row
- * returns to the top level (a single state, no stacked popups).
+ * The more-options dropdown: flat rows and one-level submenus, one visible level.
+ * - a parent tap swaps the menu to its children.
+ * - the back row returns to the top level, with a single state and no stacked popups.
  */
 @Composable
 fun MoreMenu(entries: List<MenuEntry>, onPick: (Int) -> Unit, onDismiss: () -> Unit) {
-	// the M2 dropdown reads MaterialTheme colours, but the app carries no
-	// theme — supply the two it reads. The resources resolve the day/night variant
+	// the M2 dropdown reads MaterialTheme colours, but the app carries no theme.
+	// so supply the two it reads, and the resources resolve the day/night variant
 	MaterialTheme(
 		colors = lightColors(
 			surface = colorResource(R.color.colorMenuBackground),
@@ -83,8 +83,8 @@ private fun MenuLeaf(entry: MenuEntry, onClick: () -> Unit) {
 		MenuIcon(entry)
 		Text(
 			stringResource(entry.label),
-			// the disabled alpha matches Material's muted text — the menu carries
-			// no per-row theme, so the leaf picks the colour itself
+			// the disabled alpha matches the muted text of Material.
+			// the menu carries no per-row theme, so the leaf picks the colour itself
 			color = if (entry.enabled) Color.Unspecified
 			else MaterialTheme.colors.onSurface.copy(alpha = 0.38f),
 			modifier = Modifier.padding(start = entry.iconSpacing()),
@@ -92,9 +92,6 @@ private fun MenuLeaf(entry: MenuEntry, onClick: () -> Unit) {
 	}
 }
 
-/**
- * A parent row — label plus arrow, a tap swaps the menu to its children.
- */
 @Composable
 private fun MenuParentRow(entry: MenuEntry, onClick: () -> Unit) {
 	DropdownMenuItem(onClick = onClick) {
@@ -111,19 +108,13 @@ private fun MenuParentRow(entry: MenuEntry, onClick: () -> Unit) {
 	}
 }
 
-/** The row's leading icon — an icon-less entry renders text only. */
 @Composable
 private fun MenuIcon(entry: MenuEntry) {
 	if (entry.icon != 0) Icon(painterResource(entry.icon), contentDescription = null)
 }
 
-/** The label's leading space — the icon column, zero without an icon. */
 private fun MenuEntry.iconSpacing() = if (icon != 0) 12.dp else 0.dp
 
-/**
- * The submenu's back row — left arrow plus the parent label, a tap returns
- * to the top level.
- */
 @Composable
 private fun MenuBackRow(entry: MenuEntry, onClick: () -> Unit) {
 	DropdownMenuItem(onClick = onClick) {

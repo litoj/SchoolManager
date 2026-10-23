@@ -9,12 +9,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * Unit tests of [SearchInput]'s routing — empty clears the run, a
- * one-character text keeps the shown list, longer text runs once typing
- * pauses. The virtual scheduler advances past the debounce before the
- * assertions.
- */
 class SearchInputPolicyTest {
 
 	private class RecordingHost : SearchInput.Host {
@@ -50,8 +44,8 @@ class SearchInputPolicyTest {
 
 		input.onTextChange("a")
 
-		// below the threshold — no run, and a running run is superseded. The shown
-		// list stays as it is instead of keeping growing
+		// below the threshold, so no run starts and a running run is superseded
+		// the shown list stays as it is instead of keeping growing
 		assertEquals(0, host.run.size)
 		assertEquals(0, host.cleared)
 		assertEquals(1, host.superseded)

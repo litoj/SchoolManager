@@ -25,12 +25,11 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * Subject-directory import ([ItemRepository.import] with a
- * [LegacySubjectImporter]) on a real in-memory database:
- * - the tree assembles from its split files — a save chapter's node marks its place and carries its file's content.
+ * - the tree assembles from its split files.
+ * - the node of a save chapter marks its place and carries the file content.
  * - chapters nest and unlinked files are skipped.
  * - a word re-encountered in another chapter reuses its row.
- * - a persisted `Reference` node becomes a reference link to the item its origin path names.
+ * - a persisted Reference node becomes a link to the item its origin names.
  * - a failed import leaves nothing behind.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -65,12 +64,12 @@ class LegacySubjectTest {
 	private fun import(dir: File) =
 		ItemRepository.import(importerOf(dir), ROOT_ID)
 
-	/** A [LegacyFileSource] over plain files — missing or empty files read as nothing. */
+	/** A [LegacyFileSource] over plain files, where missing or empty files read as nothing. */
 	private fun sourceOf(dir: File) = LegacyFileSource { relativePath ->
 		File(dir, relativePath).takeIf { it.isFile && it.length() > 0 }?.readText()
 	}
 
-	/** The parsed subject as an import source — the gateway's parse-then-import shape. */
+	/** The parsed subject as an import source, in the parse-then-import shape of the gateway. */
 	private fun importerOf(dir: File): LegacySubjectImporter {
 		val subject = LegacyJsonLoader.parseSubjectDir(sourceOf(dir), dir.name)
 			?: throw IllegalArgumentException("Nothing importable in the directory")
@@ -91,7 +90,7 @@ class LegacySubjectTest {
 				"""{"class":"cz.Word","name":"das Haus","cdrn":[""" +
 				"""{"class":"cz.Translation","name":"dům"}]}]}"""
 		)
-		// a leftover file no node links to — a chapter removed in the old app
+		// a leftover file no node links to, a chapter removed in the old app
 		File(chaptersDir, "extra.json").writeText(
 			"""{"class":"cz.SaveChapter","name":"Extra","cdrn":[""" +
 				"""{"class":"cz.Word","name":"die Schule"}]}"""
@@ -100,10 +99,8 @@ class LegacySubjectTest {
 		assertTrue(import(subjectDir).topLevel.isNotEmpty())
 
 		val subject = ItemRepository.subjects().single()
-		// exactly the chapters main.json links to — nothing extra
 		assertEquals(listOf("Lexikologie"), ItemRepository.children(subject.id).map { it.name })
 		val chapter = ItemRepository.children(subject.id).single()
-		// the description and content come from the file
 		assertEquals("slova", chapter.description)
 		assertEquals(listOf("das Haus"), ItemRepository.children(chapter.id).map { it.name })
 		val word = ItemRepository.children(chapter.id).single()
@@ -127,14 +124,13 @@ class LegacySubjectTest {
 
 		assertTrue(import(subjectDir).topLevel.isNotEmpty())
 
-		// one row serves both chapters — the legacy registry merge
+		// one row serves both chapters, through the legacy registry merge
 		val word = ItemRepository.getByName("das Haus", ItemKind.WORD).single()
 		val c1 = ItemRepository.getByName("c1", ItemKind.CHAPTER).single()
 		val c2 = ItemRepository.getByName("c2", ItemKind.CHAPTER).single()
 		assertEquals(listOf("das Haus"), ItemRepository.children(c1.id).map { it.name })
 		assertEquals(listOf("das Haus"), ItemRepository.children(c2.id).map { it.name })
 		assertEquals("house [a]\nhouse [b]", word.description)
-		// the translation is one row linked once, like the word
 		assertEquals(listOf("dům"), ItemRepository.translations(word.id).map { it.name })
 	}
 
@@ -153,9 +149,9 @@ class LegacySubjectTest {
 
 		assertTrue(import(subjectDir).topLevel.isNotEmpty())
 
-		// only the translation lands — the note and the nested chapter under
-		// a Word are skipped, and the class-less node is the real format's
-		// translation — it stays
+		// only the translation lands:
+		// - the note and the nested chapter under a Word are skipped.
+		// - the class-less node is the translation of the real format, so it stays.
 		val word = ItemRepository.getByName("das Haus", ItemKind.WORD).single()
 		assertEquals(listOf("dům", "no class at all"),
 			ItemRepository.translations(word.id).map { it.name })
@@ -173,7 +169,7 @@ class LegacySubjectTest {
 		)
 		File(subjectDir, "setts.dat").writeText("{}")
 		val chaptersDir = File(subjectDir, "Chapters").apply { mkdirs() }
-		// a truncated file — parsing it throws before anything is written
+		// a truncated file, whose parse throws before anything is written
 		File(chaptersDir, "bad.json").writeText("""{"class":"cz.SaveChapter","name":"cut"""")
 
 		assertThrows(IllegalArgumentException::class.java) {
@@ -193,7 +189,7 @@ class LegacySubjectTest {
 		)
 		File(subjectDir, "setts.dat").writeText("{}")
 		val chaptersDir = File(subjectDir, "Chapters").apply { mkdirs() }
-		// the file itself links to another save chapter — no depth limit
+		// the file itself links to another save chapter, with no depth limit
 		File(chaptersDir, "My Vocab.json").writeText(
 			"""{"class":"cz.SaveChapter","name":"My Vocab","cdrn":[""" +
 				"""{"class":"cz.SaveChapter","name":"Core"},""" +
@@ -232,10 +228,9 @@ class LegacySubjectTest {
 		assertTrue(import(subjectDir).topLevel.isNotEmpty())
 
 		val subject = ItemRepository.subjects().single()
-		// the bare legacy word (no translations) imported as a note
+		// the bare legacy word without translations imported as a note
 		val dog = ItemRepository.getByName("dog", ItemKind.NOTE).single()
 		val refContainer = ItemRepository.children(subject.id).first { it.name == "my refs" }
-		// the item shows in the referencing chapter through a reference link
 		assertTrue(ItemRepository.linkIsReference(refContainer.id, dog.id))
 		assertEquals(listOf("dog"), ItemRepository.children(refContainer.id).map { it.name })
 	}
@@ -266,13 +261,11 @@ class LegacySubjectTest {
 	}
 
 	@Test
-	fun `writeText reports the bytes it writes`() {
+	fun `writeText round-trips multi-byte text`() {
 		val target = File(root, "out.txt")
-		var reported = 0
+		val text = buildString { repeat(4_000) { append("číše řecká;") } }
 
-		assertTrue(FileText.writeText(
-			DocumentFile.fromFile(target).uri, "abcdef", progress = Progress { reported += it }))
-
-		assertEquals(6, reported)
+		assertTrue(FileText.writeText(DocumentFile.fromFile(target).uri, text))
+		assertEquals(text, FileText.readText(DocumentFile.fromFile(target).uri))
 	}
 }

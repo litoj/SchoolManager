@@ -82,10 +82,9 @@ private val sections = listOf(
 )
 
 /**
- * The About screen — the top bar with the app name and
- * version above the help tree.
+ * The About screen: the top bar with the app name and version above the help tree.
  *
- * @param openDrawer the hamburger press — the shell owns the drawer
+ * @param openDrawer the hamburger press, since the shell owns the drawer
  */
 @Composable
 fun AboutScreen(viewModel: AboutViewModel, openDrawer: () -> Unit) {
@@ -94,7 +93,6 @@ fun AboutScreen(viewModel: AboutViewModel, openDrawer: () -> Unit) {
 	Column(Modifier.fillMaxSize()) {
 		TopBar {
 			TopBarNav(onNavigate = openDrawer)
-			// the app name with the version suffix when known
 			TopBarTitle(stringResource(R.string.app_name) + (viewModel.version?.let { " v$it" } ?: ""))
 		}
 		HelpTree(viewModel, Modifier.weight(1f).headerShadow())
@@ -102,9 +100,10 @@ fun AboutScreen(viewModel: AboutViewModel, openDrawer: () -> Unit) {
 }
 
 /**
- * One collapsible help section — when expanded it shows the [intro]
- * paragraph, the [body] text and the custom intro in that order (each
- * `0` resource or `null` hides its field), then the [children].
+ * One collapsible help section.
+ * - when expanded it shows the [intro] paragraph, the [body] text and the custom intro.
+ * - that runs in this order, where a 0 resource or null hides its field.
+ * - [children] follow.
  */
 class HelpSection(
 	@param:StringRes val title: Int,
@@ -144,8 +143,8 @@ private fun BigHeader(text: String, @DrawableRes icon: Int) {
 		Text(
 			text,
 			Modifier.weight(1f),
-			// Green header chrome — the on-header colour, so it stays readable
-			// when the header turns bright and its text dark.
+			// the on-header colour keeps the green header chrome readable.
+			// it also works when the header turns bright and its text dark.
 			style = TextStyle(fontSize = 25.sp, color = colorResource(R.color.colorOnHeader)),
 		)
 		Icon(painterResource(icon), null, tint = Color.Unspecified)
@@ -153,9 +152,9 @@ private fun BigHeader(text: String, @DrawableRes icon: Int) {
 }
 
 /**
- * A single expandable section — a clickable header row (visuals depending on
- * its [level]), followed by its content when expanded. Both levels toggle
- * through [AboutViewModel], so the state survives recomposition and rotation.
+ * A single expandable section: a clickable header row, followed by its content.
+ * - the visuals depend on its [level].
+ * - both levels toggle through [AboutViewModel], so the state survives recomposition and rotation.
  */
 @Composable
 private fun Section(section: HelpSection, viewModel: AboutViewModel, level: Int = 0) {
@@ -174,8 +173,8 @@ private fun Section(section: HelpSection, viewModel: AboutViewModel, level: Int 
 			style = TextStyle(fontSize = if (level == 0) 19.sp else 17.sp, color = DefaultTextColor),
 		)
 		if (section.icon != 0) {
-			// Unspecified follows the theme foreground, like the text does — a
-			// specified tint is used as given.
+			// unspecified follows the theme foreground, like the text does.
+			// a specified tint is used as given
 			Icon(
 				painterResource(section.icon),
 				null,
@@ -200,7 +199,6 @@ private fun BodyText(text: String) {
 	)
 }
 
-/** The regex cheat-sheet — three explanatory paragraphs with two-column tables. */
 @Composable
 private fun RegexIntro() {
 	BodyText(stringResource(R.string.help_search_regex_how_1))

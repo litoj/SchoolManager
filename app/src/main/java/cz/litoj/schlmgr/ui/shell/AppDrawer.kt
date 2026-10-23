@@ -31,9 +31,9 @@ import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 
 /**
- * The drawer's destinations — the flat sibling screens of the navigation graph.
- * - the enum's name is the navigation route.
- * - the pushed picker screen is not a destination ([PICKER_ROUTE] is its route).
+ * The destinations of the drawer, the flat sibling screens of the navigation graph.
+ * - the name of the enum is the navigation route.
+ * - the pushed picker screen is not a destination, and [PICKER_ROUTE] is its route.
  */
 enum class Destination(val label: Int, val icon: Int) {
 	SUBJECTS(R.string.menu_objects, R.drawable.ic_subject),
@@ -46,9 +46,9 @@ enum class Destination(val label: Int, val icon: Int) {
 const val PICKER_ROUTE = "PICKER"
 
 /**
- * The navigation drawer — 250dp panel on the background surface, gradient
- * header, destinations with icons.
- * - taps navigate flat (no saved stacks).
+ * The navigation drawer: a 250dp panel on the background surface.
+ * - it holds a gradient header and the destinations with their icons.
+ * - taps navigate flat, with no saved stacks.
  */
 @Composable
 fun AppDrawer(
@@ -59,20 +59,20 @@ fun AppDrawer(
 		Modifier
 			.width(DrawerWidth)
 			.fillMaxHeight()
-			// the drawer's surface covers the system bars too — the background
-			// comes before the paddings, so it fills the whole width and height
+			// the surface of the drawer covers the system bars too.
+			// so the background comes before the paddings and fills the whole area
 			.background(colorResource(R.color.colorPrimaryBg))
 			.statusBarsPadding()
 			.navigationBarsPadding(),
 	) {
-		// the header — the gradient band with the app icon and its name
+		// the header: the gradient band with the app icon and its name
 		Box(
 			Modifier
 				.fillMaxWidth()
 				.height(55.dp)
 				.background(
-					// the gradient runs at angle 225° — soft at the top-right
-					// corner, the header green at the bottom-left
+					// the gradient runs at angle 225°, soft at the top-right corner.
+					// the header green sits at the bottom-left
 					Brush.linearGradient(
 						listOf(
 							colorResource(R.color.colorHeaderSoft),
@@ -130,14 +130,14 @@ private fun DestinationRow(
 			painter = painterResource(destination.icon),
 			contentDescription = null,
 			modifier = Modifier.size(24.dp),
-			// the theme's foreground overrides each drawable's own tint
-			// (ic_subject and ic_menu_settings carry green ones)
+			// the theme foreground overrides the own tint of each drawable.
+			// ic_subject and ic_menu_settings carry green ones
 			colorFilter = ColorFilter.tint(colorResource(R.color.colorPrimaryFg)),
 		)
 		Spacer(Modifier.width(32.dp))
 		Text(
 			stringResource(destination.label),
-			// the NavigationView's item text size
+			// the item text size of the NavigationView
 			style = TextStyle(fontSize = 14.sp, color = colorResource(R.color.colorPrimaryFg)),
 		)
 	}

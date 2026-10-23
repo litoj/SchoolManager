@@ -7,12 +7,12 @@ import cz.litoj.schlmgr.data.DataExporter
 import cz.litoj.schlmgr.data.db.DbItem
 
 /**
- * The export codec choice — the strategy the shared export path renders through.
+ * The export codec choice, the strategy that the shared export path renders through.
  */
 enum class ExportFormat {
-	/** A word list (`.txt`) — every selected container wrapped as a chapter. */
+	/** A word list in txt form, with every selected container wrapped as a chapter. */
 	WORD,
-	/** A tree JSON (HJSON) — the containers rendered with their names. */
+	/** A tree JSON in HJSON form. */
 	JSON;
 
 	fun exporter(): DataExporter = when (this) {
@@ -33,10 +33,9 @@ data class ExportRequest(
 )
 
 /**
- * Where an import lands — the open container, or the subjects root.
- * Resolved at pick time on the caller thread — the workers keep that
- * snapshot, so the anchor is the picked-time position whatever the
- * user browses to before the run.
+ * - it resolves at pick time on the caller thread.
+ * - the workers keep that snapshot, so the anchor is the pick-time position.
+ * - a later browse by the user cannot move it.
  */
 sealed interface ImportTarget {
 	data object Root : ImportTarget

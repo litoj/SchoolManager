@@ -7,10 +7,8 @@ import cz.litoj.schlmgr.data.StreamItem
 import cz.litoj.schlmgr.data.StreamReference
 import cz.litoj.schlmgr.data.StreamBuilder
 
-// The plain parse tree of a word-list file — no database involved, so the
-// parser stays testable and the caller decides where the tree lands. A
-// chapter holds words, notes and sub-chapters, a word holds translation
-// entries, a note is one named entry.
+// the plain parse tree of a word-list file, with no database involved.
+// - the parser stays testable, and the caller decides where the tree lands.
 class WordListEntry(var name: String, var description: String? = null)
 
 sealed interface WordListChild
@@ -30,10 +28,10 @@ class WordListChapter(val name: String, var description: String? = null) : WordL
 }
 
 /**
- * The mutable line assembly of one chapter's [loadContent] — the pending
- * text plus the words/translations collected since the last newline,
- * which side of the separator the parser is on, and whether the line
- * is a note.
+ * The mutable line assembly of [loadContent] for one chapter.
+ * - the pending text plus the words and translations collected since the last newline.
+ * - the side of the separator that the parser is on.
+ * - whether the line is a note.
  */
 private class ParserContext(var inWords: Boolean = true) {
 	var inNote = false
@@ -46,10 +44,10 @@ private class ParserContext(var inWords: Boolean = true) {
 
 /**
  * The word-list text format:
- * - `name {` content `}` chapters.
- * - `name;translation` words (`;`, `=`, `→` all separate).
- * - `... [description]` descriptions.
- * - a separator-led line (`= name`) is a note — a word line without the word.
+ * - a chapter is a name, an opening brace, its content, then a closing brace.
+ * - a word line splits the name from its translation on a semicolon, an equals sign or an arrow.
+ * - a description follows the text in square brackets.
+ * - a separator-led line is a note, a word line without the word.
  */
 class WordListReader private constructor(private val src: String, private val containerName: String) {
 
@@ -60,8 +58,7 @@ class WordListReader private constructor(private val src: String, private val co
 	companion object {
 
 		/**
-		 * Parses the content of one container. `containerName` labels the
-		 * parse errors — the import names the target the content lands in.
+		 * - the containerName labels the parse errors, since the import names the target.
 		 *
 		 * @throws IllegalArgumentException on malformed input, with a positioned message
 		 */
@@ -91,14 +88,14 @@ class WordListReader private constructor(private val src: String, private val co
 						i++
 						val ch2 = src[i]
 						when (ch2) {
-							// a note line unescapes its backslash — notes carry no
+							// a note line unescapes its backslash, since notes carry no
 							// variant syntax to keep raw
 							'\\', '/', '(', ')' -> if (!ctx.inNote) sb.append('\\')
 							';', '=', '→', '[', ']' -> {}
 							else -> {
 								if (ctx.inNote) throw parseError(
 							"A note has no word divider — an unescaped '\\' splits words only.")
-								// an unescaped `\` splits the current word/translation
+								// an unescaped backslash splits the current word and translation
 								flush(ctx)
 							}
 						}
@@ -106,7 +103,7 @@ class WordListReader private constructor(private val src: String, private val co
 					}
 				}
 				';', '=', '→' -> {
-					// a leading separator opens a note line — no word precedes it
+					// a leading separator opens a note line, since no word precedes it
 					if (!ctx.inNote && ctx.inWords && wordNames.isEmpty() && sb.isEmpty()) {
 						ctx.inNote = true
 					} else {
@@ -118,18 +115,17 @@ class WordListReader private constructor(private val src: String, private val co
 					}
 				}
 				'\r' -> {
-					// a lone `\r` is a line ending too — only the CRLF pair consumes the
-					// following `\n`
+					// a lone CR is a line ending too, and only the CRLF pair consumes the
+					// following newline
 					if (src.getOrNull(i + 1) == '\n') i++
 					onNewline(ctx, entries)
 				}
 				'\n' -> onNewline(ctx, entries)
 				'}' -> {
 					if (src.substring(lineStart, i).trim().isEmpty()) {
-						// the root load has no chapter to close — a stray
-						// brace must not swallow the rest of the file
+						// the root load has no chapter to close, so a stray brace
+						// must not swallow the rest of the file
 						if (isRootLoad) throw parseError("Unexpected '}'. No chapter is open.")
-						// skip to the next line ending — `\n` or a lone `\r`
 						while (++i < src.length && src[i] != '\n' && src[i] != '\r');
 						if (i < src.length && src[i] == '\r' && src.getOrNull(i + 1) == '\n') i++
 						lineStart = i + 1
@@ -139,8 +135,6 @@ class WordListReader private constructor(private val src: String, private val co
 					sb.append(ch)
 				}
 				'{' -> {
-					// the opener's line ending — `\n`, or `\r` (a lone CR, or the
-					// head of a CRLF pair)
 					val breakAfterBrace = when (src.getOrNull(i + 1)) {
 						'\n', '\r' -> true
 						else -> false
@@ -155,15 +149,15 @@ class WordListReader private constructor(private val src: String, private val co
 						val name: String
 						val desc: String?
 						if (wordNames.isEmpty()) {
-							// a `§` before a chapter opener is an empty-name marker — it is
-							// stripped, not shown
+							// a section sign before a chapter opener marks an empty name,
+							// so it is stripped, not shown
 							if (sb.isNotEmpty() && sb[sb.length - 1] == '§') sb.setLength(sb.length - 1)
 							name = halveTrailingBackslashes(sb.toString().trim())
 							desc = null
 						} else {
-							// a `\`-divided name cannot name a chapter — the
-							// divider words would silently vanish (a lone divider
-							// leaves its tail text in sb)
+							// a backslash-divided name cannot name a chapter.
+							// - its divider words would silently vanish.
+							// - a lone divider leaves its tail text in sb.
 							if (wordNames.size > 1 || sb.isNotEmpty()) throw parseError(
 								"A chapter name cannot contain a word divider ('\\').")
 							name = wordNames[0]
@@ -177,8 +171,8 @@ class WordListReader private constructor(private val src: String, private val co
 					} else sb.append(ch)
 				}
 				'[' -> {
-					// a whitespace-only piece is no text either — a blank name
-					// would poison the writers' refusals
+					// a whitespace-only piece is no text either, since a blank name
+					// would poison the refusals of the writers
 					if (sb.isNotBlank()) {
 						flush(ctx)
 						val description = getDescription()
@@ -201,15 +195,11 @@ class WordListReader private constructor(private val src: String, private val co
 		)
 	}
 
-	/**
-	 * Ends the current line — a note line emits its note, a word line its
-	 * words, a blank line only advances the position.
-	 */
 	private fun onNewline(ctx: ParserContext, entries: MutableList<WordListChild>) {
 		flush(ctx)
 		if (ctx.inNote) entries.add(emitNote(ctx))
 		else if (ctx.inWords && ctx.wordNames.isEmpty()) {
-			// blank line — nothing emits, the error positions still advance
+			// blank line: nothing emits, and the error positions still advance
 		} else if (!ctx.inWords && ctx.trlNames.isNotEmpty()) {
 			ctx.wordNames.forEachIndexed { idx, w ->
 				entries.add(mkWord(w, ctx.wordDescs[idx], ctx.trlNames, ctx.trlDescs))
@@ -232,9 +222,8 @@ class WordListReader private constructor(private val src: String, private val co
 
 	private fun flush(ctx: ParserContext) {
 		val sb = ctx.sb
-		// whitespace-only pieces trim to no name — they add nothing
 		if (sb.isBlank()) return
-		// note lines unescape already — only word/translation names carry
+		// note lines unescape already, so only word and translation names carry
 		// the doubled boundary run
 		val name = if (ctx.inNote) sb.toString().trim() else halveTrailingBackslashes(sb.toString().trim())
 		if (ctx.inWords) {
@@ -248,15 +237,14 @@ class WordListReader private constructor(private val src: String, private val co
 	}
 
 	/**
-	 * Halves a name-final backslash run — the writer doubles the run (a lone
-	 * trailing `\` would otherwise escape the next separator), so the reader
-	 * halves it back — stable across every export cycle.
+	 * - the writer doubles the run, so a lone trailing backslash cannot escape a separator.
+	 * - the reader halves it back, so the cycle stays stable across every export.
 	 */
 	private fun halveTrailingBackslashes(name: String): String {
 		var run = 0
 		while (name.length > run && name[name.length - 1 - run] == '\\') run++
-		// an odd run cannot reach a boundary — its last `\` escapes the
-		// separator, leaving nothing to halve
+		// an odd run cannot reach a boundary, since its last backslash escapes
+		// the separator, leaving nothing to halve
 		if (run < 2 || run % 2 != 0) return name
 		return name.dropLast(run / 2)
 	}
@@ -280,9 +268,9 @@ class WordListReader private constructor(private val src: String, private val co
 					sb.append(src[++i])
 				}
 				']' -> return sb.toString().trim()
-				// a newline inside the description is description content — the
-				// writer's decorative [\n … \n] wrapper trims away
-				// A `\r` rides before a CRLF pair and is dropped — a lone one is a newline.
+				// a newline inside the description is description content.
+				// - the decorative newline wrapper of the writer trims away.
+				// - a CR before a CRLF pair is dropped, and a lone one is a newline.
 				'\r' -> if (src.getOrNull(i + 1) != '\n') {
 					line++
 					lineStart = i + 1
@@ -306,9 +294,8 @@ class WordListReader private constructor(private val src: String, private val co
 }
 
 /**
- * The word-list format as an import source — the parsed tree as a
- * [StreamItem] stream (see [DataImporter]).
- * - top-level items become root items in file order, no wrapper.
+ * - top-level items become root items in file order, with no wrapper.
+ * - see [DataImporter] for the stream contract.
  */
 class WordListImporter(containerName: String, text: String) : DataImporter {
 	override val items: List<StreamItem>

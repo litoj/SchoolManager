@@ -5,9 +5,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * The engine's persisted defaults — the default seconds per item a fresh
- * program state carries. Pins the value the settings fallback and the
- * startup restore both fall back to.
+ * - the settings fallback uses the default seconds per item.
+ * - the startup restore falls back to it too.
  */
 class TestEngineDefaultsTest {
 

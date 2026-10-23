@@ -16,13 +16,11 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * Integration tests of the subject-scoped paste rules — a row refuses to
- * leave its subject ([ItemRepository.move]), and a whole subject merged
- * into another subject ([ItemRepository.mergeSubject]) runs the import
- * merge rule — the subject becomes a chapter of the target, same-named
- * chapters/notes merge below it, words merge by name in the subject
- * scope, reference links follow their rows, and the source subject
- * disappears.
+ * - the merge follows the import rule and makes the subject a chapter of the target.
+ * - same-named chapters and notes merge below it.
+ * - words merge by name in the subject scope.
+ * - reference links follow their rows.
+ * - the source subject disappears.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -87,20 +85,18 @@ class SubjectMergeTest {
 
 		assertTrue(ItemRepository.mergeSubject(a.id, b.id))
 
-		// the subject became a chapter of B — B's own chapter stays
 		assertEquals(listOf("kb", "A"), ItemRepository.children(b.id).map { it.name })
 		val mergedSubject = ItemRepository.children(b.id).single { it.name == "A" }
 		assertEquals(listOf("ka"), ItemRepository.children(mergedSubject.id).map { it.name })
 		val mergedKa = ItemRepository.children(mergedSubject.id).single()
 		assertEquals(listOf("same", "uniq"), ItemRepository.children(mergedKa.id).map { it.name })
-		// the same-named word merged into B's row — one row, joined description,
-		// both translations, a link from the moved chapter
+		// the same-named word merged into the row of B, one row with a joined
+		// description, both translations and a link from the moved chapter
 		val same = ItemRepository.children(mergedKa.id).single { it.name == "same" }
 		assertEquals(sameB.id, same.id)
 		assertTrue(same.description.contains("B side"))
 		assertTrue(same.description.contains("A side"))
 		assertEquals(setOf("ta", "tb"), ItemRepository.translations(same.id).map { it.name }.toSet())
-		// the source subject is gone
 		assertEquals(listOf("B"), ItemRepository.subjects().map { it.name })
 	}
 
@@ -149,7 +145,6 @@ class SubjectMergeTest {
 
 		val mergedSubject = ItemRepository.children(b.id).single { it.name == "A" }
 		val mergedCh1 = ItemRepository.children(mergedSubject.id).single()
-		// the moved chapter still references the original outside row
 		assertTrue(ItemRepository.linkIsReference(mergedCh1.id, outside.id))
 		assertEquals(listOf(outside.id), ItemRepository.children(kb.id).map { it.id })
 	}
@@ -161,10 +156,10 @@ class SubjectMergeTest {
 		val a = ItemRepository.createSubject("A", null)
 		val chA = ItemRepository.createChapter(a.id, "chA", null, 0)
 		val word = ItemRepository.createWord(chA.id, "w", null, listOf("t" to noDesc()))
-		// the moved subject's chapter references a chapter of a THIRD
-		// subject, which references the moved word — the outside parent
-		// never enters the plain-tree stream, and the import's scope
-		// (the target subject) cannot see the word through it
+		// a chapter of the moved subject references a chapter of a THIRD subject,
+		// which references the moved word:
+		// - the outside parent never enters the plain-tree stream.
+		// - the import scope cannot see the word through it.
 		val chP = ItemRepository.createChapter(a.id, "chP", null, 1)
 		val chR = ItemRepository.createChapter(c.id, "chR", null, 0)
 		assertTrue(ItemRepository.reference(chR.id, chP.id))
@@ -172,11 +167,11 @@ class SubjectMergeTest {
 
 		assertTrue(ItemRepository.mergeSubject(a.id, b.id))
 
-		// one word row serves the merged subject — the outside parent's
-		// reference points at it, not at a duplicated survivor
+		// one word row serves the merged subject, and the reference of the outside
+		// parent points at it, not at a duplicated survivor
 		val mergedWord = ItemRepository.getByName("w", ItemKind.WORD).single()
 		assertTrue(ItemRepository.linkIsReference(chR.id, mergedWord.id))
-		// the original word row died with the merge — no duplicated survivor
+		// the original word row died with the merge, leaving no duplicated survivor
 		assertEquals(null, ItemRepository.get(word.id))
 	}
 
@@ -186,19 +181,17 @@ class SubjectMergeTest {
 		val a = ItemRepository.createSubject("A", null)
 		val chA = ItemRepository.createChapter(a.id, "chA", null, 0)
 		val word = ItemRepository.createWord(chA.id, "w", null, listOf("t" to noDesc()))
-		// the same subject's other chapter references the word
 		val chB = ItemRepository.createChapter(a.id, "chB", null, 1)
 		assertTrue(ItemRepository.reference(word.id, chB.id))
-		// the answers bump the word and its plain holder — never a reference parent
+		// the answers bump the word and its plain holder, never a reference parent
 		repeat(2) { ItemRepository.bumpCounters(listOf(word.id, chA.id), false) }
 
 		assertTrue(ItemRepository.mergeSubject(a.id, b.id))
 
-		// the merged chapter's reference shows the word but never counts it
+		// the reference of the merged chapter shows the word but never counts it
 		val mergedSubject = ItemRepository.children(b.id).single { it.name == "A" }
 		val mergedChB = ItemRepository.children(mergedSubject.id).single { it.name == "chB" }
 		assertEquals(0, ItemRepository.get(mergedChB.id)!!.failedTests)
-		// the plain holder's derivation carries the fails
 		val mergedChA = ItemRepository.children(mergedSubject.id).single { it.name == "chA" }
 		assertEquals(2, ItemRepository.get(mergedChA.id)!!.failedTests)
 	}
@@ -210,16 +203,16 @@ class SubjectMergeTest {
 		val a = ItemRepository.createSubject("A", null)
 		val chA = ItemRepository.createChapter(a.id, "chA", null, 0)
 		val word = ItemRepository.createWord(chA.id, "w", null, listOf("t" to noDesc()))
-		// C's chapter references A's word — no link from A's reachable set
-		// points back at it, so the child-side query is the only one that
-		// sees this link
+		// a chapter of C references the word of A:
+		// - no link from the reachable set of A points back at it.
+		// - the child-side query is the only one that sees this link.
 		val chT = ItemRepository.createChapter(c.id, "chT", null, 0)
 		assertTrue(ItemRepository.reference(word.id, chT.id))
 
 		assertTrue(ItemRepository.mergeSubject(a.id, b.id))
 
-		// one word row serves the target subject — the third subject's
-		// reference points at the merged copy
+		// one word row serves the target subject, and the reference of the third
+		// subject points at the merged copy
 		val mergedWord = ItemRepository.getByName("w", ItemKind.WORD).single()
 		assertTrue(ItemRepository.linkIsReference(chT.id, mergedWord.id))
 		assertEquals(null, ItemRepository.get(word.id))
@@ -233,7 +226,6 @@ class SubjectMergeTest {
 
 		assertFalse(ItemRepository.mergeSubject(a.id, ch.id))
 
-		// nothing changed — both subjects stand, A still holds its chapter
 		assertEquals(listOf("A", "B"), ItemRepository.subjects().map { it.name })
 		assertEquals(listOf("ch"), ItemRepository.children(a.id).map { it.name })
 	}
@@ -263,7 +255,7 @@ class SubjectMergeTest {
 		val word = ItemRepository.createWord(ch1.id, "w", null, listOf("t" to noDesc()))
 		assertTrue(ItemRepository.reference(word.id, ch2.id))
 		ItemRepository.remove(word.id, ch1.id)
-		// the word survives on its reference parent alone — no plain parent left
+		// the word survives on its reference parent alone, with no plain parent left
 		assertEquals(listOf(word.id), ItemRepository.children(ch2.id).map { it.id })
 
 		assertTrue(ItemRepository.mergeSubject(a.id, b.id))

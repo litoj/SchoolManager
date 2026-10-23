@@ -29,43 +29,36 @@ internal class SubjectsNavigation(
 
 		val pasteArmed: Boolean
 
-		/** Runs [work] on main. */
 		fun postToUi(work: Runnable)
 
-		/** Enqueues view request. */
 		fun emitRequest(request: Request)
 
 		fun setContent(container: DbItem?)
 
-		/** Replaces path with container chain. */
 		fun openChain(path: MutableList<DbItem>)
 
-		/** Publishes sibling switch for slide. */
 		fun switchedSibling(step: Int, delta: Int)
 
-		/** Drops the row selection — an armed move stays. */
+		/** Drops the row selection, while an armed move stays. */
 		fun clearSelection()
 	}
 
-	/** Opens reference original. Single source opens — several show the picker. */
+	/** Opens the reference original: a single source opens, several show the picker. */
 	fun onReferenceClick(ui: ItemUiModel) {
 		val row = ui.payload ?: return
 		jumpToSources(row.item.id, row.parentId)
 	}
 
-	/**
-	 * Opens the selected hit's location — a hit may live in several
-	 * containers, so one opens at once and several show the picker.
-	 */
+	/** Opens the location of the selected hit, which may live in several containers. */
 	fun goToSelectedHit(row: ItemRow) {
-		// snapshot on main — the chain and the search's own position
+		// snapshot on main, as are the chain and the search position
 		val originPath = history.path.toList()
 		val origin = originPath.lastOrNull()
 		scope.launch(io) {
 			val paths = ItemRepository.parentIds(row.item.id).map { ItemRepository.pathTo(it) }
 			if (paths.isEmpty()) return@launch
 			host.postToUi {
-				// Own navigation wins.
+				// own navigation wins.
 				if (history.path.lastOrNull() !== origin) return@postToUi
 				if (paths.size == 1) navigateToSource(paths[0])
 				else host.emitRequest(Request.PickSource(paths, originPath))
@@ -73,9 +66,8 @@ internal class SubjectsNavigation(
 		}
 	}
 
-	/** The source jump behind the reference icon. [exclude] is the row's own link. */
+	/** The source jump behind the reference icon, where [exclude] is the own link of the row. */
 	private fun jumpToSources(itemId: Int, exclude: Int?) {
-		// snapshot on main — the chain and the search's own position
 		val originPath = history.path.toList()
 		val origin = originPath.lastOrNull()
 		scope.launch(io) {
@@ -83,7 +75,6 @@ internal class SubjectsNavigation(
 			if (sources.isEmpty()) return@launch
 			val paths = sources.map { ItemRepository.pathTo(it) }
 			host.postToUi {
-				// Own navigation wins.
 				if (history.path.lastOrNull() !== origin) return@postToUi
 				if (host.searching || host.selectionCount() > 0 || host.pasteArmed) return@postToUi
 				if (paths.size == 1) navigateToSource(paths[0])
@@ -93,9 +84,10 @@ internal class SubjectsNavigation(
 	}
 
 	/**
-	 * Opens sibling `delta` away. Replaces entry, so back goes up.
-	 * - the swipe cancels the row selection — an armed move stays alive,
-	 *   its paste can land on the switched chapter.
+	 * Opens the sibling delta away.
+	 * - it replaces the entry, so back goes up.
+	 * - the swipe cancels the row selection.
+	 * - an armed move stays alive, and its paste can land on the switched chapter.
 	 */
 	fun openSibling(delta: Int) {
 		val path = history.path
@@ -105,23 +97,23 @@ internal class SubjectsNavigation(
 		val parent = path.getOrNull(path.size - 2)
 		val pathCopy = ArrayList(path)
 		siblingJob?.cancel()
-		// Stale swipe must not land over newer.
+		// a stale swipe must not land over a newer one.
 		val generation = ++siblingGeneration
 		siblingJob = scope.launch(io) {
 			val siblings = if (parent != null) ItemRepository.children(parent.id) else ItemRepository.subjects()
 			val index = siblings.indexOfFirst { it.id == current.id }
 			if (index < 0) return@launch
 			val target = siblings.getOrNull(index + delta) ?: return@launch
-			// Only chapters openable.
+			// only chapters can open.
 			if (target.type != ItemKind.CHAPTER) return@launch
 			val newPath = pathCopy
 			newPath[newPath.size - 1] = target
 			host.postToUi {
-				// Newer navigation supersedes.
+				// a newer navigation supersedes.
 				if (generation != siblingGeneration) return@postToUi
 				if (history.path.lastOrNull() !== current) return@postToUi
-				// Mid-read search blocks landing — the selection already
-				// left, an armed move never did.
+				// a mid-read search blocks the landing, since the selection already left.
+				// an armed move never left
 				if (host.searching) return@postToUi
 				history.replaceCurrent(newPath)
 				siblingStep++
@@ -137,7 +129,6 @@ internal class SubjectsNavigation(
 
 	private var siblingGeneration = 0
 
-	/** Replaces path with container chain. */
 	fun navigateToSource(path: List<DbItem>) {
 		val current = mutableListOf<DbItem>()
 		current.addAll(path)

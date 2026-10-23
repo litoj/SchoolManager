@@ -23,14 +23,14 @@ abstract class ItemDatabase : RoomDatabase() {
 
 		fun newInstance(context: Context): ItemDatabase {
 			return Room.databaseBuilder(context, ItemDatabase::class.java, "schlmgr")
-				// No migrations while unreleased — version bump drops tables.
-				// The app rebuilds them from subject files on next start.
+				// no migrations while unreleased, so a version bump drops tables.
+				// the app rebuilds them from subject files on next start.
 				.fallbackToDestructiveMigration(dropAllTables = true)
-				// WAL journal mode explicitly — never AUTOMATIC heuristic.
-				// The low-RAM fallback uses TRUNCATE with one connection.
-				// A long import holds sole connection; every read waits behind it.
+				// the WAL journal mode is explicit, never the AUTOMATIC heuristic.
+				// - the low-RAM fallback uses TRUNCATE with one connection.
+				// - a long import holds the sole connection, and every read waits behind it.
 				.setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
-				.allowMainThreadQueries() // the UI layer is synchronous — see ItemRepository
+				.allowMainThreadQueries() // the UI layer is synchronous, see ItemRepository
 				.build()
 		}
 	}

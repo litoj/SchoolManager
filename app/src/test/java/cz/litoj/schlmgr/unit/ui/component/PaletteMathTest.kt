@@ -6,10 +6,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * The pure geometry of the New button's palette ([paletteOffset],
- * [paletteHover]) — the icons fan from straight up to straight left, and
- * a drag that left the button hovers the icon of its direction, however
- * short.
+ * - a drag that left the button hovers the icon of its direction.
+ * - the hover works however short that drag is.
  */
 class PaletteMathTest {
 
@@ -61,7 +59,7 @@ class PaletteMathTest {
 		assertEquals(2, paletteHover(-100f, 20f, 3, 25f))
 		// down-left, well below the fan
 		assertEquals(2, paletteHover(-100f, 100f, 3, 25f))
-		// straight down — nearer to the left icon than to the up one
+		// straight down, nearer to the left icon than to the up one
 		assertEquals(2, paletteHover(0f, 100f, 3, 25f))
 	}
 
@@ -74,9 +72,8 @@ class PaletteMathTest {
 
 	@Test
 	fun `every direction past the threshold hovers its nearest icon`() {
-		// to the right — the up icon is the nearest of the fan
+		// to the right, where the up icon is the nearest of the fan
 		assertEquals(0, paletteHover(100f, 0f, 3, 25f))
-		// up-right
 		assertEquals(0, paletteHover(70.7f, -70.7f, 3, 25f))
 	}
 }

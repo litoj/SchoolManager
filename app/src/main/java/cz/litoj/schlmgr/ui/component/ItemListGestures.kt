@@ -31,7 +31,7 @@ import kotlin.math.abs
 
 /**
  * What a long-press followed by a drag does on the explorer list.
- * - a selected list (or the picker) selects the dragged-over range.
+ * - a selected list, the picker included, selects the dragged-over range.
  * - a plain browsing list inside a container reorders.
  * - anything else ignores the drag.
  */
@@ -40,12 +40,12 @@ internal enum class ListDragMode { None, Select, Reorder }
 internal data class RowGeometry(val index: Int, val offset: Int, val size: Int)
 
 /**
- * The list's long-press-and-drag handler.
- * - Select drags the covered range; Reorder moves the pressed row; None consumes.
- * - mode snapshotted at the long-press; events in the `Initial` pass use edge auto-scroll.
- * - a structural list change mid-drag (a background reload landing) invalidates the claimed row indexes — the drop never fires.
- * - the content step keys the claim, so a selection remap or the drag's own reorder keeps the indexes valid.
- * - a reorder round trip — the row ends back at its own slot — never drops: the press reads as the selection the long-press started.
+ * The long-press-and-drag handler of the list.
+ * - a select drag covers the range, reorder moves the pressed row, none consumes.
+ * - the mode is snapshotted at the long-press, and events in the Initial pass use edge auto-scroll.
+ * - a structural list change mid-drag invalidates the claimed row indexes, so the drop never fires.
+ * - the content step keys the claim, so a selection remap or a drag reorder keeps the indexes.
+ * - a reorder round trip ends back at its own slot and never drops.
  */
 @Composable
 internal fun Modifier.rememberListDragModifier(
@@ -61,8 +61,7 @@ internal fun Modifier.rememberListDragModifier(
 	val currentSelectEnd by rememberUpdatedState(onSelectEnd)
 	val currentReorder by rememberUpdatedState(onReorderMove)
 	val currentDrop by rememberUpdatedState(onReorderDrop)
-	// compared against the claim — a moved step means the list changed
-	// structurally since the drag started
+	// a moved step against the claim means the list changed structurally during the drag
 	val currentStep by rememberUpdatedState(contentStep)
 	val scope = rememberCoroutineScope()
 	val slop = LocalViewConfiguration.current.touchSlop
@@ -75,13 +74,13 @@ internal fun Modifier.rememberListDragModifier(
 			var dragging = false
 			var mode = ListDragMode.None
 			var dragIndex = -1
-			// the claimed slot — the drag's net move is measured against it
+			// the claimed slot, which measures the net move of the drag
 			var anchorIndex = -1
 			var reported = false
-			// the content step the drag's indexes belong to — a mismatch stops
-			// every step and the drop
+			// the content step the drag indexes belong to.
+			// a mismatch stops every step and the drop
 			var claimedStep = -1
-			// Shared with the auto-scroll loop, so the access stays atomic.
+			// shared with the auto-scroll loop, so the access stays atomic.
 			val pointerY = AtomicReference(down.position.y)
 			var autoScroll: Job? = null
 
@@ -99,7 +98,7 @@ internal fun Modifier.rememberListDragModifier(
 				if (!stillValid()) return
 				val target = indexAtY(listState, y, edge) ?: return
 				if (target != dragIndex) {
-					// A reorder re-anchors the scroll on the first row, so put it back.
+					// a reorder re-anchors the scroll on the first row, so put it back.
 					val first = listState.firstVisibleItemIndex
 					val offset = listState.firstVisibleItemScrollOffset
 					currentReorder(dragIndex, target)
@@ -112,7 +111,7 @@ internal fun Modifier.rememberListDragModifier(
 
 			while (true) {
 				val event = awaitPointerEvent(PointerEventPass.Initial)
-				// Another finger's event carries no change for the tracked one — skip it.
+				// another finger carries no change for the tracked one, so skip it.
 				val change = event.changes.firstOrNull { it.id == down.id } ?: continue
 				if (!change.pressed) break
 				pointerY.set(change.position.y)
@@ -133,12 +132,11 @@ internal fun Modifier.rememberListDragModifier(
 									val dy = scrollStep(y, h, edge, speed)
 									if (dy != 0f) {
 										listState.scrollBy(dy)
-										// the slots moved under the finger — step again
+										// the slots moved under the finger, so step again
 										if (mode == ListDragMode.Reorder) stepReorder(y)
 										else if (mode == ListDragMode.Select) stepSelect(y)
 									}
-									// scrollBy applies the step at once and does not park the
-									// coroutine, so the loop must wait out the frame itself —
+									// scrollBy does not park the coroutine, so wait out the frame.
 									// without this it spins the main thread and locks the app.
 									delay(FrameMillis)
 								}
@@ -160,9 +158,8 @@ internal fun Modifier.rememberListDragModifier(
 			if (reported && stillValid()) {
 				when (mode) {
 					ListDragMode.Select -> currentSelectEnd()
-					// a round trip back to the row's own slot is the
-					// long-press's selection intent, not a reorder — the drop
-					// (with its selection-ending persist) never fires
+					// a round trip back to its own slot is the selection intent of the long-press.
+					// it is not a reorder, so the drop with its persist never fires.
 					ListDragMode.Reorder -> if (dragIndex != anchorIndex) currentDrop()
 					ListDragMode.None -> {}
 				}
@@ -172,10 +169,10 @@ internal fun Modifier.rememberListDragModifier(
 }
 
 /**
- * The list's pull-at-top handler.
+ * The pull-at-top handler of the list.
  * - a downward drag at the very top fires [onPull] once per gesture, past [TopPullThreshold].
- * - only a gesture that began at the top counts — a scroll from mid-list that drags past the top never fires.
- * - only the finger's own input counts — a fling or an auto-scroll never fires.
+ * - only a gesture that began at the top counts, so a scroll from mid-list never fires.
+ * - only the own input of the finger counts, so a fling or an auto-scroll never fires.
  * - consumes nothing, so the scroll and the stretch stay untouched.
  */
 @Composable
@@ -185,9 +182,8 @@ internal fun Modifier.rememberTopPullModifier(
 ): Modifier {
 	val currentPull by rememberUpdatedState(onPull)
 	val threshold = with(LocalDensity.current) { TopPullThreshold.toPx() }
-	// The gesture's start position decides whether a pull can count — the down
-	// lands before any scroll moves the list, so the position read there is
-	// the gesture's true start.
+	// the start position decides whether a pull can count.
+	// the down lands before any scroll moves the list, so the position read is the true start.
 	var beganAtTop by remember { mutableStateOf(!listState.canScrollBackward) }
 	return this
 		.pointerInput(listState) {
@@ -202,7 +198,8 @@ internal fun Modifier.rememberTopPullModifier(
 				private val pull = TopPullAccumulator(threshold)
 
 				override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-					// UserInput covers the finger and the wheel — flings and programmatic scrolls never fire
+					// the user input source covers the finger and the wheel.
+					// flings and programmatic scrolls never fire.
 					val pullable = !listState.canScrollBackward && beganAtTop
 					if (pull.scroll(available.y, !pullable, source == NestedScrollSource.UserInput)) {
 						currentPull()
@@ -222,7 +219,7 @@ internal fun Modifier.rememberTopPullModifier(
 /**
  * The pull-at-top arithmetic behind [rememberTopPullModifier], free of [LazyListState]
  * so it stays unit-testable.
- * - sums the pull-down distance while the list cannot scroll back — a pull-down arrives as a positive delta.
+ * - sums the pull-down distance while the list cannot scroll back, where a pull-down is positive.
  * - any scroll the other way, or room to scroll back, clears the pull.
  * - fires once per gesture, at the threshold.
  */
@@ -231,9 +228,9 @@ internal class TopPullAccumulator(private val threshold: Float) {
 	private var fired = false
 
 	/**
-	 * One scroll delta — [canScrollBackward] is the list's own backward room,
-	 * [drag] marks the finger's own movement.
-	 * @return true when the pull crossed the threshold just now.
+	 * True when the pull crosses the threshold just now.
+	 * - [canScrollBackward] is the backward room of the list.
+	 * - [drag] marks the own movement of the finger.
 	 */
 	fun scroll(deltaY: Float, canScrollBackward: Boolean, drag: Boolean): Boolean {
 		if (deltaY <= 0f || canScrollBackward) {
@@ -248,7 +245,6 @@ internal class TopPullAccumulator(private val threshold: Float) {
 		return true
 	}
 
-	/** The gesture ended — the next pull starts from zero. */
 	fun gestureEnded() {
 		pulled = 0f
 		fired = false
@@ -256,8 +252,6 @@ internal class TopPullAccumulator(private val threshold: Float) {
 }
 
 /**
- * The row index at a viewport-relative y in px — see the pure mapping below.
- *
  * @return row index, or null between rows and under a short list
  */
 internal fun indexAtY(listState: LazyListState, y: Float, edgeZone: Float): Int? {
@@ -271,9 +265,10 @@ internal fun indexAtY(listState: LazyListState, y: Float, edgeZone: Float): Int?
 }
 
 /**
- * The pure finger-to-row mapping behind [indexAtY]: the row spanning `y`.
- * - above the viewport it is the first row — below the list, the last row
- *   only within the bottom edge zone (empty space and row gaps map to null).
+ * The pure finger-to-row mapping behind [indexAtY]: the row spanning y.
+ * - above the viewport it is the first row, and below the list the last row.
+ * - the last row counts only within the bottom edge zone.
+ * - empty space and row gaps map to null.
  * - kept free of [LazyListState], so it is unit-testable without a list.
  */
 internal fun indexAtY(
@@ -296,11 +291,11 @@ internal fun indexAtY(
 }
 
 /**
- * The auto-scroll step in px per frame for a finger at `y`.
- * - zero away from either edge, growing with depth into the edge zone
- *   up to a max step at the very edge. Upward steps are negative.
- * - on a viewport shorter than both zones the nearer edge wins, ties
- *   scroll up. Free of [LazyListState], so it is unit-testable.
+ * The auto-scroll step in px per frame for a finger at y.
+ * - zero away from either edge, growing with depth into the edge zone.
+ * - the step reaches its maximum at the very edge, and upward steps are negative.
+ * - on a viewport shorter than both zones the nearer edge wins, and ties scroll up.
+ * - free of [LazyListState], so it is unit-testable.
  */
 internal fun scrollStep(y: Float, viewportHeight: Float, edgeZone: Float, maxStep: Float): Float {
 	val topActive = y < edgeZone
@@ -320,7 +315,6 @@ internal fun scrollStep(y: Float, viewportHeight: Float, edgeZone: Float, maxSte
 private val EdgeZone = 48.dp
 /** The auto-scroll step at the very edge. Inside [EdgeZone] it ramps up to this. */
 private val ScrollStep = 8.dp
-/** How long the auto-scroll loop waits between steps — one step per frame at 60 Hz. */
+/** How long the auto-scroll loop waits between steps: one step per frame at 60 Hz. */
 private const val FrameMillis = 16L
-/** How far down the finger must pull at the very top before [rememberTopPullModifier] fires. */
 private val TopPullThreshold = 40.dp
