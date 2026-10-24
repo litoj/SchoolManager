@@ -21,6 +21,7 @@ import cz.litoj.schlmgr.ui.component.ItemListCallbacks
 import cz.litoj.schlmgr.ui.viewmodel.ItemListState
 import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
+import cz.litoj.schlmgr.ui.viewmodel.TranslationLine
 import java.time.Duration
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -65,6 +66,19 @@ class ItemListDragTest {
 			selected = false,
 		)
 	}
+
+	/** A flipped word row of four translation lines, several times taller than a plain row. */
+	private fun tallRow(position: Int): ItemUiModel = ItemUiModel(
+		key = "tall",
+		position = position,
+		name = "tall",
+		description = "",
+		kind = RowKind.WORD,
+		ratio = 0,
+		isReference = false,
+		selected = false,
+		translations = List(4) { i -> TranslationLine("tall line ${i + 1}", "") },
+	)
 
 	private fun show(count: Int) {
 		items += rows(count)
@@ -303,5 +317,50 @@ class ItemListDragTest {
 		assertEquals(1, drops)
 		assertFalse(items.any { it.selected })
 		assertFalse("the clear reached the composed state", published.selectionActive)
+	}
+
+	/**
+	 * The reorder flicker over a tall row.
+	 * - the drag holds the finger in the top of a row several lines tall.
+	 * - the finger never crosses that row's middle, so no swap may fire.
+	 * - a held finger still emits small moves, which the drag replays as wiggles.
+	 */
+	@Test
+	fun `a finger held in the top of a tall row does not flip the order back and forth`() {
+		items += rows(4).mapIndexed { i, item -> if (i == 1) tallRow(2) else item }
+		rule.setContent {
+			Column(Modifier.size(300.dp, 400.dp)) {
+				ItemList(
+					state = ItemListState(items = items.toList(), maxPosition = items.size),
+					callbacks = ItemListCallbacks(onReorderMove = ::moveRow),
+					reorderable = true,
+				)
+			}
+		}
+
+		val from = row("item 1")
+		val px = with(rule.density) { (from.left + (from.right - from.left) / 2).toPx() }
+		val pressY = with(rule.density) { (from.top + (from.bottom - from.top) / 2).toPx() }
+		val holdY = with(rule.density) { (row("tall line 1").top + 5.dp).toPx() }
+		rule.mainClock.autoAdvance = false
+		rule.onRoot().performTouchInput {
+			down(Offset(px, pressY))
+			advanceEventTime(viewConfiguration.longPressTimeoutMillis + 100)
+		}
+		settle()
+		rule.onRoot().performTouchInput {
+			moveTo(Offset(px, holdY - 1f))
+			moveTo(Offset(px, holdY))
+		}
+		settle()
+		repeat(3) { wiggle ->
+			val bump = if (wiggle % 2 == 0) 1f else -1f
+			rule.onRoot().performTouchInput { moveTo(Offset(px, holdY + bump)) }
+			settle()
+		}
+		rule.onRoot().performTouchInput { up() }
+		settle()
+
+		assertTrue("the finger never crossed the tall row's middle: steps=$steps", steps.isEmpty())
 	}
 }

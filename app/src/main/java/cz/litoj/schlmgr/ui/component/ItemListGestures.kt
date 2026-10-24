@@ -42,6 +42,7 @@ internal data class RowGeometry(val index: Int, val offset: Int, val size: Int)
 /**
  * The long-press-and-drag handler of the list.
  * - a select drag covers the range, reorder moves the pressed row, none consumes.
+ * - a reorder swaps only past the middle of the target row, so a held finger cannot undo a swap.
  * - the mode is snapshotted at the long-press, and events in the Initial pass use edge auto-scroll.
  * - a structural list change mid-drag invalidates the claimed row indexes, so the drop never fires.
  * - the content step keys the claim, so a selection remap or a drag reorder keeps the indexes.
@@ -96,17 +97,15 @@ internal fun Modifier.rememberListDragModifier(
 
 			fun stepReorder(y: Float) {
 				if (!stillValid()) return
-				val target = indexAtY(listState, y, edge) ?: return
-				if (target != dragIndex) {
-					// a reorder re-anchors the scroll on the first row, so put it back.
-					val first = listState.firstVisibleItemIndex
-					val offset = listState.firstVisibleItemScrollOffset
-					currentReorder(dragIndex, target)
-					reported = true
-					// the list already moved the row, so follow its new slot
-					dragIndex = target
-					listState.requestScrollToItem(first, offset)
-				}
+				val target = reorderTarget(listState, dragIndex, y, edge) ?: return
+				// a reorder re-anchors the scroll on the first row, so put it back.
+				val first = listState.firstVisibleItemIndex
+				val offset = listState.firstVisibleItemScrollOffset
+				currentReorder(dragIndex, target)
+				reported = true
+				// the list already moved the row, so follow its new slot
+				dragIndex = target
+				listState.requestScrollToItem(first, offset)
 			}
 
 			while (true) {
@@ -288,6 +287,41 @@ internal fun indexAtY(
 		y > viewportHeight - edgeZone -> last.index
 		else -> null
 	}
+}
+
+/**
+ * @return the row to swap with, or null for no row, the dragged row and a finger short of the middle
+ */
+internal fun reorderTarget(listState: LazyListState, dragIndex: Int, y: Float, edgeZone: Float): Int? {
+	val info = listState.layoutInfo
+	return reorderTarget(
+		info.visibleItemsInfo.map { RowGeometry(it.index, it.offset, it.size) },
+		dragIndex,
+		y,
+		info.viewportSize.height.toFloat(),
+		edgeZone,
+	)
+}
+
+/**
+ * The pure swap decision behind [reorderTarget]: the row under the finger past its middle.
+ * - no row, the dragged row itself and a finger short of the middle return null.
+ * - the middle travels with the row, so undoing a swap takes a retreat onto the other half.
+ * - free of [LazyListState], so it is unit-testable.
+ */
+internal fun reorderTarget(
+	visible: List<RowGeometry>,
+	dragIndex: Int,
+	y: Float,
+	viewportHeight: Float,
+	edgeZone: Float,
+): Int? {
+	val target = indexAtY(visible, y, viewportHeight, edgeZone) ?: return null
+	if (target == dragIndex) return null
+	val row = visible.first { it.index == target }
+	val middle = row.offset + row.size / 2f
+	val crossed = if (target > dragIndex) y >= middle else y <= middle
+	return if (crossed) target else null
 }
 
 /**
