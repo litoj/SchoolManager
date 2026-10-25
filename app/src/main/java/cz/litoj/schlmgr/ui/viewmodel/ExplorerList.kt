@@ -88,8 +88,8 @@ internal class ExplorerList(
 				maxPosition = models.maxOfOrNull { it.position } ?: 1,
 				variant = if (isSearch) ExplorerRowVariant.Search else ExplorerRowVariant.Browse,
 				pickerMode = pickerMode,
-				// fresh content carries no selection, while the picker always selects
-				selectionActive = selectionActive(pickerMode),
+				// fresh content carries no selection
+				selectionActive = selectionActive(),
 				contentStep = it.contentStep + 1,
 			)
 		}
@@ -158,7 +158,7 @@ internal class ExplorerList(
 					} else row.toUi()
 				},
 				maxPosition = models.maxOfOrNull { it.position } ?: 1,
-				selectionActive = selectionActive(it.pickerMode),
+				selectionActive = selectionActive(),
 			)
 		}
 	}
@@ -171,7 +171,7 @@ internal class ExplorerList(
 			it.copy(
 				items = it.items + mapped,
 				maxPosition = models.size,
-				selectionActive = selectionActive(it.pickerMode),
+				selectionActive = selectionActive(),
 			)
 		}
 	}
@@ -242,7 +242,7 @@ internal class ExplorerList(
 			it.copy(
 				items = mapped,
 				maxPosition = models.maxOfOrNull { it.position } ?: 1,
-				selectionActive = selectionActive(it.pickerMode),
+				selectionActive = selectionActive(),
 				contentStep = if (structuralChange) it.contentStep + 1 else it.contentStep,
 			)
 		}
@@ -250,6 +250,5 @@ internal class ExplorerList(
 
 	private fun reorderableNow(isSearch: Boolean) = !isSearch && !pickerMode && !host.pasteArmed()
 
-	private fun selectionActive(pickerMode: Boolean) =
-		pickerMode || models.any { row -> row.selected }
+	private fun selectionActive() = models.any { row -> row.selected }
 }

@@ -25,6 +25,12 @@
             android:name=".ui.activity.TestActivity"
             android:theme="@style/AppTheme"
             android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.activity.SettingsActivity"
+            android:exported="true"
+            android:label="@string/menu_settings"
+            android:theme="@style/AppTheme"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>

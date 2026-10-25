@@ -22,7 +22,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * - the picker is the explorer core permanently in selection mode.
+ * - the picker selects like the subjects screen, no mode of its own.
  * - a search hop stays stacked, so back returns the unselected results.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -86,6 +86,16 @@ class PickerViewModelTest {
 		assertEquals(ExplorerViewModel.BackOutcome.EXIT_HINT, model.onBackRequested())
 		now += 2_000
 		assertEquals(ExplorerViewModel.BackOutcome.EXIT, model.onBackRequested())
+	}
+
+	@Test
+	fun `the selection mode follows the selected rows, not the picker`() {
+		seed()
+		val model = vm()
+
+		assertFalse("no row is selected, so no selection mode", model.listState.value.selectionActive)
+		model.setSelected(model.items().single { it.item.name == "A" && it.item.type == ItemKind.CHAPTER }, true)
+		assertTrue(model.listState.value.selectionActive)
 	}
 
 	@Test

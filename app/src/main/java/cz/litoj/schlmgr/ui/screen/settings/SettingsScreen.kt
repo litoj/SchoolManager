@@ -38,13 +38,13 @@ private val HeaderBackground @Composable get() = colorResource(R.color.colorSect
  * - the list holds the interface switches, the export splitter field and the test defaults.
  * - every edit applies and persists at once through [SettingsState].
  *
- * @param openDrawer the hamburger press, since the shell owns the drawer
+ * @param onBack the back arrow press, the host owns the back stack
  */
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel, openDrawer: () -> Unit) {
+fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
 	Column(Modifier.fillMaxSize()) {
 		TopBar {
-			TopBarNav(onNavigate = openDrawer)
+			TopBarNav(up = true, onNavigate = onBack)
 			TopBarTitle(stringResource(R.string.menu_settings))
 		}
 		SettingsList(viewModel.state, Modifier.weight(1f).headerShadow())

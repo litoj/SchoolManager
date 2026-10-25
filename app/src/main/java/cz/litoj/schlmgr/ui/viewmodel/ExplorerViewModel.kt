@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.update
  * - actions arrive here and delegate the work to [cz.litoj.schlmgr.data.ItemRepository].
  * - the chrome shows the published state.
  *
- * @param picker keeps the selection mode on
+ * @param picker trims the rows to plain and keeps the select drag
  * @param io the blocking reads, injectable for tests
  */
 abstract class ExplorerViewModel<R>(

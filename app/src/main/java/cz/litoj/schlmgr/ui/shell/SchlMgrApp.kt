@@ -1,5 +1,6 @@
 package cz.litoj.schlmgr.ui.shell
 
+import android.content.Intent
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.platform.ViewConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -27,6 +29,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.CrashReporter
+import cz.litoj.schlmgr.ui.activity.SettingsActivity
 import cz.litoj.schlmgr.ui.popup.CrashReportPopup
 import cz.litoj.schlmgr.ui.popup.DialogHost
 import cz.litoj.schlmgr.ui.popup.Dialogs
@@ -34,9 +37,7 @@ import cz.litoj.schlmgr.ui.screen.about.AboutScreen
 import cz.litoj.schlmgr.ui.screen.about.AboutViewModel
 import cz.litoj.schlmgr.ui.screen.picker.PickerScreen
 import cz.litoj.schlmgr.ui.screen.picker.PickerViewModel
-import cz.litoj.schlmgr.ui.screen.settings.SettingsScreen
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
-import cz.litoj.schlmgr.ui.viewmodel.SettingsViewModel
 import cz.litoj.schlmgr.ui.screen.subjects.SubjectsScreen
 import cz.litoj.schlmgr.ui.screen.test.TestSetupScreen
 import cz.litoj.schlmgr.ui.screen.test.TestSetupViewModel
@@ -77,8 +78,14 @@ fun SchlMgrApp() {
 			DrawerLayer(
 				state = drawer,
 				drawerContent = {
+					val context = LocalContext.current
 					AppDrawer(current) { destination ->
 						drawer.close()
+						// the settings open their own activity, everything else navigates flat
+						if (destination == Destination.SETTINGS) {
+							context.startActivity(Intent(context, SettingsActivity::class.java))
+							return@AppDrawer
+						}
 						// the flat-siblings rule applies to the start destination.
 						navController.navigate(destination.name) {
 							popUpTo(Destination.SUBJECTS.name) {
@@ -125,10 +132,6 @@ fun SchlMgrApp() {
 								viewModel = vm,
 								onExit = { navController.popBackStack() },
 							)
-						}
-						composable(Destination.SETTINGS.name) { entry ->
-							val vm: SettingsViewModel = viewModel(entry) { SettingsViewModel() }
-							SettingsScreen(vm, ::openDrawer)
 						}
 						composable(Destination.ABOUT.name) { entry ->
 							val vm: AboutViewModel = viewModel(entry) { AboutViewModel() }

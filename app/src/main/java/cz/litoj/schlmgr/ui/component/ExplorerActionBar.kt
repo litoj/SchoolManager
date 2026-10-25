@@ -100,12 +100,10 @@ fun PasteActionBar(
 	}
 }
 
-/** The picker strip: cancel, select-all and select. */
+/** The picker strip: cancel and select, shown only while rows are selected. */
 @Composable
 fun PickerActionBar(
-	selectEnabled: Boolean,
 	onCancel: () -> Unit,
-	onSelectAll: () -> Unit,
 	onSelect: () -> Unit,
 	modifier: Modifier = Modifier,
 ) {
@@ -115,12 +113,8 @@ fun PickerActionBar(
 			true,
 		)
 		ActionButton(
-			Action(R.drawable.ic_check_all, R.string.select_all, onSelectAll),
+			Action(R.drawable.ic_check, R.string.select, onSelect),
 			true,
-		)
-		ActionButton(
-			Action(R.drawable.ic_check, R.string.select, onSelect, R.drawable.ic_check_disabled),
-			selectEnabled,
 		)
 	}
 }

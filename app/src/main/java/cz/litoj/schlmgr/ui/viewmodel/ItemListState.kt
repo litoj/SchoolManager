@@ -5,8 +5,8 @@ package cz.litoj.schlmgr.ui.viewmodel
  * - [ExplorerViewModel] maintains it.
  *
  * @property maxPosition the largest position, which drives the position column width
- * @property pickerMode picker screen, where the selection mode stays on
- * @property selectionActive selection mode is on, by the picker or any selected row
+ * @property pickerMode picker screen, where rows stay plain and the drag always selects
+ * @property selectionActive selection mode is on, by any selected row
  * @property variant the row metrics that apply, see [ExplorerRowVariant]
  * @property contentStep moves on a publish, insert or removal.
  * - not on a selection remap, drag reorder or streamed append, where indexes stay valid.
@@ -28,9 +28,6 @@ data class ItemListState(
 	 */
 	val singleSelected: Boolean get() = selectionCount == 1
 
-	/**
-	 * How many rows are selected.
-	 * - the Select enablement of the picker reads one number instead of its own count.
-	 */
+	/** How many rows are selected, the number behind [singleSelected]. */
 	val selectionCount: Int get() = items.count { it.selected }
 }

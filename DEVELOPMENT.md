@@ -201,7 +201,7 @@ query field (SearchInput)
 
 ### Picker (`ui.screen.picker`)
 
-- **PickerScreen** — explorer content in selection mode; search field in title bar; bottom bar (cancel/select-all/select).
+- **PickerScreen** — explorer content; search field in title bar; select-all button in the top corner; bottom bar (cancel/select) only while selecting.
 - **PickerViewModel** — shared saved history across entries; `onSelect` commits picked rows into `TestSetupState`.
 
 ### Popups (`ui.popup`)

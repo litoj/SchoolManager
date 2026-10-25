@@ -24,6 +24,7 @@ import cz.litoj.schlmgr.ui.viewmodel.SearchUi
 /**
  * The source picker screen: a pushed destination, not a drawer sibling.
  * - the top bar holds the up arrow and the search field in the title slot.
+ * - the corner holds the select-all button, where an explorer holds its more menu.
  * - the explorer content sits below, with the back chain over it.
  * - the exit pops back to the test setup.
  *
@@ -58,6 +59,10 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 				visible = searchVisible && !fieldOpen,
 				onClick = viewModel::openSearchField,
 			)
+			TopBarIconButton(
+				icon = R.drawable.ic_check_all,
+				onClick = viewModel::onSelectAllToggle,
+			)
 		}
 		PickerContent(viewModel, Modifier.weight(1f).headerShadow())
 	}
@@ -66,6 +71,7 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 /**
  * The explorer content of the picker: the scaffold with the bottom strip of the picker.
  * - the scaffold holds the breadcrumbs, the info strip and the item list.
+ * - the strip shows only while rows are selected, like the subjects screen.
  */
 @Composable
 private fun PickerContent(viewModel: PickerViewModel, modifier: Modifier = Modifier) {
@@ -79,10 +85,8 @@ private fun PickerContent(viewModel: PickerViewModel, modifier: Modifier = Modif
 		callbacks = pickerCallbacks(viewModel),
 		modifier = modifier,
 	) {
-		PickerActionBar(
-			selectEnabled = listState.anySelected,
+		if (listState.anySelected) PickerActionBar(
 			onCancel = viewModel::cancel,
-			onSelectAll = viewModel::onSelectAllToggle,
 			onSelect = viewModel::onSelect,
 		)
 	}

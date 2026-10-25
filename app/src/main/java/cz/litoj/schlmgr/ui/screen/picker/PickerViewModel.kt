@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * The test-source picker: the explorer core in permanent selection mode.
+ * The test-source picker: the explorer core that selects like the subjects screen.
  * - it adds the confirm to the source list.
  */
 class PickerViewModel(

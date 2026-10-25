@@ -198,7 +198,7 @@
     <string name="menu_about">O programu</string>
     <string name="menu_objects">Předměty</string>
     <string name="menu_settings">Nastavení</string>
-    <string name="more_export">Exportovat</string>
+    <string name="more_export">Export</string>
     <string name="more_reference">Vytvořit zástupce</string>
     <string name="reference_fork">Zástupci, kteří budou odkazovat na nové slovo</string>
     <string name="ref_source_pick">Zvolte zdroj zástupce:</string>
@@ -235,13 +235,12 @@
     <string name="permission_pending">Akce už čeká na oprávnění</string>
     <string name="search">Zadat klíčové slovo</string>
     <string name="select">Zvolit</string>
-    <string name="select_all">Vybrat vše</string>
     <string name="select_test">Test</string>
     <string name="setts_him_flipped">Automaticky překládat slovíčka</string>
     <string name="setts_him_parse">Zobrazovat názvy položek ve zpracované formě</string>
     <string name="setts_interface">Rozhraní</string>
     <string name="setts_desc_lines">Počet přímo zobrazených řádků poznámky</string>
-    <string name="setts_double_tap_ms">Okno dvojkliku (ms)</string>
+    <string name="setts_double_tap_ms">Čas na dvojklik pro přeložení všeho</string>
     <string name="setts_test_amount">Výchozí počet položek v testu</string>
     <string name="setts_test_clever">Vytváření testů podle úspěšnosti</string>
     <string name="setts_test_time">Výchozí čas na položku</string>

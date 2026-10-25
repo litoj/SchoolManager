@@ -33,6 +33,7 @@ import cz.litoj.schlmgr.R
 /**
  * The destinations of the drawer, the flat sibling screens of the navigation graph.
  * - the name of the enum is the navigation route.
+ * - the settings are an own activity now, so their name is no route, see [SchlMgrApp].
  * - the pushed picker screen is not a destination, and [PICKER_ROUTE] is its route.
  */
 enum class Destination(val label: Int, val icon: Int) {
@@ -46,7 +47,7 @@ enum class Destination(val label: Int, val icon: Int) {
 const val PICKER_ROUTE = "PICKER"
 
 /**
- * The navigation drawer: a 250dp panel on the background surface.
+ * The navigation drawer: a 250dp panel on a background surface.
  * - it holds a gradient header and the destinations with their icons.
  * - taps navigate flat, with no saved stacks.
  */

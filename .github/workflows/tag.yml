@@ -1,0 +1,50 @@
+# Pushes a tag named after the versionName of app/build.gradle.kts.
+name: Tag
+
+on:
+  push:
+    branches: ['main']
+
+permissions:
+  contents: write
+
+# The run pushes a tag, so it must finish once started.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read version
+        id: version
+        run: |
+          version=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          if [[ ! "$version" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+            echo "::error::versionName '$version' is not a plain number chain"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # An existing tag means the value was not bumped since the last one,
+      # so the run stops as the reminder to up it.
+      - name: Fail on an existing tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if git ls-remote origin "refs/tags/$VERSION" | grep -q .; then
+            echo "::error::tag $VERSION exists, bump versionName in app/build.gradle.kts"
+            exit 1
+          fi
+
+      - name: Push the tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git tag "$VERSION" "$GITHUB_SHA"
+          git push origin "$VERSION"
