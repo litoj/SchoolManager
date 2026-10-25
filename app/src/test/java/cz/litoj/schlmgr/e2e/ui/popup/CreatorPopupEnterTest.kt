@@ -1,12 +1,16 @@
 package cz.litoj.schlmgr.e2e.ui.popup
 
+import android.content.Context
+import android.view.inputmethod.InputMethodManager
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextInput
+import androidx.test.core.app.ApplicationProvider
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.popup.CreatorContent
@@ -22,6 +26,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
@@ -31,6 +36,8 @@ import org.robolectric.annotation.Config
  * - the word name and the earlier translations move the keyboard along.
  * - a note is the exception, where Enter jumps to the description.
  * - its commit stays on the OK button.
+ * - a new item opens with the keyboard in the name field, an edit does not.
+ * - the keyboard wish is one shot, so a rebuilt composition raises no new keyboard.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -46,6 +53,37 @@ class CreatorPopupEnterTest {
 
 	private fun wordPopup() =
 		CreatorPopup(CreatorPopup.Kind.NEW_WORD, null, CreatorContent.Word(emptyList()))
+
+	@Test
+	fun `a new item opens with the keyboard in the name field`() {
+		val popup = wordPopup()
+		popup.name = "Haus"
+		rule.setContent { popup.Content() }
+
+		rule.onNodeWithText("Haus").assertIsFocused()
+		assertTrue(keyboardShown())
+	}
+
+	@Test
+	fun `an edited item opens with no field focused`() {
+		val row = ItemRow(
+			DbItem(id = 5, name = "alt", description = "alte Notiz", type = ItemKind.NOTE), null, 1)
+		val popup = CreatorPopup(CreatorPopup.Kind.EDIT, row, CreatorContent.Simple)
+		rule.setContent { popup.Content() }
+
+		rule.onAllNodes(focusedField).assertCountEquals(0)
+	}
+
+	@Test
+	fun `the open consumes the keyboard wish`() {
+		val popup = wordPopup()
+		popup.name = "Haus"
+		assertTrue(popup.wantsNameFocus)
+		rule.setContent { popup.Content() }
+
+		rule.onNodeWithText("Haus").assertIsFocused()
+		assertFalse(popup.wantsNameFocus)
+	}
 
 	@Test
 	fun `enter in a chapter's name confirms`() {
@@ -149,6 +187,12 @@ class CreatorPopupEnterTest {
 	private val focusedField = SemanticsMatcher("focused field") {
 		it.config.getOrElse(SemanticsProperties.Focused) { false }
 	}
+
+	/** Reads the input manager shadow, since only it sees the keyboard ask. */
+	private fun keyboardShown() = shadowOf(
+		ApplicationProvider.getApplicationContext<Context>()
+			.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+		.isSoftInputVisible
 
 	@Test
 	fun `the renewed editor takes typing in its fresh fields`() {

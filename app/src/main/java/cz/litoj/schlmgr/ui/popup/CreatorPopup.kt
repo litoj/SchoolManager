@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -79,10 +80,12 @@ class CreatorPopup(
 	 */
 	@Stable
 	private class EditorState(
-		val focusNameOnOpen: Boolean,
+		focusNameOnOpen: Boolean,
 		edited: ItemRow?,
 		rows: List<TranslationRow>,
 	) {
+		/** One shot, so a rotation cannot pop the keyboard back open. */
+		var focusNameOnOpen by mutableStateOf(focusNameOnOpen)
 		var name by mutableStateOf(edited?.item?.name ?: "")
 		var description by mutableStateOf(edited?.item?.description ?: "")
 
@@ -113,13 +116,14 @@ class CreatorPopup(
 	 * One construction path of the editor, for the first word of a run and its renewals.
 	 * - the renewals come from [resetForNextWord].
 	 */
-	private fun freshEditor(focusNameOnOpen: Boolean = false) = EditorState(
+	private fun freshEditor(focusNameOnOpen: Boolean) = EditorState(
 		focusNameOnOpen,
 		edited,
 		(content as? CreatorContent.Word)?.initial ?: emptyList(),
 	)
 
-	private var editor by mutableStateOf(freshEditor())
+	// a new item starts empty, so the name field takes the keyboard right away
+	private var editor by mutableStateOf(freshEditor(kind != Kind.EDIT))
 
 	// exposed publicly so the call sites read them as name/description.
 	var name: String
@@ -139,6 +143,10 @@ class CreatorPopup(
 	}
 
 	val isDirty: Boolean get() = editor.isDirty
+
+	/** True while the open still wants the name focus, consumed by the first composition. */
+	@VisibleForTesting
+	internal val wantsNameFocus: Boolean get() = editor.focusNameOnOpen
 
 	override fun canDismissByOutsideTouch(): Boolean = !isDirty
 
@@ -220,15 +228,22 @@ class CreatorPopup(
 		// the popup colours mirror the app theme in res/values/colors.xml, not hard-coded values.
 		// so a theme change only needs to touch the resource file.
 		val textColor = colorResource(R.color.colorPrimaryFg)
+		val keyboard = LocalSoftwareKeyboardController.current
 
 		// the editor instance is the identity of the content.
 		// - a renewal, see [resetForNextWord], rebuilds the whole subtree.
 		// - so the next word gets fresh field components, not the committed ones.
 		key(editor) {
-			// a renewed editor opens with the keyboard in its name field.
+			// a new item and each renewal open with the keyboard in the name field.
 			// the deferred effect lets the fresh subtree compose first
-			LaunchedEffect(editor.focusNameOnOpen) {
-				if (editor.focusNameOnOpen) runCatching { nameFocus.requestFocus() }
+			LaunchedEffect(Unit) {
+				if (editor.focusNameOnOpen) {
+					editor.focusNameOnOpen = false
+					runCatching { nameFocus.requestFocus() }
+					// the field focus alone does not guarantee the keyboard,
+					// so the ask goes out explicitly too
+					keyboard?.show()
+				}
 			}
 			// the outside dismiss and the keyboard inset handling live in the shared dialog host.
 			PopupCard {
