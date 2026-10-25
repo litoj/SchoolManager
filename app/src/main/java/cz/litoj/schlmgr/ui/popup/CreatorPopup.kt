@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -33,11 +32,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
@@ -237,14 +233,7 @@ class CreatorPopup(
 			// the outside dismiss and the keyboard inset handling live in the shared dialog host.
 			PopupCard {
 				// the header is fixed, so title, divider, name and description stay visible.
-				Text(
-					stringResource(kind.headerRes),
-					Modifier
-						.fillMaxWidth()
-						.padding(top = 5.dp),
-					style = TextStyle(fontSize = 25.sp, color = textColor),
-					textAlign = TextAlign.Center
-				)
+				PopupTitle(stringResource(kind.headerRes))
 				HairlineDivider()
 				// the Enter key commits on the last name field, for the simple kinds this one.
 				// a note is the exception, since its body is the description.
@@ -286,11 +275,7 @@ class CreatorPopup(
 					}
 				}
 				HairlineDivider()
-				Row(
-					Modifier
-						.fillMaxWidth()
-						.height(50.dp)
-				) {
+				PopupButtonRow {
 					PopupButton(
 						stringResource(R.string.cancel),
 						Modifier.weight(1f)

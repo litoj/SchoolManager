@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -26,10 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.FlipConflict
@@ -96,6 +92,11 @@ class FlipConflictPopup(conflicts: List<FlipConflict>) : DialogSpec {
 
 	fun dismiss() = Dialogs.dismiss(this)
 
+	/** The title icon and the tests share this path, so it stays internal. */
+	internal fun showHelp() {
+		InfoPopup(R.string.help, R.string.flip_conflicts_help)
+	}
+
 	/** A false verdict from the listener keeps the popup open, so a refusal can be corrected. */
 	internal fun notifyOk(): Boolean {
 		val listener = okListener ?: return true
@@ -109,14 +110,18 @@ class FlipConflictPopup(conflicts: List<FlipConflict>) : DialogSpec {
 	override fun Content() {
 		val textColor = colorResource(R.color.colorPrimaryFg)
 		PopupCard {
-			Text(
-				stringResource(R.string.flip_conflicts_title),
-				Modifier
-					.fillMaxWidth()
-					.padding(top = 5.dp),
-				style = TextStyle(fontSize = 25.sp, color = textColor),
-				textAlign = TextAlign.Center
-			)
+			PopupTitle(stringResource(R.string.flip_conflicts_title)) {
+				Icon(
+					painterResource(R.drawable.ic_help),
+					contentDescription = stringResource(R.string.help),
+					tint = textColor,
+					modifier = Modifier
+						.align(Alignment.CenterEnd)
+						.padding(end = 10.dp)
+						.size(30.dp)
+						.clickable { showHelp() }
+				)
+			}
 			HairlineDivider()
 			// not a LazyColumn, since same-direction scrollables would steal drags.
 			Column(
@@ -132,11 +137,7 @@ class FlipConflictPopup(conflicts: List<FlipConflict>) : DialogSpec {
 				}
 			}
 			HairlineDivider()
-			Row(
-				Modifier
-					.fillMaxWidth()
-					.height(50.dp)
-			) {
+			PopupButtonRow {
 				PopupButton(
 					stringResource(R.string.cancel),
 					Modifier.weight(1f)

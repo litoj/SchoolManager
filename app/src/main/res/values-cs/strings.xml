@@ -211,6 +211,13 @@
     <string name="flip_conflicts_title">Kolidující slova</string>
     <string name="flip_conflicts_ok">Obrátit</string>
     <string name="flip_conflicts_blank">Každé kolidující slovo potřebuje název</string>
+    <string name="flip_conflicts_help">Každý řádek je slovíčko nebo překlad, který přesahuje výběr.
+        \nSlovíčko se nachází i v kontejnerech mimo výběr, obrácení by je tedy změnilo. Překlad sdílí slovíčka mimo výběr, obrácení by z něj udělalo kopii a sdílení by skončilo.
+        \nNeupravený řádek vztah zachová, takže vše, čeho mimo výběr dosáhne, se přidá k obrácení. Kontrola se po každém kole spustí znovu, neupravené řádky mohou přinést nové.
+        \nUpravený řádek dá obrácení kopii s novým obsahem, mimo výběr zůstane původní.
+        \nMezera za názvem je neviditelná úprava: kopie si po oříznutí ponechá stejný název a jen se řádek odpojí.
+        \nKřížek vyřadí slova řádku z obrácení, mimo výběr se nic nezmění.
+        \nŘádek zbývající v seznamu bez názvu potvrzení odmítne. Až se seznam vyprázdní, obrácení proběhne.</string>
     <string name="json_export_ext">.hjson</string>
     <string name="json_import_types">application/hjson</string>
     <string name="new_chapter">Nová kapitola</string>

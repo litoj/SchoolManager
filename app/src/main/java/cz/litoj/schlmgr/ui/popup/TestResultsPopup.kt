@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,14 +69,7 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 					.background(colorResource(R.color.colorPrimaryBg))
 					.padding(5.dp)
 			) {
-				Text(
-					successText,
-					Modifier
-						.fillMaxWidth()
-						.padding(top = 5.dp),
-					style = TextStyle(fontSize = 25.sp, color = colorResource(R.color.colorPrimaryFg)),
-					textAlign = TextAlign.Center,
-				)
+				PopupTitle(successText)
 				HairlineDivider()
 				LazyColumn(Modifier.weight(1f)) {
 					items(rows) { row -> WordResultRow(row, positionWidth) }

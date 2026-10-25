@@ -20,7 +20,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
@@ -60,14 +59,7 @@ class ReferencePopup(
 	private fun ReferencePopupScreen() {
 		val textColor = TextColor
 		PopupCard {
-			Text(
-				stringResource(R.string.reference_fork),
-				Modifier
-					.fillMaxWidth()
-					.padding(top = 5.dp),
-				style = TextStyle(fontSize = 25.sp, color = textColor),
-				textAlign = TextAlign.Center
-			)
+			PopupTitle(stringResource(R.string.reference_fork))
 			HairlineDivider()
 			// the list scrolls when it outgrows the card. The button row stays visible
 			Column(
@@ -79,11 +71,7 @@ class ReferencePopup(
 				following.forEach { item -> ReferenceRow(item, textColor) }
 			}
 			HairlineDivider()
-			Row(
-				Modifier
-					.fillMaxWidth()
-					.height(50.dp)
-			) {
+			PopupButtonRow {
 				PopupButton(stringResource(R.string.cancel), Modifier.weight(1f)) { dismiss() }
 				VerticalButtonSeparator()
 				PopupButton(stringResource(R.string.ok), Modifier.weight(1f)) {

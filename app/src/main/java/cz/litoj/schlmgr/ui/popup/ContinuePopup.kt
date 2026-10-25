@@ -1,8 +1,5 @@
 package cz.litoj.schlmgr.ui.popup
 
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -36,7 +33,7 @@ class ContinuePopup(private val onOk: () -> Unit) : DialogSpec {
 				style = TextStyle(fontSize = 20.sp, color = TextColor),
 			)
 			HairlineDivider()
-			Row(Modifier.fillMaxWidth().height(50.dp)) {
+			PopupButtonRow {
 				PopupButton(stringResource(R.string.cancel), Modifier.weight(1f)) { Dialogs.dismiss(this@ContinuePopup) }
 				VerticalButtonSeparator()
 				PopupButton(stringResource(R.string.ok), Modifier.weight(1f)) {

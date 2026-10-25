@@ -5,6 +5,7 @@ import cz.litoj.schlmgr.data.db.FlipConflict
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.popup.Dialogs
 import cz.litoj.schlmgr.ui.popup.FlipConflictPopup
+import cz.litoj.schlmgr.ui.popup.InfoPopup
 import cz.litoj.schlmgr.ui.viewmodel.FlipConflictsResult
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -16,6 +17,7 @@ import org.junit.Test
  * - the commit maps left, edited and removed rows to the kept and removed lists.
  * - edits must dirty the dialog, or a close would drop them unseen.
  * - a refused verdict keeps the dialog open, so the user can retry.
+ * - the help dialog opens above the round, so the round survives its close.
  * - the teardown clears the shared stack, so no dialog leaks across tests.
  */
 class FlipConflictPopupTest {
@@ -95,6 +97,20 @@ class FlipConflictPopupTest {
 		popup.setOkListener { true }
 		assertTrue(popup.notifyOk())
 		assertFalse(Dialogs.isShowing<FlipConflictPopup>())
+	}
+
+	@Test
+	fun `the help opens above the round and leaves it standing`() {
+		FlipConflictPopup(listOf(conflict("pes"))).showHelp()
+
+		assertTrue(Dialogs.isShowing<FlipConflictPopup>())
+		assertTrue(Dialogs.isShowing<InfoPopup>())
+
+		// the help was shown last, so it sits on top of the shared stack
+		Dialogs.dismiss(Dialogs.stack.value.last())
+
+		assertFalse(Dialogs.isShowing<InfoPopup>())
+		assertTrue(Dialogs.isShowing<FlipConflictPopup>())
 	}
 
 	@Test

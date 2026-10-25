@@ -204,6 +204,13 @@
     <string name="flip_conflicts_title">Conflicting words</string>
     <string name="flip_conflicts_ok">Flip</string>
     <string name="flip_conflicts_blank">Every conflicting word needs a name</string>
+    <string name="flip_conflicts_help">Each row is a word or a translation that reaches past the selection.
+        \nA word row lives in containers outside the selection too, so the flip would change them. A translation row is shared with words outside, so the flip would copy it and the sharing would end.
+        \nAn untouched row keeps the relation, so everything it reaches outside joins the flip. The check runs again after every round, untouched rows can bring new ones.
+        \nAn edited row gives the flip a copy with the new contents, the outside keeps the original.
+        \nA space behind the name is the invisible edit: the copy keeps the trimmed name and only the row detaches.
+        \nThe cross button drops the words of the row from the flip, nothing changes outside.
+        \nA row left in the list without a name refuses the commit. When the list empties, the flip runs.</string>
     <string name="json_export_ext">.hjson</string>
     <string name="json_import_types">application/hjson</string>
     <string name="new_chapter">New chapter</string>

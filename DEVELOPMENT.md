@@ -212,6 +212,7 @@ All implement `DialogSpec`, shown through `Dialogs` stack (own `Dialog` window e
 |-------|---------|
 | `CreatorPopup` | Create/edit item: name + description, word translations editor, `CreatorResult` verdict |
 | `FlipConflictPopup` | Flip's conflict round: editable rows (keep/edit/remove), `FlipConflictsResult` verdict |
+| `InfoPopup` | Read-only explanation above another dialog: title + scrollable body + OK |
 | `ReferencePopup` | Pick which referenced chapters keep the moved word (fork decision) |
 | `ContinuePopup` | OK/cancel confirm, OK fires exactly once |
 | `TestResultsPopup` | Post-test results: success % + per-item rows with typed answer colored |
@@ -219,7 +220,7 @@ All implement `DialogSpec`, shown through `Dialogs` stack (own `Dialog` window e
 | `CrashReportPopup` | Previous-session crash report + Copy |
 | `SourcePickPopup` | Pick source chain for a word living in multiple containers |
 | `Dialogs` | Stack: show/dismiss/clear, `isShowing<T>()` |
-| `PopupChrome` | Shared card/separator/button/field chrome |
+| `PopupChrome` | Shared card/title/body/button/separator/field chrome |
 
 ### Components (`ui.component`)
 
