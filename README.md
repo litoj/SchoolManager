@@ -1,25 +1,73 @@
-# SchoolManager
-An Android application written in Kotlin (Android Studio).
+# School Manager
 
-Practices words, notes, chapters and subjects you order in a custom hierarchy, with adaptable test options.
-All hierarchy files import and export as word lists (`.txt`) or HJSON trees. File opening is Android-specific
-(DocumentFile / Uri), so the files move between devices only through the app's import and export.
+Offline Android app for school vocabulary. Subjects, chapters, words, translations and notes form a hierarchy, with tests and saved success rates.
 
-The Android application contains an extensive help screen within to help new users navigate through.
+- Android 11 or newer
+- Download the APK from [Releases](https://github.com/litoj/SchoolManager/releases)
 
-**Version:** 2.0.1 (build 66)
-**Min SDK:** 30 | **Target SDK:** 37 | **Compile SDK:** 37
-**Stack:** Kotlin, Jetpack Compose, Room, HJSON
-**Formats:** word list (`.txt`), HJSON tree JSON, legacy JSON subject directories
-**Distribution:** APK via GitHub releases (not Play Store)
+## Screenshots
 
-![light](https://user-images.githubusercontent.com/54900518/181997907-ce79b962-0c7e-4ca6-a65d-45cf703a814e.jpg)
-![dark](https://user-images.githubusercontent.com/54900518/181997917-ca3dfb37-f861-4998-8838-28e64146d80d.jpg)
-<img width="540" height="1170" alt="Image" src="https://github.com/user-attachments/assets/5210b1a1-1f57-41df-9ff0-82391489d45d" />
-<img width="540" height="1170" alt="Image" src="https://github.com/user-attachments/assets/1215908c-5c65-447a-acb2-b73c0b5c3c6c" />
-<img width="540" height="1170" alt="Image" src="https://github.com/user-attachments/assets/b5ca6abd-f97a-4342-a653-58069a56b546" />
-<img width="540" height="1170" alt="Image" src="https://github.com/user-attachments/assets/9bc9d8dc-c843-4f0a-8ae4-059e0483cd63" />
-<img width="540" height="1170" alt="Image" src="https://github.com/user-attachments/assets/02b2f9d7-0a52-48bd-b249-5070ff00907f" />
-<img width="540" height="1170" alt="Image" src="https://github.com/user-attachments/assets/b39c76b9-a37f-44a2-baf4-9bf55b1c0c24" />
-<img width="540" height="1170" alt="Image" src="https://github.com/user-attachments/assets/f33d54d0-4407-4544-8a2c-1cff5f197817" />
-<img width="540" height="1170" alt="Image" src="https://github.com/user-attachments/assets/bcfeaa56-e890-4b24-8465-e8ad124c9b07" />
+<img width="360" alt="subjects" src="https://github.com/user-attachments/assets/60bd06c5-2d81-420b-82db-281376e01f6a" /> <img width="360" alt="chapter" src="https://github.com/user-attachments/assets/80a97a5f-799f-44b2-b066-187d2497d1fc" />
+
+<img width="360" alt="new-item-palette" src="https://github.com/user-attachments/assets/918789a2-de1f-4f42-87db-ace4bf48607c" /> <img width="360" alt="word-creator" src="https://github.com/user-attachments/assets/162a2198-ad90-4a50-8ee7-56d09f61c91b" />
+
+<img width="360" alt="selection" src="https://github.com/user-attachments/assets/0d21c156-5a8a-492a-950a-f03f01856399" /> <img width="360" alt="search" src="https://github.com/user-attachments/assets/6dfa95cb-9012-42a3-8912-188e0d39294f" />
+
+<img width="360" alt="test-setup" src="https://github.com/user-attachments/assets/15b4f339-4833-44c7-b103-d90d8654275c" /> <img width="360" alt="test-run" src="https://github.com/user-attachments/assets/fa59cfc9-a103-431f-8e48-007665c5196e" />
+<img width="360" alt="test-results" src="https://github.com/user-attachments/assets/0cf6d9bc-f4dd-48fb-899d-f17088a582f4" />
+
+<img width="360" alt="settings" src="https://github.com/user-attachments/assets/27eb3611-7113-4b3b-a562-35fb618bf80d" /> <img width="360" alt="help" src="https://github.com/user-attachments/assets/f63f900f-5337-483d-af0d-4cb0a492fd63" />
+
+## Beyond the basics
+
+The in-app Help covers the standard workflow. These features are easy to miss.
+
+### Browsing
+
+- Swipe left or right to move between sibling containers.
+- Tap a breadcrumb part to jump back to that container.
+- Pull down at the top of a list to open the search field.
+- Tap the type icon of a row to select it during a selection or in the picker.
+- Long-press and drag a row in a browse list to reorder it.
+
+### Display
+
+- Tap a word to switch between the word and its translations.
+- A second tap within the window flips the whole list to that word's side.
+- The double-tap window is configurable. Zero turns the group flip off.
+- The colour band marks success. Blue is untested, red is weak, green is strong.
+- A description above the display limit collapses to an info icon. Tap it to read the full text.
+
+### References
+
+- A reference shows one word in another container without a copy.
+- The Create reference action prepares the selected rows. Open the target and press Paste.
+- Chapters cannot be referenced.
+- The link icon opens the original container. With several containers, the app asks for one.
+- Editing a shared word asks which references follow the change.
+
+### Stored flip
+
+- The more menu can flip the stored direction of the selected rows.
+- The conflict dialog lists rows that reach outside the selection. Keep, copy or drop each one.
+
+### Sorting
+
+- The sort menu orders by alphabet, success rate, name length, manual position or test priority.
+- Priority puts weak and rarely tested rows first.
+
+### Keyboard
+
+- Search: Enter runs the query.
+- New word: Enter moves from the name to the translations. The last translation saves the word and opens a fresh word popup.
+- Note: Enter on the name moves to the description.
+- Subject or chapter: Enter in the name saves it.
+- Test: Enter moves to the next answer. The last answer hides the keyboard.
+
+### Tests
+
+- Duration is per item. The timer runs for the number of tested items times the duration.
+- The Make tests by success rate setting picks the rows that the priority sort puts first.
+- The source picker has a select-all button in the top corner.
+
+Development: [DEVELOPMENT.md](DEVELOPMENT.md).

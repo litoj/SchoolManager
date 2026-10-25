@@ -43,10 +43,10 @@ fun Item(
 	item: ItemUiModel,
 	onClick: () -> Unit,
 	onLongClick: () -> Unit,
+	modifier: Modifier = Modifier,
 	/** The type icon tapped, a running selection or the picker selects the row with it. */
 	onIconClick: (() -> Unit)? = null,
 	descVisible: Boolean,
-	modifier: Modifier = Modifier,
 	variant: ExplorerRowVariant = ExplorerRowVariant.Browse,
 	positionWidth: Dp,
 	infoAction: (@Composable () -> Unit)? = null,

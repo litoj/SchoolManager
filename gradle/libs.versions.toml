@@ -3,8 +3,9 @@ agp = "9.4.1"
 activity = "1.13.0"
 navigation = "2.10.2"
 documentfile = "1.1.0"
-# Must match the Kotlin version AGP's built-in Kotlin uses (KGP 2.2.10).
-kotlin = "2.2.10"
+# AGP bundles KGP 2.2.10 as its floor, this version overrides the built-in one.
+# Keep it at or above the bundled version, AGP upgrades anything lower.
+kotlin = "2.4.0"
 # KSP 2.3.x is decoupled from the Kotlin version; 2.3.x supports AGP 9 built-in Kotlin.
 ksp = "2.3.12"
 room = "2.8.5"

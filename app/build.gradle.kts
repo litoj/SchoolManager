@@ -20,8 +20,8 @@ android {
         applicationId = "cz.litoj.schlmgr"
         minSdk = 30
         targetSdk = 37
-        versionCode = 69
-        versionName = "2.0.4"
+        versionCode = 70
+        versionName = "2.0.5"
         signingConfig = signingConfigs.getByName("debug")
     }
 
@@ -64,6 +64,14 @@ android {
     // Only en and cs ship; this drops the many locales pulled in by libraries.
     androidResources {
         localeFilters += listOf("en", "cs")
+    }
+
+    // No NDK in this toolchain, so the graphics-path native lib cannot be
+    // stripped. Keeping its symbols states that as the intended result.
+    packaging {
+        jniLibs {
+            keepDebugSymbols += "**/libandroidx.graphics.path.so"
+        }
     }
 
     compileOptions {

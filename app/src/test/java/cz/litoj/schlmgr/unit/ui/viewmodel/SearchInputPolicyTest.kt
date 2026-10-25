@@ -3,12 +3,15 @@ package cz.litoj.schlmgr.unit.ui.viewmodel
 import cz.litoj.schlmgr.ui.viewmodel.SearchInput
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+// the unconfined dispatcher makes each debounced run land inside the test
+@OptIn(ExperimentalCoroutinesApi::class)
 class SearchInputPolicyTest {
 
 	private class RecordingHost : SearchInput.Host {

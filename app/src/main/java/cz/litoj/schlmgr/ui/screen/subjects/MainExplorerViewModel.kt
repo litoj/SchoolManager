@@ -11,6 +11,7 @@ import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.FlipAnalysis
+import cz.litoj.schlmgr.data.db.FlipResolution
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ROOT_ID
@@ -18,7 +19,6 @@ import cz.litoj.schlmgr.data.db.WordEdit
 import cz.litoj.schlmgr.data.db.ratio
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.ui.viewmodel.CreatorResult
-import cz.litoj.schlmgr.ui.viewmodel.FlipConflictsResult
 import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
 import cz.litoj.schlmgr.ui.screen.test.TestSetupState
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
@@ -341,7 +341,9 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 	fun flipSelected() = flip.flipSelected()
 
-	fun commitFlipResolutions(analysis: FlipAnalysis, result: FlipConflictsResult): Boolean = flip.commitFlipResolutions(analysis, result)
+	fun commitFlipResolutions(analysis: FlipAnalysis, resolutions: List<FlipResolution>): Boolean = flip.commitFlipResolutions(analysis, resolutions)
+
+	fun cancelFlipRound() = flip.cancelFlipRound()
 
 	/** Selection stays armed for export. */
 	fun prepareTest() {

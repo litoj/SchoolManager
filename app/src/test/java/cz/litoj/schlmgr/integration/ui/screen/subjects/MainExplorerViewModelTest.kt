@@ -4,6 +4,7 @@ import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.data.db.FlipResolution
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.db.ROOT_ID
@@ -12,8 +13,6 @@ import cz.litoj.schlmgr.ui.screen.subjects.MenuId
 import cz.litoj.schlmgr.ui.viewmodel.CreatorResult
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
-import cz.litoj.schlmgr.ui.viewmodel.FlipConflictsResult
-import cz.litoj.schlmgr.ui.viewmodel.FlipKeptRow
 import cz.litoj.schlmgr.ui.viewmodel.InfoBar
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
@@ -819,17 +818,16 @@ class MainExplorerViewModelTest {
 			val notice = async(start = CoroutineStart.UNDISPATCHED) {
 				GlobalDependencies.messages.first()
 			}
-			assertFalse(model.commitFlipResolutions(analysis, FlipConflictsResult(
-				kept = listOf(FlipKeptRow(conflict.row, " ", "")), removed = emptyList())))
+			assertFalse(model.commitFlipResolutions(analysis,
+				listOf(FlipResolution(conflict.row.id, false, " ", ""))))
 			withTimeout(1_000) {
 				assertEquals(GlobalDependencies.UiMessage.Notice(UiNotice.FlipBlankName), notice.await())
 			}
 		}
 
 		// a keep adds the outside chapter, so the flip runs through it
-		assertTrue(model.commitFlipResolutions(analysis, FlipConflictsResult(
-			kept = listOf(FlipKeptRow(conflict.row, conflict.row.name, conflict.row.description)),
-			removed = emptyList())))
+		assertTrue(model.commitFlipResolutions(analysis,
+			listOf(FlipResolution(conflict.row.id, false, conflict.row.name, conflict.row.description))))
 		assertEquals("the flip ran after the resolution", listOf("t1"), model.items().map { it.item.name })
 	}
 
@@ -851,8 +849,9 @@ class MainExplorerViewModelTest {
 		assertEquals("pes", analysis.conflicts.single().row.name)
 
 		// a remove drops the linked word, so nothing flips
-		assertTrue(model.commitFlipResolutions(analysis, FlipConflictsResult(
-			kept = emptyList(), removed = listOf(analysis.conflicts.single().row))))
+		val doomed = analysis.conflicts.single().row
+		assertTrue(model.commitFlipResolutions(analysis,
+			listOf(FlipResolution(doomed.id, true, doomed.name, doomed.description))))
 		assertEquals(listOf("cat", "dog"), model.items().map { it.item.name })
 		assertEquals("dog kept its translation",
 			listOf("pes"), ItemRepository.translations(model.items().single { it.item.name == "dog" }.item.id)
@@ -876,16 +875,14 @@ class MainExplorerViewModelTest {
 		val first = runBlocking { withTimeout(100) { model.requests.first() } }
 		val firstRound = (first as MainExplorerViewModel.Request.ResolveFlipConflicts).analysis
 		assertEquals("pes", firstRound.conflicts.single().row.name)
-		assertTrue(model.commitFlipResolutions(firstRound, FlipConflictsResult(
-			kept = firstRound.conflicts.map { FlipKeptRow(it.row, it.row.name, it.row.description) },
-			removed = emptyList())))
+		assertTrue(model.commitFlipResolutions(firstRound,
+			firstRound.conflicts.map { FlipResolution(it.row.id, false, it.row.name, it.row.description) }))
 
 		val second = runBlocking { withTimeout(100) { model.requests.first() } }
 		val secondRound = (second as MainExplorerViewModel.Request.ResolveFlipConflicts).analysis
 		assertEquals("kocka", secondRound.conflicts.single().row.name)
-		assertTrue(model.commitFlipResolutions(secondRound, FlipConflictsResult(
-			kept = secondRound.conflicts.map { FlipKeptRow(it.row, it.row.name, it.row.description) },
-			removed = emptyList())))
+		assertTrue(model.commitFlipResolutions(secondRound,
+			secondRound.conflicts.map { FlipResolution(it.row.id, false, it.row.name, it.row.description) }))
 
 		// a clean plan commits, so the shared translations become words
 		assertEquals(setOf("kocka", "pes"), model.items().map { it.item.name }.toSet())

@@ -2,11 +2,10 @@ package cz.litoj.schlmgr.unit.ui.popup
 
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.FlipConflict
+import cz.litoj.schlmgr.data.db.FlipResolution
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.popup.Dialogs
 import cz.litoj.schlmgr.ui.popup.FlipConflictPopup
-import cz.litoj.schlmgr.ui.popup.InfoPopup
-import cz.litoj.schlmgr.ui.viewmodel.FlipConflictsResult
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -14,10 +13,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * - the commit maps left, edited and removed rows to the kept and removed lists.
+ * - the commit maps left, edited and removed rows to their resolutions.
  * - edits must dirty the dialog, or a close would drop them unseen.
  * - a refused verdict keeps the dialog open, so the user can retry.
- * - the help dialog opens above the round, so the round survives its close.
  * - the teardown clears the shared stack, so no dialog leaks across tests.
  */
 class FlipConflictPopupTest {
@@ -34,16 +32,23 @@ class FlipConflictPopupTest {
 		DbItem(id = nextId++, name = name, description = "", type = ItemKind.TRANSLATION),
 		outside = emptyList(), scheduled = emptyList())
 
+	/** Runs the ok and returns the committed resolutions. */
+	private fun commit(popup: FlipConflictPopup): List<FlipResolution> {
+		var out: List<FlipResolution>? = null
+		popup.setOkListener { out = it; true }
+		popup.notifyOk()
+		return out!!
+	}
+
 	@Test
 	fun `an untouched row keeps its contents`() {
 		val popup = FlipConflictPopup(listOf(conflict("pes")))
-		var result: FlipConflictsResult? = null
-		popup.setOkListener { result = it; true }
-		popup.notifyOk()
+		val resolutions = commit(popup)
 
-		assertEquals("pes", result!!.kept.single().name)
-		assertEquals(1, result!!.kept.single().source.id)
-		assertTrue(result!!.removed.isEmpty())
+		val kept = resolutions.filter { !it.removed }
+		assertEquals("pes", kept.single().name)
+		assertEquals(1, kept.single().rowId)
+		assertTrue(resolutions.none { it.removed })
 	}
 
 	@Test
@@ -51,12 +56,10 @@ class FlipConflictPopupTest {
 		val popup = FlipConflictPopup(listOf(conflict("pes")))
 		popup.rows.single().name = "pes "
 		popup.rows.single().description = "custom"
-		var result: FlipConflictsResult? = null
-		popup.setOkListener { result = it; true }
-		popup.notifyOk()
+		val kept = commit(popup).filter { !it.removed }.single()
 
-		assertEquals("pes ", result!!.kept.single().name)
-		assertEquals("custom", result!!.kept.single().description)
+		assertEquals("pes ", kept.name)
+		assertEquals("custom", kept.description)
 	}
 
 	@Test
@@ -65,13 +68,11 @@ class FlipConflictPopupTest {
 		val dog = conflict("dog")
 		val popup = FlipConflictPopup(listOf(pes, dog))
 		popup.remove(popup.rows.first())
-		var result: FlipConflictsResult? = null
-		popup.setOkListener { result = it; true }
-		popup.notifyOk()
+		val resolutions = commit(popup)
 
-		assertEquals(listOf("dog"), result!!.kept.map { it.name })
-		assertEquals(listOf("pes"), result!!.removed.map { it.name })
-		assertEquals(pes.row.id, result!!.removed.single().id)
+		assertEquals(listOf("dog"), resolutions.filter { !it.removed }.map { it.name })
+		assertEquals(listOf("pes"), resolutions.filter { it.removed }.map { it.name })
+		assertEquals(pes.row.id, resolutions.single { it.removed }.rowId)
 	}
 
 	@Test
@@ -100,23 +101,9 @@ class FlipConflictPopupTest {
 	}
 
 	@Test
-	fun `the help opens above the round and leaves it standing`() {
-		FlipConflictPopup(listOf(conflict("pes"))).showHelp()
-
-		assertTrue(Dialogs.isShowing<FlipConflictPopup>())
-		assertTrue(Dialogs.isShowing<InfoPopup>())
-
-		// the help was shown last, so it sits on top of the shared stack
-		Dialogs.dismiss(Dialogs.stack.value.last())
-
-		assertFalse(Dialogs.isShowing<InfoPopup>())
-		assertTrue(Dialogs.isShowing<FlipConflictPopup>())
-	}
-
-	@Test
 	fun `a second ok after acceptance commits nothing`() {
 		val popup = FlipConflictPopup(listOf(conflict("pes")))
-		val commits = ArrayList<FlipConflictsResult>()
+		val commits = ArrayList<List<FlipResolution>>()
 		popup.setOkListener { commits.add(it); true }
 		popup.notifyOk()
 

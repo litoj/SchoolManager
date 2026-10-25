@@ -75,7 +75,7 @@ class SearchBatchTest {
 		// a mid-stream sort renumbers the shown rows 1..n, so the next batch must
 		// continue from the live size, not its stale run-global positions
 		vm.load(rows(2), isSearch = true)
-		val batch = rows(2).map { it.item.copy(id = 100 + it.item.id.toInt()) }
+		val batch = rows(2).map { it.item.copy(id = 100 + it.item.id) }
 			.map { ItemRow(it, null, 99, false) }
 
 		drain(vm, batch)

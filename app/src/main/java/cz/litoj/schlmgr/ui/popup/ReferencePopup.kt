@@ -80,6 +80,7 @@ class ReferencePopup(
 				val listener = okListener ?: return@PopupButton
 				okListener = null
 				listener(following.map { it.id })
+				dismiss()
 			}
 			}
 		}

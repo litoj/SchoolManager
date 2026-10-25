@@ -1,25 +1,34 @@
 # Pushes a tag named after the versionName of app/build.gradle.kts.
+# The tag waits for the Test workflow of the same commit, a red main stays untagged.
 name: Tag
 
 on:
-  push:
-    branches: ['main']
+  workflow_run:
+    workflows: [Test]
+    types: [completed]
+    branches: [main]
 
 permissions:
   contents: write
 
 # The run pushes a tag, so it must finish once started.
+# The tested commit keys the group, a rerun of it queues behind.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_sha }}
   cancel-in-progress: false
 
 jobs:
   tag:
+    # only a green Test run may tag, a failed or cancelled one leaves the main untagged
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
+      # the tested commit, not the default branch head: the tree must match the tested one
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Read version
         id: version
@@ -45,6 +54,7 @@ jobs:
       - name: Push the tag
         env:
           VERSION: ${{ steps.version.outputs.version }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          git tag "$VERSION" "$GITHUB_SHA"
+          git tag "$VERSION" "$HEAD_SHA"
           git push origin "$VERSION"

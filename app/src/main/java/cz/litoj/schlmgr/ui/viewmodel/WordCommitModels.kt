@@ -41,14 +41,3 @@ data class CreatorResult(
 	val translations: List<TranslationValue>,
 	val removedTranslations: List<DbItem>,
 )
-
-/**
- * One conflict row the user left in the list, with the possibly edited
- * contents. The source is the row the conflict carried, never an addition.
- */
-data class FlipKeptRow(val source: DbItem, val name: String, val description: String)
-
-data class FlipConflictsResult(
-	val kept: List<FlipKeptRow>,
-	val removed: List<DbItem>,
-)

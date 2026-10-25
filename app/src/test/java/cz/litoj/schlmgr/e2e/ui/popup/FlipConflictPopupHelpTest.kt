@@ -1,5 +1,7 @@
 package cz.litoj.schlmgr.e2e.ui.popup
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -55,11 +57,14 @@ class FlipConflictPopupHelpTest {
 
 	@Test
 	fun `the help shows the round logic and OK closes only the help`() {
-		val popup = round()
-		popup.showHelp()
-		// taken from the real showHelp path, so the body assert covers what the icon opens
-		val help = Dialogs.stack.value.filterIsInstance<InfoPopup>().single()
-		rule.setContent { help.Content() }
+		round()
+		rule.setContent {
+			// the test renders the stack itself, since no dialog host runs here
+			val stack by Dialogs.stack.collectAsState()
+			stack.forEach { it.Content() }
+		}
+
+		rule.onNodeWithContentDescription("Help").performClick()
 
 		rule.onNodeWithText("Each row is a word or a translation", substring = true).assertExists()
 		rule.onNodeWithText("OK").performClick()

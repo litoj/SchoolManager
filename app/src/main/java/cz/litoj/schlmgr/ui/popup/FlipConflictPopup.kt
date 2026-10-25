@@ -29,19 +29,15 @@ import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.FlipConflict
+import cz.litoj.schlmgr.data.db.FlipResolution
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.component.HairlineDivider
 import cz.litoj.schlmgr.ui.component.IconSize
-import cz.litoj.schlmgr.ui.viewmodel.FlipConflictsResult
-import cz.litoj.schlmgr.ui.viewmodel.FlipKeptRow
 
 /**
  * The conflict popup of the flip, one row per relation that spans the flip
- * set and the outside, reusing the creator row fields:
- * - an untouched row keeps the relation, so the check runs again
- * - an edited row gives the flip a copy, so the outside keeps the original
- * - a trailing space detaches the row, so the trim keeps the word
- * - the remove button drops the words linked to the row from the flip
+ * set and the outside, reusing the creator row fields. The round rules live
+ * in the flip_conflicts_help text, the one user-facing copy.
  */
 class FlipConflictPopup(conflicts: List<FlipConflict>) : DialogSpec {
 
@@ -62,7 +58,10 @@ class FlipConflictPopup(conflicts: List<FlipConflict>) : DialogSpec {
 	/** The dropped rows, kept apart so the commit can detach them. */
 	private val removed = mutableListOf<DbItem>()
 
-	private var okListener: ((FlipConflictsResult) -> Boolean)? = null
+	private var okListener: ((List<FlipResolution>) -> Boolean)? = null
+
+	/** The round closed without an OK, so the host drops the flip run. */
+	var onCanceled: (() -> Unit)? = null
 
 	/** Snapshot of each row at start, for the unsaved-changes guard. */
 	private val initialRows = rows.map { it.name to it.description }
@@ -76,14 +75,12 @@ class FlipConflictPopup(conflicts: List<FlipConflict>) : DialogSpec {
 
 	override fun canDismissByOutsideTouch(): Boolean = !isDirty
 
-	fun setOkListener(listener: (FlipConflictsResult) -> Boolean) {
+	fun setOkListener(listener: (List<FlipResolution>) -> Boolean) {
 		okListener = listener
 	}
 
-	private fun result() = FlipConflictsResult(
-		kept = rows.map { FlipKeptRow(it.source, it.name, it.description) },
-		removed = removed.toList(),
-	)
+	private fun result() = rows.map { FlipResolution(it.source.id, false, it.name, it.description) } +
+		removed.map { FlipResolution(it.id, true, it.name, it.description) }
 
 	/** The remove button and the tests share this path, so it stays internal. */
 	internal fun remove(row: ConflictRow) {
@@ -93,8 +90,12 @@ class FlipConflictPopup(conflicts: List<FlipConflict>) : DialogSpec {
 
 	fun dismiss() = Dialogs.dismiss(this)
 
-	/** The title icon and the tests share this path, so it stays internal. */
-	internal fun showHelp() {
+	// the OK path clears the listener before the dismiss, so a set listener means a cancel
+	override fun onDismissed() {
+		if (okListener != null) onCanceled?.invoke()
+	}
+
+	private fun showHelp() {
 		InfoPopup(R.string.help, R.string.flip_conflicts_help)
 	}
 

@@ -21,7 +21,6 @@ import cz.litoj.schlmgr.ui.component.ExplorerSearchField
 import cz.litoj.schlmgr.ui.popup.ContinuePopup
 import cz.litoj.schlmgr.ui.popup.CreatorContent
 import cz.litoj.schlmgr.ui.popup.CreatorPopup
-import cz.litoj.schlmgr.ui.popup.Dialogs
 import cz.litoj.schlmgr.ui.popup.FlipConflictPopup
 import cz.litoj.schlmgr.ui.popup.ReferencePopup
 import cz.litoj.schlmgr.ui.popup.SourcePickPopup
@@ -138,12 +137,12 @@ fun SubjectsScreen(
 					val popup = ReferencePopup(request.references)
 					popup.setOkListener { kept ->
 						viewModel.commitForkReferences(request.row, request.edit, kept)
-						popup.dismiss()
 					}
 				}
 				is MainExplorerViewModel.Request.ResolveFlipConflicts -> {
 					val popup = FlipConflictPopup(request.analysis.conflicts)
 					popup.setOkListener { result -> viewModel.commitFlipResolutions(request.analysis, result) }
+					popup.onCanceled = viewModel::cancelFlipRound
 				}
 				is MainExplorerViewModel.Request.ConfirmDelete ->
 					ContinuePopup {
@@ -174,9 +173,6 @@ fun SubjectsScreen(
 			TopBarMoreButton(
 				subjectsMenu(menuKind, selecting),
 			) { itemId ->
-				// an open conflict round owns the flip, so a second start would stack another popup
-				if (itemId == MenuId.FLIP && Dialogs.isShowing<FlipConflictPopup>())
-					return@TopBarMoreButton
 				viewModel.onMenuItemClick(itemId)
 			}
 		}

@@ -330,7 +330,7 @@ class HJsonExporter : DataExporter {
 		val chapter = JsonChapter(item.item.name, item.item.description.ifEmpty { null })
 		for (child in childrenOf[item] ?: emptyList()) when {
 			// a reference names its target, and the plain home holds the row
-			child.refPath != null -> chapter.entries.add(JsonRef(child.refPath!!))
+			child.refPath != null -> chapter.entries.add(JsonRef(child.refPath))
 			child.item.type == ItemKind.WORD -> chapter.entries.add(wordOf(child, childrenOf))
 			child.item.type == ItemKind.CHAPTER -> chapter.entries.add(chapterOf(child, childrenOf))
 			else -> chapter.entries.add(JsonNote(child.item.name, child.item.description.ifEmpty { null }))
