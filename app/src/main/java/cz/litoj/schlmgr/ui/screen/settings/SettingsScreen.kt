@@ -68,6 +68,10 @@ private fun SettingsList(state: SettingsState, modifier: Modifier = Modifier) {
 			stringResource(R.string.setts_desc_lines), state.descLinesText, state::setDescLines,
 		) { state.descLinesFocusLost(); keyboard?.hide() }
 		HairlineDivider()
+		SettingNumberRow(
+			stringResource(R.string.setts_double_tap_ms), state.doubleTapMsText, state::setDoubleTapMs,
+		) { state.doubleTapMsFocusLost(); keyboard?.hide() }
+		HairlineDivider()
 		WordSplitRow(state)
 		// no resource exists for the Test section label, so it stays a literal
 		SectionHeader("Test")

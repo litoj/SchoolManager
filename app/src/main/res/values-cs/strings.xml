@@ -241,6 +241,7 @@
     <string name="setts_him_parse">Zobrazovat názvy položek ve zpracované formě</string>
     <string name="setts_interface">Rozhraní</string>
     <string name="setts_desc_lines">Počet přímo zobrazených řádků poznámky</string>
+    <string name="setts_double_tap_ms">Okno dvojkliku (ms)</string>
     <string name="setts_test_amount">Výchozí počet položek v testu</string>
     <string name="setts_test_clever">Vytváření testů podle úspěšnosti</string>
     <string name="setts_test_time">Výchozí čas na položku</string>

@@ -206,7 +206,11 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		var parse = true
 		var defFlip = true
 
+		/** The double-tap window, a settings change rebuilds the list detector. */
+		var doubleTapMs by mutableIntStateOf(DEFAULT_DOUBLE_TAP_MS)
+
 		const val DEFAULT_DESC_LINES = 5
+		const val DEFAULT_DOUBLE_TAP_MS = 300
 
 		/**
 		 * A blank description never shows, and a longer one collapses to its icon.
@@ -224,6 +228,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 			defFlip = AppSettings.getBool("flipWord", true)
 			parse = AppSettings.getBool("parseNames", true)
 			descLines = AppSettings.getInt("descLines", DEFAULT_DESC_LINES)
+			doubleTapMs = AppSettings.getInt("doubleTapMs", DEFAULT_DOUBLE_TAP_MS)
 		}
 
 		@JvmStatic

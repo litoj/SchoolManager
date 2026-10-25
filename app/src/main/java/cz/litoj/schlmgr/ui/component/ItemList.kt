@@ -114,7 +114,6 @@ internal class LongPressDragHandler {
 }
 
 private val DoubleTapSpan = 32.dp
-private const val DOUBLE_TAP_MS = 300L
 
 /**
  * Classifies a tap as the second of a double by time and place.
@@ -197,7 +196,10 @@ fun ItemList(
 		onReorderDrop = callbacks.onReorderDrop,
 	)
 	val pullModifier = Modifier.rememberTopPullModifier(listState, callbacks.onTopPull)
-	val doubleTap = remember(density) { DoubleTapDetector(with(density) { DoubleTapSpan.toPx() }, DOUBLE_TAP_MS) }
+	// the setting rebuilds the detector, its change applies to the next gesture
+	val doubleTap = remember(density, ItemRow.doubleTapMs) {
+		DoubleTapDetector(with(density) { DoubleTapSpan.toPx() }, ItemRow.doubleTapMs.toLong())
+	}
 	val onDoubleTap by rememberUpdatedState(callbacks.onItemDoubleTap)
 	val selectionActive by rememberUpdatedState(state.selectionActive)
 	val tapModifier = Modifier.pointerInput(doubleTap) {

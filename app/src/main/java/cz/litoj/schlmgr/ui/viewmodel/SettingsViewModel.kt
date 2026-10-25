@@ -19,6 +19,7 @@ class SettingsState(
 	parse: Boolean = true,
 	defFlip: Boolean = true,
 	descLinesText: String = ItemRow.DEFAULT_DESC_LINES.toString(),
+	doubleTapMsText: String = ItemRow.doubleTapMs.toString(),
 	wordSplitText: String = ";",
 	clever: Boolean = false,
 	amountText: String = "10",
@@ -29,6 +30,8 @@ class SettingsState(
 	var defFlip by mutableStateOf(defFlip)
 		private set
 	var descLinesText by mutableStateOf(descLinesText)
+		private set
+	var doubleTapMsText by mutableStateOf(doubleTapMsText)
 		private set
 	var wordSplitText by mutableStateOf(wordSplitText)
 		private set
@@ -63,6 +66,20 @@ class SettingsState(
 	fun descLinesFocusLost() {
 		if (descLinesText.toIntOrNull() == null)
 			descLinesText = ItemRow.descLines.toString()
+	}
+
+	/** Zero stands for a disabled double, since no second tap fits the window. */
+	fun setDoubleTapMs(text: String) {
+		doubleTapMsText = digitsOnly(text)
+		doubleTapMsText.toIntOrNull()?.let {
+			ItemRow.doubleTapMs = it
+			AppSettings.set("doubleTapMs", it)
+		}
+	}
+
+	fun doubleTapMsFocusLost() {
+		if (doubleTapMsText.toIntOrNull() == null)
+			doubleTapMsText = ItemRow.doubleTapMs.toString()
 	}
 
 	fun toggleClever() {
@@ -134,6 +151,7 @@ class SettingsViewModel : ViewModel() {
 		parse = ItemRow.parse,
 		defFlip = ItemRow.defFlip,
 		descLinesText = ItemRow.descLines.toString(),
+		doubleTapMsText = ItemRow.doubleTapMs.toString(),
 		wordSplitText = WordListWriter.wordTranslationSplitter,
 		clever = TestEngine.isClever,
 		amountText = TestEngine.amount.toString(),
