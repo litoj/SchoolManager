@@ -12,6 +12,7 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -100,11 +101,11 @@ fun NewItemFab(
 					modifier = Modifier
 						.offset {
 							IntOffset(
-								(at.x - IconSize.toPx() / 2).roundToInt(),
-								(at.y - IconSize.toPx() / 2).roundToInt(),
+								(at.x - PaletteIconSize.toPx() / 2).roundToInt(),
+								(at.y - PaletteIconSize.toPx() / 2).roundToInt(),
 							)
 						}
-						.size(IconSize)
+						.size(PaletteIconSize)
 						// the hovered icon carries the header colour, and the rest
 						// the grey wash of the strip
 						.background(
@@ -184,7 +185,7 @@ fun NewItemFab(
 					painterResource(R.drawable.ic_add),
 					contentDescription = null,
 					colorFilter = ColorFilter.tint(ExplorerColors.onHeader),
-					modifier = Modifier.align(Alignment.Center).size(FabIconSize),
+					modifier = Modifier.align(Alignment.Center).padding(IconPadding).fillMaxSize(),
 				)
 			}
 		}
@@ -207,9 +208,8 @@ private suspend fun AwaitPointerEventScope.nextChange(pointer: PointerId): Point
 /** The button: a rounded square in the title bar colour. Every size below derives from it. */
 internal val FabSize = 50.dp
 /** The cell of a palette icon: the size of the button, the type icon at its spot. */
-private val IconSize = FabSize
+private val PaletteIconSize = FabSize
 private val IconPadding = 10.dp
-private val FabIconSize = FabSize - IconPadding * 2
 /** The palette icons sit one button size off the edge of the button. */
 internal val PaletteRadius = FabSize * 2
 private val FabCorner = 10.dp

@@ -296,7 +296,7 @@ private fun ActionIcon(res: Int, onClick: () -> Unit) {
 		painterResource(res),
 		contentDescription = null,
 		modifier = Modifier
-			.size(30.dp)
+			.size(IconSize)
 			.clickable(onClick = onClick),
 	)
 }

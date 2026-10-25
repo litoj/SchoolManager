@@ -37,6 +37,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.ui.component.IconSize
 
 /**
  * The chrome of the top bar: the status strip above the 55dp row on the header colour.
@@ -114,8 +115,7 @@ fun RowScope.TopBarIconButton(
 		Image(
 			painter = painterResource(icon),
 			contentDescription = null,
-			// the buttons draw the icon scaled inside a 50x55 slot
-			modifier = Modifier.size(width = 32.5.dp, height = 30.dp),
+			modifier = Modifier.size(IconSize),
 			colorFilter = ColorFilter.tint(colorResource(R.color.colorOnHeader)),
 		)
 	}
@@ -138,7 +138,7 @@ fun RowScope.TopBarMoreButton(entries: List<MenuEntry>, onPick: (Int) -> Unit) {
 		Image(
 			painter = painterResource(R.drawable.ic_more),
 			contentDescription = null,
-			modifier = Modifier.size(width = 32.5.dp, height = 30.dp),
+			modifier = Modifier.size(IconSize),
 			colorFilter = ColorFilter.tint(colorResource(R.color.colorOnHeader)),
 		)
 		if (open) MoreMenu(entries, onPick) { open = false }

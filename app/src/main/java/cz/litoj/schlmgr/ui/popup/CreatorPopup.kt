@@ -39,6 +39,7 @@ import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.component.HairlineDivider
+import cz.litoj.schlmgr.ui.component.IconSize
 import cz.litoj.schlmgr.ui.viewmodel.CreatorResult
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.TranslationRow
@@ -387,7 +388,7 @@ class CreatorPopup(
 					tint = Color.Unspecified,
 					modifier = Modifier
 						.padding(start = 12.5.dp)
-						.size(30.dp)
+						.size(IconSize)
 						.clickable {
 							row.source?.let { removedTranslations.add(it) }
 							translations.remove(row)

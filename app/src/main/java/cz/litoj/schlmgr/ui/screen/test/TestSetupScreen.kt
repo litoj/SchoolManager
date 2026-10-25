@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.activity.TestActivity
 import cz.litoj.schlmgr.ui.component.HairlineDivider
+import cz.litoj.schlmgr.ui.component.IconSize
 import cz.litoj.schlmgr.ui.component.iconRes
 import cz.litoj.schlmgr.ui.component.SettingNumberRow
 import cz.litoj.schlmgr.ui.component.SettingSwitchRow
@@ -170,7 +171,7 @@ private fun SourceRow(row: SourceRowUi, onRemove: () -> Unit) {
 			Image(
 				painter = painterResource(row.kind.iconRes),
 				contentDescription = null,
-				modifier = Modifier.size(30.dp),
+				modifier = Modifier.size(IconSize),
 			)
 			Spacer(Modifier.width(3.dp))
 			Text(
@@ -182,7 +183,7 @@ private fun SourceRow(row: SourceRowUi, onRemove: () -> Unit) {
 			painter = painterResource(R.drawable.ic_cancel_round),
 			contentDescription = stringResource(R.string.delete),
 			modifier = Modifier
-				.size(30.dp)
+				.size(IconSize)
 				.clickable(onClick = onRemove),
 		)
 	}
@@ -222,7 +223,7 @@ private fun AddSourceTile(onAdd: () -> Unit) {
 		Image(
 			painter = painterResource(R.drawable.ic_add),
 			contentDescription = null,
-			modifier = Modifier.size(20.dp),
+			modifier = Modifier.size(IconSize),
 		)
 		Spacer(Modifier.width(5.dp))
 		Text(

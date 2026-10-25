@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -29,6 +30,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.ui.component.IconSize
 
 /**
  * The destinations of the drawer, the flat sibling screens of the navigation graph.
@@ -85,11 +87,14 @@ fun AppDrawer(
 				),
 			contentAlignment = Alignment.Center,
 		) {
-			Row(verticalAlignment = Alignment.CenterVertically) {
+			Row(
+				Modifier.height(IntrinsicSize.Min),
+				verticalAlignment = Alignment.CenterVertically,
+			) {
 				Image(
 					painter = painterResource(R.drawable.ic_app),
 					contentDescription = null,
-					modifier = Modifier.size(40.dp),
+					modifier = Modifier.fillMaxHeight(),
 				)
 				Spacer(Modifier.width(5.dp))
 				Text(
@@ -130,7 +135,7 @@ private fun DestinationRow(
 		Image(
 			painter = painterResource(destination.icon),
 			contentDescription = null,
-			modifier = Modifier.size(24.dp),
+			modifier = Modifier.size(IconSize),
 			// the theme foreground overrides the own tint of each drawable.
 			// ic_subject and ic_menu_settings carry green ones
 			colorFilter = ColorFilter.tint(colorResource(R.color.colorPrimaryFg)),

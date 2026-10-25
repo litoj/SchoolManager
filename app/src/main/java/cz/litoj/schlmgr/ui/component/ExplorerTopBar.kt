@@ -7,6 +7,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -100,12 +101,13 @@ fun CrumbChain(
 					.padding(horizontal = 4.dp),
 			)
 			if (index < names.size - 1) {
-				// scaled content stays centered. The tint carries the palette, because
-				// the fixed grey fill of the drawable would read the same in both.
+				// the tint carries the palette, a fixed grey fill would read the same in both themes.
+				// the dimmed chevron stays a separator instead of reading as text.
 				Image(
 					painterResource(R.drawable.ic_bread_crumbs),
 					contentDescription = null,
-					colorFilter = ColorFilter.tint(crumbColor),
+					modifier = Modifier.fillMaxHeight(0.5f),
+					colorFilter = ColorFilter.tint(crumbColor.copy(alpha = 0.75f)),
 				)
 			}
 		}

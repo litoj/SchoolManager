@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.ui.component.HairlineDivider
+import cz.litoj.schlmgr.ui.component.IconSize
 
 /**
  * The pre-fork reference picker: the items referencing the word, in no particular order.
@@ -107,7 +108,7 @@ class ReferencePopup(
 					tint = Color.Unspecified,
 					modifier = Modifier
 						.padding(start = 12.5.dp)
-						.size(30.dp)
+						.size(IconSize)
 						.clickable { following.remove(item) }
 				)
 			}

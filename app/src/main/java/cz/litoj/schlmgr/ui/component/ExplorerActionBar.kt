@@ -13,10 +13,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -25,14 +27,13 @@ import cz.litoj.schlmgr.R
 
 private val BarColor @Composable get() = ExplorerColors.actionBar
 
-private val TextEnabled @Composable get() = ExplorerColors.actionText
-private val TextDisabled @Composable get() = ExplorerColors.actionTextDisabled
+private val ForegroundEnabled @Composable get() = ExplorerColors.actionText
+private val ForegroundDisabled @Composable get() = ExplorerColors.actionTextDisabled
 
 private class Action(
-	@field:DrawableRes @param:DrawableRes val iconEnabled: Int,
+	@field:DrawableRes @param:DrawableRes val icon: Int,
 	@field:StringRes @param:StringRes val label: Int,
 	val onClick: () -> Unit,
-	@field:DrawableRes @param:DrawableRes val iconDisabled: Int = iconEnabled,
 )
 
 /**
@@ -68,7 +69,7 @@ fun SelectionActionBar(
 			true,
 		)
 		ActionButton(
-			Action(R.drawable.ic_edit, R.string.edit, onEdit, R.drawable.ic_edit_disabled),
+			Action(R.drawable.ic_edit, R.string.edit, onEdit),
 			editEnabled,
 		)
 		ActionButton(
@@ -133,7 +134,7 @@ private fun ActionStrip(
 	)
 }
 
-/** One icon-over-label button. A false enabled dims the label and disables the click. */
+/** One icon-over-label button. A false enabled dims the icon and label, and disables the click. */
 @Composable
 private fun RowScope.ActionButton(action: Action, enabled: Boolean) {
 	Column(
@@ -144,15 +145,18 @@ private fun RowScope.ActionButton(action: Action, enabled: Boolean) {
 		horizontalAlignment = Alignment.CenterHorizontally,
 		verticalArrangement = Arrangement.Center,
 	) {
+		// Icons render at the Material standard. No drawable size can change the bar.
 		Image(
-			painterResource(if (enabled) action.iconEnabled else action.iconDisabled),
+			painterResource(action.icon),
 			contentDescription = null,
+			modifier = Modifier.size(IconSize),
+			colorFilter = ColorFilter.tint(if (enabled) ForegroundEnabled else ForegroundDisabled),
 		)
 		Spacer(Modifier.height(2.dp))
 		Text(
 			stringResource(action.label),
 			fontSize = 12.sp,
-			color = if (enabled) TextEnabled else TextDisabled,
+			color = if (enabled) ForegroundEnabled else ForegroundDisabled,
 			maxLines = 1,
 		)
 	}

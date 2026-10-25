@@ -31,6 +31,7 @@ import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.FlipConflict
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.component.HairlineDivider
+import cz.litoj.schlmgr.ui.component.IconSize
 import cz.litoj.schlmgr.ui.viewmodel.FlipConflictsResult
 import cz.litoj.schlmgr.ui.viewmodel.FlipKeptRow
 
@@ -118,7 +119,7 @@ class FlipConflictPopup(conflicts: List<FlipConflict>) : DialogSpec {
 					modifier = Modifier
 						.align(Alignment.CenterEnd)
 						.padding(end = 10.dp)
-						.size(30.dp)
+						.size(IconSize)
 						.clickable { showHelp() }
 				)
 			}
@@ -188,7 +189,7 @@ class FlipConflictPopup(conflicts: List<FlipConflict>) : DialogSpec {
 					tint = Color.Unspecified,
 					modifier = Modifier
 						.padding(start = 12.5.dp)
-						.size(30.dp)
+						.size(IconSize)
 						.clickable { remove(row) }
 				)
 			}

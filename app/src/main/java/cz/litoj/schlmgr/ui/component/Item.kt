@@ -144,7 +144,7 @@ private fun PositionCell(
 			// the name tells the accessibility service which row the icon selects
 			contentDescription = if (onIconClick == null) null else item.name,
 			modifier = Modifier
-				.size(TypeIconSize)
+				.size(IconSize)
 				.then(if (onIconClick != null) Modifier.clickable { onIconClick() } else Modifier),
 		)
 	}
@@ -198,7 +198,7 @@ internal fun successRatioBackground(item: ItemUiModel): Color = Color(successRat
 
 private val CellSidePadding = 2.dp
 
-private fun tintBandWidth(positionWidth: Dp) = positionWidth + CellSidePadding * 2 + TypeIconSize
+private fun tintBandWidth(positionWidth: Dp) = positionWidth + CellSidePadding * 2 + IconSize
 
 /**
  * The success-ratio band behind the position cell, painted in the draw phase.
@@ -228,7 +228,6 @@ private class CellMetrics private constructor(val textSize: androidx.compose.ui.
 	}
 }
 
-private val TypeIconSize = 30.dp
 private val ActionIconSize = 30.dp
 
 val RowKind.iconRes: Int
@@ -253,7 +252,7 @@ private fun ItemPreviews() {
 			PreviewModels.word(4, 100, "das Haus"),
 			{}, {}, descVisible = false,
 			positionWidth = browseWidth,
-			infoAction = { Image(painterResource(R.drawable.ic_desc_popup), null) },
+			infoAction = { Image(painterResource(R.drawable.ic_desc_popup), null, Modifier.size(IconSize)) },
 		)
 		Item(
 			PreviewModels.word(5, 0, "die Schule\n школа").copy(selected = true),
