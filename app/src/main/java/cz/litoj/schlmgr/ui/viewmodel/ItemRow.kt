@@ -205,7 +205,6 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		var descLines by mutableIntStateOf(DEFAULT_DESC_LINES)
 		var parse = true
 		var defFlip = true
-		var flipAllOnClick = false
 
 		const val DEFAULT_DESC_LINES = 5
 
@@ -223,7 +222,6 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		@JvmStatic
 		fun applyStoredOptions() {
 			defFlip = AppSettings.getBool("flipWord", true)
-			flipAllOnClick = AppSettings.getBool("flipAllOnClick", false)
 			parse = AppSettings.getBool("parseNames", true)
 			descLines = AppSettings.getInt("descLines", DEFAULT_DESC_LINES)
 		}

@@ -230,7 +230,6 @@
     <string name="select">Select</string>
     <string name="select_all">Select all</string>
     <string name="select_test">Test</string>
-    <string name="setts_him_allflip">Translate all words on every click</string>
     <string name="setts_him_flipped">Translate words automatically</string>
     <string name="setts_him_parse">Display item names parsed</string>
     <string name="setts_interface">Interface</string>

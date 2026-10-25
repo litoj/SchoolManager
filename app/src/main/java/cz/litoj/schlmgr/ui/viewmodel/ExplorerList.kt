@@ -201,15 +201,23 @@ internal class ExplorerList(
 	fun flipWord(item: ItemRow?) {
 		val row = item ?: return
 		scope.launch {
-			// snapshot on main, since the rows travel.
-			val toFlip = if (ItemRow.flipAllOnClick) {
-				val flip = !row.flipped
-				models.filter {
-					(it.item.type == ItemKind.WORD || it.item.type == ItemKind.TRANSLATION) &&
-						it.flipped != flip
-				}
-			} else listOf(row)
 			// the flip content, read on io: the translations or the words.
+			val content = withContext(io) { ItemRow.flipContentOf(row.item) }
+			row.applyFlip(content)
+			remap()
+		}
+	}
+
+	/**
+	 * Flips every word and translation row but [exceptId] to [flipped].
+	 * - a double click drives it, the tapped row already holds the state.
+	 */
+	fun flipAllTo(exceptId: Int, flipped: Boolean) {
+		scope.launch {
+			val toFlip = models.filter {
+				(it.item.type == ItemKind.WORD || it.item.type == ItemKind.TRANSLATION) &&
+					it.item.id != exceptId && it.flipped != flipped
+			}
 			val applied = withContext(io) {
 				toFlip.map { target -> target to ItemRow.flipContentOf(target.item) }
 			}

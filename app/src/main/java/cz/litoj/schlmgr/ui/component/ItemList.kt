@@ -5,6 +5,8 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -14,8 +16,14 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
@@ -39,6 +47,11 @@ import cz.litoj.schlmgr.ui.viewmodel.TranslationLine
 class ItemListCallbacks(
 	/** A tap on a row opens a container or flips a word, and the screen dispatches it. */
 	val onItemClick: (ItemUiModel) -> Unit = {},
+	/**
+	 * The second tap of a double, the two taps landed at one place.
+	 * - a word flip may shrink its row, so the second tap can hit another row.
+	 */
+	val onItemDoubleTap: () -> Unit = {},
 	/**
 	 * A long-press on a row starts or toggles its selection.
 	 * - the directory jump of a search hit lives in the more menu.
@@ -98,6 +111,34 @@ internal class LongPressDragHandler {
 	}
 }
 
+private val DoubleTapSpan = 32.dp
+private const val DOUBLE_TAP_MS = 300L
+
+/**
+ * Classifies a tap as the second of a double by time and place.
+ * - the place decides, since a flip may shrink the row and move another word under the finger.
+ * - the previous tap must have hit a word, a double only extends its flip.
+ */
+internal class DoubleTapDetector(private val spanPx: Float, private val windowMs: Long) {
+
+	private var lastPosition = Offset.Zero
+	private var lastAt = 0L
+	private var lastWasWord = false
+
+	/**
+	 * Records a tap down and answers whether it closes a double.
+	 * - the caller consumes the down, so no row sees the tap.
+	 */
+	fun onDown(position: Offset, at: Long, isWord: Boolean): Boolean {
+		val closes = lastWasWord && at - lastAt <= windowMs &&
+			(position - lastPosition).getDistance() <= spanPx
+		lastPosition = position
+		lastAt = at
+		lastWasWord = isWord
+		return closes
+	}
+}
+
 /**
  * A selected list, the picker or a search-result list drags a selection.
  * - a result list has no container order to change.
@@ -133,6 +174,7 @@ fun ItemList(
 		state.maxPosition,
 		state.variant,
 	)
+	val density = LocalDensity.current
 	val pending = remember { LongPressDragHandler() }
 	// a structural change moves the rows, so a stale arm would act on the wrong ones.
 	// the key is the content step, since a selection remap keeps the arm the press just set
@@ -153,7 +195,24 @@ fun ItemList(
 		onReorderDrop = callbacks.onReorderDrop,
 	)
 	val pullModifier = Modifier.rememberTopPullModifier(listState, callbacks.onTopPull)
-	LazyColumn(modifier.then(dragModifier).then(pullModifier), state = listState) {
+	val doubleTap = remember(density) { DoubleTapDetector(with(density) { DoubleTapSpan.toPx() }, DOUBLE_TAP_MS) }
+	val onDoubleTap by rememberUpdatedState(callbacks.onItemDoubleTap)
+	val selectionActive by rememberUpdatedState(state.selectionActive)
+	val tapModifier = Modifier.pointerInput(doubleTap) {
+		awaitEachGesture {
+			val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+			// the row under the tap decides the kind, a flip may have moved it
+			val kind = listState.layoutInfo.visibleItemsInfo
+				.firstOrNull { down.position.y >= it.offset && down.position.y < it.offset + it.size }
+				?.contentType as? RowKind
+			if (!selectionActive && doubleTap.onDown(down.position, down.uptimeMillis, kind == RowKind.WORD)) {
+				// the list takes the second tap of a double, no row ever sees it
+				down.consume()
+				onDoubleTap()
+			}
+		}
+	}
+	LazyColumn(modifier.then(dragModifier).then(pullModifier).then(tapModifier), state = listState) {
 		itemsIndexed(
 			state.items,
 			key = { _, item -> item.key },

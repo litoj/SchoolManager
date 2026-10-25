@@ -18,7 +18,6 @@ import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 class SettingsState(
 	parse: Boolean = true,
 	defFlip: Boolean = true,
-	flipAllOnClick: Boolean = false,
 	descLinesText: String = ItemRow.DEFAULT_DESC_LINES.toString(),
 	wordSplitText: String = ";",
 	clever: Boolean = false,
@@ -28,8 +27,6 @@ class SettingsState(
 	var parse by mutableStateOf(parse)
 		private set
 	var defFlip by mutableStateOf(defFlip)
-		private set
-	var flipAllOnClick by mutableStateOf(flipAllOnClick)
 		private set
 	var descLinesText by mutableStateOf(descLinesText)
 		private set
@@ -52,12 +49,6 @@ class SettingsState(
 		defFlip = !defFlip
 		ItemRow.defFlip = defFlip
 		AppSettings.set("flipWord", defFlip)
-	}
-
-	fun toggleFlipAllOnClick() {
-		flipAllOnClick = !flipAllOnClick
-		ItemRow.flipAllOnClick = flipAllOnClick
-		AppSettings.set("flipAllOnClick", flipAllOnClick)
 	}
 
 	/** Zero stands for the icon-only display. */
@@ -142,7 +133,6 @@ class SettingsViewModel : ViewModel() {
 	val state = SettingsState(
 		parse = ItemRow.parse,
 		defFlip = ItemRow.defFlip,
-		flipAllOnClick = ItemRow.flipAllOnClick,
 		descLinesText = ItemRow.descLines.toString(),
 		wordSplitText = WordListWriter.wordTranslationSplitter,
 		clever = TestEngine.isClever,

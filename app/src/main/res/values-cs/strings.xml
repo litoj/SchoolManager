@@ -237,7 +237,6 @@
     <string name="select">Zvolit</string>
     <string name="select_all">Vybrat vše</string>
     <string name="select_test">Test</string>
-    <string name="setts_him_allflip">Přeložit všechna slovíčka každým kliknutím</string>
     <string name="setts_him_flipped">Automaticky překládat slovíčka</string>
     <string name="setts_him_parse">Zobrazovat názvy položek ve zpracované formě</string>
     <string name="setts_interface">Rozhraní</string>

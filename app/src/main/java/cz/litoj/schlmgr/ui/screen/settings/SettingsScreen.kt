@@ -64,8 +64,6 @@ private fun SettingsList(state: SettingsState, modifier: Modifier = Modifier) {
 		HairlineDivider()
 		SettingSwitchRow(stringResource(R.string.setts_him_flipped), state.defFlip, state::toggleDefFlip)
 		HairlineDivider()
-		SettingSwitchRow(stringResource(R.string.setts_him_allflip), state.flipAllOnClick, state::toggleFlipAllOnClick)
-		HairlineDivider()
 		SettingNumberRow(
 			stringResource(R.string.setts_desc_lines), state.descLinesText, state::setDescLines,
 		) { state.descLinesFocusLost(); keyboard?.hide() }

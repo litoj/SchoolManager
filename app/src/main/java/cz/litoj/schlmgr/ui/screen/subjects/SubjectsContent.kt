@@ -85,6 +85,7 @@ private fun mainCallbacks(viewModel: MainExplorerViewModel, selectionActive: Boo
 			else if (ui.trackPath != null) viewModel.onSearchHitClick(ui)
 			else viewModel.onItemClick(ui.payload)
 		},
+		onItemDoubleTap = viewModel::onItemDoubleTap,
 		onItemLongClick = { ui ->
 			viewModel.onItemLongClick(ui.payload)
 		},

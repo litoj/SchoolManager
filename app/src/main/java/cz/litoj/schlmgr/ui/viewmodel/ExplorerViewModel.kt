@@ -71,6 +71,9 @@ abstract class ExplorerViewModel<R>(
 		const val SEARCH_MIN_CHARS = 2
 		const val SEARCH_DEBOUNCE_MS = 300L
 		const val EXIT_WINDOW_MS = 3000L
+
+		// the two taps of a double span the list window plus both tap durations
+		const val DOUBLE_FLIP_TOTAL_MS = 600L
 	}
 
 	private val searchFlow = SearchFlow(viewModelScope, io, history, SearchFlowHost())
@@ -307,7 +310,30 @@ abstract class ExplorerViewModel<R>(
 		true
 	} else false
 
-	fun flipWord(item: ItemRow?) = list.flipWord(item)
+	private var lastFlipRow = -1
+	private var lastFlipTarget = false
+	private var lastFlipAt = 0L
+
+	/**
+	 * A word tap flips the word, a double tap on it flips the rest to it.
+	 * - the tapped word keeps the state its first tap produced.
+	 */
+	fun flipWord(item: ItemRow?) {
+		val row = item ?: return
+		lastFlipRow = row.item.id
+		lastFlipTarget = !row.flipped
+		lastFlipAt = clock()
+		list.flipWord(row)
+	}
+
+	/**
+	 * The second tap of a double, the list flips to the word of the first tap.
+	 * - the age bound drops a stale first tap, the list may have changed since.
+	 */
+	fun onItemDoubleTap() {
+		if (lastFlipRow == -1 || clock() - lastFlipAt > DOUBLE_FLIP_TOTAL_MS) return
+		list.flipAllTo(lastFlipRow, lastFlipTarget)
+	}
 
 	private inner class SelectionHost : Selection.Host {
 		override val models get() = list.items()

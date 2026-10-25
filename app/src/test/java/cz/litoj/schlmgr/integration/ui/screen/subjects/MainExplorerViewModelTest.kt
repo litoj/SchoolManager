@@ -467,6 +467,73 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
+	fun `a double tap on a word flips every other word to it`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "w1", null, listOf("xx1" to null))
+		ItemRepository.createWord(c1.id, "w2", null, listOf("xx2" to null))
+		ItemRepository.createWord(c1.id, "w3", null, listOf("xx3" to null))
+		val model = vmIn("A")
+		model.openSearchField()
+		model.onQuerySubmit("xx")
+		val rows = model.items()
+		assertEquals(3, rows.size)
+		val w1 = rows.single { it.item.name == "w1" }
+		val w2 = rows.single { it.item.name == "w2" }
+		val w3 = rows.single { it.item.name == "w3" }
+
+		model.onSearchHitClick(w1.toUi())
+		model.onItemDoubleTap()
+
+		assertTrue("the tapped word keeps its first flip", w1.flipped)
+		assertTrue("the second word flipped to it", w2.flipped)
+		assertTrue("the third word flipped to it", w3.flipped)
+	}
+
+	@Test
+	fun `a double tap without a recent word flip changes nothing`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "w1", null, listOf("xx1" to null))
+		ItemRepository.createWord(c1.id, "w2", null, listOf("xx2" to null))
+		val model = vmIn("A")
+		model.openSearchField()
+		model.onQuerySubmit("xx")
+		val w1 = model.items().single { it.item.name == "w1" }
+		val w2 = model.items().single { it.item.name == "w2" }
+		model.onSearchHitClick(w1.toUi())
+
+		now += ExplorerViewModel.DOUBLE_FLIP_TOTAL_MS + 1
+		model.onItemDoubleTap()
+
+		assertTrue("the word keeps its single flip", w1.flipped)
+		assertFalse("the stale double flipped nothing", w2.flipped)
+	}
+
+	@Test
+	fun `a second click without the double flips only the tapped word`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "w1", null, listOf("xx1" to null))
+		ItemRepository.createWord(c1.id, "w2", null, listOf("xx2" to null))
+		ItemRepository.createWord(c1.id, "w3", null, listOf("xx3" to null))
+		val model = vmIn("A")
+		model.openSearchField()
+		model.onQuerySubmit("xx")
+		val rows = model.items()
+		val w1 = rows.single { it.item.name == "w1" }
+		val w2 = rows.single { it.item.name == "w2" }
+		val w3 = rows.single { it.item.name == "w3" }
+
+		model.onSearchHitClick(w1.toUi())
+		model.onSearchHitClick(w2.toUi())
+
+		assertTrue("the first word kept its flip", w1.flipped)
+		assertTrue("the second word flipped alone", w2.flipped)
+		assertFalse("the third word stayed unflipped", w3.flipped)
+	}
+
+	@Test
 	fun `go to location opens the selected hit's directory`() {
 		val (model, row) = searchedWord()
 		model.setSelected(row, true)
