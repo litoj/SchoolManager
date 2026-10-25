@@ -6,6 +6,7 @@ import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import androidx.room.Room
@@ -33,6 +34,7 @@ import org.robolectric.annotation.Config
  * The picker chrome against the selection state, the subjects screen shapes.
  * - the select strip shows only while rows are selected.
  * - the corner button is the select-all of the picker, always present.
+ * - a tap while selecting toggles the row, no click-through like the explorer.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -112,5 +114,33 @@ class PickerScreenTest {
 		tapCornerButton()
 		rule.runOnIdle { assertFalse(model.items().any { it.selected }) }
 		rule.onNodeWithText(text(R.string.select)).assertDoesNotExist()
+	}
+
+	@Test
+	fun `a tap while selecting toggles the row instead of opening it`() {
+		val model = PickerViewModel(Dispatchers.Unconfined)
+		rule.setContent { PickerScreen(model, {}) }
+		rule.waitForIdle()
+
+		selectTheRow()
+
+		rule.onNodeWithText("B").performClick()
+		rule.runOnIdle {
+			assertTrue("the tap selected the other row",
+				model.items().single { it.item.name == "B" }.selected)
+			assertTrue("the long-pressed row stays selected",
+				model.items().single { it.item.name == "A" }.selected)
+		}
+		// the tap opened nothing, both rows still stand
+		rule.onNodeWithText("A").assertExists()
+		rule.onNodeWithText("B").assertExists()
+
+		rule.onNodeWithText("A").performClick()
+		rule.runOnIdle {
+			assertFalse("the second tap dropped the first row",
+				model.items().single { it.item.name == "A" }.selected)
+			assertTrue("the other row keeps its selection",
+				model.items().single { it.item.name == "B" }.selected)
+		}
 	}
 }
