@@ -52,6 +52,8 @@ class ItemListCallbacks(
 	 * - a word flip may shrink its row, so the second tap can hit another row.
 	 */
 	val onItemDoubleTap: () -> Unit = {},
+	/** The type icon of a row tapped, the host selects the row with it. */
+	val onItemIconClick: (ItemUiModel) -> Unit = {},
 	/**
 	 * A long-press on a row starts or toggles its selection.
 	 * - the directory jump of a search hit lives in the more menu.
@@ -230,6 +232,10 @@ fun ItemList(
 					pending.arm(index, dragMode)
 					callbacks.onItemLongClick(item)
 				},
+				// the icon selects while a selection runs or the picker shows
+				onIconClick = if (state.selectionActive || state.pickerMode) {
+					{ callbacks.onItemIconClick(item) }
+				} else null,
 				descVisible = !state.pickerMode,
 				variant = state.variant,
 				positionWidth = positionWidth,

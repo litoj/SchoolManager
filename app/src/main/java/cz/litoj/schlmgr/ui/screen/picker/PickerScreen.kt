@@ -91,6 +91,7 @@ private fun PickerContent(viewModel: PickerViewModel, modifier: Modifier = Modif
 private fun pickerCallbacks(viewModel: PickerViewModel): ItemListCallbacks = ItemListCallbacks(
 	onItemClick = { ui -> viewModel.onItemClick(ui.payload) },
 	onItemDoubleTap = viewModel::onItemDoubleTap,
+	onItemIconClick = { ui -> viewModel.toggleSelect(ui.payload) },
 	onItemLongClick = { ui -> viewModel.onItemLongClick(ui.payload) },
 	onSelectRange = viewModel::selectRange,
 	onSelectEnd = viewModel::endRangeSelect,

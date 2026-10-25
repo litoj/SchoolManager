@@ -3,6 +3,7 @@ package cz.litoj.schlmgr.ui.component
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +43,8 @@ fun Item(
 	item: ItemUiModel,
 	onClick: () -> Unit,
 	onLongClick: () -> Unit,
+	/** The type icon tapped, a running selection or the picker selects the row with it. */
+	onIconClick: (() -> Unit)? = null,
 	descVisible: Boolean,
 	modifier: Modifier = Modifier,
 	variant: ExplorerRowVariant = ExplorerRowVariant.Browse,
@@ -61,7 +64,7 @@ fun Item(
 			.successRatioBand(item, tintBandWidth(positionWidth))
 			.combinedClickable(onClick = onClick, onLongClick = onLongClick),
 	) {
-		PositionCell(item, variant, positionWidth, Modifier.align(Alignment.CenterVertically))
+		PositionCell(item, variant, positionWidth, Modifier.align(Alignment.CenterVertically), onIconClick)
 		// the wrapper column holds the texts and the trailing actions.
 		// so the separator below them spans the part of the row without the success-rate colour.
 		Column(Modifier.weight(1f)) {
@@ -120,6 +123,7 @@ private fun PositionCell(
 	variant: ExplorerRowVariant,
 	width: Dp,
 	modifier: Modifier = Modifier,
+	onIconClick: (() -> Unit)? = null,
 ) {
 	Row(
 		modifier,
@@ -137,8 +141,11 @@ private fun PositionCell(
 		)
 		Image(
 			painterResource(item.kind.iconRes),
-			contentDescription = null,
-			modifier = Modifier.size(TypeIconSize),
+			// the name tells the accessibility service which row the icon selects
+			contentDescription = if (onIconClick == null) null else item.name,
+			modifier = Modifier
+				.size(TypeIconSize)
+				.then(if (onIconClick != null) Modifier.clickable { onIconClick() } else Modifier),
 		)
 	}
 }

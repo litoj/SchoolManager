@@ -86,6 +86,7 @@ private fun mainCallbacks(viewModel: MainExplorerViewModel, selectionActive: Boo
 			else viewModel.onItemClick(ui.payload)
 		},
 		onItemDoubleTap = viewModel::onItemDoubleTap,
+		onItemIconClick = { ui -> viewModel.toggleSelect(ui.payload) },
 		onItemLongClick = { ui ->
 			viewModel.onItemLongClick(ui.payload)
 		},
