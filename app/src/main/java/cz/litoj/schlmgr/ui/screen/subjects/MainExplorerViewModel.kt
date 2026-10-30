@@ -148,12 +148,13 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 	private var pendingAfterPermission: (() -> Unit)? = null
 
 	/** A second request while one waits is refused and reported, so none is lost silently. */
-	fun requestWithPermission(action: () -> Unit) {
+	fun requestWithPermission(action: () -> Unit): Boolean {
 		if (pendingAfterPermission != null) {
 			UserMessages.showMsg(ctx.getString(R.string.permission_pending), ctx.getString(R.string.permission_pending))
-			return
+			return false
 		}
 		pendingAfterPermission = action
+		return true
 	}
 
 	fun runAfterPermission() {

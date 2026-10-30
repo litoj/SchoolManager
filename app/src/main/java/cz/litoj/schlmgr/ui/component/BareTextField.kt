@@ -121,6 +121,7 @@ private fun BareTextFieldCore(
 	var focused by remember { mutableStateOf(false) }
 	val state = rememberTextFieldState(value)
 	val echoed by rememberUpdatedState(value)
+	val onValueChange by rememberUpdatedState(onValueChange)
 	// an external value change re-seeds the field. A sync during composition
 	// would clobber edits the relay below has not delivered yet
 	LaunchedEffect(value) {

@@ -38,6 +38,15 @@ class DoubleTapDetectorTest {
 	}
 
 	@Test
+	fun `a reset breaks the pair across a content change`() {
+		detector.onDown(Offset(100f, 100f), at = 1_000L, isWord = true)
+
+		// the list swapped its content, so a tap in the new list cannot close a double
+		detector.reset()
+		assertFalse(detector.onDown(Offset(105f, 100f), at = 1_100L, isWord = true))
+	}
+
+	@Test
 	fun `the first tap of a list is single`() {
 		assertFalse(detector.onDown(Offset(100f, 100f), at = 1_000L, isWord = true))
 	}

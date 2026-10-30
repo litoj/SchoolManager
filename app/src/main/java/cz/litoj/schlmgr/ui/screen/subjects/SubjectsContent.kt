@@ -9,6 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -35,9 +36,11 @@ internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifie
 	val state by viewModel.state.collectAsStateWithLifecycle()
 	val listState by viewModel.listState.collectAsStateWithLifecycle()
 	// a horizontal swipe switches to the sibling.
+	// the pixel threshold keys the gesture, so a density change restarts it
 	val swipeThreshold = with(LocalDensity.current) { 40.dp.toPx() }
 	val searching = listState.variant == ExplorerRowVariant.Search
 	var swipe by remember { mutableFloatStateOf(0f) }
+	val openSibling by rememberUpdatedState(viewModel::openSibling)
 	val scrollState = rememberLazyListState()
 	// the New button visibility follows the drag gesture, not the list scroll
 	val fabVisibility = rememberFabVisibility()
@@ -54,12 +57,12 @@ internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifie
 			scrollState = scrollState,
 			modifier = Modifier.fillMaxSize()
 				.fabDragVisibility(fabVisibility) { scrollState.canScrollForward || scrollState.canScrollBackward }
-				.pointerInput(Unit) {
+				.pointerInput(swipeThreshold) {
 				detectHorizontalDragGestures(
 					onHorizontalDrag = { _, amount -> swipe += amount },
 					onDragEnd = {
-						if (swipe < -swipeThreshold) viewModel.openSibling(1)
-						else if (swipe > swipeThreshold) viewModel.openSibling(-1)
+						if (swipe < -swipeThreshold) openSibling(1)
+						else if (swipe > swipeThreshold) openSibling(-1)
 						swipe = 0f
 					},
 					onDragCancel = { swipe = 0f },

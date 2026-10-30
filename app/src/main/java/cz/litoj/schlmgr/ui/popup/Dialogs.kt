@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
@@ -51,6 +52,13 @@ internal class StickyImePad {
 	var held by mutableIntStateOf(0)
 		private set
 
+	/** The live inset of the last frame, written by [follow]. */
+	var live by mutableIntStateOf(0)
+		private set
+
+	/** The pad of the current frame, derived so an unchanged pad recomposes nothing. */
+	val pad: Int by derivedStateOf { padFor(live) }
+
 	fun pause() {
 		paused = true
 	}
@@ -66,6 +74,7 @@ internal class StickyImePad {
 
 	/** Captures the live inset while it leads, after a resume only once it returns. */
 	fun follow(ime: Int) {
+		live = ime
 		when {
 			paused -> {}
 			awaiting -> if (ime > 0) {
@@ -105,6 +114,8 @@ interface DialogSpec {
  * The dialog stack of the app: the process-wide dialog list as observable state.
  * - every activity composing a [DialogHost] renders the same dialogs.
  * - rotation needs no repaint machinery, since the stack survives and recomposition re-renders.
+ * - an activity may finish with its dialog still on the stack: the host beneath
+ *   in the task renders it, see the test results popup.
  */
 object Dialogs {
 
@@ -197,7 +208,7 @@ private fun DialogScrim(spec: DialogSpec) {
 	Box(
 		Modifier
 			.fillMaxSize()
-			.padding(bottom = with(density) { sticky.padFor(ime).toDp() })
+			.padding(bottom = with(density) { sticky.pad.toDp() })
 			.background(colorResource(R.color.colorScrim))
 			.pointerInput(spec) {
 				detectTapGestures {

@@ -76,11 +76,21 @@ object TestRunState {
 			true
 		} else false
 
+	/** The walk of the run that is starting, null once it lands. */
+	@Volatile
+	private var walking: Host? = null
+
 	/**
 	 * The blocking walk runs off main, and the state lands only into a living screen.
-	 * - a rotated screen walks again, and an exited screen leaves nothing behind.
+	 * - a rotated screen takes the walk over, since its old host is gone.
+	 * - a second start of the same screen inside the window runs nothing.
+	 * - an exited screen leaves nothing behind.
 	 */
 	fun start(host: Host) {
+		// the run shows only after the walk lands, so a second call inside the
+		// window would otherwise run a second engine beside the first
+		if (walking === host) return
+		walking = host
 		// an empty or below-1 field falls back to the setting of the engine
 		val amount = (TestSetupState.amountText.toIntOrNull() ?: 0)
 			.takeIf { it >= 1 } ?: TestEngine.amount
@@ -93,7 +103,11 @@ object TestRunState {
 			// - it turns a selected chapter into its words
 			val src = TestEngine.convertAll(TestSetupState.list)
 			if (src.isEmpty()) {
-				mainHandler.post { host.onNoObjects() }
+				mainHandler.post {
+					if (walking !== host) return@post
+					walking = null
+					host.onNoObjects()
+				}
 				return@launch
 			}
 			val newTest = TestEngine()
@@ -112,6 +126,8 @@ object TestRunState {
 			)
 			val models = newTest.getTestSrc().map { TestItemModel(it) }
 			mainHandler.post {
+				if (walking !== host) return@post
+				walking = null
 				if (!host.isAlive()) return@post
 				// a rotation during grading skipped reset, so start from empty
 				_items.clear()
@@ -162,6 +178,8 @@ object TestRunState {
 	fun reset() {
 		test?.stopTest()
 		test = null
+		// a walk still in flight lands into nothing, an exited screen left it behind
+		walking = null
 		secondsLeft = 0
 		_answers.clear()
 		_items.clear()

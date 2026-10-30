@@ -17,8 +17,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -140,6 +143,12 @@ internal class DoubleTapDetector(private val spanPx: Float, private val windowMs
 		lastWasWord = isWord
 		return closes
 	}
+
+	/** A content change must not pair taps from the list before it. */
+	fun reset() {
+		lastAt = 0
+		lastWasWord = false
+	}
 }
 
 /**
@@ -179,9 +188,6 @@ fun ItemList(
 	)
 	val density = LocalDensity.current
 	val pending = remember { LongPressDragHandler() }
-	// a structural change moves the rows, so a stale arm would act on the wrong ones.
-	// the key is the content step, since a selection remap keeps the arm the press just set
-	LaunchedEffect(state.contentStep) { pending.reset() }
 	val dragMode = listDragMode(
 		state.pickerMode,
 		state.selectionActive,
@@ -204,6 +210,13 @@ fun ItemList(
 	}
 	val onDoubleTap by rememberUpdatedState(callbacks.onItemDoubleTap)
 	val selectionActive by rememberUpdatedState(state.selectionActive)
+	// a structural change moves the rows, so a stale arm would act on the wrong ones.
+	// - the key is the content step, since a selection remap keeps the arm the press just set.
+	// - the taps of two different lists must not pair into a double.
+	LaunchedEffect(state.contentStep) {
+		pending.reset()
+		doubleTap.reset()
+	}
 	val tapModifier = Modifier.pointerInput(doubleTap) {
 		awaitEachGesture {
 			val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
@@ -270,12 +283,19 @@ fun ItemList(
 /**
  * Reveals the last row of the list whenever [ItemListState.scrollToBottom] asks.
  * - the reveal animates, so the rows it passes stay readable.
+ * - the counter is consumed across recreations, so a rotation never replays
+ *   a scroll that the import already asked for.
  */
 @Composable
 internal fun ListEndReveal(listState: ItemListState, scrollState: LazyListState) {
+	var revealed by rememberSaveable { mutableIntStateOf(0) }
 	LaunchedEffect(listState.scrollToBottom) {
-		if (listState.scrollToBottom > 0 && listState.items.isNotEmpty())
+		// a fresh view model restarts its counter, so the remembered level must follow
+		if (listState.scrollToBottom < revealed) revealed = listState.scrollToBottom
+		if (listState.scrollToBottom > revealed && listState.items.isNotEmpty()) {
+			revealed = listState.scrollToBottom
 			scrollState.animateScrollToItem(listState.items.lastIndex)
+		}
 	}
 }
 

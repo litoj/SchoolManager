@@ -100,6 +100,20 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
+	fun `a second pending permission request refuses, the first keeps its slot`() {
+		seed()
+		val model = vm()
+		val ran = mutableListOf<Int>()
+
+		assertTrue(model.requestWithPermission { ran.add(1) })
+		assertFalse(model.requestWithPermission { ran.add(2) })
+
+		model.runAfterPermission()
+
+		assertEquals(listOf(1), ran)
+	}
+
+	@Test
 	fun `back clears the selection before it pops a path level`() {
 		seed()
 		val model = vmIn("A")

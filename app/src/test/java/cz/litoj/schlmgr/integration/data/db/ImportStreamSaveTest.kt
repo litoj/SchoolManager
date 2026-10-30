@@ -93,7 +93,7 @@ class ImportStreamSaveTest {
 		} catch (e: IllegalArgumentException) {
 			// expected, because a blank name is not an item
 		}
-		// the refusal runs before the save, so nothing landed
+		// the stream failed whole, so nothing landed
 		assertEquals(emptyList<String>(), ItemRepository.subjects().map { it.name })
 	}
 

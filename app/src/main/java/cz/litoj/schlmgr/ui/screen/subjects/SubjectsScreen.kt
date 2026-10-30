@@ -93,8 +93,9 @@ fun SubjectsScreen(
 				context, Manifest.permission.POST_NOTIFICATIONS)
 			!= PackageManager.PERMISSION_GRANTED
 		) {
-			viewModel.requestWithPermission(action)
-			notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+			// a refused request keeps the older action, so its dialog must not open
+			if (viewModel.requestWithPermission(action))
+				notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
 		} else action()
 	}
 

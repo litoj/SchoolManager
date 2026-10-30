@@ -62,7 +62,6 @@ internal object ImportService {
 
 	/**
 	 * Every non-translation item carries a name.
-	 * A violating file fails the whole import before anything is written.
 	 * A translation may stay blank, since the save skips it.
 	 */
 	private fun requireNamed(importer: DataImporter) {

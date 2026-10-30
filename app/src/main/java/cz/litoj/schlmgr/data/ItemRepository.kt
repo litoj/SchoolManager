@@ -380,8 +380,6 @@ object ItemRepository {
 	 * Applies a committed word edit.
 	 * - it forks when the word is shared, renamed and lost a translation.
 	 * - otherwise it edits in place, and a rename-join keeps the survivor.
-	 * - a blank name refuses, since no export format round-trips it.
-	 * - an edit that leaves the word without a translation refuses.
 	 */
 	@JvmStatic
 	fun editWord(edit: WordEdit): DbItem = query {

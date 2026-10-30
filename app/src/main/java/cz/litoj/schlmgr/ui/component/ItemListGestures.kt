@@ -184,10 +184,15 @@ internal fun Modifier.rememberTopPullModifier(
 	// the start position decides whether a pull can count.
 	// the down lands before any scroll moves the list, so the position read is the true start.
 	var beganAtTop by remember { mutableStateOf(!listState.canScrollBackward) }
+	// a wheel gesture has no down, so its first tick is its own gesture start.
+	// - the scrollable clears the flag at every gesture end.
+	// - the flag never outlives the finger gesture it came from.
+	var finger by remember { mutableStateOf(false) }
 	return this
 		.pointerInput(listState) {
 			awaitEachGesture {
 				awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+				finger = true
 				beganAtTop = !listState.canScrollBackward
 			}
 		}
@@ -199,6 +204,7 @@ internal fun Modifier.rememberTopPullModifier(
 				override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
 					// the user input source covers the finger and the wheel.
 					// flings and programmatic scrolls never fire.
+					if (!finger) beganAtTop = !listState.canScrollBackward
 					val pullable = !listState.canScrollBackward && beganAtTop
 					if (pull.scroll(available.y, !pullable, source == NestedScrollSource.UserInput)) {
 						currentPull()
@@ -208,6 +214,7 @@ internal fun Modifier.rememberTopPullModifier(
 
 				override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
 					pull.gestureEnded()
+					finger = false
 					return Velocity.Zero
 				}
 			}
