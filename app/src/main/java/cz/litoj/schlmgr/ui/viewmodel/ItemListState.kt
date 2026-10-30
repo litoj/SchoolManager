@@ -18,6 +18,8 @@ data class ItemListState(
 	val selectionActive: Boolean = false,
 	val variant: ExplorerRowVariant = ExplorerRowVariant.Browse,
 	val contentStep: Int = 0,
+	/** A reload or a row appended at the end asks the list to show its last row. */
+	val scrollToBottom: Int = 0,
 ) {
 	/** One read for the selection strips, instead of a rescan of [items]. */
 	val anySelected: Boolean get() = items.any { it.selected }

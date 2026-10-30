@@ -23,15 +23,6 @@ object FileGateway {
 		DocumentFile.fromSingleUri(ctx, uri)?.name ?: fallback
 
 	/**
-	 * - the name only labels the parse errors, and the content lands with no wrapper.
-	 */
-	fun containerNameFrom(pickedName: String?): String {
-		if (pickedName.isNullOrEmpty()) return "subject"
-		val dot = pickedName.lastIndexOf('.')
-		return if (dot > 0) pickedName.substring(0, dot) else pickedName
-	}
-
-	/**
 	 * The shape of the picked document, read from its first non-whitespace byte.
 	 * - a word list starts with a name.
 	 * - an unreadable document reads as a word list, and the worker read reports the failure.
@@ -94,9 +85,11 @@ object FileGateway {
 	 * - the success report follows only a written file.
 	 * - a failure already went out through onSaveFail.
 	 */
-	fun writeExport(uri: Uri, name: String, text: String, words: Int, chapters: Int) {
+	fun writeExport(
+		uri: Uri, name: String, text: String, words: Int, chapters: Int, mime: String,
+	) {
 		if (FileText.writeText(uri, text)) {
-			Startup.onExportSuccess(name, words, chapters)
+			Startup.onExportSuccess(uri, name, words, chapters, mime)
 		}
 	}
 }

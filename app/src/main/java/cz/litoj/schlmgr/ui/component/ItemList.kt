@@ -25,6 +25,7 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -51,7 +52,7 @@ class ItemListCallbacks(
 	 * The second tap of a double, the two taps landed at one place.
 	 * - a word flip may shrink its row, so the second tap can hit another row.
 	 */
-	val onItemDoubleTap: () -> Unit = {},
+	val onItemDoubleTap: (ItemUiModel?) -> Unit = {},
 	/** The type icon of a row tapped, the host selects the row with it. */
 	val onItemIconClick: (ItemUiModel) -> Unit = {},
 	/**
@@ -125,17 +126,26 @@ internal class DoubleTapDetector(private val spanPx: Float, private val windowMs
 	private var lastPosition = Offset.Zero
 	private var lastAt = 0L
 	private var lastWasWord = false
+	private var lastAnchor = -1
+
+	/** The row id the opening tap of the last closed double hit, -1 over the empty part. */
+	var openAnchor = -1
+		private set
 
 	/**
 	 * Records a tap down and answers whether it closes a double.
 	 * - the caller consumes the down, so no row sees the tap.
+	 * - the anchor rides the opening tap, its row read before its own
+	 *   flip could move it.
 	 */
-	fun onDown(position: Offset, at: Long, isWord: Boolean): Boolean {
+	fun onDown(position: Offset, at: Long, isWord: Boolean, anchor: Int = -1): Boolean {
 		val closes = lastWasWord && at - lastAt <= windowMs &&
 			(position - lastPosition).getDistance() <= spanPx
+		if (closes) openAnchor = lastAnchor
 		lastPosition = position
 		lastAt = at
 		lastWasWord = isWord
+		lastAnchor = anchor
 		return closes
 	}
 }
@@ -202,17 +212,24 @@ fun ItemList(
 	}
 	val onDoubleTap by rememberUpdatedState(callbacks.onItemDoubleTap)
 	val selectionActive by rememberUpdatedState(state.selectionActive)
+	val items by rememberUpdatedState(state.items)
 	val tapModifier = Modifier.pointerInput(doubleTap) {
 		awaitEachGesture {
 			val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-			// the row under the tap decides the kind, a flip may have moved it
-			val kind = listState.layoutInfo.visibleItemsInfo
-				.firstOrNull { down.position.y >= it.offset && down.position.y < it.offset + it.size }
-				?.contentType as? RowKind
-			if (!selectionActive && doubleTap.onDown(down.position, down.uptimeMillis, kind == RowKind.WORD)) {
+			// the row under the tap decides the kind and the anchor, read
+			// before the row's own flip can move it
+			val open = rowAt(listState, down.position.y)
+			val onWord = open?.contentType == RowKind.WORD || open == null
+			val anchorId = open?.let { items.getOrNull(it.index)?.payload?.item?.id } ?: -1
+			if (!selectionActive && doubleTap.onDown(down.position, down.uptimeMillis, onWord, anchorId)) {
 				// the list takes the second tap of a double, no row ever sees it
 				down.consume()
-				onDoubleTap()
+				// the explorer owns the double: the opening tap's row anchors
+				// the flip to its current state, an opening tap on the empty
+				// part flips every row over
+				val anchor = if (doubleTap.openAnchor != -1)
+					items.firstOrNull { it.payload?.item?.id == doubleTap.openAnchor } else null
+				onDoubleTap(if (anchor?.kind == RowKind.WORD) anchor else null)
 			}
 		}
 	}
@@ -253,9 +270,8 @@ fun ItemList(
 				infoAction = if (!state.pickerMode && item.description.isNotEmpty() && !ItemRow.showsDescription(item.description)) {
 					{ InfoActionIcon { callbacks.onInfo(item) } }
 				} else null,
-				// references belong to the search view.
-				// a browse row lives in its home, so there is nothing to jump to.
-				referenceAction = if (!state.pickerMode && state.variant == ExplorerRowVariant.Search && item.hasSource) {
+				// a reference row jumps to its home from wherever it shows
+				referenceAction = if (!state.pickerMode && item.hasSource) {
 					{ ReferenceActionIcon { callbacks.onReference(item) } }
 				} else null,
 				onInnerInfo = if (!state.pickerMode) {
@@ -267,6 +283,18 @@ fun ItemList(
 }
 
 /**
+ * Reveals the last row of the list whenever [ItemListState.scrollToBottom] asks.
+ * - the reveal animates, so the rows it passes stay readable.
+ */
+@Composable
+internal fun ListEndReveal(listState: ItemListState, scrollState: LazyListState) {
+	LaunchedEffect(listState.scrollToBottom) {
+		if (listState.scrollToBottom > 0 && listState.items.isNotEmpty())
+			scrollState.animateScrollToItem(listState.items.lastIndex)
+	}
+}
+
+/**
  * The move springs of the rows, quick and without a bounce.
  * - they are not the stock StiffnessMediumLow glide that animateItem and animateContentSize use.
  */
@@ -274,6 +302,10 @@ private val RowPlacementSpec = spring<IntOffset>(
 	stiffness = Spring.StiffnessMedium,
 	dampingRatio = 1f,
 )
+
+/** The visible row at the y position, or null over the empty part of the list. */
+private fun rowAt(list: LazyListState, y: Float) =
+	list.layoutInfo.visibleItemsInfo.firstOrNull { y >= it.offset && y < it.offset + it.size }
 
 private val RowSizeSpec = spring<IntSize>(
 	stiffness = Spring.StiffnessMedium,
@@ -287,14 +319,15 @@ internal fun InfoActionIcon(onClick: () -> Unit) {
 
 @Composable
 internal fun ReferenceActionIcon(onClick: () -> Unit) {
-	ActionIcon(R.drawable.ic_ref, onClick)
+	ActionIcon(R.drawable.ic_ref, onClick, R.string.more_go_to)
 }
 
 @Composable
-private fun ActionIcon(res: Int, onClick: () -> Unit) {
+private fun ActionIcon(res: Int, onClick: () -> Unit, description: Int? = null) {
+	val label = if (description != null) stringResource(description) else null
 	Image(
 		painterResource(res),
-		contentDescription = null,
+		contentDescription = label,
 		modifier = Modifier
 			.size(IconSize)
 			.clickable(onClick = onClick),

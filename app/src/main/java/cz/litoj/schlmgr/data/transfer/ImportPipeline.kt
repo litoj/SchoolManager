@@ -25,6 +25,13 @@ abstract class FileWorker(
 	private val postToUi: (Runnable) -> Unit,
 	private val threadName: String,
 ) {
+	/**
+	 * The import result callback, set before start.
+	 * - it runs on the worker thread.
+	 * - the import mover uses it to open a single imported container.
+	 */
+	var onImported: ((ItemRepository.ImportResult) -> Unit)? = null
+
 	/** The view may be gone while the worker runs, so nothing binds the thread to it. */
 	fun start(): Thread =
 		Thread({ runTemplate() }, threadName).also { it.start() }
@@ -74,6 +81,7 @@ abstract class FileWorker(
 
 	protected fun notifyImported(result: ItemRepository.ImportResult) {
 		Startup.onImportSuccess(result.words, result.chapters)
+		onImported?.invoke(result)
 	}
 }
 
@@ -100,7 +108,7 @@ class WordIntoContainerImport(
 		FileGateway.importProgress(appContext, R.string.progress_import, uri).use { progress ->
 			val content = readContent(uri, progress) ?: return
 			// wrapped, since the save loop drives the row phase of the bar
-			val outcome = persist(WordListImporter(self?.name ?: FileGateway.containerNameFrom(fileName), content), progress, anchor)
+			val outcome = persist(WordListImporter(fileName.ifEmpty { uri.toString() }, content), progress, anchor)
 			post { if (self == null && atRoot()) onRootReload() else onRefreshed() }
 			notifyImported(outcome)
 		}
@@ -113,7 +121,7 @@ class WordIntoContainerImport(
  * A word list picked at the root: the file content lands as it is, with no wrapper.
  * - a saved container wrapper chapter becomes a subject again.
  * - bare words land as the rows of the root.
- * - the file name only labels the parse errors, see [FileGateway.containerNameFrom].
+ * - the file name only labels the parse errors.
  * - the importer parses the whole text before anything is written.
  * - the subjects screen reloads instead of adding rows.
  */
@@ -125,10 +133,10 @@ class WordAsSubjectImport(
 ) : FileWorker(appContext, postToUi, "Subject file import") {
 
 	override fun doRun() {
-		val name = FileGateway.containerNameFrom(FileGateway.displayName(appContext, uri, ""))
+		val fileName = FileGateway.displayName(appContext, uri, uri.toString())
 		FileGateway.importProgress(appContext, R.string.progress_import, uri).use { progress ->
 			val content = readContent(uri, progress) ?: return
-			val result = persist(WordListImporter(name, content), progress)
+			val result = persist(WordListImporter(fileName, content), progress)
 			post { onRootReload() }
 			notifyImported(result)
 		}
@@ -157,9 +165,15 @@ class JsonTreeImport(
 	override fun doRun() {
 		FileGateway.importProgress(appContext, R.string.progress_import, uri).use { progress ->
 			val content = readContent(uri, progress) ?: return
+			val fileName = FileGateway.displayName(appContext, uri, uri.toString())
+			val importer = try {
+				HJsonImporter(content)
+			} catch (e: IllegalArgumentException) {
+				throw IllegalArgumentException("$fileName: ${e.message}", e)
+			}
 			// no open container means the root, where the file chapters become subjects
 			val anchor = openContainer()?.id ?: ROOT_ID
-			val result = persist(HJsonImporter(content), progress, anchor)
+			val result = persist(importer, progress, anchor)
 			post { if (atRoot()) onRootReload() else onCurrentReload() }
 			notifyImported(result)
 		}
@@ -225,7 +239,7 @@ class LegacyDirImport(
 /**
  * The one shared export path, with the codec as the injected [ExportFormat] strategy.
  * - the word-list and tree-JSON target workers differ only in the format they hand over.
- * - the containers are the pick-time snapshot of the caller.
+ * - the selected rows are the pick-time snapshot of the caller.
  */
 class ExportPipeline(
 	appContext: Context,
@@ -237,18 +251,18 @@ class ExportPipeline(
 ) : FileWorker(appContext, postToUi, format.threadName()) {
 
 	override fun doRun() {
-		val containers = selected()
-		if (containers.isEmpty()) return
+		val rows = selected()
+		if (rows.isEmpty()) return
 		// the callback touches UI state, the selection clear, so it runs on
 		// the main thread like every other follow-up
 		post { onExportStart() }
-		val request = ExportRequest(uri, containers, format)
+		val request = ExportRequest(uri, rows, format)
 		val name = FileGateway.displayName(appContext, request.uri)
 		FileGateway.titledProgress(appContext, R.string.progress_export, name).use { progress ->
 			// wrapped, since the stream handover targets the bar at the object count
-			val text = ItemRepository.export(progress.exporter(format.exporter()), request.containers)
-			val (words, chapters) = ItemRepository.subgraphStats(request.containers.map { it.id })
-			FileGateway.writeExport(request.uri, name, text, words, chapters)
+			val text = ItemRepository.export(progress.exporter(format.exporter()), request.rows)
+			val (words, chapters) = ItemRepository.subgraphStats(request.rows.map { it.id })
+			FileGateway.writeExport(request.uri, name, text, words, chapters, format.mimeType())
 		}
 	}
 

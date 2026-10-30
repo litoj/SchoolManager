@@ -1,10 +1,9 @@
 package cz.litoj.schlmgr.ui.screen.subjects
 
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.Modifier
+import cz.litoj.schlmgr.ui.component.FabVisibility
 import cz.litoj.schlmgr.ui.component.NewItemFab
-import cz.litoj.schlmgr.ui.component.rememberScrollUpVisible
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerScreenState
 import cz.litoj.schlmgr.ui.viewmodel.ItemListState
@@ -21,14 +20,14 @@ internal fun SubjectsFab(
 	viewModel: MainExplorerViewModel,
 	listState: ItemListState,
 	state: ExplorerScreenState,
-	scrollState: LazyListState,
+	visibility: FabVisibility,
 	modifier: Modifier = Modifier,
 ) {
 	NewItemFab(
 		kinds = newKinds(
 			listState.selectionActive, viewModel.pasteArmed,
 			menuKindFor(listState.variant == ExplorerRowVariant.Search, state.breadcrumbs.size)),
-		visible = rememberScrollUpVisible(scrollState),
+		visible = visibility.shown,
 		onPick = { kind -> viewModel.onMenuItemClick(newMenuIdOf(kind)) },
 		modifier = modifier,
 	)

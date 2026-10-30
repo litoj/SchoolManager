@@ -4,10 +4,12 @@ import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.FlipResolution
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.db.ROOT_ID
+import cz.litoj.schlmgr.support.wordRows
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
 import cz.litoj.schlmgr.ui.screen.subjects.MenuId
 import cz.litoj.schlmgr.ui.viewmodel.CreatorResult
@@ -24,10 +26,13 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -482,7 +487,7 @@ class MainExplorerViewModelTest {
 		val w3 = rows.single { it.item.name == "w3" }
 
 		model.onSearchHitClick(w1.toUi())
-		model.onItemDoubleTap()
+		model.onItemDoubleTap(w1.toUi())
 
 		assertTrue("the tapped word keeps its first flip", w1.flipped)
 		assertTrue("the second word flipped to it", w2.flipped)
@@ -490,7 +495,7 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
-	fun `a double tap without a recent word flip changes nothing`() {
+	fun `a double tap without an anchor flips every row over`() {
 		val (aId, _) = seed()
 		val c1 = ItemRepository.children(aId).single()
 		ItemRepository.createWord(c1.id, "w1", null, listOf("xx1" to null))
@@ -502,11 +507,10 @@ class MainExplorerViewModelTest {
 		val w2 = model.items().single { it.item.name == "w2" }
 		model.onSearchHitClick(w1.toUi())
 
-		now += ExplorerViewModel.DOUBLE_FLIP_TOTAL_MS + 1
-		model.onItemDoubleTap()
+		model.onItemDoubleTap(null)
 
-		assertTrue("the word keeps its single flip", w1.flipped)
-		assertFalse("the stale double flipped nothing", w2.flipped)
+		assertTrue("the flipped word turned back", !w1.flipped)
+		assertTrue("the plain word flipped over", w2.flipped)
 	}
 
 	@Test
@@ -1055,33 +1059,14 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
-	fun `an export without a selection carries the open container and names the file after it`() {
+	fun `an export without a selection emits no request`() {
 		seed()
 		val model = vmIn("A")
 
-		assertEquals(listOf("A"), model.exportContainers().map { it.name })
-
 		model.onMenuItemClick(MenuId.EXPORT_WORD)
-		val request = runBlocking { withTimeout(100) { model.requests.first() } }
-		assertEquals("A.txt", (request as MainExplorerViewModel.Request.PickWordExport).fileName)
-	}
 
-	@Test
-	fun `an export without a selection at the root carries every subject and the generic name`() {
-		seed()
-		// a bare word under the root, a mis-anchored import, has no wrapper of its
-		// own in either format, so the export skips it
-		val bare = ItemRepository.legacyInsert("bare", null, ItemKind.WORD, 0, 0)
-		val trl = ItemRepository.legacyInsert("tr", null, ItemKind.TRANSLATION, 0, 0)
-		ItemRepository.legacyLinkAtEnd(ROOT_ID, bare)
-		ItemRepository.legacyLinkAtEnd(bare, trl)
-		val model = vm()
-
-		assertEquals(listOf("A", "B"), model.exportContainers().map { it.name })
-
-		model.onMenuItemClick(MenuId.EXPORT_WORD)
-		val request = runBlocking { withTimeout(100) { model.requests.first() } }
-		assertEquals("subjects.txt", (request as MainExplorerViewModel.Request.PickWordExport).fileName)
+		assertNull("no export without a selection",
+			runBlocking { withTimeoutOrNull(100) { model.requests.firstOrNull() } })
 	}
 
 	@Test
@@ -1090,10 +1075,126 @@ class MainExplorerViewModelTest {
 		val model = vmIn("A")
 		model.setSelected(model.items().single { it.item.name == "c1" }, true)
 
-		assertEquals(listOf("c1"), model.exportContainers().map { it.name })
+		assertEquals(listOf("c1"), model.exportRows().map { it.name })
 
 		model.onMenuItemClick(MenuId.EXPORT_WORD)
 		val request = runBlocking { withTimeout(100) { model.requests.first() } }
 		assertEquals("c1.txt", (request as MainExplorerViewModel.Request.PickWordExport).fileName)
+	}
+
+	@Test
+	fun `an export with selected words carries those words only`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "xyz", null, listOf("t1" to null))
+		ItemRepository.createWord(c1.id, "w2", null, listOf("t2" to null))
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		model.setSelected(model.items().single { it.item.name == "xyz" }, true)
+		model.setSelected(model.items().single { it.item.name == "w2" }, true)
+
+		assertEquals(listOf("xyz", "w2"), model.exportRows().map { it.name })
+	}
+
+	@Test
+	fun `an export of two selected words names the file after the open chapter as partial`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "xyz", null, listOf("t1" to null))
+		ItemRepository.createWord(c1.id, "w2", null, listOf("t2" to null))
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		model.setSelected(model.items().single { it.item.name == "xyz" }, true)
+		model.setSelected(model.items().single { it.item.name == "w2" }, true)
+
+		model.onMenuItemClick(MenuId.EXPORT_WORD)
+		val request = runBlocking { withTimeout(100) { model.requests.first() } }
+		assertEquals("c1 - partial.txt", (request as MainExplorerViewModel.Request.PickWordExport).fileName)
+	}
+
+	@Test
+	fun `an export of one selected row at the root names the file after it`() {
+		seed()
+		val model = vm()
+		model.setSelected(model.items().single { it.item.name == "A" }, true)
+
+		model.onMenuItemClick(MenuId.EXPORT_WORD)
+		val request = runBlocking { withTimeout(100) { model.requests.first() } }
+		assertEquals("A.txt", (request as MainExplorerViewModel.Request.PickWordExport).fileName)
+	}
+
+	@Test
+	fun `an export of several selected rows at the root names the file subjects`() {
+		seed()
+		val model = vm()
+		model.setSelected(model.items().single { it.item.name == "A" }, true)
+		model.setSelected(model.items().single { it.item.name == "B" }, true)
+
+		model.onMenuItemClick(MenuId.EXPORT_WORD)
+		val request = runBlocking { withTimeout(100) { model.requests.first() } }
+		assertEquals("subjects.txt", (request as MainExplorerViewModel.Request.PickWordExport).fileName)
+	}
+
+	@Test
+	fun `a JSON export of the selection names the file after the chapter`() {
+		seed()
+		val model = vmIn("A")
+		model.setSelected(model.items().single { it.item.name == "c1" }, true)
+
+		model.onMenuItemClick(MenuId.EXPORT_JSON)
+		val request = runBlocking { withTimeout(100) { model.requests.first() } }
+		assertEquals("c1", (request as MainExplorerViewModel.Request.PickJsonExport).fileName)
+	}
+
+	@Test
+	fun `a selected translation row never joins an export`() {
+		val (aId, _) = seed()
+		val model = vmIn("A")
+		val c1 = model.items().single { it.item.name == "c1" }
+		val word = ItemRepository.createWord(c1.item.id, "w1", null, listOf("t1" to null))
+		val translation = ItemRepository.translations(word.id).single()
+		val row = ItemRow.ofSearchHit(
+			translation, listOf(ItemRepository.get(aId)!!, c1.item), 1, emptyList())
+		model.load(listOf(row), isSearch = true)
+		model.setSelected(row, true)
+
+		assertTrue("a translation row never joins", model.exportRows().isEmpty())
+	}
+
+	@Test
+	fun `an import target opens the path and scrolls to the bottom`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		val model = vm()
+
+		model.openImportTarget(listOf(aId, c1.id), scrollToBottom = true)
+
+		assertEquals(listOf("A", "c1"), model.history.path.map { it.name })
+		assertEquals(1, model.listState.value.scrollToBottom)
+	}
+
+	@Test
+	fun `an import reload asks the list to scroll to the bottom`() {
+		val model = vm()
+		model.load(wordRows(3))
+		assertEquals(0, model.listState.value.scrollToBottom)
+
+		model.requestScrollToBottom()
+		model.load(wordRows(4))
+
+		assertEquals(1, model.listState.value.scrollToBottom)
+	}
+
+	@Test
+	fun `a row appended by the creator asks the list to show its end`() {
+		seed()
+		val model = vmIn("A")
+		assertEquals(0, model.listState.value.scrollToBottom)
+
+		model.addItem(ItemRow(
+			DbItem(name = "new", description = "", type = ItemKind.CHAPTER), null, 2))
+
+		assertEquals("the appended row reveals the end", 1, model.listState.value.scrollToBottom)
+		assertEquals(listOf("c1", "new"), model.items().map { it.item.name })
 	}
 }

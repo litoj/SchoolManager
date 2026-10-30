@@ -93,6 +93,8 @@ abstract class ExplorerViewModel<R>(
 
 	fun refreshReorderable() = list.refreshReorderable()
 
+	fun requestScrollToBottom() = list.requestScrollToBottom()
+
 	fun load(content: List<ItemRow>, isSearch: Boolean = false, isPicker: Boolean = false) =
 		list.load(content, isSearch, isPicker)
 
@@ -310,29 +312,24 @@ abstract class ExplorerViewModel<R>(
 		true
 	} else false
 
-	private var lastFlipRow = -1
-	private var lastFlipTarget = false
-	private var lastFlipAt = 0L
-
 	/**
-	 * A word tap flips the word, a double tap on it flips the rest to it.
-	 * - the tapped word keeps the state its first tap produced.
+	 * A word tap flips the word.
+	 * - the double of the explorer reads the row state at close time, no memory here.
 	 */
 	fun flipWord(item: ItemRow?) {
 		val row = item ?: return
-		lastFlipRow = row.item.id
-		lastFlipTarget = !row.flipped
-		lastFlipAt = clock()
 		list.flipWord(row)
 	}
 
 	/**
-	 * The second tap of a double, the list flips to the word of the first tap.
-	 * - the age bound drops a stale first tap, the list may have changed since.
+	 * The closing tap of a double, the explorer owns it.
+	 * - the anchor row extends its own state to every other row.
+	 * - no anchor, both taps on the empty part, flips every row over.
 	 */
-	fun onItemDoubleTap() {
-		if (lastFlipRow == -1 || clock() - lastFlipAt > DOUBLE_FLIP_TOTAL_MS) return
-		list.flipAllTo(lastFlipRow, lastFlipTarget)
+	fun onItemDoubleTap(anchor: ItemUiModel?) {
+		val row = anchor?.payload
+		if (row != null) list.flipAllTo(row.item.id, row.flipped)
+		else list.flipAllOver()
 	}
 
 	private inner class SelectionHost : Selection.Host {

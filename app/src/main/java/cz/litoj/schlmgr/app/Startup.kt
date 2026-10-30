@@ -1,6 +1,7 @@
 package cz.litoj.schlmgr.app
 
 import android.content.Context
+import android.net.Uri
 import androidx.annotation.VisibleForTesting
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.ItemRepository
@@ -8,8 +9,8 @@ import cz.litoj.schlmgr.data.wordlist.WordListWriter
 import cz.litoj.schlmgr.testing.TestEngine
 
 /**
- * App startup and the file outcome reports of the transfer layer, called from
- * [cz.litoj.schlmgr.ui.activity.MainActivity] each time it is created.
+ * App startup and the file outcome reports of the transfer layer, called by
+ * every activity entry before its first composition.
  */
 object Startup {
 
@@ -91,8 +92,8 @@ object Startup {
 	 * name of the picked target where the file landed.
 	 */
 	@JvmStatic
-	fun onExportSuccess(path: String, words: Int, chapters: Int) =
-		UserMessages.onExportSuccess(path, words, chapters)
+	fun onExportSuccess(uri: Uri, path: String, words: Int, chapters: Int, mime: String) =
+		UserMessages.onExportSuccess(uri, path, words, chapters, mime)
 
 	/** File read failure, and the caller skips the failing document. */
 	@JvmStatic

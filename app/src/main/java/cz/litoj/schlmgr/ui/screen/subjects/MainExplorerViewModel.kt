@@ -174,6 +174,20 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		setContent(history.path.lastOrNull())
 	}
 
+	/** The import mover hands over its destination after the worker finished. */
+	fun openImportTarget(pathIds: List<Int>, scrollToBottom: Boolean) {
+		viewModelScope.launch(io) {
+			val path = pathIds.mapNotNull { ItemRepository.get(it) }
+				.filter { it.type == ItemKind.CHAPTER }
+				.toMutableList()
+			postToUi {
+				openChain(path)
+				onChange()
+				if (scrollToBottom) requestScrollToBottom()
+			}
+		}
+	}
+
 	// see [ExplorerViewModel.onBackRequested].
 
 	/**
@@ -388,6 +402,7 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		override fun clearSelection() = this@MainExplorerViewModel.clearSelection()
 		override fun setContent(container: DbItem?) = this@MainExplorerViewModel.setContent(container)
 		override fun reloadContent() = this@MainExplorerViewModel.reloadContent()
+		override fun requestScrollToBottom() = this@MainExplorerViewModel.requestScrollToBottom()
 		override fun refreshInfo() = this@MainExplorerViewModel.refreshInfo()
 	}
 
@@ -395,7 +410,7 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 	private fun exportJsonFile() = transfer.exportJsonFile()
 
-	internal fun exportContainers(): List<DbItem> = transfer.exportContainers()
+	internal fun exportRows(): List<DbItem> = transfer.exportRows()
 
 	fun onAnyFilePicked(uri: Uri) = transfer.onAnyFilePicked(uri)
 

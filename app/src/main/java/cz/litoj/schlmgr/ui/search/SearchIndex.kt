@@ -2,6 +2,7 @@ package cz.litoj.schlmgr.ui.search
 
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.DbLink
+import cz.litoj.schlmgr.data.db.ItemKind
 
 /**
  * The whole content of one container, preloaded for a search run.
@@ -26,6 +27,11 @@ class SearchIndex(rows: List<DbItem>, links: List<DbLink>, childLinks: List<DbLi
 
 	/** The children of a container in link order, chapters or the translations of a word. */
 	fun childrenOf(parentId: Int): List<DbItem> = children[parentId] ?: emptyList()
+
+	/** The translations of a word for the flip of a hit row, empty for any other row. */
+	fun wordTranslations(item: DbItem): List<DbItem> =
+		if (item.type != ItemKind.WORD) emptyList()
+		else childrenOf(item.id).filter { it.type == ItemKind.TRANSLATION }
 
 	/**
 	 * Every link into an item, its whole parent set with the reference flags.

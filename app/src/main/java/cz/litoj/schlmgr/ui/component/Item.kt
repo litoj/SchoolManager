@@ -36,6 +36,7 @@ import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 import cz.litoj.schlmgr.ui.viewmodel.TranslationLine
+import kotlin.math.min
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -179,19 +180,25 @@ private fun ActionSlot(content: @Composable () -> Unit) {
 }
 
 /**
- * Success-ratio tint, all at one low alpha so it stays readable over both themes.
+ * Success-ratio tint with a low alpha so it stays readable over both themes.
  * - a red-to-yellow ramp below 50 % and a yellow-to-green ramp above it.
+ * - yellow over a light ground only dims the blue channel, the eye sees it
+ * least, so the alpha lifts toward the middle to match the end colours.
  * - blue for an unrated row, nothing for an empty container.
  */
 internal fun successRatioArgb(ratio: Int): Int = when (ratio) {
 	-2 -> 0
 	-1 -> 0x401A6AB8
-	// below 50 the green channel ramps up with the ratio, so the tint turns yellow
-	// above 50 the red channel fades with the ratio, so the tint runs to green
-	else -> if (ratio < 50)
-		0x40FF0000 or ((ratio * 256 / 50).coerceIn(0, 255) shl 8) or 0x22
-	else
-		0x40000000 or (((100 - ratio) * 256 / 50).coerceIn(0, 255) shl 16) or 0xFF00 or 0x22
+	else -> {
+		// 0x40 at the ends, 0x80 at the equal middle
+		val alpha = 0x40 + min(ratio, 100 - ratio) * 0x40 / 50
+		// below 50 the green channel ramps up with the ratio, so the tint turns yellow
+		// above 50 the red channel fades with the ratio, so the tint runs to green
+		if (ratio < 50)
+			(alpha shl 24) or 0xFF0000 or ((ratio * 256 / 50).coerceIn(0, 255) shl 8) or 0x22
+		else
+			(alpha shl 24) or (((100 - ratio) * 256 / 50).coerceIn(0, 255) shl 16) or 0xFF00 or 0x22
+	}
 }
 
 internal fun successRatioBackground(item: ItemUiModel): Color = Color(successRatioArgb(item.ratio))

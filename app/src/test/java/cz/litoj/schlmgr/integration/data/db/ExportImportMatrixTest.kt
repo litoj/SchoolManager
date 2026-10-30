@@ -161,6 +161,25 @@ class ExportImportMatrixTest {
 		assertEquals(listOf("c1"), ItemRepository.children(subjects[1].id).map { it.name })
 	}
 
+	@Test
+	fun `selected words export round trip as bare entries`() {
+		buildRich()
+		val words = listOf(row("w1", ItemKind.WORD))
+
+		val text = ItemRepository.export(WordListExporter(), words)
+		assertEquals("one bare word writes one word line", "w1=t1\\t2\n", text)
+		val json = ItemRepository.export(HJsonExporter(), words)
+
+		freshDatabase()
+		val holder = ItemRepository.createSubject("Holder", null)
+		ItemRepository.import(HJsonImporter(json), holder.id)
+
+		// a bare word root lands in the import target with its translations
+		val back = ItemRepository.children(holder.id).single()
+		assertEquals("w1", back.name)
+		assertEquals(listOf("t1", "t2"), ItemRepository.translations(back.id).map { it.name })
+	}
+
 
 	@Test
 	fun `a chapter export round trips as a word list`() {

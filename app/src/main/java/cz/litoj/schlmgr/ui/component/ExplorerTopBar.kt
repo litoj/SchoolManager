@@ -125,14 +125,17 @@ private fun InfoStrip(
 	onClick: () -> Unit,
 ) {
 	// the strip resolves the display text from the semantics, because the resource
-	// formatting belongs here, with the description line riding the percent sign
+	// formatting belongs here.
 	val text = when (info) {
 		null -> ""
 		is InfoBar.Root -> stringResource(R.string.data_child_count, info.count)
-		is InfoBar.Children -> stringResource(
-			R.string.data_children_sf, info.count, info.ratio,
-			if (info.description.isEmpty()) "%" else "%\n" + info.description,
-		)
+		is InfoBar.Children -> {
+			val suffix = if (info.description.isEmpty()) "" else "\n" + info.description
+			// -1 marks an untested container, so no percent sign follows.
+			if (info.ratio < 0)
+				stringResource(R.string.data_children_untested, info.count, suffix)
+			else stringResource(R.string.data_children_sf, info.count, info.ratio, "%$suffix")
+		}
 		is InfoBar.Search -> stringResource(R.string.data_search_chapters, info.count, info.chapters)
 	}
 	// the laid-out line count of the current text. The wrapper Box always gives

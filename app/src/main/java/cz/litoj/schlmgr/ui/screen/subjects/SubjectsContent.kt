@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -18,6 +19,9 @@ import cz.litoj.schlmgr.ui.component.ExplorerScaffold
 import cz.litoj.schlmgr.ui.component.ItemListCallbacks
 import cz.litoj.schlmgr.ui.component.PasteActionBar
 import cz.litoj.schlmgr.ui.component.SelectionActionBar
+import cz.litoj.schlmgr.ui.component.fabDragVisibility
+import cz.litoj.schlmgr.ui.component.ListEndReveal
+import cz.litoj.schlmgr.ui.component.rememberFabVisibility
 import cz.litoj.schlmgr.ui.popup.MessagePopup
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 
@@ -35,6 +39,11 @@ internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifie
 	val searching = listState.variant == ExplorerRowVariant.Search
 	var swipe by remember { mutableFloatStateOf(0f) }
 	val scrollState = rememberLazyListState()
+	// the New button visibility follows the drag gesture, not the list scroll
+	val fabVisibility = rememberFabVisibility()
+	ListEndReveal(listState, scrollState)
+	// a load landing resets the button, an insert or delete keeps it hidden
+	LaunchedEffect(state.contentStep) { fabVisibility.show() }
 	Box(modifier) {
 		ExplorerScaffold(
 			state = state,
@@ -43,7 +52,9 @@ internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifie
 			onInfoClick = viewModel::toggleInfoExpanded,
 			callbacks = mainCallbacks(viewModel, listState.selectionActive),
 			scrollState = scrollState,
-			modifier = Modifier.fillMaxSize().pointerInput(Unit) {
+			modifier = Modifier.fillMaxSize()
+				.fabDragVisibility(fabVisibility) { scrollState.canScrollForward || scrollState.canScrollBackward }
+				.pointerInput(Unit) {
 				detectHorizontalDragGestures(
 					onHorizontalDrag = { _, amount -> swipe += amount },
 					onDragEnd = {
@@ -73,7 +84,7 @@ internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifie
 			}
 		}
 		SubjectsFab(
-			viewModel, listState, state, scrollState, Modifier.matchParentSize())
+			viewModel, listState, state, fabVisibility, Modifier.matchParentSize())
 	}
 }
 

@@ -14,27 +14,36 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
@@ -81,12 +90,11 @@ class CreatorPopup(
 	 */
 	@Stable
 	private class EditorState(
-		focusNameOnOpen: Boolean,
 		edited: ItemRow?,
 		rows: List<TranslationRow>,
 	) {
 		/** One shot, so a rotation cannot pop the keyboard back open. */
-		var focusNameOnOpen by mutableStateOf(focusNameOnOpen)
+		var focusNameOnOpen by mutableStateOf(true)
 		var name by mutableStateOf(edited?.item?.name ?: "")
 		var description by mutableStateOf(edited?.item?.description ?: "")
 
@@ -117,14 +125,13 @@ class CreatorPopup(
 	 * One construction path of the editor, for the first word of a run and its renewals.
 	 * - the renewals come from [resetForNextWord].
 	 */
-	private fun freshEditor(focusNameOnOpen: Boolean) = EditorState(
-		focusNameOnOpen,
+	private fun freshEditor() = EditorState(
 		edited,
 		(content as? CreatorContent.Word)?.initial ?: emptyList(),
 	)
 
-	// a new item starts empty, so the name field takes the keyboard right away
-	private var editor by mutableStateOf(freshEditor(kind != Kind.EDIT))
+	// every editor opens with the keyboard in its name field, a new item and an edit alike
+	private var editor by mutableStateOf(freshEditor())
 
 	// exposed publicly so the call sites read them as name/description.
 	var name: String
@@ -218,7 +225,7 @@ class CreatorPopup(
 	 * - the keyboard lands in the name field, and the popup stays open.
 	 */
 	private fun resetForNextWord() {
-		editor = freshEditor(focusNameOnOpen = true)
+		editor = freshEditor()
 	}
 
 	@Composable
@@ -229,7 +236,28 @@ class CreatorPopup(
 		// the popup colours mirror the app theme in res/values/colors.xml, not hard-coded values.
 		// so a theme change only needs to touch the resource file.
 		val textColor = colorResource(R.color.colorPrimaryFg)
-		val keyboard = LocalSoftwareKeyboardController.current
+		// a replaced controller must reach the resume observer, which outlives compositions
+		val keyboard by rememberUpdatedState(LocalSoftwareKeyboardController.current)
+		// how many fields of the popup hold focus, a focus move keeps the count level
+		var focusedFields by remember { mutableIntStateOf(0) }
+		val trackFocus = Modifier.onFocusChanged { focusedFields += if (it.hasFocus) 1 else -1 }
+		// the system hides the keyboard when the app leaves or a split screen
+		// neighbour pauses it, a held focus brings it back on the resume
+		val lifecycleOwner = LocalLifecycleOwner.current
+		val view by rememberUpdatedState(LocalView.current)
+		DisposableEffect(lifecycleOwner) {
+			val observer = LifecycleEventObserver { _, event ->
+				if (event == Lifecycle.Event.ON_RESUME && focusedFields > 0) {
+					// the input connection rebuilds with the window focus, so
+					// the ask waits a loop for it
+					view.post { keyboard?.show() }
+				}
+			}
+			lifecycleOwner.lifecycle.addObserver(observer)
+			onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+		}
+		// the rows sit in their own scroll, so the added row lands in view
+		val rowsScroll = rememberScrollState()
 
 		// the editor instance is the identity of the content.
 		// - a renewal, see [resetForNextWord], rebuilds the whole subtree.
@@ -238,6 +266,8 @@ class CreatorPopup(
 			// a new item and each renewal open with the keyboard in the name field.
 			// the deferred effect lets the fresh subtree compose first
 			LaunchedEffect(Unit) {
+				// the rebuilt fields recount from zero, a disposed focus leaves no event
+				focusedFields = 0
 				if (editor.focusNameOnOpen) {
 					editor.focusNameOnOpen = false
 					runCatching { nameFocus.requestFocus() }
@@ -245,6 +275,23 @@ class CreatorPopup(
 					// so the ask goes out explicitly too
 					keyboard?.show()
 				}
+			}
+			// a row focused through the add button or the Enter chain opens
+			// the keyboard, the field focus alone does not guarantee it
+			LaunchedEffect(editor.pendingFocusId) {
+				if (editor.pendingFocusId != null) keyboard?.show()
+			}
+			// the row count the last scroll saw, only a growth is an append.
+			// the renewal rebuilds this subtree, so the count starts anew
+			var rowsSeen by remember { mutableIntStateOf(translations.size) }
+			// a row appended below the fold stays reachable, so the rows scroll
+			// shows it after one frame. A removal keeps the view where it is
+			LaunchedEffect(translations.size) {
+				val grew = translations.size > rowsSeen
+				rowsSeen = translations.size
+				if (!grew) return@LaunchedEffect
+				withFrameNanos { }
+				rowsScroll.scrollTo(rowsScroll.maxValue)
 			}
 			// the outside dismiss and the keyboard inset handling live in the shared dialog host.
 			PopupCard {
@@ -259,6 +306,7 @@ class CreatorPopup(
 					{ name = it },
 					R.string.data_name,
 					textColor,
+					modifier = trackFocus,
 					singleLine = true,
 					onImeAction = when {
 						content is CreatorContent.Word -> ({ onWordNameEnter() })
@@ -273,6 +321,7 @@ class CreatorPopup(
 					{ description = it },
 					R.string.data_desc,
 					textColor,
+					modifier = trackFocus,
 					focusRequester = descriptionFocus,
 				)
 				// the variable middle holds the type-specific editor.
@@ -282,10 +331,10 @@ class CreatorPopup(
 					Modifier
 						.fillMaxWidth()
 						.weight(1f, fill = false)
-						.verticalScroll(rememberScrollState())
+						.verticalScroll(rowsScroll)
 				) {
 					when (content) {
-						is CreatorContent.Word -> WordEditor(textColor)
+						is CreatorContent.Word -> WordEditor(textColor, trackFocus)
 
 						else -> Unit
 					}
@@ -304,19 +353,23 @@ class CreatorPopup(
 	}
 
 	@Composable
-	private fun WordEditor(textColor: Color) {
+	private fun WordEditor(textColor: Color, modifier: Modifier) {
 		// not a LazyColumn, since the enclosing middle section already scrolls.
 		// nesting same-direction scrollables would let the inner one steal the drags.
 		Column(Modifier.fillMaxWidth()) {
 			translations.forEach { row ->
 				// keyed by the row, since rows come and go without a renewal too.
 				// a slot shift must not hand one row the field state of another row.
-				key(row.id) { TranslationRowEditor(row, textColor) }
+				key(row.id) { TranslationRowEditor(row, textColor, modifier) }
 			}
 			Box(
 				Modifier
 					.fillMaxWidth()
-					.clickable { translations.add(TranslationRow("", "", null)) }
+					.clickable {
+						val row = TranslationRow("", "", null)
+						translations.add(row)
+						editor.pendingFocusId = row.id
+					}
 					.padding(vertical = 2.dp),
 				contentAlignment = Alignment.Center,
 			) {
@@ -333,23 +386,27 @@ class CreatorPopup(
 	private fun TranslationRowEditor(
 		row: TranslationRow,
 		textColor: Color,
+		modifier: Modifier,
 	) {
-		val nameFocus = remember(row.id) { FocusRequester() }
+		val rowNameFocus = remember(row.id) { FocusRequester() }
 		// registered post-composition, so an abandoned recomposition leaves no stale entry behind
-		SideEffect { editor.nameFieldFocus[row.id] = nameFocus }
+		SideEffect { editor.nameFieldFocus[row.id] = rowNameFocus }
 		// keyed on pendingFocusId too, so re-targeting an already-composed row re-runs the effect.
 		// - so focus really moves there, instead of falling through to the description field.
 		// - newly appended rows are focused as soon as they compose.
 		LaunchedEffect(row.id, editor.pendingFocusId) {
 			if (editor.pendingFocusId == row.id) {
 				editor.pendingFocusId = null
-				runCatching { nameFocus.requestFocus() }
+				runCatching { rowNameFocus.requestFocus() }
 			}
 		}
+		// the row knows whether it holds the keyboard, so its removal can
+		// hand the keyboard over instead of dropping it
+		var holdsFocus by remember { mutableStateOf(false) }
 		// the layout matches the main frame, so the start padding aligns the bordered fields.
 		// - the delete icon keeps the same margin from the right edge of the card.
 		// - so it does not hug the popup
-		Column(Modifier.fillMaxWidth()) {
+		Column(Modifier.fillMaxWidth().onFocusChanged { holdsFocus = it.hasFocus }) {
 			HairlineDivider()
 			Row(
 				Modifier
@@ -367,11 +424,12 @@ class CreatorPopup(
 						{ row.name = it },
 						R.string.data_translate,
 						textColor,
+						modifier = modifier,
 						singleLine = true,
 						onImeAction = { onTranslationNameEnter(translations.indexOf(row)) },
 						// the Enter of the last row confirms, so the key reads Done, not Next
 						imeAction = if (translations.lastOrNull() == row) ImeAction.Done else ImeAction.Next,
-						focusRequester = nameFocus,
+						focusRequester = rowNameFocus,
 						horizontalPadding = 0.dp,
 					)
 					BorderedTextField(
@@ -379,18 +437,27 @@ class CreatorPopup(
 						{ row.description = it },
 						R.string.data_desc,
 						textColor,
+						modifier = modifier,
 						horizontalPadding = 0.dp
 					)
 				}
 				Icon(
 					painterResource(R.drawable.ic_cancel_round),
-					contentDescription = null,
+					contentDescription = stringResource(R.string.delete),
 					tint = Color.Unspecified,
 					modifier = Modifier
 						.padding(start = 12.5.dp)
 						.size(IconSize)
 						.clickable {
 							row.source?.let { removedTranslations.add(it) }
+							// the keyboard keeps the flow: the focus hands over
+							// before the row dies, the item name for the first row
+							if (holdsFocus) {
+								val previous = translations.getOrNull(translations.indexOf(row) - 1)
+								if (previous != null)
+									runCatching { editor.nameFieldFocus[previous.id]?.requestFocus() }
+								else runCatching { nameFocus.requestFocus() }
+							}
 							translations.remove(row)
 							// the focus handle of the row is dead, so drop it with the row
 							editor.nameFieldFocus.remove(row.id)

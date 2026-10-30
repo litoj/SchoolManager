@@ -24,11 +24,17 @@ enum class ExportFormat {
 		WORD -> "Word list export"
 		JSON -> "JSON export"
 	}
+
+	fun mimeType(): String = when (this) {
+		WORD -> "text/plain"
+		JSON -> "application/hjson"
+	}
 }
 
 data class ExportRequest(
 	val uri: Uri,
-	val containers: List<DbItem>,
+	/** The selected rows of the pick, chapters, words and notes alike. */
+	val rows: List<DbItem>,
 	val format: ExportFormat,
 )
 

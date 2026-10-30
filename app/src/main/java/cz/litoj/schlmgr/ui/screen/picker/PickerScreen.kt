@@ -82,7 +82,7 @@ private fun PickerContent(viewModel: PickerViewModel, modifier: Modifier = Modif
 		listState = listState,
 		onBreadcrumbClick = viewModel::breadcrumbClick,
 		onInfoClick = viewModel::toggleInfoExpanded,
-		callbacks = pickerCallbacks(viewModel),
+		callbacks = pickerCallbacks(viewModel, listState.selectionActive),
 		modifier = modifier,
 	) {
 		if (listState.anySelected) PickerActionBar(
@@ -92,8 +92,12 @@ private fun PickerContent(viewModel: PickerViewModel, modifier: Modifier = Modif
 	}
 }
 
-private fun pickerCallbacks(viewModel: PickerViewModel): ItemListCallbacks = ItemListCallbacks(
-	onItemClick = { ui -> viewModel.onItemClick(ui.payload) },
+/** The row intents, where a selection tap toggles like on the subjects screen. */
+private fun pickerCallbacks(viewModel: PickerViewModel, selectionActive: Boolean): ItemListCallbacks = ItemListCallbacks(
+	onItemClick = { ui ->
+		if (selectionActive) viewModel.setSelected(ui.payload, !ui.selected)
+		else viewModel.onItemClick(ui.payload)
+	},
 	onItemDoubleTap = viewModel::onItemDoubleTap,
 	onItemIconClick = { ui -> viewModel.toggleSelect(ui.payload) },
 	onItemLongClick = { ui -> viewModel.onItemLongClick(ui.payload) },

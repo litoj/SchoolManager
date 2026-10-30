@@ -2,6 +2,7 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="action_full_text">Celý Text</string>
     <string name="action_sw_success">" zapsáno úspěšně"</string>
+    <string name="action_share">Sdílet</string>
     <string name="about_text">Tento program byl vyvinut, aby pomohl lidem se školními předměty, zvláště s cizími jazyky a biologií.\n\nPro další pomoc mě kontaktujte na litos@tuta.io</string>
     <string name="add_word">Přidat překlad</string>
     <string name="ok">OK</string>
@@ -10,6 +11,7 @@
     <string name="cut">Vyjmout</string>
     <string name="data_child_count">"Položek: %1$d"</string>
     <string name="data_children_sf">"Položek: %1$d, Úspěšnost: %2$d%3$s"</string>
+    <string name="data_children_untested">"Položek: %1$d, Úspěšnost: Netestováno%2$s"</string>
     <string name="data_search_chapters">"Položek: %1$d;\tKapitol: %2$d"</string>
     <string name="data_desc">Popisek</string>
     <string name="data_name">Název</string>
@@ -84,9 +86,6 @@
     <string name="help_extra_import_mch">Import starých předmětů</string>
     <string name="help_extra_import_mch_how">Složku s předmětem staré verze aplikace lze importovat na obrazovce předmětů: zvolte \'Stará složka předmětu\' v podmenu \'Import\' v menu \'více\'.
         \nPředmět se stejným názvem se neimportuje dvakrát.</string>
-    <string name="help_extra_import_mch_word">Import předmětu ze souboru</string>
-    <string name="help_extra_import_mch_word_how">Předmět lze vytvořit ze souboru se slovíčky: na obrazovce předmětů zvolte \'Soubor\' v podmenu \'Import\' v menu \'více\'.
-        \nNový předmět se pojmenuje podle zvoleného souboru a jeho obsah se zpracuje stejně jako při importu slovíček (kapitoly a slovíčka), pouze na nejvyšší úrovni předmětu.</string>
     <string name="help_extra_naming">Způsoby pojmenovávání</string>
     <string name="help_extra_naming_how">Tato aplikace umožňuje pojmenovávat slovíčka a další položky specifickým způsobem, díky kterému máte při testu více možností, jak odpovědět.
         \nK dosažení se používá těchto znaků: /()
@@ -95,27 +94,18 @@
         \noni/ony jdou = \'oni jdou\', nebo \'ony jdou\'
         \n(Já jdu)/(Ty jdeš). = \'Já jdu.\', nebo \'Ty jdeš.\'</string>
     <string name="help_extra_words_export">Export slovíček</string>
-    <string name="help_extra_words_export_how">Zvolte možnost v podmenu \'Exportovat\' v menu \'více\': vybrané položky se vyexportují, a bez výběru celý otevřený kontejner (na obrazovce předmětů všechny předměty).
-        \nSoubor se slovíčky je kompaktní a nese pouze strukturu slovní zásoby — bez úspěšnosti a referencí; soubor JSON je úplná kopie předmětu včetně úspěšnosti, poznámek a referencí.
-        \nPouze soubor JSON lze zpětně importovat bez ztráty obsahu.</string>
+    <string name="help_extra_words_export_how">Exportují se vybrané položky. Bez výběru se exportuje otevřený kontejner, na obrazovce předmětů všechny předměty.</string>
+    <string name="help_export_word">Soubor se slovíčky</string>
+    <string name="help_export_word_how">Kompaktní. Bez úspěšnosti. Bez referencí.</string>
+    <string name="help_export_json">Soubor JSON</string>
+    <string name="help_export_json_how">Úplný. Včetně úspěšnosti, poznámek a referencí.</string>
     <string name="help_extra_words_import">Import slovíček</string>
-    <string name="help_extra_words_import_how">Slovíčka se importují přes menu \'více\' — uvnitř kontejneru zvolte \'Import\', na obrazovce předmětů \'Soubor\' v podmenu \'Import\'; uvnitř kontejneru se přidají do něj, na obrazovce předmětů vytvoří nový předmět. Typ souboru se pozná automaticky podle obsahu: soubor začínající \'[\' nebo \'{\' je strom předmětu (kapitoly, slovíčka, poznámky a reference), ostatní soubory jsou slovíčka. Soubor může obsahovat kapitoly a slovíčka.
-        \nPoznámky k položkám pište ve tvaru \'\\[poznámky k položce\\]\'.
-        \nSlovíčka a jejich překlady oddělte pomocí \';\', \'=\', nebo \'→\'.
-        \nPro zápis více slovíček se stejným překladem (a naopak) oddělte slovíčka zpětným lomítkem \\.
-        \nKapitoly začínají řádkem ve tvaru \'název kapitoly [případné poznámky] {\', kapitolu ukončíte pomocí \'}\' na samostatném řádku.
-        \nKaždou položku pište na nový řádek, odsazení a mezery mezi jednotlivými položkami jsou libovolné.
-        \nMožný příkladný formát:
-        \n\nkapitola v souboru 1 {
-        \n\tslovíčko 1;překlad 1
-        \n\tslovíčko 2=překlad 2
-        \n\tnázev podkapitoly [poznámky k podkapitole] {
-        \n\t\tslovíčko 3 [poznámky] = překlad 3
-        \n\t\tslovíčko 4\\slovíčko 5;překlad 4
-        \n\t\tslovíčko 6 [poznámka] \\ slovíčko 7 → překlad 5
-        \n\t}
-        \n\tslovíčko 7;překlad 1 [poznámka překladu]\\překlad 6
-        \n}</string>
+    <string name="help_extra_words_import_how">Uvnitř předmětu: Více, Import, zvolte soubor.\nNa obrazovce předmětů: Více, Import, Soubor, zvolte soubor. Vytvoří se nový předmět.</string>
+    <string name="help_import_format">Formát souboru</string>
+    <string name="help_import_format_how">Kapitola: název { a } na samostatných řádcích.\nSlovíčko: slovíčko = překlad.\nPoznámka: = text.\nPopis: [text] za názvem.\nVarianty: první\\druhý.</string>
+    <string name="help_import_example">Příklad</string>
+    <string name="help_import_errors">Chyby importu</string>
+    <string name="help_import_errors_how">Chyba uvádí soubor a řádek. Opravte řádek a zvolte soubor znovu.</string>
     <string name="help_search">Vyhledávání</string>
     <string name="help_search_how">Vyhledávání je umožňěno ve všech kapitolách a předmětech.
         \nVe výsledcích vyhledávání otevře kliknutí na nalezenou kapitolu její kontejner.
@@ -202,8 +192,10 @@
     <string name="more_reference">Vytvořit zástupce</string>
     <string name="reference_fork">Zástupci, kteří budou odkazovat na nové slovo</string>
     <string name="ref_source_pick">Zvolte zdroj zástupce:</string>
-    <string name="more_export_word">Soubor se slovíčky (bez statistik)</string>
+    <string name="more_export_word">Soubor se slovíčky (bez úspěšnosti)</string>
     <string name="more_import">Import</string>
+    <string name="import_here">Importovat sem</string>
+    <string name="import_file_title">Import %1$s</string>
     <string name="more_import_file">Soubor</string>
     <string name="more_export_json">Soubor JSON (včetně úspěšnosti)</string>
     <string name="more_flip">Obrátit slova a překlady</string>
@@ -224,6 +216,7 @@
     <string name="new_mch">Nový předmět</string>
     <string name="new_word">Nové slovíčko</string>
     <string name="new_note">Nová poznámka</string>
+    <string name="fab_new">Nový</string>
     <string name="note_copied">Zkopírováno</string>
     <string name="objects_cancel">Storno</string>
     <string name="paste">Vložit</string>

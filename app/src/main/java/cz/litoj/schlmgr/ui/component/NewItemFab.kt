@@ -16,34 +16,36 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.PointerInputChange
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
+import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.hypot
@@ -52,7 +54,7 @@ import kotlin.math.sin
 
 /**
  * The floating New-action button, bottom right, a rounded square in the title bar colouring.
- * - the screen drives [visible] with the scroll of the list, down hides and up shows.
+ * - the screen drives [visible] with the drag gesture, see [fabDragVisibility].
  * - it offers the [kinds] of the open screen.
  * - one offered kind opens its creator when the press releases, by click or drag alike.
  * - several kinds open a circular palette around the button, where a drag or a click commits.
@@ -183,7 +185,7 @@ fun NewItemFab(
 			) {
 				Image(
 					painterResource(R.drawable.ic_add),
-					contentDescription = null,
+					contentDescription = stringResource(R.string.fab_new),
 					colorFilter = ColorFilter.tint(ExplorerColors.onHeader),
 					modifier = Modifier.align(Alignment.Center).padding(IconPadding).fillMaxSize(),
 				)
@@ -216,25 +218,70 @@ private val FabCorner = 10.dp
 internal val FabMargin = 15.dp
 private val FabElevation = 6.dp
 
+/** A single gesture must climb this far before the button hides, so a lift that twitches keeps it. */
+private val FabHideTravel = 15.dp
+
 /**
- * True while the list idles or scrolls up.
- * - the New button hides on the way down the way a browser search bar does.
- * - it returns on the way up.
+ * The visibility of the New button, decided by the drag gesture.
+ * - a gesture up must cover a margin before the button hides, so a finger
+ *   lift that twitches the list does not drop it.
+ * - a downward move shows it again and resets the travel of the gesture.
  */
-@Composable
-internal fun rememberScrollUpVisible(list: LazyListState): Boolean {
-	var shown by remember { mutableStateOf(true) }
-	LaunchedEffect(list) {
-		// a packed scroll position, so the index and the offset move as one number.
-		// the bound is larger than any offset a single item can reach
-		var previous = 0L
-		snapshotFlow { list.firstVisibleItemIndex.toLong() * 100_000L + list.firstVisibleItemScrollOffset }
-			.collect { position ->
-				if (position < previous) shown = true else if (position > previous) shown = false
-				previous = position
-			}
+@Stable
+internal class FabVisibility(internal val hideAfterPx: Float) {
+	var shown by mutableStateOf(true)
+		private set
+
+	fun show() {
+		shown = true
 	}
-	return shown
+
+	fun hide() {
+		shown = false
+	}
+}
+
+/** The visibility holder, its hide margin in pixels of the current density. */
+@Composable
+internal fun rememberFabVisibility(): FabVisibility {
+	val density = LocalDensity.current
+	return remember { FabVisibility(with(density) { FabHideTravel.toPx() }) }
+}
+
+/**
+ * Watches the vertical drags of the area for [visibility], without consuming.
+ * - the initial pass sees every drag, so the button also hides where the
+ *   list has nothing to scroll to.
+ * - a move led sideways counts as none, so a sibling swipe that climbs a
+ *   little keeps the button.
+ * - a downward move shows the button and resets the travel of the gesture.
+ * - [canHide] guards the drop, a list that fits the viewport keeps its
+ *   button whatever the gesture.
+ */
+internal fun Modifier.fabDragVisibility(
+	visibility: FabVisibility,
+	canHide: () -> Boolean = { true },
+): Modifier = pointerInput(visibility) {
+	awaitEachGesture {
+		val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+		// the travel of one gesture alone, a twitching lift never covers it
+		var upTravel = 0f
+		while (true) {
+			val event = awaitPointerEvent(PointerEventPass.Initial)
+			val change = event.changes.firstOrNull { it.id == down.id } ?: continue
+			if (!change.pressed) break
+			val delta = change.positionChange()
+			// a move led sideways belongs to a sibling swipe, it is no climb
+			if (abs(delta.x) > abs(delta.y)) continue
+			if (delta.y > 0f) {
+				upTravel = 0f
+				visibility.show()
+			} else if (delta.y < 0f) {
+				upTravel -= delta.y
+				if (upTravel >= visibility.hideAfterPx && canHide()) visibility.hide()
+			}
+		}
+	}
 }
 
 /**

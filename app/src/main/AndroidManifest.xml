@@ -31,6 +31,33 @@
             android:label="@string/menu_settings"
             android:theme="@style/AppTheme"
             android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.activity.ImportActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/AppTheme"
+            android:windowSoftInputMode="adjustResize">
+            <!-- The wide mimetypes are wanted: file managers share text files
+                 as text/plain or octet-stream streams, and name no suffix
+                 promise. A text-only SEND carries no stream and finishes at
+                 once. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="application/json" />
+                <data android:mimeType="application/hjson" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="application/json" />
+                <data android:mimeType="application/hjson" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

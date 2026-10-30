@@ -11,12 +11,16 @@ import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.json.HJsonExporter
 import cz.litoj.schlmgr.data.transfer.ExportFormat
 import cz.litoj.schlmgr.data.transfer.ExportPipeline
-import cz.litoj.schlmgr.data.transfer.FileGateway
 import cz.litoj.schlmgr.data.transfer.ImporterFactory
 import cz.litoj.schlmgr.data.transfer.LegacyDirImport
 import cz.litoj.schlmgr.data.wordlist.WordListExporter
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -107,14 +111,12 @@ class FileWorkerTest {
 		return uri
 	}
 
-	/** The onAnyFilePicked dispatch, with the resolvers as the view model hands them over. */
+	/** The picked-file dispatch, with the resolvers as the view model hands them over. */
 	private fun importPicked(fileName: String, open: () -> DbItem?, text: String): Reloads {
 		val reloads = Reloads()
 		val uri = picked(text)
-		ImporterFactory.create(
+		ImporterFactory.createPickedImport(
 			GlobalDependencies.appContext, { it.run() }, uri, fileName,
-			FileGateway.startsAsJson(GlobalDependencies.appContext, uri),
-			ImporterFactory.targetFor(open()),
 			open, { open() == null },
 			{ reloads.root++ }, { reloads.current++ }, { reloads.container++ },
 		).start().join()
@@ -253,6 +255,37 @@ class FileWorkerTest {
 		assertEquals(ItemKind.WORD, row.type)
 		assertEquals(listOf("home"), ItemRepository.translations(row.id).map { it.name })
 		assertEquals(1, reloads.root)
+	}
+
+	@Test
+	fun `a finished import reports its top-level rows to the caller`() {
+		val deutsch = ItemRepository.createSubject("Deutsch", null)
+		val lektion = ItemRepository.createChapter(deutsch.id, "Lektion", null)
+		var top: List<DbItem>? = null
+		val uri = picked("Kapitel {\nHaus;home\n}")
+		val worker = ImporterFactory.createPickedImport(
+			GlobalDependencies.appContext, { it.run() }, uri, "list.txt",
+			{ lektion }, { false }, {}, {}, {},
+		)
+		worker.onImported = { result -> top = result.topLevel }
+
+		worker.start().join()
+
+		assertEquals(listOf("Kapitel"), top?.map { it.name })
+	}
+
+	@Test
+	fun `a word list parse error names the picked file, not the target container`() = runBlocking {
+		val deutsch = ItemRepository.createSubject("Deutsch", null)
+		val lektion = ItemRepository.createChapter(deutsch.id, "Lektion 1", null)
+		val message = async(start = CoroutineStart.UNDISPATCHED) {
+			withTimeout(2_000) { GlobalDependencies.messages.first() }
+		}
+
+		importPicked("Broken.txt", { lektion }, "Haus\n")
+
+		val text = (message.await() as GlobalDependencies.UiMessage.Text).text
+		assertTrue(text.startsWith("Broken.txt - line 1"))
 	}
 
 	@Test

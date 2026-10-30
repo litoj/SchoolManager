@@ -55,6 +55,13 @@ internal class ExplorerList(
 
 	private var listMutationGen = 0
 
+	private var scrollToBottomPending = false
+
+	/** The next publish moves the list to its last row. */
+	fun requestScrollToBottom() {
+		scrollToBottomPending = true
+	}
+
 	fun orderPersisted() {
 		listMutationGen++
 	}
@@ -82,6 +89,10 @@ internal class ExplorerList(
 		pickerMode = isPicker || host.picker
 		host.resetDragSelect()
 		models = content.toMutableList()
+		val scroll = if (scrollToBottomPending) {
+			scrollToBottomPending = false
+			_listState.value.scrollToBottom + 1
+		} else _listState.value.scrollToBottom
 		_listState.update {
 			it.copy(
 				items = models.map { row -> row.toUi() },
@@ -91,6 +102,7 @@ internal class ExplorerList(
 				// fresh content carries no selection
 				selectionActive = selectionActive(),
 				contentStep = it.contentStep + 1,
+				scrollToBottom = scroll,
 			)
 		}
 		if (isSearch) host.onSearchRowsChanged()
@@ -124,10 +136,10 @@ internal class ExplorerList(
 		if (container != null && container.type != ItemKind.CHAPTER) return null
 		val parentId = container?.id ?: ROOT_ID
 		val children = ItemRepository.children(parentId)
-		// the default flip renders translations, so one batch read covers the container.
+		// one batch read covers the container: the default render and every later flip.
 		// a read per word would be too slow
 		val translations =
-			if (ItemRow.defFlip && children.any { it.type == ItemKind.WORD })
+			if (children.any { it.type == ItemKind.WORD })
 				ItemRepository.childTranslations(parentId) else emptyMap()
 		return ItemRow.convert(
 			children, parentId,
@@ -142,16 +154,19 @@ internal class ExplorerList(
 	private fun insertItem(index: Int, item: ItemRow) {
 		listMutationGen++
 		// the index ages with the popup, so clamp to the live list.
-		models.add(index.coerceIn(0, models.size), item)
+		val at = index.coerceIn(0, models.size)
+		models.add(at, item)
 		models.forEachIndexed { i, row -> row.renumber(i + 1) }
 		_listState.update {
 			it.copy(
 				contentStep = it.contentStep + 1,
+				// a row appended at the end is new content, the list shows it
+				scrollToBottom = if (at == models.lastIndex) it.scrollToBottom + 1 else it.scrollToBottom,
 				items = List(models.size) { i ->
 					val row = models[i]
 					val old = it.items.getOrNull(i)
 					// the row kept its slot, so reuse the mapped item.
-					if (i < index && old?.payload === row && old.position == row.position &&
+					if (i < at && old?.payload === row && old.position == row.position &&
 						old.selected == row.selected
 					) {
 						old
@@ -196,13 +211,17 @@ internal class ExplorerList(
 
 	/**
 	 * The shared tap rule: a word flips to its translations, and a translation to its words.
-	 * - reads run on [io], and the flips publish on main.
+	 * - the preloaded content flips at once, an unpreloaded row reads on io first.
 	 */
 	fun flipWord(item: ItemRow?) {
 		val row = item ?: return
+		if (row.flipOnto(!row.flipped)) {
+			remap()
+			return
+		}
 		scope.launch {
-			// the flip content, read on io: the translations or the words.
 			val content = withContext(io) { ItemRow.flipContentOf(row.item) }
+			row.preloadFlip(content)
 			row.applyFlip(content)
 			remap()
 		}
@@ -211,19 +230,44 @@ internal class ExplorerList(
 	/**
 	 * Flips every word and translation row but [exceptId] to [flipped].
 	 * - a double click drives it, the tapped row already holds the state.
+	 * - the preloaded rows flip at once, an unpreloaded one reads on io.
 	 */
 	fun flipAllTo(exceptId: Int, flipped: Boolean) {
-		scope.launch {
-			val toFlip = models.filter {
-				(it.item.type == ItemKind.WORD || it.item.type == ItemKind.TRANSLATION) &&
-					it.item.id != exceptId && it.flipped != flipped
+		val pending = models.filter {
+			(it.item.type == ItemKind.WORD || it.item.type == ItemKind.TRANSLATION) &&
+				it.item.id != exceptId && it.flipped != flipped
+		}
+		val unpreloaded = pending.filterNot { it.flipOnto(flipped) }
+		if (unpreloaded.isNotEmpty()) scope.launch {
+			// one io hop reads every missing row, a hop per row repeats the dispatch
+			val contents = withContext(io) { unpreloaded.map { ItemRow.flipContentOf(it.item) } }
+			unpreloaded.forEachIndexed { i, row ->
+				row.preloadFlip(contents[i])
+				row.flipOnto(flipped)
 			}
-			val applied = withContext(io) {
-				toFlip.map { target -> target to ItemRow.flipContentOf(target.item) }
-			}
-			applied.forEach { (target, content) -> target.applyFlip(content) }
 			remap()
 		}
+		remap()
+	}
+
+	/**
+	 * Flips every word and translation row over, each to its own other side.
+	 * - a double on the empty part of the explorer drives it, no anchor exists.
+	 */
+	fun flipAllOver() {
+		val pending = models.filter {
+			it.item.type == ItemKind.WORD || it.item.type == ItemKind.TRANSLATION
+		}
+		val unpreloaded = pending.filterNot { it.flipOnto(!it.flipped) }
+		if (unpreloaded.isNotEmpty()) scope.launch {
+			val contents = withContext(io) { unpreloaded.map { ItemRow.flipContentOf(it.item) } }
+			unpreloaded.forEachIndexed { i, row ->
+				row.preloadFlip(contents[i])
+				row.applyFlip(contents[i])
+			}
+			remap()
+		}
+		remap()
 	}
 
 	fun move(from: Int, to: Int) {

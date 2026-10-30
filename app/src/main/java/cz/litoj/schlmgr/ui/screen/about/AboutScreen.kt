@@ -23,6 +23,7 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -73,10 +74,22 @@ private val sections = listOf(
 		R.string.help_extra, intro = R.string.help_extra_how, icon = R.drawable.ic_extra,
 		children = listOf(
 			HelpSection(R.string.help_extra_naming, R.string.help_extra_naming_how),
-			HelpSection(R.string.help_extra_words_import, R.string.help_extra_words_import_how),
-			HelpSection(R.string.help_extra_words_export, R.string.help_extra_words_export_how),
+			HelpSection(
+				R.string.help_extra_words_import, R.string.help_extra_words_import_how,
+				children = listOf(
+					HelpSection(R.string.help_import_format, R.string.help_import_format_how),
+					HelpSection(R.string.help_import_example, customIntro = { WordListExample() }),
+					HelpSection(R.string.help_import_errors, R.string.help_import_errors_how),
+				),
+			),
+			HelpSection(
+				R.string.help_extra_words_export, R.string.help_extra_words_export_how,
+				children = listOf(
+					HelpSection(R.string.help_export_word, R.string.help_export_word_how),
+					HelpSection(R.string.help_export_json, R.string.help_export_json_how),
+				),
+			),
 			HelpSection(R.string.help_extra_import_mch, R.string.help_extra_import_mch_how, icon = R.drawable.ic_import_help),
-			HelpSection(R.string.help_extra_import_mch_word, R.string.help_extra_import_mch_word_how, icon = R.drawable.ic_subject),
 		),
 	),
 )
@@ -196,6 +209,19 @@ private fun BodyText(text: String) {
 		text,
 		Modifier.padding(8.dp),
 		style = TextStyle(fontSize = 15.sp, color = DefaultTextColor),
+	)
+}
+
+@Composable
+private fun WordListExample() {
+	Text(
+		stringResource(R.string.help_import_example_text),
+		Modifier.padding(8.dp),
+		style = TextStyle(
+			fontSize = 13.sp,
+			fontFamily = FontFamily.Monospace,
+			color = DefaultTextColor,
+		),
 	)
 }
 

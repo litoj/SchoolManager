@@ -11,7 +11,7 @@ enum class ImportKind {
 }
 
 /**
- * The onAnyFilePicked dispatch: the document shape first, the backlog position second.
+ * The picked-file dispatch, shared by the import mover and the subjects screen.
  * - an opening square bracket or an opening curly brace starts a tree import.
  * - that tree import keeps its own names and takes the open container as its anchor.
  * - the picked name never decides, since a provider may report none at all.
@@ -28,6 +28,33 @@ object ImporterFactory {
 
 	fun targetFor(openContainer: DbItem?): ImportTarget =
 		if (openContainer == null) ImportTarget.Root else ImportTarget.Container(openContainer)
+
+	/**
+	 * Builds the import worker of a picked document.
+	 * - the document shape and the provider name resolve inside, so the
+	 *   caller wraps the call on io.
+	 * - an empty [fileName] reads the provider name here, a known one skips
+	 *   the query.
+	 */
+	fun createPickedImport(
+		appContext: Context,
+		postToUi: (Runnable) -> Unit,
+		uri: Uri,
+		fileName: String,
+		openContainer: () -> DbItem?,
+		atRoot: () -> Boolean,
+		onRootReload: () -> Unit,
+		onCurrentReload: () -> Unit,
+		onContainerReload: () -> Unit,
+	): FileWorker {
+		val jsonContent = FileGateway.startsAsJson(appContext, uri)
+		val name = fileName.ifEmpty { FileGateway.displayName(appContext, uri, "") }
+		return create(
+			appContext, postToUi, uri, name, jsonContent,
+			targetFor(openContainer()), openContainer, atRoot,
+			onRootReload, onCurrentReload, onContainerReload,
+		)
+	}
 
 	/**
 	 * - name, shape and target resolve on the caller thread.

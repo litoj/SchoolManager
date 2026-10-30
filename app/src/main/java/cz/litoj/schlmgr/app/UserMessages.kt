@@ -1,6 +1,7 @@
 package cz.litoj.schlmgr.app
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import cz.litoj.schlmgr.R
 
@@ -38,10 +39,10 @@ object UserMessages {
 	 * name of the picked target where the file landed.
 	 */
 	@JvmStatic
-	fun onExportSuccess(path: String, words: Int, chapters: Int) {
+	fun onExportSuccess(uri: Uri, path: String, words: Int, chapters: Int, mime: String) {
 		val msg = stats(R.string.stat_exported, words, chapters) + '\n' +
 			path + GlobalDependencies.appContext.getString(R.string.action_sw_success)
-		showMsg(msg, msg)
+		GlobalDependencies.messages.tryEmit(GlobalDependencies.UiMessage.ShareFile(msg, uri, mime))
 	}
 
 	/** The "Imported/Exported X words in Y chapters." sentence of both statistics. */

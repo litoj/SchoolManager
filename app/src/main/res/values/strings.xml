@@ -1,6 +1,7 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="action_full_text">Full Text</string>
     <string name="action_sw_success">" written with success"</string>
+    <string name="action_share">Share</string>
     <string name="about_text">This program was developed to help people with school subjects, especially with foreign languages and biology.\n\nFor any further help contact me at litos@tuta.io</string>
     <string name="add_word">Add translate</string>
     <string name="app_name" translatable="false">School Manager</string>
@@ -10,6 +11,7 @@
     <string name="cut">Cut</string>
     <string name="data_child_count">"Elements: %1$d"</string>
     <string name="data_children_sf">"Elements: %1$d, Success rate: %2$d%3$s"</string>
+    <string name="data_children_untested">"Elements: %1$d, Success rate: Untested%2$s"</string>
     <string name="data_search_chapters">"Elements: %1$d;\tChapters: %2$d"</string>
     <string name="data_desc">Description</string>
     <string name="data_name">Name</string>
@@ -78,37 +80,26 @@
     <string name="help_extra_import_mch">Legacy subjects import</string>
     <string name="help_extra_import_mch_how">A subject folder of the old app version can be imported on the subjects screen: pick \'Legacy subject folder\' in the \'Import\' submenu of the \'more\' menu.
         \nA subject with the same name is not imported twice.</string>
-    <string name="help_extra_import_mch_word">Subject import from a file</string>
-    <string name="help_extra_import_mch_word_how">A subject can be created from a words file: on the subjects screen pick \'File\' in the \'Import\' submenu of the \'more\' menu.
-        \nThe new subject is named after the picked file and its content is parsed exactly like the words import (chapters and words), only at the top level of the subject.</string>
     <string name="help_extra_naming">Naming convention</string>
     <string name="help_extra_naming_how">If you have similar names of certain words, and they have identical translations, combine them using these: /().
         \nSlash character signals two different options ending by a whitespace, an interpunction character or a bracket.
         \nExamples:
         \nI/They come = \'I come\' or \'They come\'
         \n(I go)/(He goes). = \'I go.\' or \'He goes\'.</string>
-    <string name="help_extra_words_export">Words exporting</string>
-    <string name="help_extra_words_export_how">Pick an option in the \'Export\' submenu of the \'more\' menu: selected rows are exported, and with nothing selected the whole open container (every subject on the subjects screen).
-        \nThe word file is compact and carries only the structure of the vocabulary — no success rates, no references; the JSON file is a complete replica of the subject, success rates, notes and references included.
-        \nOnly the JSON file imports back without loss.</string>
-    <string name="help_extra_words_import">Words importing</string>
-    <string name="help_extra_words_import_how">Words are imported through the \'more\' menu — inside a container pick \'Import\', on the subjects screen pick \'File\' in the \'Import\' submenu; inside a container they land in it, on the subjects screen they create a new subject. The import detects the file itself by its content: a file starting with \'[\' or \'{\' is a subject tree (chapters, words, notes and references), anything else is a word list. The word file can be structured in a simpler hierarchy: it can contain chapters and words.
-        \nDescription to individual items can be written directly behind the item in format like \'[description]\'.
-        \nWords and translates can be separated using \';\', \'=\', or \'→\'.
-        \nWords with same translate are separated by a backward slash \'\\\'.
-        \nChapters begin on a separate line in the following format \'chapter name [optional description] {\', end them with a single \'}\' on a separate line.
-        \nEvery item should be written on a new line, spacing and indentation between them is ignored - meant only for better readability.
-        \nPossible format example:
-        \n\nchapter-in-file 1 {
-        \n\tword 1;translate 1
-        \n\tword 2=translate 2
-        \n\tsubchapter name [subchapter description] {
-        \n\t\tword 3 [description] = translate 3
-        \n\t\tword 4\\word 5;translate 4
-        \n\t\tword 6 [description] \\ word 7 → translate 5
-        \n\t}
-        \n\tword 7;translate 1 [description]\\translate 6
-        \n}</string>
+    <string name="help_extra_words_export">Export words</string>
+    <string name="help_extra_words_export_how">Selected rows export. Nothing selected exports the open container, or all subjects at the root.</string>
+    <string name="help_export_word">Word file</string>
+    <string name="help_export_word_how">Compact. No success rates. No references.</string>
+    <string name="help_export_json">JSON file</string>
+    <string name="help_export_json_how">Complete. Success rates, notes and references included.</string>
+    <string name="help_extra_words_import">Import words</string>
+    <string name="help_extra_words_import_how">Inside a subject: More, Import, pick the file.\nAt the subjects screen: More, Import, File, pick the file. A new subject is created.</string>
+    <string name="help_import_format">File format</string>
+    <string name="help_import_format_how">Chapter: name { and } on their own lines.\nWord: word = translation.\nNote: = text.\nDescription: [text] after a name.\nVariants: first\\second.</string>
+    <string name="help_import_example">Example</string>
+    <string name="help_import_errors">Import errors</string>
+    <string name="help_import_errors_how">The error names the file and line. Fix that line and pick the file again.</string>
+    <string name="help_import_example_text" translatable="false">Kapitel 1 {\n\tder Hund = pes\n\tdie Katze = kočka\n}</string>
     <string name="help_search">Searching</string>
     <string name="help_search_how">Searching is enabled in all chapters and subjects.
         \nIn a search list, a click on a found chapter opens its container.
@@ -195,8 +186,10 @@
     <string name="more_reference">Create reference</string>
     <string name="reference_fork">References that follow the new word</string>
     <string name="ref_source_pick">Choose the source of the reference:</string>
-    <string name="more_export_word">Word file (no statistics)</string>
+    <string name="more_export_word">Word file (no success rates)</string>
     <string name="more_import">Import</string>
+    <string name="import_here">Import here</string>
+    <string name="import_file_title">Import %1$s</string>
     <string name="more_import_file">File</string>
     <string name="more_export_json">JSON file (success rates included)</string>
     <string name="more_flip">Flip words and translations</string>
@@ -217,6 +210,7 @@
     <string name="new_mch">New subject</string>
     <string name="new_word">New word</string>
     <string name="new_note">New note</string>
+    <string name="fab_new">New</string>
     <string name="note_copied">Copied</string>
     <string name="objects_cancel">Cancel</string>
     <string name="paste">Paste</string>

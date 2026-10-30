@@ -120,10 +120,12 @@ private fun BareTextFieldCore(
 	val hintColor = style.hintColor.takeIf { it != Color.Unspecified } ?: textColor.copy(alpha = 0.5f)
 	var focused by remember { mutableStateOf(false) }
 	val state = rememberTextFieldState(value)
-	if (state.text.toString() != value) state.setTextAndPlaceCursorAtEnd(value)
-	// the value of the parent: an emission equal to it is the echo of the
-	// programmatic sync above, not user input
 	val echoed by rememberUpdatedState(value)
+	// an external value change re-seeds the field. A sync during composition
+	// would clobber edits the relay below has not delivered yet
+	LaunchedEffect(value) {
+		if (state.text.toString() != value) state.setTextAndPlaceCursorAtEnd(value)
+	}
 	LaunchedEffect(state) {
 		// skipping the first emission avoids echoing the seeded value
 		snapshotFlow { state.text.toString() }

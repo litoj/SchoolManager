@@ -25,6 +25,7 @@ import cz.litoj.schlmgr.ui.popup.FlipConflictPopup
 import cz.litoj.schlmgr.ui.popup.ReferencePopup
 import cz.litoj.schlmgr.ui.popup.SourcePickPopup
 import cz.litoj.schlmgr.ui.shell.ExplorerBackHandler
+import cz.litoj.schlmgr.ui.shell.MainLaunchTarget
 import cz.litoj.schlmgr.ui.shell.TopBar
 import cz.litoj.schlmgr.ui.shell.TopBarIconButton
 import cz.litoj.schlmgr.ui.shell.TopBarMoreButton
@@ -49,6 +50,8 @@ fun SubjectsScreen(
 	openDrawer: () -> Unit,
 	onOpenTest: () -> Unit,
 	onExitApp: () -> Unit,
+	launchTarget: MainLaunchTarget? = null,
+	onLaunchHandled: () -> Unit = {},
 ) {
 	val context = LocalContext.current
 	// the local resources avoid stale cached resources.
@@ -155,6 +158,13 @@ fun SubjectsScreen(
 					SourcePickPopup(request.paths, request.origin, viewModel::navigateToSource)
 			}
 		}
+	}
+
+	// the import mover hands over its destination after the worker finished.
+	LaunchedEffect(launchTarget) {
+		val target = launchTarget ?: return@LaunchedEffect
+		viewModel.openImportTarget(target.path, target.scrollToBottom)
+		onLaunchHandled()
 	}
 
 	ExplorerBackHandler(viewModel, onExitApp)

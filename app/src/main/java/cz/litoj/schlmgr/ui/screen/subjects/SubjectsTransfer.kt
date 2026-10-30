@@ -6,7 +6,6 @@ import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.transfer.ExportFormat
 import cz.litoj.schlmgr.data.transfer.ExportPipeline
-import cz.litoj.schlmgr.data.transfer.FileGateway
 import cz.litoj.schlmgr.data.transfer.ImporterFactory
 import cz.litoj.schlmgr.data.transfer.LegacyDirImport
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel.Request
@@ -42,51 +41,66 @@ internal class SubjectsTransfer(
 
 		fun reloadContent()
 
+		fun requestScrollToBottom()
+
 		fun refreshInfo()
 	}
 
+	/**
+	 * The file name of an export of the selected rows, null when none is writable.
+	 * - see [exportRows] for what a selection may hold.
+	 */
+	private fun exportFileName(): String? {
+		val rows = exportRows()
+		if (rows.isEmpty()) return null
+		val open = host.path.lastOrNull()
+		return when {
+			rows.size == 1 -> rows[0].name
+			// a multi selection inside a container is a partial export of it
+			open != null -> open.name + PARTIAL_SUFFIX
+			else -> "subjects"
+		}
+	}
+
+	/** The word-list export of the selected rows. */
 	fun exportWordFile() {
-		host.emitRequest(Request.PickWordExport(exportName() + ".txt"))
+		val name = exportFileName() ?: return
+		host.emitRequest(Request.PickWordExport(name + ".txt"))
 	}
 
+	/** The tree-JSON export of the selected rows. */
 	fun exportJsonFile() {
-		host.emitRequest(Request.PickJsonExport(exportName()))
+		val name = exportFileName() ?: return
+		host.emitRequest(Request.PickJsonExport(name))
 	}
-
-	private fun selectedContainers(): List<DbItem> =
-		host.items().filter { it.selected && it.item.type == ItemKind.CHAPTER }.map { it.item }
 
 	/**
-	 * Selection containers, else open or all subjects. Only containers export.
+	 * The selected rows, an export always covers a selection.
+	 * - a translation row has no line of any format, so it never joins.
 	 */
-	internal fun exportContainers(): List<DbItem> {
-		val selected = selectedContainers()
-		if (selected.isNotEmpty()) return selected
-		val open = host.path.lastOrNull()
-		return if (open != null) listOf(open)
-		else host.items().filter { it.item.type == ItemKind.CHAPTER }.map { it.item }
-	}
+	internal fun exportRows(): List<DbItem> =
+		host.items()
+			.filter { it.selected && it.item.type != ItemKind.TRANSLATION }
+			.map { it.item }
 
-	private fun exportName(): String {
-		val containers = exportContainers()
-		return if (containers.size == 1) containers[0].name else "subjects"
-	}
-
-	/** Dispatches picked file via [ImporterFactory]. */
+	/** Dispatches a picked file, the provider reads run on io. */
 	fun onAnyFilePicked(uri: Uri) {
-		val target = ImporterFactory.targetFor(host.path.lastOrNull())
 		val open = host.path.lastOrNull()
 		val atRoot = host.path.isEmpty()
 		scope.launch(io) {
-			val name = FileGateway.displayName(host.ctx, uri, "")
-			// the shape of the document decides its format.
-			// the name may resolve to nothing on some providers
-			val jsonContent = FileGateway.startsAsJson(host.ctx, uri)
-			val worker = ImporterFactory.create(
-				host.ctx, host::postToUi, uri, name, jsonContent, target, { open }, { atRoot },
-				{ host.setContent(null) },
-				{ host.reloadContent() },
+			val worker = ImporterFactory.createPickedImport(
+				host.ctx, host::postToUi, uri, "",
+				{ open }, { atRoot },
 				{
+					host.requestScrollToBottom()
+					host.setContent(null)
+				},
+				{
+					host.requestScrollToBottom()
+					host.reloadContent()
+				},
+				{
+					host.requestScrollToBottom()
 					host.reloadContent()
 					host.refreshInfo()
 				},
@@ -96,17 +110,23 @@ internal class SubjectsTransfer(
 	}
 
 	fun onWordTargetPicked(uri: Uri) {
-		val selected = exportContainers()
+		val selected = exportRows()
 		ExportPipeline(host.ctx, host::postToUi, uri, ExportFormat.WORD, { selected }, host::clearSelection).start()
 	}
 
 	fun onJsonTargetPicked(uri: Uri) {
-		val selected = exportContainers()
+		val selected = exportRows()
 		ExportPipeline(host.ctx, host::postToUi, uri, ExportFormat.JSON, { selected }, host::clearSelection).start()
 	}
 
 	fun onDirPicked(uri: Uri) {
 		val atRoot = host.path.isEmpty()
-		LegacyDirImport(host.ctx, host::postToUi, uri, { atRoot }) { host.setContent(null) }.start()
+		LegacyDirImport(host.ctx, host::postToUi, uri, { atRoot }) {
+			host.requestScrollToBottom()
+			host.setContent(null)
+		}.start()
 	}
 }
+
+/** The suffix of a multi selection export of the open container. */
+private const val PARTIAL_SUFFIX = " - partial"

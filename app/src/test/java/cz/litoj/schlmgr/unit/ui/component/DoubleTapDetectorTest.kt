@@ -2,6 +2,7 @@ package cz.litoj.schlmgr.unit.ui.component
 
 import androidx.compose.ui.geometry.Offset
 import cz.litoj.schlmgr.ui.component.DoubleTapDetector
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -47,5 +48,13 @@ class DoubleTapDetectorTest {
 		val off = DoubleTapDetector(spanPx = 32f, windowMs = 0L)
 		off.onDown(Offset(100f, 100f), at = 1_000L, isWord = true)
 		assertFalse(off.onDown(Offset(100f, 100f), at = 1_001L, isWord = true))
+	}
+
+	@Test
+	fun `a closed double hands over the anchor of the opening tap`() {
+		detector.onDown(Offset(100f, 100f), at = 1_000L, isWord = true, anchor = 7)
+
+		assertTrue(detector.onDown(Offset(110f, 105f), at = 1_200L, isWord = true, anchor = 9))
+		assertEquals("the anchor rides the opening tap, not the closing one", 7, detector.openAnchor)
 	}
 }

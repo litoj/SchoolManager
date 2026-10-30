@@ -62,11 +62,12 @@ object JsonWordList {
 	/**
 	 * - the caller owns the tree, and the exporter converts its stream into it.
 	 * - tests build it by hand.
+	 * - the file is a list of entries, so any root kind writes.
 	 */
 	@JvmStatic
-	fun writeChapters(chapters: List<JsonChapter>): String {
-		val root: JsonValue = if (chapters.size == 1) chapterValue(chapters[0])
-		else JsonArray().apply { chapters.forEach { add(chapterValue(it)) } }
+	fun writeEntries(entries: List<JsonChild>): String {
+		val root: JsonValue = if (entries.size == 1) childValue(entries[0])
+		else JsonArray().apply { entries.forEach { add(childValue(it)) } }
 		return root.toString(Stringify.HJSON)
 	}
 
@@ -319,12 +320,17 @@ class HJsonImporter(text: String) : DataImporter {
 class HJsonExporter : DataExporter {
 	override fun render(items: List<StreamItem>): String {
 		val childrenOf = StreamBuilder.childrenOf(items)
-		// the top level of the format is chapters, so a word or note root
-		// has no node and is skipped, not converted
-		return JsonWordList.writeChapters(
-			items.filter { it.parent == null && it.item.type == ItemKind.CHAPTER }
-				.map { chapterOf(it, childrenOf) })
+		return JsonWordList.writeEntries(
+			items.filter { it.parent == null }.map { entryOf(it, childrenOf) })
 	}
+
+	/** Every stream root writes as itself, a chapter, word or note alike. */
+	private fun entryOf(item: StreamItem, childrenOf: Map<StreamItem, List<StreamItem>>): JsonChild =
+		when (item.item.type) {
+			ItemKind.CHAPTER -> chapterOf(item, childrenOf)
+			ItemKind.WORD -> wordOf(item, childrenOf)
+			else -> JsonNote(item.item.name, item.item.description.ifEmpty { null })
+		}
 
 	private fun chapterOf(item: StreamItem, childrenOf: Map<StreamItem, List<StreamItem>>): JsonChapter {
 		val chapter = JsonChapter(item.item.name, item.item.description.ifEmpty { null })

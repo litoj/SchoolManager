@@ -7,9 +7,12 @@ import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.legacy.LegacyFileSource
 import cz.litoj.schlmgr.data.legacy.LegacyJsonLoader
 import cz.litoj.schlmgr.data.legacy.LegacySubjectImporter
+import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
+import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import java.io.File
 import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.Dispatchers
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -125,5 +128,22 @@ class FlipPerformanceTest {
 
 		// one translation per word proves the flip covered the whole chapter
 		assertEquals(300, ItemRepository.children(deck).count { it.name.startsWith("trl") })
+	}
+
+	@Test
+	fun `the flips of a loaded wide chapter read no database`() {
+		val deck = wideChapter()
+		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		model.onItemClick(model.items().single { it.item.name == "NJ" })
+		model.onItemClick(model.items().single { it.item.name == "wide" })
+
+		countQueries()
+		model.flipWord(model.items().first())
+		model.onItemDoubleTap(model.listState.value.items.first())
+
+		// the preloaded content flips every row, a read per row would storm the budget
+		assertQueryBudget("list-flips", 0)
+		// the rows load default-flipped, so the double leaves them all unflipped
+		assertTrue("the flip-all covered every row", model.items().none { it.flipped })
 	}
 }

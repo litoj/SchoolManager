@@ -14,7 +14,7 @@ import org.junit.Test
 
 /**
  * - no database is touched.
- * - [JsonWordList.writeChapters] is the database-free counterpart of write.
+ * - [JsonWordList.writeEntries] is the database-free counterpart of write.
  */
 class JsonWordListParseTest {
 
@@ -172,7 +172,7 @@ class JsonWordListParseTest {
 		subject.entries.add(nested)
 		subject.entries.add(JsonRef(listOf("Subject", "nested", "inner")))
 
-		val parsed = JsonWordList.parse(JsonWordList.writeChapters(listOf(subject)))
+		val parsed = JsonWordList.parse(JsonWordList.writeEntries(listOf(subject)))
 
 		val subject2 = parsed.single() as JsonChapter
 		assertEquals("Subject", subject2.name)
@@ -206,7 +206,7 @@ class JsonWordListParseTest {
 		val a = JsonChapter("A")
 		val b = JsonChapter("B", "bd")
 
-		val parsed = JsonWordList.parse(JsonWordList.writeChapters(listOf(a, b)))
+		val parsed = JsonWordList.parse(JsonWordList.writeEntries(listOf(a, b)))
 
 		assertEquals(2, parsed.size)
 		assertEquals("A", (parsed[0] as JsonChapter).name)
@@ -215,12 +215,30 @@ class JsonWordListParseTest {
 	}
 
 	@Test
+	fun `bare word and note roots write and parse back`() {
+		val word = JsonWord("Haus", "wd", 1, 2)
+		word.translations.add(JsonTranslation("dům", null, 0, 0))
+		val note = JsonNote("note", "nd")
+
+		val single = JsonWordList.parse(JsonWordList.writeEntries(listOf(word)))
+		val several = JsonWordList.parse(JsonWordList.writeEntries(listOf(word, note)))
+
+		val back = single.single() as JsonWord
+		assertEquals("Haus", back.name)
+		assertEquals("wd", back.description)
+		assertEquals(1, back.passedTests)
+		assertEquals(listOf("dům"), back.translations.map { it.name })
+		assertEquals(2, several.size)
+		assertEquals(JsonNote::class, several[1]::class)
+	}
+
+	@Test
 	fun `the written file shape stays exact`() {
 		val chapter = JsonChapter("Bare")
 		chapter.entries.add(JsonWord("w"))
 		chapter.entries.add(JsonNote("n", "nd"))
 
-		val text = JsonWordList.writeChapters(listOf(chapter))
+		val text = JsonWordList.writeEntries(listOf(chapter))
 
 		// the whole format in one pin, where unset optionals leave no line
 		assertEquals(
@@ -251,7 +269,7 @@ class JsonWordListParseTest {
 		outer.entries.add(JsonChapter("empty"))
 		outer.entries.add(JsonWord("word"))
 
-		val text = JsonWordList.writeChapters(listOf(outer))
+		val text = JsonWordList.writeEntries(listOf(outer))
 
 		assertTrue(text.contains("children"))
 		assertTrue(text.contains("translations"))

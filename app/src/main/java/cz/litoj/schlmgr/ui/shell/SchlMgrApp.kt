@@ -2,15 +2,10 @@ package cz.litoj.schlmgr.ui.shell
 
 import android.content.Intent
 import androidx.activity.compose.LocalActivity
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.material.SnackbarHost
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -21,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.platform.ViewConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -50,7 +44,10 @@ import kotlinx.coroutines.launch
  * - the shell manages only names, factories, the drawer and the back stack.
  */
 @Composable
-fun SchlMgrApp() {
+fun SchlMgrApp(
+	launchTarget: MainLaunchTarget? = null,
+	onLaunchHandled: () -> Unit = {},
+) {
 	// the presses of the app arm faster than the platform default, see [QuickLongPress]
 	val system = LocalViewConfiguration.current
 	CompositionLocalProvider(LocalViewConfiguration provides QuickLongPress(system)) {
@@ -67,6 +64,17 @@ fun SchlMgrApp() {
 		val drawer = rememberDrawerLayerState()
 		val navController = rememberNavController()
 		fun openDrawer() = drawer.open()
+
+		// an import Done returns to the subjects screen, which applies the target path.
+		LaunchedEffect(launchTarget) {
+			if (launchTarget != null) navController.navigate(Destination.SUBJECTS.name) {
+				popUpTo(Destination.SUBJECTS.name) {
+					inclusive = false
+					saveState = false
+				}
+				launchSingleTop = true
+			}
+		}
 
 		// the open drawer destination, which checks a row and owns the gestures
 		val backStack by navController.currentBackStackEntryAsState()
@@ -116,6 +124,8 @@ fun SchlMgrApp() {
 								openDrawer = ::openDrawer,
 								onOpenTest = { navController.navigate(Destination.TEST.name) },
 								onExitApp = { activity?.finish() },
+								launchTarget = launchTarget,
+								onLaunchHandled = onLaunchHandled,
 							)
 						}
 						composable(Destination.TEST.name) { entry ->
@@ -151,13 +161,7 @@ fun SchlMgrApp() {
 			// the status band is the dark green of the drawer banner.
 			// - it is drawn last, so it also covers the drawer and its scrim.
 			// - the bar looks the same whether the drawer is open or closed.
-			// - the top bar reserves only the height of the strip.
-			Box(
-				Modifier
-					.fillMaxWidth()
-					.windowInsetsTopHeight(WindowInsets.statusBars)
-					.background(colorResource(R.color.colorStatusBar))
-			)
+			StatusBarBand()
 		}
 
 		DialogHost()

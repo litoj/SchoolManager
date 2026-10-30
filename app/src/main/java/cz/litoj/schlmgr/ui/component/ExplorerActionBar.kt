@@ -120,6 +120,38 @@ fun PickerActionBar(
 	}
 }
 
+/** The import mover strip: always visible, with the import and done states. */
+@Composable
+fun ImportActionBar(
+	busy: Boolean,
+	imported: Boolean,
+	onCancel: () -> Unit,
+	onImport: () -> Unit,
+	onDone: () -> Unit,
+	modifier: Modifier = Modifier,
+) {
+	ActionStrip(modifier) {
+		if (imported) {
+			ActionButton(
+				Action(R.drawable.ic_check, R.string.done, onDone),
+				true,
+			)
+		} else {
+			ActionButton(
+				Action(R.drawable.ic_cancel, R.string.objects_cancel, onCancel),
+				!busy,
+			)
+			ActionButton(
+				Action(R.drawable.ic_import_black, R.string.import_here, onImport),
+				!busy,
+			)
+		}
+	}
+}
+
+/** The height of the action strips, which the screens pad around. */
+internal val ActionStripHeight = 60.dp
+
 @Composable
 private fun ActionStrip(
 	modifier: Modifier = Modifier,
@@ -128,7 +160,7 @@ private fun ActionStrip(
 	Row(
 		modifier
 			.fillMaxWidth()
-			.height(60.dp)
+			.height(ActionStripHeight)
 			.background(BarColor),
 		content = content,
 	)

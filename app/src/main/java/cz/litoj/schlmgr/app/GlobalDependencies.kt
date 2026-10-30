@@ -1,6 +1,7 @@
 package cz.litoj.schlmgr.app
 
 import android.content.Context
+import android.net.Uri
 import kotlinx.coroutines.flow.MutableSharedFlow
 
 /**
@@ -36,5 +37,8 @@ object GlobalDependencies {
 
 		/** A notice that the display resolves, see [UiNotice]. */
 		data class Notice(val notice: UiNotice) : UiMessage
+
+		/** An export result with a share action on the saved document. */
+		data class ShareFile(val text: String, val uri: Uri, val mime: String) : UiMessage
 	}
 }

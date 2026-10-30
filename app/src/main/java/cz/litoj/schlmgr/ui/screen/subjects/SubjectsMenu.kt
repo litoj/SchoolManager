@@ -49,7 +49,7 @@ private val importMenu = listOf(
 private val rootMenu = listOf(
 	MenuEntry(0, R.string.sort, icon = R.drawable.ic_sort_black, children = sortMenu),
 	MenuEntry(0, R.string.more_import, icon = R.drawable.ic_import_black, children = importMenu),
-	MenuEntry(0, R.string.more_export, icon = R.drawable.ic_export_black, children = exportMenu, always = true),
+	MenuEntry(0, R.string.more_export, icon = R.drawable.ic_export_black, children = exportMenu, selectionAction = true),
 	MenuEntry(MenuId.FLIP, R.string.more_flip, icon = R.drawable.ic_flip_black, selectionAction = true),
 	MenuEntry(MenuId.REFERENCE, R.string.more_reference, icon = R.drawable.ic_reference_black, selectionAction = true),
 )
@@ -58,7 +58,7 @@ private val containerMenu = listOf(
 	MenuEntry(0, R.string.sort, icon = R.drawable.ic_sort_black, children = sortMenu),
 	// single import needs no submenu.
 	MenuEntry(MenuId.IMPORT_FILE, R.string.more_import, icon = R.drawable.ic_import_black),
-	MenuEntry(0, R.string.more_export, icon = R.drawable.ic_export_black, children = exportMenu, always = true),
+	MenuEntry(0, R.string.more_export, icon = R.drawable.ic_export_black, children = exportMenu, selectionAction = true),
 	MenuEntry(MenuId.FLIP, R.string.more_flip, icon = R.drawable.ic_flip_black, selectionAction = true),
 	MenuEntry(MenuId.REFERENCE, R.string.more_reference, icon = R.drawable.ic_reference_black, selectionAction = true),
 )
@@ -67,7 +67,7 @@ private val containerMenu = listOf(
 private fun searchMenu() = listOf(
 	MenuEntry(MenuId.FLIP, R.string.more_flip, icon = R.drawable.ic_flip_black, selectionAction = true),
 	MenuEntry(MenuId.REFERENCE, R.string.more_reference, icon = R.drawable.ic_reference_black, selectionAction = true),
-	MenuEntry(0, R.string.more_export, icon = R.drawable.ic_export_black, children = exportMenu, always = true),
+	MenuEntry(0, R.string.more_export, icon = R.drawable.ic_export_black, children = exportMenu, selectionAction = true),
 	// no sort-default, since search has no browse order.
 	MenuEntry(0, R.string.sort, icon = R.drawable.ic_sort_black,
 		children = sortMenu.filter { it.id != MenuId.SORT_DEFAULT }),

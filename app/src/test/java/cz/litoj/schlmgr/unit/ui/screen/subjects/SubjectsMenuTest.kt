@@ -42,16 +42,20 @@ class SubjectsMenuTest {
 	}
 
 	@Test
-	fun `every menu kind offers the export in both forms`() {
+	fun `every menu kind offers the export while selecting only`() {
 		for (kind in MainExplorerViewModel.MenuKind.entries) {
-			for (selecting in listOf(false, true)) {
-				val menu = subjectsMenu(kind, selecting)
-				assertTrue(
-					"$kind selecting=$selecting offers the export",
-					menu.any { it.children.isNotEmpty() && it.always &&
-						it.children.all { child -> child.id == MenuId.EXPORT_WORD || child.id == MenuId.EXPORT_JSON } },
-				)
-			}
+			val selecting = subjectsMenu(kind, selecting = true)
+			assertTrue(
+				"$kind with a selection offers the export",
+				selecting.any { it.children.isNotEmpty() &&
+					it.children.all { child -> child.id == MenuId.EXPORT_WORD || child.id == MenuId.EXPORT_JSON } },
+			)
+			val plain = subjectsMenu(kind, selecting = false)
+			assertTrue(
+				"$kind without a selection offers no export",
+				plain.none { it.children.isNotEmpty() &&
+					it.children.any { child -> child.id == MenuId.EXPORT_WORD || child.id == MenuId.EXPORT_JSON } },
+			)
 		}
 	}
 
@@ -68,11 +72,10 @@ class SubjectsMenuTest {
 	}
 
 	@Test
-	fun `the search menu keeps the sort and export rows without a selection`() {
+	fun `the search menu without a selection keeps only the sort row`() {
 		val plain = subjectsMenu(MainExplorerViewModel.MenuKind.SEARCH, selecting = false)
-		assertEquals(2, plain.size)
-		assertTrue(plain.any { it.children.isNotEmpty() && !it.always })
-		assertTrue(plain.any { it.always })
+		assertEquals(1, plain.size)
+		assertTrue(plain.single().children.isNotEmpty())
 	}
 
 	@Test

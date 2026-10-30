@@ -12,7 +12,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * The success-ratio background tint, a fixed low alpha over the plain colours.
+ * The success-ratio background tint, a low alpha over the plain colours.
+ * - the middle of the ramp lifts the alpha, yellow reads fainter than red
+ * or green at one alpha.
  */
 class SuccessRatioArgbTest {
 
@@ -24,25 +26,33 @@ class SuccessRatioArgbTest {
 
 	@Test
 	fun `ratios 0, 50 and 100 use the same gradient`() {
-		assertEquals(0x40FF0022, successRatioArgb(0)) // same saturation and alpha as the rest
-		assertEquals(0x40FFFF22, successRatioArgb(50)) // 1 success + 1 fail: translucent yellow
+		assertEquals(0x40FF0022, successRatioArgb(0)) // full red keeps the base alpha
+		// 1 success + 1 fail: yellow dims only the blue channel over a light
+		// ground, so it needs the double alpha to read as strong as the ends
+		assertEquals(0x80FFFF22.toInt(), successRatioArgb(50))
 		assertEquals(0x4000FF22, successRatioArgb(100))
 	}
 
 	@Test
-	fun `below 50 grades the green channel at a 0x40 alpha`() {
-		// the high byte from the success ratio, the low byte 22, alpha 0x40
-		assertEquals(0x40FF0000 or (25 * 256 / 50 shl 8) or 0x22, successRatioArgb(25))
-		assertEquals(0x40, successRatioArgb(25) ushr 24 and 0xFF)
+	fun `the alpha lifts linearly toward the middle`() {
+		assertEquals(0x60, successRatioArgb(25) ushr 24 and 0xFF)
+		assertEquals(0x60, successRatioArgb(75) ushr 24 and 0xFF)
+		// one step from the middle stays under the peak
+		assertEquals(0x7E, successRatioArgb(49) ushr 24 and 0xFF)
 	}
 
 	@Test
-	fun `above 50 grades the red channel and keeps the 0x40 alpha`() {
-		// the high byte from the inverted ratio, then FF22, at alpha 0x40
+	fun `below 50 grades the green channel`() {
+		// the high byte from the success ratio, the low byte 22, alpha 0x60
+		assertEquals(0x60FF0000 or (25 * 256 / 50 shl 8) or 0x22, successRatioArgb(25))
+	}
+
+	@Test
+	fun `above 50 grades the red channel`() {
+		// the high byte from the inverted ratio, then FF22, at alpha 0x60
 		val grade = (100 - 75) * 256 / 50 // 128 = 0x80
-		assertEquals(0x40, successRatioArgb(75) ushr 24 and 0xFF) // alpha, not the grade
 		assertEquals(grade, successRatioArgb(75) ushr 16 and 0xFF) // red carries the grade
-		assertEquals(0x4080FF22, successRatioArgb(75))
+		assertEquals(0x6080FF22, successRatioArgb(75))
 	}
 
 	@Test

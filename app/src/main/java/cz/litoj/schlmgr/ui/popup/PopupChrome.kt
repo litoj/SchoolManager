@@ -151,6 +151,7 @@ internal fun BorderedTextField(
 	onValueChange: (String) -> Unit,
 	@StringRes label: Int,
 	textColor: Color,
+	modifier: Modifier = Modifier,
 	singleLine: Boolean = false,
 	onImeAction: (() -> Unit)? = null,
 	imeAction: ImeAction? = null,
@@ -158,7 +159,7 @@ internal fun BorderedTextField(
 	horizontalPadding: androidx.compose.ui.unit.Dp = 20.dp,
 ) {
 	Box(
-		Modifier
+		modifier
 			.fillMaxWidth()
 			.padding(horizontal = horizontalPadding, vertical = 5.dp)
 			.border(0.8.dp, colorResource(R.color.colorControlLine))

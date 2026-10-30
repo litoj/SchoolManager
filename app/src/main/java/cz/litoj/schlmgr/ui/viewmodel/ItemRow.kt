@@ -59,6 +59,12 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		private set
 
 	/**
+	 * The flip content of the row, preloaded with the list so a flip reads no database.
+	 * - null marks an unpreloaded row, the flip path reads on io then.
+	 */
+	private var flipContent: List<DbItem>? = null
+
+	/**
 	 * Whether the referenced row still lives in a container besides this one.
 	 * - its source can be gone, since the home was deleted while the link kept the row alive.
 	 * - without another container there is nowhere to jump, so the icon stays hidden.
@@ -90,6 +96,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		this.item = item
 		this.parentId = parentId
 		flipped = false
+		flipContent = null
 		renderName()
 		refreshReferenceFacts(parentId)
 		if (item.type != ItemKind.WORD) return
@@ -109,6 +116,21 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		if (item.type != ItemKind.WORD && item.type != ItemKind.TRANSLATION) return
 		flipped = !flipped
 		if (flipped) toShow = renderTranslations(items) else renderName()
+	}
+
+	/** Preloads the flip content, so the flips of the row read no database. */
+	fun preloadFlip(items: List<DbItem>) {
+		flipContent = items
+	}
+
+	/**
+	 * Flips onto [flippedTo] with the preloaded content.
+	 * - a false return means no content was preloaded, the caller reads on io.
+	 */
+	fun flipOnto(flippedTo: Boolean): Boolean {
+		val content = flipContent ?: return false
+		if (flipped != flippedTo) applyFlip(content)
+		return true
 	}
 
 	/**
@@ -168,6 +190,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 			renderName()
 			return
 		}
+		flipContent = items
 		if (flipped) toShow = renderTranslations(items) else renderName()
 	}
 
@@ -301,6 +324,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 			row.parentId = parentId
 			row.isReference = parentId != null && links.any { it.parentId == parentId && it.isReference }
 			row.hasSource = row.isReference && links.any { it.parentId != parentId }
+			row.preloadFlip(translations)
 			row.applyDefaultFlip(translations)
 			return row
 		}
@@ -310,15 +334,23 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		 * - the chain serves the jump to directory action.
 		 * - its reference facts come from the preloaded [links].
 		 * - so a run with thousands of hits stays database-free after preload.
+		 * @param flipContent the translations of a word hit, null leaves the row to read on demand
 		 */
 		@JvmStatic
-		fun ofSearchHit(item: DbItem, path: List<DbItem>, position: Int, links: List<DbLink>): ItemRow {
+		fun ofSearchHit(
+			item: DbItem,
+			path: List<DbItem>,
+			position: Int,
+			links: List<DbLink>,
+			flipContent: List<DbItem>? = null,
+		): ItemRow {
 			val parent = path.lastOrNull()?.id
 			val row = ItemRow(item, null, position, applyDefFlip = false)
 			row.path = ArrayList(path)
 			row.parentId = parent
 			row.isReference = links.any { it.parentId == parent && it.isReference }
 			row.hasSource = row.isReference && links.any { it.parentId != parent }
+			if (flipContent != null) row.preloadFlip(flipContent)
 			return row
 		}
 	}

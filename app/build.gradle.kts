@@ -20,8 +20,8 @@ android {
         applicationId = "cz.litoj.schlmgr"
         minSdk = 30
         targetSdk = 37
-        versionCode = 70
-        versionName = "2.0.5"
+        versionCode = 71
+        versionName = "2.0.6"
         signingConfig = signingConfigs.getByName("debug")
     }
 
