@@ -8,6 +8,7 @@ import cz.litoj.schlmgr.data.legacy.LegacyFileSource
 import cz.litoj.schlmgr.data.legacy.LegacyJsonLoader
 import cz.litoj.schlmgr.data.legacy.LegacySubjectImporter
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
+import cz.litoj.schlmgr.support.setRowOptions
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import java.io.File
@@ -75,12 +76,12 @@ class BrowseOpenPerformanceTest {
 		) ?: throw IllegalStateException("missing legacy NJ fixture")
 		ItemRepository.import(LegacySubjectImporter(subject))
 		// the open path renders flipped words, according to the setting of the user
-		ItemRow.defFlip = true
+		setRowOptions(defFlip = true)
 	}
 
 	@After
 	fun tearDown() {
-		ItemRow.defFlip = defFlipWas
+		setRowOptions(defFlip = defFlipWas)
 		db.close()
 		ItemRepository.resetForTest()
 	}

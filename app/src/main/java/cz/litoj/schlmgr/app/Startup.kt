@@ -52,10 +52,11 @@ object Startup {
 	 * - nothing writes them until the user changes a setting.
 	 */
 	private fun applyStoredOptions() {
-		TestEngine.amount = AppSettings.getInt("testAmount", 10)
+		TestEngine.applyOptions(
+			AppSettings.getBool("isClever", true),
+			AppSettings.getInt("testAmount", 10))
 		TestEngine.setDefaultTime(AppSettings.getInt("defaultTestTime", TestEngine.DEFAULT_TIME_SECONDS))
-		TestEngine.isClever = AppSettings.getBool("isClever", true)
-		TestEngine.isReversed = AppSettings.getBool("reverseTest", false)
+		TestEngine.applyReversed(AppSettings.getBool("reverseTest", false))
 		WordListWriter.setWordTranslationSplitter(AppSettings.getString("exportWordSplit", "="))
 	}
 

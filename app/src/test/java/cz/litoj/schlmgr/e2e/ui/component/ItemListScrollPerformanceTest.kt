@@ -27,6 +27,7 @@ import cz.litoj.schlmgr.ui.search.SearchEngine
 import cz.litoj.schlmgr.ui.search.SearchIndex
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 import cz.litoj.schlmgr.ui.viewmodel.ItemListState
+import cz.litoj.schlmgr.support.setRowOptions
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
@@ -90,7 +91,7 @@ class ItemListScrollPerformanceTest {
 
 	@After
 	fun tearDown() {
-		ItemRow.descLines = descLinesWas
+		setRowOptions(descLines = descLinesWas)
 		db.close()
 		ItemRepository.resetForTest()
 	}
@@ -342,7 +343,7 @@ class ItemListScrollPerformanceTest {
 
 	@Test
 	fun `fast-scrolling the NJ variant-word results reports its frames`() {
-		ItemRow.descLines = Int.MAX_VALUE
+		setRowOptions(descLines = Int.MAX_VALUE)
 		val target = njVariantRows()
 		// the word rows of NJ that carry a variant slash, 138 after the subject-wide name merge
 		assertEquals(138, target.size)
@@ -358,7 +359,7 @@ class ItemListScrollPerformanceTest {
 
 	@Test
 	fun `fast-scrolling variable-height rows reports its frames`() {
-		ItemRow.descLines = Int.MAX_VALUE
+		setRowOptions(descLines = Int.MAX_VALUE)
 		val target = variableHeightRows()
 		assertEquals(300, target.size)
 		composeHost(reorderable = true)

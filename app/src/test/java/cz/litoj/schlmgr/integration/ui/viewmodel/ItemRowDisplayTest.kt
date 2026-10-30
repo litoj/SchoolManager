@@ -5,6 +5,7 @@ import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemDatabase
+import cz.litoj.schlmgr.support.setRowOptions
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -39,13 +40,13 @@ class ItemRowDisplayTest {
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 		// raw names, because the join behaviour of the parser has its own unit test
-		ItemRow.parse = false
+		setRowOptions(parse = false)
 	}
 
 	@After
 	fun tearDown() {
-		ItemRow.parse = savedParse
-		ItemRow.defFlip = savedDefFlip
+		setRowOptions(parse = savedParse)
+		setRowOptions(defFlip = savedDefFlip)
 		db.close()
 		ItemRepository.resetForTest()
 	}
@@ -59,7 +60,7 @@ class ItemRowDisplayTest {
 
 	@Test
 	fun `a word row starts flipped when defFlip is on`() {
-		ItemRow.defFlip = true
+		setRowOptions(defFlip = true)
 		val (parentId, word) = wordWithTranslations()
 		val row = ItemRow(word, parentId, 1)
 		assertTrue(row.flipped)
@@ -70,7 +71,7 @@ class ItemRowDisplayTest {
 
 	@Test
 	fun `a word row starts unflipped when defFlip is off`() {
-		ItemRow.defFlip = false
+		setRowOptions(defFlip = false)
 		val (parentId, word) = wordWithTranslations()
 		val row = ItemRow(word, parentId, 1)
 		assertFalse(row.flipped)
@@ -81,7 +82,7 @@ class ItemRowDisplayTest {
 
 	@Test
 	fun `flip toggles the display both ways`() {
-		ItemRow.defFlip = false
+		setRowOptions(defFlip = false)
 		val (parentId, word) = wordWithTranslations()
 		val row = ItemRow(word, parentId, 1)
 
@@ -100,7 +101,7 @@ class ItemRowDisplayTest {
 
 	@Test
 	fun `update refreshes the unflipped display from the database`() {
-		ItemRow.defFlip = false
+		setRowOptions(defFlip = false)
 		val (parentId, word) = wordWithTranslations()
 		val row = ItemRow(word, parentId, 1)
 
@@ -114,7 +115,7 @@ class ItemRowDisplayTest {
 
 	@Test
 	fun `update keeps a flipped row flipped`() {
-		ItemRow.defFlip = true
+		setRowOptions(defFlip = true)
 		val (parentId, word) = wordWithTranslations()
 		val row = ItemRow(word, parentId, 1)
 		assertTrue(row.flipped)
@@ -143,7 +144,7 @@ class ItemRowDisplayTest {
 
 	@Test
 	fun `setNew re-targets the row onto another word`() {
-		ItemRow.defFlip = false
+		setRowOptions(defFlip = false)
 		val (parentId, word) = wordWithTranslations()
 		val row = ItemRow(word, parentId, 1)
 

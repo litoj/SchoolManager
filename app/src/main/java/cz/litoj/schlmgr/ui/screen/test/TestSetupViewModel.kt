@@ -64,7 +64,7 @@ class TestSetupViewModel : ViewModel() {
 	fun toggleReverse() {
 		val on = !TestSetupState.reverseTest
 		TestSetupState.setReverse(on)
-		TestEngine.isReversed = on
+		TestEngine.applyReversed(on)
 		AppSettings.set("reverseTest", on)
 	}
 

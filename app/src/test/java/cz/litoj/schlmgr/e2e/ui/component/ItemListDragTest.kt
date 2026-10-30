@@ -174,7 +174,6 @@ class ItemListDragTest {
 				val state = ItemListState(
 					items = items.toList(),
 					maxPosition = items.size,
-					selectionActive = items.any { it.selected },
 				)
 				published = state
 				ItemList(
@@ -269,7 +268,6 @@ class ItemListDragTest {
 								items = state.value.items.map {
 									if (it.key == pressed.key) it.copy(selected = true) else it
 								},
-								selectionActive = true,
 							)
 						},
 						onReorderMove = ::moveRow,

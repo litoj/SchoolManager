@@ -120,6 +120,19 @@ class TestEngine {
 	fun getTestSrc(): List<TestEntry> = ArrayList(source)
 
 	companion object {
+		/** One mutation door, the startup load and the settings screen share it. */
+		@JvmStatic
+		fun applyOptions(isClever: Boolean, amount: Int) {
+			this.isClever = isClever
+			this.amount = amount
+		}
+
+		/** One mutation door, the startup load and the test setup share it. */
+		@JvmStatic
+		fun applyReversed(reversed: Boolean) {
+			isReversed = reversed
+		}
+
 
 		/**
 		 * The size of the success-rate belts in percents.
@@ -234,6 +247,7 @@ class TestEngine {
 		 */
 		@JvmStatic
 		var isClever = true
+			private set
 
 		/**
 		 * Whether a test shows the tested word and expects one of its translations,
@@ -241,10 +255,12 @@ class TestEngine {
 		 */
 		@JvmStatic
 		var isReversed = false
+			private set
 
 		/** Item count per test, where -1 or more than the source uses all of it. */
 		@JvmStatic
 		var amount = 10
+			private set
 
 		/**
 		 * Whether [answer] names the tested word in the current direction.

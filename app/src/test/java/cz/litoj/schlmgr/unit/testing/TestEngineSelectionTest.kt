@@ -39,7 +39,7 @@ class TestEngineSelectionTest {
 	}
 
 	private fun select(items: List<Item>, amount: Int): List<TestEntry> {
-		TestEngine.isClever = true
+		TestEngine.applyOptions(isClever = true, amount = TestEngine.amount)
 		val test = TestEngine()
 		test.setTested(amount, null, 1, items.map { it.toEntry() })
 		return test.getTestSrc()
@@ -50,7 +50,7 @@ class TestEngineSelectionTest {
 
 	@Test
 	fun `an empty source selects nothing instead of crashing`() {
-		TestEngine.isClever = true
+		TestEngine.applyOptions(isClever = true, amount = TestEngine.amount)
 		val test = TestEngine()
 		test.setTested(-1, null, 1, emptyList())
 		assertTrue(test.getTestSrc().isEmpty())
@@ -58,7 +58,7 @@ class TestEngineSelectionTest {
 
 	@Test
 	fun `a single-entry source starts a one-item test`() {
-		TestEngine.isClever = true
+		TestEngine.applyOptions(isClever = true, amount = TestEngine.amount)
 		val test = TestEngine()
 		test.setTested(1, null, 1, listOf(Item(1, 0, 0).toEntry()))
 		assertEquals(1, test.getTestSrc().size)
@@ -158,7 +158,7 @@ class TestEngineSelectionTest {
 		val translation = DbItem(id = 2, name = "dům/domov", description = "", type = ItemKind.TRANSLATION)
 		val translations = listOf(translation)
 
-		TestEngine.isReversed = true
+		TestEngine.applyReversed(true)
 		try {
 			assertTrue(TestEngine.matchesAnswer(word, translations, "domov"))
 			assertFalse(
@@ -166,7 +166,7 @@ class TestEngineSelectionTest {
 				TestEngine.matchesAnswer(word, translations, "house")
 			)
 		} finally {
-			TestEngine.isReversed = false
+			TestEngine.applyReversed(false)
 		}
 
 		assertTrue(TestEngine.matchesAnswer(word, translations, "house"))
@@ -188,7 +188,7 @@ class TestEngineSelectionTest {
 		val stavba = DbItem(id = 2, name = "stavba", description = "", type = ItemKind.TRANSLATION)
 		val translations = listOf(dum, stavba)
 
-		TestEngine.isReversed = true
+		TestEngine.applyReversed(true)
 		try {
 			assertEquals(listOf(dum), TestEngine.creditedTranslations(translations, "dům"))
 			// a slash variant of a translation counts as naming it
@@ -197,7 +197,7 @@ class TestEngineSelectionTest {
 			// an answer naming no translation credits none, so the engine fails all
 			assertEquals(emptyList<DbItem>(), TestEngine.creditedTranslations(translations, "house"))
 		} finally {
-			TestEngine.isReversed = false
+			TestEngine.applyReversed(false)
 		}
 
 		// the normal direction, where the translations were the shown prompt, so all are credited

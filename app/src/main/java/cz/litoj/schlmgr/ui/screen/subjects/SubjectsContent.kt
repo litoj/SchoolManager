@@ -48,13 +48,15 @@ internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifie
 	// a load landing resets the button, an insert or delete keeps it hidden
 	LaunchedEffect(state.contentStep) { fabVisibility.show() }
 	Box(modifier) {
+		val callbacks = mainCallbacks(viewModel, listState.selectionActive)
 		ExplorerScaffold(
 			state = state,
 			listState = listState,
 			onBreadcrumbClick = viewModel::breadcrumbClick,
 			onInfoClick = viewModel::toggleInfoExpanded,
-			callbacks = mainCallbacks(viewModel, listState.selectionActive),
+			callbacks = callbacks,
 			scrollState = scrollState,
+			listArea = { SiblingSlideList(state, listState, callbacks, scrollState, Modifier.weight(1f)) },
 			modifier = Modifier.fillMaxSize()
 				.fabDragVisibility(fabVisibility) { scrollState.canScrollForward || scrollState.canScrollBackward }
 				.pointerInput(swipeThreshold) {
@@ -74,7 +76,7 @@ internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifie
 					onCancel = viewModel::cancelPaste,
 					onPaste = viewModel::doPaste,
 				)
-				listState.anySelected -> SelectionActionBar(
+				listState.selectionActive -> SelectionActionBar(
 					editEnabled = listState.singleSelected,
 					onTest = viewModel::prepareTest,
 					onCut = if (searching) null else ({ viewModel.move(false) }),

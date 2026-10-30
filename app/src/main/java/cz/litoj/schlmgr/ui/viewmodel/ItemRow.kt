@@ -226,11 +226,15 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		 */
 		// descLines is Compose state, so a settings change reaches a live list without a reload
 		var descLines by mutableIntStateOf(DEFAULT_DESC_LINES)
+			private set
 		var parse = true
+			private set
 		var defFlip = true
+			private set
 
 		/** The double-tap window, a settings change rebuilds the list detector. */
 		var doubleTapMs by mutableIntStateOf(DEFAULT_DOUBLE_TAP_MS)
+			private set
 
 		const val DEFAULT_DESC_LINES = 5
 		const val DEFAULT_DOUBLE_TAP_MS = 300
@@ -248,10 +252,21 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		/** The app layer applies the rest, while this one reads the ui settings. */
 		@JvmStatic
 		fun applyStoredOptions() {
-			defFlip = AppSettings.getBool("flipWord", true)
-			parse = AppSettings.getBool("parseNames", true)
-			descLines = AppSettings.getInt("descLines", DEFAULT_DESC_LINES)
-			doubleTapMs = AppSettings.getInt("doubleTapMs", DEFAULT_DOUBLE_TAP_MS)
+			applyOptions(
+				AppSettings.getBool("parseNames", true),
+				AppSettings.getBool("flipWord", true),
+				AppSettings.getInt("descLines", DEFAULT_DESC_LINES),
+				AppSettings.getInt("doubleTapMs", DEFAULT_DOUBLE_TAP_MS),
+			)
+		}
+
+		/** One mutation door, the stored load and the settings screen share it. */
+		@JvmStatic
+		fun applyOptions(parse: Boolean, defFlip: Boolean, descLines: Int, doubleTapMs: Int) {
+			this.parse = parse
+			this.defFlip = defFlip
+			this.descLines = descLines
+			this.doubleTapMs = doubleTapMs
 		}
 
 		@JvmStatic

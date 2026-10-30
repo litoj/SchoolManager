@@ -1,5 +1,6 @@
 package cz.litoj.schlmgr.unit.ui.viewmodel
 
+import cz.litoj.schlmgr.support.setRowOptions
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -18,7 +19,7 @@ class NameParserTest {
 
 	@After
 	fun restoreParse() {
-		ItemRow.parse = savedParse
+		setRowOptions(parse = savedParse)
 	}
 
 	@Test
@@ -49,7 +50,7 @@ class NameParserTest {
 
 	@Test
 	fun `parsing off keeps the raw name`() {
-		ItemRow.parse = false
+		setRowOptions(parse = false)
 		assertEquals("They/(He and she) moved.", ItemRow.nameParser("They/(He and she) moved."))
 	}
 

@@ -18,6 +18,7 @@ import java.util.concurrent.CountDownLatch
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -120,6 +121,7 @@ class ImportTargetScreenTest {
 
 	@Test
 	fun `the mover keeps its bar and opens a target`() {
+		grantProgressPermission()
 		mover()
 
 		rule.onNodeWithText(label(R.string.objects_cancel)).assertExists()
@@ -142,6 +144,7 @@ class ImportTargetScreenTest {
 
 		// the bar belongs to the mover, no subjects screen ever asked before it
 		val request = rule.runOnIdle { shadowOf(rule.activity).lastRequestedPermission }
+		assertNotNull("the mover never asked for the progress permission", request)
 		assertTrue(android.Manifest.permission.POST_NOTIFICATIONS
 			in request!!.requestedPermissions)
 	}

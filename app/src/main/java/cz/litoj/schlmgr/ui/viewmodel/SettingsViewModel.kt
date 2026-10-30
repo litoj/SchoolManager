@@ -44,13 +44,13 @@ class SettingsState(
 
 	fun toggleParse() {
 		parse = !parse
-		ItemRow.parse = parse
+		applyRowOptions()
 		AppSettings.set("parseNames", parse)
 	}
 
 	fun toggleDefFlip() {
 		defFlip = !defFlip
-		ItemRow.defFlip = defFlip
+		applyRowOptions()
 		AppSettings.set("flipWord", defFlip)
 	}
 
@@ -58,7 +58,7 @@ class SettingsState(
 	fun setDescLines(text: String) {
 		descLinesText = digitsOnly(text)
 		descLinesText.toIntOrNull()?.let {
-			ItemRow.descLines = it
+			applyRowOptions()
 			AppSettings.set("descLines", it)
 		}
 	}
@@ -72,7 +72,7 @@ class SettingsState(
 	fun setDoubleTapMs(text: String) {
 		doubleTapMsText = digitsOnly(text)
 		doubleTapMsText.toIntOrNull()?.let {
-			ItemRow.doubleTapMs = it
+			applyRowOptions()
 			AppSettings.set("doubleTapMs", it)
 		}
 	}
@@ -84,7 +84,7 @@ class SettingsState(
 
 	fun toggleClever() {
 		clever = !clever
-		TestEngine.isClever = clever
+		TestEngine.applyOptions(clever, TestEngine.amount)
 		AppSettings.set("isClever", clever)
 	}
 
@@ -109,7 +109,7 @@ class SettingsState(
 		amountText = digitsOnly(text)
 		amountText.toIntOrNull()?.let {
 			if (it >= 1) {
-				TestEngine.amount = it
+				TestEngine.applyOptions(TestEngine.isClever, it)
 				AppSettings.set("testAmount", it)
 			}
 		}
@@ -133,6 +133,13 @@ class SettingsState(
 	fun timeFocusLost() {
 		if (needsRestore(timeText))
 			timeText = TestEngine.getDefaultTime().toString()
+	}
+
+	/** The row options move through the one door of ItemRow. */
+	private fun applyRowOptions() {
+		ItemRow.applyOptions(parse, defFlip,
+			descLinesText.toIntOrNull() ?: ItemRow.descLines,
+			doubleTapMsText.toIntOrNull() ?: ItemRow.doubleTapMs)
 	}
 
 	companion object {

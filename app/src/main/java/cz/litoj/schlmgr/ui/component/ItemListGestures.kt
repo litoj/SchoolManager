@@ -185,8 +185,8 @@ internal fun Modifier.rememberTopPullModifier(
 	// the down lands before any scroll moves the list, so the position read is the true start.
 	var beganAtTop by remember { mutableStateOf(!listState.canScrollBackward) }
 	// a wheel gesture has no down, so its first tick is its own gesture start.
-	// - the scrollable clears the flag at every gesture end.
-	// - the flag never outlives the finger gesture it came from.
+	// the scrollable clears the flag at every gesture end, so a wheel tick
+	// never rides a finger flag
 	var finger by remember { mutableStateOf(false) }
 	return this
 		.pointerInput(listState) {

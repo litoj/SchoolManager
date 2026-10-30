@@ -3,6 +3,7 @@ package cz.litoj.schlmgr.unit.ui.viewmodel
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.DbLink
 import cz.litoj.schlmgr.data.db.ItemKind
+import cz.litoj.schlmgr.support.setRowOptions
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -21,7 +22,7 @@ class BrowseRowPreloadTest {
 
 	@After
 	fun restore() {
-		ItemRow.defFlip = defFlipWas
+		setRowOptions(defFlip = defFlipWas)
 	}
 
 	private fun chapter(id: Int, name: String) =
@@ -64,7 +65,7 @@ class BrowseRowPreloadTest {
 
 	@Test
 	fun `a default-flipped word renders from the preloaded translations`() {
-		ItemRow.defFlip = true
+		setRowOptions(defFlip = true)
 		val word = DbItem(id = 2, name = "Haus", description = "", type = ItemKind.WORD)
 		val trl = DbItem(id = 9, name = "dům", description = "budova", type = ItemKind.TRANSLATION)
 
@@ -80,7 +81,7 @@ class BrowseRowPreloadTest {
 
 	@Test
 	fun `a whole word batch builds flipped without a database`() {
-		ItemRow.defFlip = true
+		setRowOptions(defFlip = true)
 		// every word row renders its translations from the map, while a per-row query
 		// would throw here since no repository is initialized
 		val words = (1..20).map { DbItem(id = it, name = "w$it", description = "", type = ItemKind.WORD) }
