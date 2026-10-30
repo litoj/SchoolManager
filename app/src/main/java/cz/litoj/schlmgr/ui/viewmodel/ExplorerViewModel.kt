@@ -71,9 +71,6 @@ abstract class ExplorerViewModel<R>(
 		const val SEARCH_MIN_CHARS = 2
 		const val SEARCH_DEBOUNCE_MS = 300L
 		const val EXIT_WINDOW_MS = 3000L
-
-		// the two taps of a double span the list window plus both tap durations
-		const val DOUBLE_FLIP_TOTAL_MS = 600L
 	}
 
 	private val searchFlow = SearchFlow(viewModelScope, io, history, SearchFlowHost())
@@ -323,13 +320,10 @@ abstract class ExplorerViewModel<R>(
 
 	/**
 	 * The closing tap of a double, the explorer owns it.
-	 * - the anchor row extends its own state to every other row.
-	 * - no anchor, both taps on the empty part, flips every row over.
+	 * - every word and translation row flips to the side opposite the majority.
 	 */
-	fun onItemDoubleTap(anchor: ItemUiModel?) {
-		val row = anchor?.payload
-		if (row != null) list.flipAllTo(row.item.id, row.flipped)
-		else list.flipAllOver()
+	fun onItemDoubleTap() {
+		list.flipAllToMajority()
 	}
 
 	private inner class SelectionHost : Selection.Host {

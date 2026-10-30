@@ -139,11 +139,11 @@ class FlipPerformanceTest {
 
 		countQueries()
 		model.flipWord(model.items().first())
-		model.onItemDoubleTap(model.listState.value.items.first())
+		model.onItemDoubleTap()
 
 		// the preloaded content flips every row, a read per row would storm the budget
 		assertQueryBudget("list-flips", 0)
-		// the rows load default-flipped, so the double leaves them all unflipped
+		// one row lost its default flip, the group flip takes the whole list to the word side
 		assertTrue("the flip-all covered every row", model.items().none { it.flipped })
 	}
 }

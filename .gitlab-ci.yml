@@ -1,0 +1,77 @@
+# The GitLab twin of the GitHub workflows: tests with lint on every
+# commit.
+
+# A merge request replaces its branch pipeline, the twin of the GitHub
+# pull_request trigger.
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS == null
+
+stages: [image, test]
+
+# Builds the test image into the project registry.
+# It runs only when its recipe changes, so a normal pipeline pays nothing.
+ci-image:
+  stage: image
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  timeout: 15 minutes
+  # a newer commit may cancel this build too
+  interruptible: true
+  rules:
+    - changes: [ci/Dockerfile]
+  script:
+    # compileSdk of app/build.gradle.kts is the one source of the platform
+    - sdk=$(sed -n 's/.*compileSdk = \([0-9][0-9]*\).*/\1/p' app/build.gradle.kts)
+    - |
+      if [ -z "$sdk" ]; then
+        echo "compileSdk is not a plain number"
+        exit 1
+      fi
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --context "$CI_PROJECT_DIR" --dockerfile "$CI_PROJECT_DIR/ci/Dockerfile" --destination "$CI_REGISTRY_IMAGE:ci" --build-arg "PLATFORM_SDK=$sdk" --cache --cache-repo "$CI_REGISTRY_IMAGE/kaniko-cache"
+
+test:
+  stage: test
+  # the ci-image job rebuilds this tag first when its recipe changed
+  image: $CI_REGISTRY_IMAGE:ci
+  needs:
+    - job: ci-image
+      optional: true
+  timeout: 20 minutes
+  # a newer commit may cancel this run, like the GitHub concurrency group
+  interruptible: true
+  variables:
+    GRADLE_USER_HOME: $CI_PROJECT_DIR/.gradle-home
+  script:
+    # one invocation pays the daemon start and the configuration cache once
+    # release lint too: it checks each variant, and that one carries the release build config
+    - ./gradlew :app:testDebugUnitTest :app:lintDebug :app:lintRelease --stacktrace
+  cache:
+    # the toolchain inputs key the dependency, wrapper and build caches
+    - key:
+        files:
+          - gradle/libs.versions.toml
+          - gradle/wrapper/gradle-wrapper.properties
+      paths:
+        - .gradle-home/caches/
+        - .gradle-home/wrapper/
+    # the project state needs no key of its own, gradle rebuilds on any
+    # input change, so staleness self-corrects. It carries the
+    # configuration cache and the built classes, so unchanged sources
+    # skip the compile and the tests they already ran
+    - key: project-state
+      paths:
+        - .gradle/
+        - app/build/
+  artifacts:
+    # always, so a failed run still carries its junit xml, the merge
+    # request widget reads it and shows the test summary
+    when: always
+    reports:
+      junit: app/build/test-results/testDebugUnitTest/TEST-*.xml
+    expire_in: 1 week
+

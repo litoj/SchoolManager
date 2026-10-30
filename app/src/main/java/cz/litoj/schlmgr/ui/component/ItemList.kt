@@ -49,10 +49,11 @@ class ItemListCallbacks(
 	/** A tap on a row opens a container or flips a word, and the screen dispatches it. */
 	val onItemClick: (ItemUiModel) -> Unit = {},
 	/**
-	 * The second tap of a double, the two taps landed at one place.
-	 * - a word flip may shrink its row, so the second tap can hit another row.
+	 * The closing tap of a double, the list consumes it and no row sees it.
+	 * - the explorer flips every word and translation row to the side
+	 * opposite the majority.
 	 */
-	val onItemDoubleTap: (ItemUiModel?) -> Unit = {},
+	val onItemDoubleTap: () -> Unit = {},
 	/** The type icon of a row tapped, the host selects the row with it. */
 	val onItemIconClick: (ItemUiModel) -> Unit = {},
 	/**
@@ -119,33 +120,24 @@ private val DoubleTapSpan = 32.dp
 /**
  * Classifies a tap as the second of a double by time and place.
  * - the place decides, since a flip may shrink the row and move another word under the finger.
- * - the previous tap must have hit a word, a double only extends its flip.
+ * - the previous tap must have hit a word, a chapter or note never opens a double.
  */
 internal class DoubleTapDetector(private val spanPx: Float, private val windowMs: Long) {
 
 	private var lastPosition = Offset.Zero
 	private var lastAt = 0L
 	private var lastWasWord = false
-	private var lastAnchor = -1
-
-	/** The row id the opening tap of the last closed double hit, -1 over the empty part. */
-	var openAnchor = -1
-		private set
 
 	/**
 	 * Records a tap down and answers whether it closes a double.
 	 * - the caller consumes the down, so no row sees the tap.
-	 * - the anchor rides the opening tap, its row read before its own
-	 *   flip could move it.
 	 */
-	fun onDown(position: Offset, at: Long, isWord: Boolean, anchor: Int = -1): Boolean {
+	fun onDown(position: Offset, at: Long, isWord: Boolean): Boolean {
 		val closes = lastWasWord && at - lastAt <= windowMs &&
 			(position - lastPosition).getDistance() <= spanPx
-		if (closes) openAnchor = lastAnchor
 		lastPosition = position
 		lastAt = at
 		lastWasWord = isWord
-		lastAnchor = anchor
 		return closes
 	}
 }
@@ -212,24 +204,17 @@ fun ItemList(
 	}
 	val onDoubleTap by rememberUpdatedState(callbacks.onItemDoubleTap)
 	val selectionActive by rememberUpdatedState(state.selectionActive)
-	val items by rememberUpdatedState(state.items)
 	val tapModifier = Modifier.pointerInput(doubleTap) {
 		awaitEachGesture {
 			val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-			// the row under the tap decides the kind and the anchor, read
-			// before the row's own flip can move it
+			// the row under the tap decides the kind, a chapter or note
+			// never opens a double
 			val open = rowAt(listState, down.position.y)
 			val onWord = open?.contentType == RowKind.WORD || open == null
-			val anchorId = open?.let { items.getOrNull(it.index)?.payload?.item?.id } ?: -1
-			if (!selectionActive && doubleTap.onDown(down.position, down.uptimeMillis, onWord, anchorId)) {
+			if (!selectionActive && doubleTap.onDown(down.position, down.uptimeMillis, onWord)) {
 				// the list takes the second tap of a double, no row ever sees it
 				down.consume()
-				// the explorer owns the double: the opening tap's row anchors
-				// the flip to its current state, an opening tap on the empty
-				// part flips every row over
-				val anchor = if (doubleTap.openAnchor != -1)
-					items.firstOrNull { it.payload?.item?.id == doubleTap.openAnchor } else null
-				onDoubleTap(if (anchor?.kind == RowKind.WORD) anchor else null)
+				onDoubleTap()
 			}
 		}
 	}

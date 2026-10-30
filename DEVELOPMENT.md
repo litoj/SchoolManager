@@ -84,12 +84,33 @@ apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
 - Comment sentences use no parentheses, dashes or semicolons.
 - Code wraps at about 100 columns.
 - Prevent invalid states at the source. Never backstop downstream.
-- Fail-first: every behaviour change ships with a pinning test that fails on the old behaviour.
-- No tests for impossible states. One pin per prevention.
 - Three instances of work run in parallel. Do not end a turn with fewer.
 - Ask before anything irreversible: reverts, deletions, resets, amends.
 
-## 8. Open items
+## 8. Testing standard
+
+Three test packages, one per layer:
+
+| Package | Runs | Covers |
+|---------|------|--------|
+| `unit` | plain JVM | pure logic: codecs, engines, detectors, state machines |
+| `integration` | Robolectric with a real in-memory Room | repository and view model flows |
+| `e2e` | a Compose rule over the real screen | what only the composed screen shows: taps, focus, keyboard, scroll, visibility |
+
+What gets a test:
+
+- A pin belongs where behavior lives: state changes, flows, codecs,
+  engines, bug fixes. A component that only wires a callback to Compose
+  needs no pin, the framework guarantees the wiring.
+- Every bug fix lands red first, the pin fails on the old code.
+
+What does not:
+
+- No test for a state that cannot exist. One pin per prevention.
+- No second test for one prevention. An e2e pin only where no unit or
+  integration test can see the behavior, it is the slowest kind.
+
+## 9. Open items
 
 | Item | Status |
 |------|--------|
@@ -98,3 +119,5 @@ apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
 | Scroll stutter on the physical phone | Emulator clean. Recipe: `adb shell dumpsys gfxinfo cz.litoj.schlmgr reset`, fling `\W/` results, `adb shell dumpsys gfxinfo cz.litoj.schlmgr` |
 | Test results success rate | Prints a raw float, rounding undecided |
 | `GradleDependency` lint errors on `libs.versions.toml` | Since Kotlin 2.4.0, bump or baseline undecided |
+| Main-path pins missing against §8 | Governed by the meaningfulness rule, no gap list kept |
+

@@ -22,7 +22,6 @@ import cz.litoj.schlmgr.ui.viewmodel.SearchUi
 import kotlinx.coroutines.Dispatchers
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -112,6 +111,7 @@ class SearchClickVariantsTest {
 		val a = ItemRepository.subjects().single()
 		val c1 = ItemRepository.children(a.id).single()
 		ItemRepository.createWord(c1.id, "xy2", null, listOf("t2" to null))
+		ItemRepository.createWord(c1.id, "xy3", null, listOf("t3" to null))
 		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
 		rule.setContent { SubjectsScreen(model, {}, {}, {}) }
 		rule.waitForIdle()
@@ -136,18 +136,19 @@ class SearchClickVariantsTest {
 		rule.runOnIdle {
 			assertEquals(SearchUi.TYPING, model.state.value.searchUi)
 			assertEquals(ExplorerRowVariant.Search, model.listState.value.variant)
-			assertEquals("both hits flipped in place — the whole word block flipped",
-				listOf("t1", "t2"), model.items().map { it.toShow })
+			assertEquals("one flipped row against the plain pair, the pair flips over",
+				listOf("t1", "t2", "t3"), model.items().map { it.toShow })
 			assertTrue(model.items().all { it.flipped })
 		}
 	}
 
 	@Test
-	fun `double click - a second double flips the results back`() {
+	fun `double click - the double flips the results to the other side of the majority`() {
 		// one more matching word, so a single-row flip must not satisfy the assertion
 		val a = ItemRepository.subjects().single()
 		val c1 = ItemRepository.children(a.id).single()
 		ItemRepository.createWord(c1.id, "xy2", null, listOf("t2" to null))
+		ItemRepository.createWord(c1.id, "xy3", null, listOf("t3" to null))
 		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
 		rule.setContent { SubjectsScreen(model, {}, {}, {}) }
 		rule.waitForIdle()
@@ -158,16 +159,14 @@ class SearchClickVariantsTest {
 		rule.waitForIdle()
 		rule.onNodeWithText("xyz").assertExists()
 
-		// the first double flips all, the pause passes the window, the second flips back
-		rule.onNodeWithText("xyz").performTouchInput {
-			down(Offset(20f, 20f))
-			advanceEventTime(60)
-			up()
-			advanceEventTime(80)
-			down(Offset(20f, 20f))
-			advanceEventTime(60)
-			up()
-			advanceEventTime(400)
+		// two single taps flip two rows, the places sit apart so no double forms
+		rule.onNodeWithText("xyz").performClick()
+		rule.waitForIdle()
+		rule.onNodeWithText("xy2").performClick()
+		rule.waitForIdle()
+
+		// one injection holds both taps, the event times stay inside the double window
+		rule.onNodeWithText("xy3").performTouchInput {
 			down(Offset(20f, 20f))
 			advanceEventTime(60)
 			up()
@@ -178,18 +177,19 @@ class SearchClickVariantsTest {
 		}
 		rule.waitForIdle()
 		rule.runOnIdle {
-			assertEquals("both hits round-tripped through the flip-all",
-				listOf("xyz", "xy2"), model.items().map { it.toShow })
-			assertFalse(model.items().any { it.flipped })
+			assertEquals("the flipped majority flips back to the word side",
+				listOf("xyz", "xy2", "xy3"), model.items().map { it.toShow })
+			assertTrue(model.items().none { it.flipped })
 		}
 	}
 
 	@Test
-	fun `double click - the empty part alone flips every hit over`() {
+	fun `double click - the empty part double flips the results to the other side of the majority`() {
 		// one more matching word, so a single-row flip must not satisfy the assertion
 		val a = ItemRepository.subjects().single()
 		val c1 = ItemRepository.children(a.id).single()
 		ItemRepository.createWord(c1.id, "xy2", null, listOf("t2" to null))
+		ItemRepository.createWord(c1.id, "xy3", null, listOf("t3" to null))
 		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
 		rule.setContent { SubjectsScreen(model, {}, {}, {}) }
 		rule.waitForIdle()
@@ -200,8 +200,14 @@ class SearchClickVariantsTest {
 		rule.waitForIdle()
 		rule.onNodeWithText("xyz").assertExists()
 
-		// both taps land on the empty part below the rows, no word anchors the double
-		val last = rule.onNodeWithText("xy2").getUnclippedBoundsInRoot()
+		// two single taps flip two rows, the places sit apart so no double forms
+		rule.onNodeWithText("xyz").performClick()
+		rule.waitForIdle()
+		rule.onNodeWithText("xy2").performClick()
+		rule.waitForIdle()
+
+		// both taps land on the empty part below the rows, no row sits under them
+		val last = rule.onNodeWithText("xy3").getUnclippedBoundsInRoot()
 		val below = with(rule.density) {
 			Offset((last.left + 50.dp).toPx(), (last.bottom + 50.dp).toPx())
 		}
@@ -216,13 +222,14 @@ class SearchClickVariantsTest {
 		}
 		rule.waitForIdle()
 		rule.runOnIdle {
-			assertEquals("every hit flipped over with no word tapped",
-				listOf("t1", "t2"), model.items().map { it.toShow })
+			assertEquals("the flipped majority flips back to the word side",
+				listOf("xyz", "xy2", "xy3"), model.items().map { it.toShow })
+			assertTrue(model.items().none { it.flipped })
 		}
 	}
 
 	@Test
-	fun `double click - the flip of the first tap moves the rows, the anchor holds`() {
+	fun `double click - the flip of the first tap moves the rows, the place holds`() {
 		// one more matching word, so a single-row flip must not satisfy the assertion
 		val a = ItemRepository.subjects().single()
 		val c1 = ItemRepository.children(a.id).single()
@@ -255,8 +262,8 @@ class SearchClickVariantsTest {
 		}
 		rule.waitForIdle()
 		rule.runOnIdle {
-			assertEquals("the anchor held the tapped word through its own flip",
-				listOf("t1", "t2"), model.items().map { it.toShow })
+			assertEquals("the double closed over the moved rows, a tie keeps the word side",
+				listOf("xyz", "xy2"), model.items().map { it.toShow })
 		}
 	}
 }

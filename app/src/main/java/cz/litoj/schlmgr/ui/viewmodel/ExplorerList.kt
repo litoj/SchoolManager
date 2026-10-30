@@ -228,14 +228,26 @@ internal class ExplorerList(
 	}
 
 	/**
-	 * Flips every word and translation row but [exceptId] to [flipped].
-	 * - a double click drives it, the tapped row already holds the state.
+	 * Flips every word and translation row to the side opposite the majority.
+	 * - a double click drives it, no row anchors the flip.
+	 * - the majority decides the side, a tie goes to the word side.
+	 */
+	fun flipAllToMajority() {
+		val rows = models.filter {
+			it.item.type == ItemKind.WORD || it.item.type == ItemKind.TRANSLATION
+		}
+		// the group flip lands on the minority side, a tie lands on the word side
+		flipAllTo(rows.count { it.flipped } * 2 < rows.size)
+	}
+
+	/**
+	 * Flips every word and translation row to [flipped].
 	 * - the preloaded rows flip at once, an unpreloaded one reads on io.
 	 */
-	fun flipAllTo(exceptId: Int, flipped: Boolean) {
+	private fun flipAllTo(flipped: Boolean) {
 		val pending = models.filter {
 			(it.item.type == ItemKind.WORD || it.item.type == ItemKind.TRANSLATION) &&
-				it.item.id != exceptId && it.flipped != flipped
+				it.flipped != flipped
 		}
 		val unpreloaded = pending.filterNot { it.flipOnto(flipped) }
 		if (unpreloaded.isNotEmpty()) scope.launch {
@@ -244,26 +256,6 @@ internal class ExplorerList(
 			unpreloaded.forEachIndexed { i, row ->
 				row.preloadFlip(contents[i])
 				row.flipOnto(flipped)
-			}
-			remap()
-		}
-		remap()
-	}
-
-	/**
-	 * Flips every word and translation row over, each to its own other side.
-	 * - a double on the empty part of the explorer drives it, no anchor exists.
-	 */
-	fun flipAllOver() {
-		val pending = models.filter {
-			it.item.type == ItemKind.WORD || it.item.type == ItemKind.TRANSLATION
-		}
-		val unpreloaded = pending.filterNot { it.flipOnto(!it.flipped) }
-		if (unpreloaded.isNotEmpty()) scope.launch {
-			val contents = withContext(io) { unpreloaded.map { ItemRow.flipContentOf(it.item) } }
-			unpreloaded.forEachIndexed { i, row ->
-				row.preloadFlip(contents[i])
-				row.applyFlip(contents[i])
 			}
 			remap()
 		}

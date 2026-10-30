@@ -471,7 +471,7 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
-	fun `a double tap on a word flips every other word to it`() {
+	fun `a double flips every word to the other side of the majority`() {
 		val (aId, _) = seed()
 		val c1 = ItemRepository.children(aId).single()
 		ItemRepository.createWord(c1.id, "w1", null, listOf("xx1" to null))
@@ -486,16 +486,16 @@ class MainExplorerViewModelTest {
 		val w2 = rows.single { it.item.name == "w2" }
 		val w3 = rows.single { it.item.name == "w3" }
 
+		// the first tap of the double flipped one word, the plain pair rules
 		model.onSearchHitClick(w1.toUi())
-		model.onItemDoubleTap(w1.toUi())
+		model.onItemDoubleTap()
 
-		assertTrue("the tapped word keeps its first flip", w1.flipped)
-		assertTrue("the second word flipped to it", w2.flipped)
-		assertTrue("the third word flipped to it", w3.flipped)
+		assertTrue("the flipped word stays where its tap left it", w1.flipped)
+		assertTrue("the plain majority flips over", w2.flipped && w3.flipped)
 	}
 
 	@Test
-	fun `a double tap without an anchor flips every row over`() {
+	fun `a double on an even split flips every row to the word side`() {
 		val (aId, _) = seed()
 		val c1 = ItemRepository.children(aId).single()
 		ItemRepository.createWord(c1.id, "w1", null, listOf("xx1" to null))
@@ -507,10 +507,9 @@ class MainExplorerViewModelTest {
 		val w2 = model.items().single { it.item.name == "w2" }
 		model.onSearchHitClick(w1.toUi())
 
-		model.onItemDoubleTap(null)
+		model.onItemDoubleTap()
 
-		assertTrue("the flipped word turned back", !w1.flipped)
-		assertTrue("the plain word flipped over", w2.flipped)
+		assertTrue("a tie flips to the word side", !w1.flipped && !w2.flipped)
 	}
 
 	@Test
