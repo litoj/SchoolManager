@@ -135,6 +135,15 @@ Its DB part is the model for this project.
 - An append at the list end reveals the end.
 - An insert in the middle does not scroll.
 
+### Help
+
+- The help top bar search filters the tree live while typing.
+- A match keeps its ancestors, everything else drops.
+- Matches stand open during a search and the About block hides.
+- Closing the field clears the query.
+- Header levels differ by band and size, the deepest carries depth by indentation.
+- A one-line topic folds into body text, never gets its own section.
+
 ### CI
 
 - The tag CI waits for a green Test run of a main commit.
@@ -149,6 +158,8 @@ Its DB part is the model for this project.
 - No active task.
 - Open items live in `DEVELOPMENT.md`.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
+- 2026-10-30: help search, three header levels and folded one-line topics.
+  The filter is `HelpFilter` with a unit pin, 668 tests.
 - 2026-10-29: the testing standard lives in `DEVELOPMENT.md` §8, commits
   `e103946` and `2ef70a6`. A pin belongs where behavior lives, wiring a
   callback to Compose needs none. The wiring pins of the first round went

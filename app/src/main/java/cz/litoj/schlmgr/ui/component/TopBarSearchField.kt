@@ -29,21 +29,21 @@ import androidx.lifecycle.LifecycleEventObserver
 import cz.litoj.schlmgr.R
 
 /**
- * The explorer search field, fully stateless.
+ * The top bar search field, fully stateless.
  * - the text mirrors the query of the screen, which decides when to close.
- * - threshold, debounce and clearing policy live in the view model.
- * - both explorers render it against their own state.
+ * - threshold, debounce and clearing policy live in the screen's view model.
  * - a dismissed keyboard closes the field, since the system hides it on the first back press.
  * - so the field leaves with the keyboard instead of waiting for a second press.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ExplorerSearchField(
+fun TopBarSearchField(
 	value: String,
 	onValueChange: (String) -> Unit,
 	onSubmit: (String) -> Unit,
 	onClose: () -> Unit,
 	modifier: Modifier = Modifier,
+	hint: String = stringResource(R.string.search),
 ) {
 	val keyboard = LocalSoftwareKeyboardController.current
 	val focus = remember { FocusRequester() }
@@ -106,7 +106,7 @@ fun ExplorerSearchField(
 				),
 				focusRequester = focus,
 				imeAction = ImeAction.Search,
-				hint = stringResource(R.string.search),
+				hint = hint,
 				onImeAction = {
 					onSubmit(value)
 					// the results are the point now, so drop the keyboard but keep the field

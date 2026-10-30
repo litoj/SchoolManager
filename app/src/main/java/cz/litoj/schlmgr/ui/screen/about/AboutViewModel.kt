@@ -7,7 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 
-/** Holds which help sections are expanded, keyed by section title resource. */
+/** Holds the help tree state: which sections are expanded and the active search. */
 class AboutViewModel : ViewModel() {
 
 	var expanded by mutableStateOf(setOf<Int>())
@@ -15,6 +15,26 @@ class AboutViewModel : ViewModel() {
 
 	fun toggle(key: Int) {
 		expanded = if (key in expanded) expanded - key else expanded + key
+	}
+
+	var searchOpen by mutableStateOf(false)
+		private set
+
+	var query by mutableStateOf("")
+		private set
+
+	fun openSearchField() {
+		searchOpen = true
+	}
+
+	// the tree is unfiltered once the field is gone, so the query leaves with it
+	fun closeSearchField() {
+		searchOpen = false
+		query = ""
+	}
+
+	fun onQueryChange(text: String) {
+		query = text
 	}
 
 	var version by mutableStateOf<String?>(null)
