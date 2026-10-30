@@ -10,7 +10,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.component.ExplorerScaffold
-import cz.litoj.schlmgr.ui.component.ExplorerSearchField
+import cz.litoj.schlmgr.ui.component.TopBarSearchField
 import cz.litoj.schlmgr.ui.component.ItemListCallbacks
 import cz.litoj.schlmgr.ui.component.PickerActionBar
 import cz.litoj.schlmgr.ui.shell.ExplorerBackHandler
@@ -52,7 +52,7 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 	Column(Modifier.fillMaxSize()) {
 		TopBar {
 			TopBarNav(up = true, onNavigate = onExit)
-			if (fieldOpen) ExplorerSearchField(query, viewModel::onQueryChange, viewModel::onQuerySubmit, viewModel::closeSearchField, Modifier.weight(1f))
+			if (fieldOpen) TopBarSearchField(query, viewModel::onQueryChange, viewModel::onQuerySubmit, viewModel::closeSearchField, Modifier.weight(1f))
 			else TopBarTitle(title)
 			TopBarIconButton(
 				icon = R.drawable.ic_search,

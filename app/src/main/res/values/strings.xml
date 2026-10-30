@@ -87,20 +87,15 @@
         \nI/They come = \'I come\' or \'They come\'
         \n(I go)/(He goes). = \'I go.\' or \'He goes\'.</string>
     <string name="help_extra_words_export">Export words</string>
-    <string name="help_extra_words_export_how">Selected rows export. Nothing selected exports the open container, or all subjects at the root.</string>
-    <string name="help_export_word">Word file</string>
-    <string name="help_export_word_how">Compact. No success rates. No references.</string>
-    <string name="help_export_json">JSON file</string>
-    <string name="help_export_json_how">Complete. Success rates, notes and references included.</string>
+    <string name="help_extra_words_export_how">Selected rows export. Nothing selected exports the open container, or all subjects at the root.\nWord file: compact, no success rates, no references.\nJSON file: complete, success rates, notes and references included.</string>
     <string name="help_extra_words_import">Import words</string>
-    <string name="help_extra_words_import_how">Inside a subject: More, Import, pick the file.\nAt the subjects screen: More, Import, File, pick the file. A new subject is created.</string>
+    <string name="help_extra_words_import_how">Inside a subject: More, Import, pick the file.\nAt the subjects screen: More, Import, File, pick the file. A new subject is created.\nAn error names the file and line. Fix that line and pick the file again.</string>
     <string name="help_import_format">File format</string>
     <string name="help_import_format_how">Chapter: name { and } on their own lines.\nWord: word = translation.\nNote: = text.\nDescription: [text] after a name.\nVariants: first\\second.</string>
-    <string name="help_import_example">Example</string>
-    <string name="help_import_errors">Import errors</string>
-    <string name="help_import_errors_how">The error names the file and line. Fix that line and pick the file again.</string>
     <string name="help_import_example_text" translatable="false">Kapitel 1 {\n\tder Hund = pes\n\tdie Katze = kočka\n}</string>
+    <string name="help_no_match">No matching help.</string>
     <string name="help_search">Searching</string>
+    <string name="help_search_hint">Search help</string>
     <string name="help_search_how">Searching is enabled in all chapters and subjects.
         \nIn a search list, a click on a found chapter opens its container.
         \nThere are various methods for searching, the search engine accepts naming syntax.</string>

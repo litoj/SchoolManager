@@ -25,11 +25,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.component.DefaultTextColor
+import cz.litoj.schlmgr.ui.component.TopBarSearchField
 import cz.litoj.schlmgr.ui.shell.TopBar
+import cz.litoj.schlmgr.ui.shell.TopBarIconButton
 import cz.litoj.schlmgr.ui.shell.TopBarNav
 import cz.litoj.schlmgr.ui.shell.TopBarTitle
 import cz.litoj.schlmgr.ui.shell.headerShadow
@@ -77,18 +80,13 @@ private val sections = listOf(
 			HelpSection(
 				R.string.help_extra_words_import, R.string.help_extra_words_import_how,
 				children = listOf(
-					HelpSection(R.string.help_import_format, R.string.help_import_format_how),
-					HelpSection(R.string.help_import_example, customIntro = { WordListExample() }),
-					HelpSection(R.string.help_import_errors, R.string.help_import_errors_how),
+					HelpSection(
+						R.string.help_import_format, R.string.help_import_format_how,
+						customIntro = { WordListExample() },
+					),
 				),
 			),
-			HelpSection(
-				R.string.help_extra_words_export, R.string.help_extra_words_export_how,
-				children = listOf(
-					HelpSection(R.string.help_export_word, R.string.help_export_word_how),
-					HelpSection(R.string.help_export_json, R.string.help_export_json_how),
-				),
-			),
+			HelpSection(R.string.help_extra_words_export, R.string.help_extra_words_export_how),
 			HelpSection(R.string.help_extra_import_mch, R.string.help_extra_import_mch_how, icon = R.drawable.ic_import_help),
 		),
 	),
@@ -106,7 +104,24 @@ fun AboutScreen(viewModel: AboutViewModel, openDrawer: () -> Unit) {
 	Column(Modifier.fillMaxSize()) {
 		TopBar {
 			TopBarNav(onNavigate = openDrawer)
-			TopBarTitle(stringResource(R.string.app_name) + (viewModel.version?.let { " v$it" } ?: ""))
+			if (viewModel.searchOpen) {
+				TopBarSearchField(
+					viewModel.query,
+					viewModel::onQueryChange,
+					// the tree filters live, so the submit only drops the keyboard
+					{},
+					viewModel::closeSearchField,
+					Modifier.weight(1f),
+					hint = stringResource(R.string.help_search_hint),
+				)
+			} else {
+				TopBarTitle(stringResource(R.string.app_name) + (viewModel.version?.let { " v$it" } ?: ""))
+			}
+			TopBarIconButton(
+				icon = R.drawable.ic_search,
+				visible = !viewModel.searchOpen,
+				onClick = viewModel::openSearchField,
+			)
 		}
 		HelpTree(viewModel, Modifier.weight(1f).headerShadow())
 	}
@@ -130,16 +145,24 @@ class HelpSection(
 
 @Composable
 private fun HelpTree(viewModel: AboutViewModel, modifier: Modifier = Modifier) {
+	val context = LocalContext.current
+	val searching = viewModel.query.isNotBlank()
+	val visible = if (searching) HelpFilter.visible(sections, viewModel.query, context::getString) else emptySet()
 	LazyColumn(modifier.fillMaxSize()) {
 		item { BigHeader(stringResource(R.string.help), R.drawable.ic_help) }
-		sections.forEach { section -> item(key = section.title) { Section(section, viewModel) } }
-		item { BigHeader(stringResource(R.string.menu_about), R.drawable.ic_app_mini) }
-		item {
-			Text(
-				stringResource(R.string.about_text),
-				Modifier.padding(8.dp),
-				style = TextStyle(fontSize = 13.sp, color = DefaultTextColor),
-			)
+		sections.filter { !searching || it.title in visible }.forEach { section ->
+			item(key = section.title) { Section(section, viewModel, searching, visible) }
+		}
+		if (searching && visible.isEmpty()) item { BodyText(stringResource(R.string.help_no_match)) }
+		if (!searching) {
+			item { BigHeader(stringResource(R.string.menu_about), R.drawable.ic_app_mini) }
+			item {
+				Text(
+					stringResource(R.string.about_text),
+					Modifier.padding(8.dp),
+					style = TextStyle(fontSize = 13.sp, color = DefaultTextColor),
+				)
+			}
 		}
 	}
 }
@@ -164,26 +187,47 @@ private fun BigHeader(text: String, @DrawableRes icon: Int) {
 	}
 }
 
+private data class SectionStyle(val background: Color, val fontSize: TextUnit, val vertical: Dp, val indent: Dp)
+
+/**
+ * The visuals of a section header for its level.
+ * - the deepest level has no band left, so its indentation carries the depth.
+ */
+@Composable
+private fun sectionStyle(level: Int): SectionStyle = when (level) {
+	0 -> SectionStyle(GroupBackground, 19.sp, 7.dp, 0.dp)
+	1 -> SectionStyle(SubBackground, 17.sp, 2.dp, 0.dp)
+	else -> SectionStyle(Color.Transparent, 15.sp, 2.dp, 15.dp * (level - 1))
+}
+
 /**
  * A single expandable section: a clickable header row, followed by its content.
  * - the visuals depend on its [level].
- * - both levels toggle through [AboutViewModel], so the state survives recomposition and rotation.
+ * - every level toggles through [AboutViewModel], so the state survives recomposition and rotation.
+ * - while [searching] runs, every visible section stands open to reveal its matches.
  */
 @Composable
-private fun Section(section: HelpSection, viewModel: AboutViewModel, level: Int = 0) {
-	val expanded = section.title in viewModel.expanded
+private fun Section(
+	section: HelpSection,
+	viewModel: AboutViewModel,
+	searching: Boolean,
+	visible: Set<Int>,
+	level: Int = 0,
+) {
+	val style = sectionStyle(level)
+	val expanded = searching || section.title in viewModel.expanded
 	Row(
 		Modifier
 			.fillMaxWidth()
-			.background(if (level == 0) GroupBackground else SubBackground)
+			.background(style.background)
 			.clickable { viewModel.toggle(section.title) }
-			.padding(horizontal = 15.dp, vertical = if (level == 0) 7.dp else 2.dp),
+			.padding(start = 15.dp + style.indent, end = 15.dp, top = style.vertical, bottom = style.vertical),
 		verticalAlignment = Alignment.CenterVertically,
 	) {
 		Text(
 			stringResource(section.title),
 			Modifier.weight(1f),
-			style = TextStyle(fontSize = if (level == 0) 19.sp else 17.sp, color = DefaultTextColor),
+			style = TextStyle(fontSize = style.fontSize, color = DefaultTextColor),
 		)
 		if (section.icon != 0) {
 			// unspecified follows the theme foreground, like the text does.
@@ -199,7 +243,9 @@ private fun Section(section: HelpSection, viewModel: AboutViewModel, level: Int 
 		if (section.intro != 0) BodyText(stringResource(section.intro))
 		if (section.body != 0) BodyText(stringResource(section.body))
 		section.customIntro?.invoke()
-		section.children.forEach { Section(it, viewModel, level + 1) }
+		section.children
+			.filter { !searching || it.title in visible }
+			.forEach { Section(it, viewModel, searching, visible, level + 1) }
 	}
 }
 

@@ -94,19 +94,14 @@
         \noni/ony jdou = \'oni jdou\', nebo \'ony jdou\'
         \n(Já jdu)/(Ty jdeš). = \'Já jdu.\', nebo \'Ty jdeš.\'</string>
     <string name="help_extra_words_export">Export slovíček</string>
-    <string name="help_extra_words_export_how">Exportují se vybrané položky. Bez výběru se exportuje otevřený kontejner, na obrazovce předmětů všechny předměty.</string>
-    <string name="help_export_word">Soubor se slovíčky</string>
-    <string name="help_export_word_how">Kompaktní. Bez úspěšnosti. Bez referencí.</string>
-    <string name="help_export_json">Soubor JSON</string>
-    <string name="help_export_json_how">Úplný. Včetně úspěšnosti, poznámek a referencí.</string>
+    <string name="help_extra_words_export_how">Exportují se vybrané položky. Bez výběru se exportuje otevřený kontejner, na obrazovce předmětů všechny předměty.\nSoubor se slovíčky: kompaktní, bez úspěšnosti a referencí.\nSoubor JSON: úplný, včetně úspěšnosti, poznámek a referencí.</string>
     <string name="help_extra_words_import">Import slovíček</string>
-    <string name="help_extra_words_import_how">Uvnitř předmětu: Více, Import, zvolte soubor.\nNa obrazovce předmětů: Více, Import, Soubor, zvolte soubor. Vytvoří se nový předmět.</string>
+    <string name="help_extra_words_import_how">Uvnitř předmětu: Více, Import, zvolte soubor.\nNa obrazovce předmětů: Více, Import, Soubor, zvolte soubor. Vytvoří se nový předmět.\nChyba uvádí soubor a řádek. Opravte řádek a zvolte soubor znovu.</string>
     <string name="help_import_format">Formát souboru</string>
     <string name="help_import_format_how">Kapitola: název { a } na samostatných řádcích.\nSlovíčko: slovíčko = překlad.\nPoznámka: = text.\nPopis: [text] za názvem.\nVarianty: první\\druhý.</string>
-    <string name="help_import_example">Příklad</string>
-    <string name="help_import_errors">Chyby importu</string>
-    <string name="help_import_errors_how">Chyba uvádí soubor a řádek. Opravte řádek a zvolte soubor znovu.</string>
+    <string name="help_no_match">Odpovídající nápověda neexistuje.</string>
     <string name="help_search">Vyhledávání</string>
+    <string name="help_search_hint">Hledat v nápovědě</string>
     <string name="help_search_how">Vyhledávání je umožňěno ve všech kapitolách a předmětech.
         \nVe výsledcích vyhledávání otevře kliknutí na nalezenou kapitolu její kontejner.
         \nVyhledávat lze pomocí různých metod, vyhledávání také podporuje pojmenovávací syntaxi.</string>
