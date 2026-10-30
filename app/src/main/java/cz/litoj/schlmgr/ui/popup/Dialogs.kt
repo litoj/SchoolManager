@@ -114,8 +114,8 @@ interface DialogSpec {
  * The dialog stack of the app: the process-wide dialog list as observable state.
  * - every activity composing a [DialogHost] renders the same dialogs.
  * - rotation needs no repaint machinery, since the stack survives and recomposition re-renders.
- * - an activity may finish with its dialog still on the stack: the host beneath
- *   in the task renders it, see the test results popup.
+ * - an activity may finish with its dialog still on the stack.
+ * - the host beneath in the task renders it, see the test results popup.
  */
 object Dialogs {
 

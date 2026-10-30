@@ -120,3 +120,22 @@ What does not:
 | Test results success rate | Prints a raw float, rounding undecided |
 | Main-path pins missing against §8 | Governed by the meaningfulness rule, no gap list kept |
 
+## 10. Code review mode
+
+OpenCode holds a `review` agent mode. It reviews changes and does not fix them.
+
+- The mode is read-only on the codebase. The report is the only write and stays under `/tmp`.
+- Review scope:
+  - consistency with the codebase style and practices
+  - test thoroughness and coverage of edge cases
+  - readability
+  - documentation where the code is not self-explanatory
+- Comment and doc format follows §7. Findings also flag doc about params, return values or fields that lives far from those values.
+- Process:
+  - determine the branch under review and the main branch
+  - subagents review the diff between them and may split divisible changes
+  - the subagents cross-check the findings and look for further issues
+- The joined report orders issues by importance for correctness and maintainability. It lists only remaining issues, never who found or disproved what.
+- A merge request branch gets its report in a new markdown file under `/tmp`. Any other review replies directly.
+- Every file reference in a report file is a valid online source link to the reviewed branch.
+

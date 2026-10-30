@@ -164,6 +164,6 @@ Hard constraints.
 - Findings arrive while fixing continues, with a queue of next segments.
 - Work continuously between dispatches.
 - No separate work left means dispatch, not stop.
-- The rule to ask before an irreversible action in `DEVELOPMENT.md` §8 outranks every other rule.
+- The rule to ask before an irreversible action in `DEVELOPMENT.md` §7 outranks every other rule.
 - Dead code from a change is part of it. Remove it without asking.
-- The rule of three instances and the comment limits live in `DEVELOPMENT.md` §8.
+- The rule of three instances and the comment limits live in `DEVELOPMENT.md` §7.

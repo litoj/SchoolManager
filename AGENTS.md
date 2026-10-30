@@ -13,7 +13,10 @@
 
 # Communication
 
-- Always write all your responses in the **ASD-STE100** format.
+- The user has ADHD: no long texts, no long lists.
+- Structure everything shortly and clearly.
+- Every line of any text you write reads like a title: only the important information, no filler.
+- This covers code comments, documentation, notes and communication alike.
 - Present your reasoning: context, assumptions, and why you chose this approach.
 - **Only** use file **editing** on existing files - **never overwrite entire file**
 - I - the user - am the leading developer of the project
@@ -58,9 +61,8 @@ Applies to every code comment, documentation and note you write anywhere, centra
 - no redundant text, no narration, no bug history
 - max 2 simple sentences per comment - no parentheses, dashes, semicolons
   - shouldn't be longer than 2 lines
-- otherwise make it into bullet points
-  - each at most 1.5 lines
-  - one information per point, never more
+- each sentence gets its own line, no wrapping, only the important information
+- a genuine list becomes bullet points, one information per point
   - in points, not sentences (**like this section**)
 - keep everything clear, readable, short
 - compare new docs against the existing docs, discuss notable differences first

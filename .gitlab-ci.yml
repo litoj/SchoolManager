@@ -1,8 +1,6 @@
-# The GitLab twin of the GitHub workflows: tests with lint on every
-# commit.
+# The GitLab twin of the GitHub workflows: tests with lint on every commit.
 
-# A merge request replaces its branch pipeline, the twin of the GitHub
-# pull_request trigger.
+# A merge request replaces its branch pipeline, the twin of the GitHub pull_request trigger.
 workflow:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -11,7 +9,7 @@ workflow:
 stages: [image, test]
 
 # Builds the test image into the project registry.
-# It runs only when its recipe changes, so a normal pipeline pays nothing.
+# It runs only when its recipe changes, a normal pipeline pays nothing for it.
 ci-image:
   stage: image
   image:
@@ -47,9 +45,8 @@ test:
   variables:
     GRADLE_USER_HOME: $CI_PROJECT_DIR/.gradle-home
   script:
-    # one invocation pays the daemon start and the configuration cache once
-    # release lint too: it checks each variant.
-    # that one carries the release build config, so it must not pass unchecked
+    # One invocation pays the daemon start and the configuration cache once.
+    # Release lint is the only variant that sees the minified build.
     - ./gradlew :app:testDebugUnitTest :app:lintDebug :app:lintRelease --stacktrace
   cache:
     # the toolchain inputs key the dependency, wrapper and build caches
@@ -60,17 +57,14 @@ test:
       paths:
         - .gradle-home/caches/
         - .gradle-home/wrapper/
-    # the project state needs no key of its own, gradle rebuilds on any
-    # input change, so staleness self-corrects. It carries the
-    # configuration cache and the built classes, so unchanged sources
-    # skip the compile and the tests they already ran
+    # Gradle rebuilds on any input change, so staleness self-corrects.
+    # The state carries the built classes, so unchanged sources skip the compile and their tests.
     - key: project-state
       paths:
         - .gradle/
         - app/build/
   artifacts:
-    # always, so a failed run still carries its junit xml, the merge
-    # request widget reads it and shows the test summary
+    # A failed run still carries its junit xml for the merge request widget.
     when: always
     reports:
       junit: app/build/test-results/testDebugUnitTest/TEST-*.xml

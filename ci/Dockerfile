@@ -7,8 +7,8 @@ FROM eclipse-temurin:21-jdk
 ARG PLATFORM_SDK
 ENV ANDROID_HOME=/opt/android-sdk
 
-# The repository names a level's platform with an inconsistent minor suffix.
-# The index lookup takes the exact package name for the level.
+# The repository names a platform with an inconsistent minor suffix.
+# The lookup takes the exact package name for the level.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl unzip fontconfig fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/* \
