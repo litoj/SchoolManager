@@ -99,7 +99,7 @@ class SearchInputPolicyTest {
 		input.cancelPending()
 		input.onSubmit("ab")
 
-		assertEquals("the run's results are gone — the submit rebuilds them", listOf("ab", "ab"), host.run)
+		assertEquals("the run's results are gone, the submit rebuilds them", listOf("ab", "ab"), host.run)
 	}
 
 	@Test

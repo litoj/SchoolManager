@@ -42,6 +42,7 @@ class SubjectsScreenInfoTest {
 	@After
 	fun tearDown() {
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	@Test

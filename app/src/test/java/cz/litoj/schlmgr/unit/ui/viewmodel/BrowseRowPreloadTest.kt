@@ -74,7 +74,7 @@ class BrowseRowPreloadTest {
 		val row = rows.single()
 		assertTrue("the word took the default flip", row.flipped)
 		assertEquals("dům", row.toShow)
-		assertEquals("no joint description — the line carries its own", "", row.info)
+		assertEquals("no joint description, the line carries its own", "", row.info)
 		assertEquals(listOf("budova"), row.translationLines.map { it.description })
 	}
 

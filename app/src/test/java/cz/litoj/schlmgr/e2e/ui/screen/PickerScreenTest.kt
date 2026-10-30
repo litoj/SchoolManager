@@ -62,6 +62,7 @@ class PickerScreenTest {
 		// the saved position of the picker is process-wide, so leave the root for the next class
 		PickerViewModel.resetSavedHistory()
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	private fun text(res: Int): String = RuntimeEnvironment.getApplication().getString(res)

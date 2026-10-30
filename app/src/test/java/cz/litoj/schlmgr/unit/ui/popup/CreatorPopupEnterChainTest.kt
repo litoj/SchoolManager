@@ -98,7 +98,7 @@ class CreatorPopupEnterChainTest {
 		assertEquals("", popup.translations[0].name)
 		assertNotSame("the renewal builds a fresh editor, not a wiped one", committedRow, popup.translations[0])
 		assertFalse("the renewed editor is clean again", popup.isDirty)
-		assertTrue("the run continues — the popup stays shown", Dialogs.stack.value.contains(popup))
+		assertTrue("the run continues, the popup stays shown", Dialogs.stack.value.contains(popup))
 	}
 
 	@Test
@@ -125,7 +125,7 @@ class CreatorPopupEnterChainTest {
 
 		popup.notifyOk()
 
-		assertFalse("the OK button never renews — the run ends", Dialogs.stack.value.contains(popup))
+		assertFalse("the OK button never renews, the run ends", Dialogs.stack.value.contains(popup))
 	}
 
 	@Test

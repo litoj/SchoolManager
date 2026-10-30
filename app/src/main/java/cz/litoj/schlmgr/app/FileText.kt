@@ -1,5 +1,6 @@
 package cz.litoj.schlmgr.app
 
+import cz.litoj.schlmgr.data.Progress
 import android.net.Uri
 import java.io.FilterInputStream
 import java.io.IOException

@@ -37,6 +37,7 @@ class WordEditTest {
 	@After
 	fun tearDown() {
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	private fun word(parentId: Int, name: String, vararg translations: String): DbItem =
@@ -75,6 +76,41 @@ class WordEditTest {
 		val first = word(chapters.first(), name, *translations)
 		for (c in chapters.drop(1)) word(c, name, *translations)
 		return first
+	}
+
+	@Test
+	fun `a whitespace-only addition refuses the edit`() {
+		val subject = ItemRepository.createSubject("english", null)
+		val dog = word(subject.id, "dog", "pes")
+
+		try {
+			ItemRepository.editWord(edit(dog.id, subject.id, "dog",
+				removed = listOf(trl(dog.id, "pes").id), additions = listOf("   " to null)))
+			fail("a whitespace addition skips at the merge, so the edit would strand the word")
+		} catch (e: IllegalArgumentException) {
+			// expected, because the edit must not leave the word without a translation
+		}
+		assertEquals(listOf("pes"), names(dog.id))
+	}
+
+	@Test
+	fun `a blank name refuses the edit and the rename`() {
+		val subject = ItemRepository.createSubject("english", null)
+		val dog = word(subject.id, "dog", "pes")
+
+		try {
+			ItemRepository.editWord(edit(dog.id, subject.id, "   ", keptOf(dog.id)))
+			fail("a word with no name cannot be stored, since no export format round-trips it")
+		} catch (e: IllegalArgumentException) {
+			// expected, because a blank name is not a word
+		}
+		try {
+			ItemRepository.rename(dog.id, "   ")
+			fail("a rename to no name cannot be stored, since no export format round-trips it")
+		} catch (e: IllegalArgumentException) {
+			// expected, because a blank name is not a word
+		}
+		assertEquals("dog", ItemRepository.children(subject.id).single().name)
 	}
 
 	@Test

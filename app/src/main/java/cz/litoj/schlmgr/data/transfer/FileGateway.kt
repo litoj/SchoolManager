@@ -5,7 +5,7 @@ import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import cz.litoj.schlmgr.app.FileProgress
 import cz.litoj.schlmgr.app.FileText
-import cz.litoj.schlmgr.app.Progress
+import cz.litoj.schlmgr.data.Progress
 import cz.litoj.schlmgr.app.Startup
 import cz.litoj.schlmgr.data.legacy.LegacyFileSource
 import cz.litoj.schlmgr.data.legacy.LegacyJsonLoader

@@ -64,6 +64,7 @@ class TestActivityTest {
 		fun clean() {
 			TestRunState.reset()
 			db.close()
+			ItemRepository.resetForTest()
 		}
 	}
 }

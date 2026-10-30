@@ -3,9 +3,16 @@ package cz.litoj.schlmgr.data.db
 import cz.litoj.schlmgr.data.db.dao.Counters
 import cz.litoj.schlmgr.data.db.dao.ItemDao
 import cz.litoj.schlmgr.data.DataImporter
-import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.StreamItem
 import cz.litoj.schlmgr.data.StreamReference
+
+/** The outcome of one import, with the saved word and chapter totals. */
+class ImportResult(
+	/** Rows the stream roots became: subjects at root, anchor children below. */
+	val topLevel: List<DbItem>,
+	val words: Int,
+	val chapters: Int,
+)
 
 /**
  * - three save phases over the accumulator and the session.
@@ -17,7 +24,7 @@ internal object ImportService {
 	 * - the subject merge reads the map for re-linking.
 	 */
 	internal class ImportOutcome(
-		val result: ItemRepository.ImportResult,
+		val result: ImportResult,
 		val savedRows: Map<StreamItem, Int>,
 	)
 
@@ -25,6 +32,7 @@ internal object ImportService {
 		dao: ItemDao, importer: DataImporter, anchorId: Int,
 	): ImportOutcome {
 		requireWordsTranslated(importer)
+		requireNamed(importer)
 		val session = ImportSession.load(dao, anchorId)
 		val acc = ImportAccumulator()
 		saveImportStream(session, importer, anchorId, acc)
@@ -32,7 +40,7 @@ internal object ImportService {
 		acc.remapIds(session.flush())
 		refreshImportCounters(session, dao, importer, acc, anchorId)
 		return ImportOutcome(
-			ItemRepository.ImportResult(acc.topLevel, acc.words, acc.chapters), acc.saved)
+			ImportResult(acc.topLevel, acc.words, acc.chapters), acc.saved)
 	}
 
 	/**
@@ -49,6 +57,19 @@ internal object ImportService {
 			// a blank name carries no translation once trimmed
 			if (children.none { it.name.trim().isNotEmpty() }) throw IllegalArgumentException(
 				"A word without a translation: '${entry.item.name}' — make it a note instead")
+		}
+	}
+
+	/**
+	 * Every non-translation item carries a name.
+	 * A violating file fails the whole import before anything is written.
+	 * A translation may stay blank, since the save skips it.
+	 */
+	private fun requireNamed(importer: DataImporter) {
+		for (entry in importer.items) {
+			if (entry.item.type == ItemKind.TRANSLATION) continue
+			if (entry.item.name.trim().isEmpty()) throw IllegalArgumentException(
+				"An item without a name: '${entry.item.name}'")
 		}
 	}
 

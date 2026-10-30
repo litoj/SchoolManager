@@ -2,34 +2,32 @@ package cz.litoj.schlmgr.data
 
 import androidx.annotation.VisibleForTesting
 import androidx.room.withTransaction
-import cz.litoj.schlmgr.app.Progress
 import cz.litoj.schlmgr.data.db.dao.ItemDao
 import cz.litoj.schlmgr.data.db.dao.Counters
 import cz.litoj.schlmgr.data.db.dao.WordTranslation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import cz.litoj.schlmgr.data.db.AddTranslationsParams
 import cz.litoj.schlmgr.data.db.CounterChain
 import cz.litoj.schlmgr.data.db.DaoItemStore
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.DbLink
-import cz.litoj.schlmgr.data.db.Descriptions
 import cz.litoj.schlmgr.data.db.FlipAnalysis
 import cz.litoj.schlmgr.data.db.FlipResolution
 import cz.litoj.schlmgr.data.db.FlipService
 import cz.litoj.schlmgr.data.db.GraphDelete
 import cz.litoj.schlmgr.data.db.GraphWalk
 import cz.litoj.schlmgr.data.db.ImportService
+import cz.litoj.schlmgr.data.db.ImportResult
+import cz.litoj.schlmgr.data.db.SQL_IDS_PER_STATEMENT
 import cz.litoj.schlmgr.data.db.InsertWordParams
 import cz.litoj.schlmgr.data.db.ItemDatabase
-import cz.litoj.schlmgr.data.db.ItemStore
 import cz.litoj.schlmgr.data.db.ItemKind
-import cz.litoj.schlmgr.data.db.KeptTranslation
 import cz.litoj.schlmgr.data.db.LinkOrder
 import cz.litoj.schlmgr.data.db.MoveRequest
 import cz.litoj.schlmgr.data.db.NewTranslation
 import cz.litoj.schlmgr.data.db.ROOT_ID
 import cz.litoj.schlmgr.data.db.WordEdit
+import cz.litoj.schlmgr.data.db.WordEditService
 import cz.litoj.schlmgr.data.db.WordMerge
 
 /**
@@ -39,9 +37,6 @@ import cz.litoj.schlmgr.data.db.WordMerge
  * - the export renders and walks on the caller thread.
  */
 object ItemRepository {
-
-	/** The id budget of one bulk statement, below the 999 host-parameter cap of SQLite. */
-	internal const val SQL_IDS_PER_STATEMENT = 900
 
 	@Volatile
 	private var db: ItemDatabase? = null
@@ -61,6 +56,12 @@ object ItemRepository {
 	@VisibleForTesting
 	internal fun initForTest(database: ItemDatabase) {
 		db = database
+	}
+
+	/** Drops the test database, so a later test cannot read a closed one. */
+	@VisibleForTesting
+	internal fun resetForTest() {
+		db = null
 	}
 
 	/** Callers skip data access when false. */
@@ -164,19 +165,25 @@ object ItemRepository {
 	fun subgraphChildLinks(rootId: Int): List<DbLink> = query { it.itemDao().subgraphChildLinks(rootId) }
 
 	@JvmStatic
-	fun createSubject(name: String, description: String?): DbItem = query {
-		it.withTransaction {
-			val dao = it.itemDao()
-			val id = dao.insert(DbItem(name = name, description = description ?: "", type = ItemKind.CHAPTER)).toInt()
-			LinkOrder.linkAt(dao, ROOT_ID, id, null)
-			dao.get(id)!!
+	fun createSubject(name: String, description: String?): DbItem {
+		// a blank name cannot be stored, since no export format round-trips it
+		require(name.isNotBlank()) { "A subject needs a name" }
+		return query {
+			it.withTransaction {
+				val dao = it.itemDao()
+				val id = dao.insert(DbItem(name = name, description = description ?: "", type = ItemKind.CHAPTER)).toInt()
+				LinkOrder.linkAt(dao, ROOT_ID, id, null)
+				dao.get(id)!!
+			}
 		}
 	}
 
 	@JvmStatic
 	@JvmOverloads
-	fun createChapter(parentId: Int, name: String, description: String?, position: Int? = null): DbItem =
-		query {
+	fun createChapter(parentId: Int, name: String, description: String?, position: Int? = null): DbItem {
+		// a blank name cannot be stored, since no export format round-trips it
+		require(name.isNotBlank()) { "A chapter needs a name" }
+		return query {
 			it.withTransaction {
 				val dao = it.itemDao()
 				val id = dao.insert(DbItem(name = name, description = description ?: "", type = ItemKind.CHAPTER)).toInt()
@@ -184,11 +191,14 @@ object ItemRepository {
 				dao.get(id)!!
 			}
 		}
+	}
 
 	@JvmStatic
 	@JvmOverloads
-	fun createNote(parentId: Int, name: String, description: String?, position: Int? = null): DbItem =
-		query {
+	fun createNote(parentId: Int, name: String, description: String?, position: Int? = null): DbItem {
+		// a blank name cannot be stored, since no export format round-trips it
+		require(name.isNotBlank()) { "A note needs a name" }
+		return query {
 			it.withTransaction {
 				val dao = it.itemDao()
 				val id = dao.insert(DbItem(name = name, description = description ?: "", type = ItemKind.NOTE)).toInt()
@@ -196,6 +206,7 @@ object ItemRepository {
 				dao.get(id)!!
 			}
 		}
+	}
 
 	/**
 	 * A word with translations as pairs, and same-named words merge instead of doubling.
@@ -208,6 +219,8 @@ object ItemRepository {
 		description: String?,
 		translations: List<Pair<String, String?>>,
 	): DbItem {
+		// a blank name cannot be stored, since no export format round-trips it
+		require(name.isNotBlank()) { "A word needs a name" }
 		// a blank name carries no translation once trimmed
 		require(translations.any { it.first.trim().isNotEmpty() }) {
 			"A word needs at least one translation — make a note instead"
@@ -215,7 +228,7 @@ object ItemRepository {
 		return query {
 			it.withTransaction {
 				val dao = it.itemDao()
-				val word = insertWord(DaoItemStore(dao), InsertWordParams(parentId, name, description,
+				val word = WordMerge.insertWord(DaoItemStore(dao), InsertWordParams(parentId, name, description,
 					translations.map { NewTranslation(it.first, it.second) }))
 				// a merge onto an existing word brings its counters into the
 				// derivation of the parent, and no other create path changes them
@@ -240,13 +253,6 @@ object ItemRepository {
 		it.withTransaction { ImportService.run(it.itemDao(), importer, anchorId).result }
 	}
 
-	class ImportResult(
-		/** Rows the stream roots became: subjects at root, anchor children below. */
-		val topLevel: List<DbItem>,
-		val words: Int,
-		val chapters: Int,
-	)
-
 	/**
 	 * Reads the container content as a stream and renders it.
 	 * - the whole walked stream hands over through [DataExporter.onStream] before the render.
@@ -266,44 +272,49 @@ object ItemRepository {
 	 * - it appears at its home only.
 	 * - a home outside the export writes its content in place, or the save would lose it.
 	 */
-	private fun walkExport(containers: List<DbItem>): List<StreamItem> {
-		val out = ArrayList<StreamItem>()
-		val itemsById = HashMap<Int, DbItem>()
-		for (container in containers)
-			for (row in query { it.itemDao().subgraph(container.id) }) itemsById[row.id] = row
-		val links = LinkedHashSet<DbLink>()
-		for (container in containers)
-			links.addAll(query { it.itemDao().subgraphLinks(container.id) })
-		// sort links by position, matching the live per-node order
-		val sorted = links.sortedWith(compareBy({ it.position }, { it.childId }))
-		val rootIds = HashSet<Int>()
-		for (container in containers) rootIds.add(container.id)
-		// plain parents by child, since every reference path climbs them to a root,
-		// so they gather before any path computes
-		val plainParents = HashMap<Int, MutableList<Int>>()
-		for (link in sorted) if (!link.isReference)
-			plainParents.getOrPut(link.childId) { ArrayList() }.add(link.parentId)
-		val children = HashMap<Int, MutableList<StreamChild>>()
-		for (link in sorted) {
-			val child = itemsById[link.childId] ?: continue
-			val refPath =
-				if (link.isReference) refPathOf(child, itemsById, plainParents, rootIds) else null
-			children.getOrPut(link.parentId) { ArrayList() }.add(StreamChild(child, refPath))
+	private fun walkExport(containers: List<DbItem>): List<StreamItem> = query { database ->
+		// one transaction spans the walk, so a concurrent import cannot drop
+		// a row between the reads
+		database.withTransaction {
+			val dao = database.itemDao()
+			val out = ArrayList<StreamItem>()
+			val itemsById = HashMap<Int, DbItem>()
+			for (container in containers)
+				for (row in dao.subgraph(container.id)) itemsById[row.id] = row
+			val links = LinkedHashSet<DbLink>()
+			for (container in containers)
+				links.addAll(dao.subgraphLinks(container.id))
+			// sort links by position, matching the live per-node order
+			val sorted = links.sortedWith(compareBy({ it.position }, { it.childId }))
+			val rootIds = HashSet<Int>()
+			for (container in containers) rootIds.add(container.id)
+			// plain parents by child, since every reference path climbs them to a root,
+			// so they gather before any path computes
+			val plainParents = HashMap<Int, MutableList<Int>>()
+			for (link in sorted) if (!link.isReference)
+				plainParents.getOrPut(link.childId) { ArrayList() }.add(link.parentId)
+			val children = HashMap<Int, MutableList<StreamChild>>()
+			for (link in sorted) {
+				val child = itemsById[link.childId] ?: continue
+				val refPath =
+					if (link.isReference) refPathOf(child, itemsById, plainParents, rootIds) else null
+				children.getOrPut(link.parentId) { ArrayList() }.add(StreamChild(child, refPath))
+			}
+			for (container in containers) {
+				val root = StreamItem(container, null)
+				out.add(root)
+				GraphWalk.collectInto(out, root,
+					{ walked ->
+						val kids = children[walked.id] ?: emptyList()
+						// words list translations only.
+						if (walked.type == ItemKind.WORD)
+							kids.filter { it.row.type == ItemKind.TRANSLATION }
+						else kids
+					},
+				)
+			}
+			out
 		}
-		for (container in containers) {
-			val root = StreamItem(container, null)
-			out.add(root)
-			GraphWalk.collectInto(out, root,
-				{ walked ->
-					val kids = children[walked.id] ?: emptyList()
-					// words list translations only.
-					if (walked.type == ItemKind.WORD)
-						kids.filter { it.row.type == ItemKind.TRANSLATION }
-					else kids
-				},
-			)
-		}
-		return out
 	}
 
 	/**
@@ -331,46 +342,15 @@ object ItemRepository {
 	}
 
 	/**
-	 * Word-add merge rule for every item add.
-	 * - the name trims first, since a spaced name is the same word.
-	 * - same-named word in scope merges, new one otherwise.
-	 */
-	internal suspend fun insertWord(store: ItemStore, params: InsertWordParams): DbItem =
-		WordMerge.insertWord(store, params)
-
-	/**
-	 * Translation-add half of merge rule, for any store.
-	 * - the name trims first, since a blank name is no translation.
-	 * - same-named translation in scope merges, new one otherwise.
-	 * - empty names skip.
-	 * - rows return in the given order.
-	 */
-	internal suspend fun addTranslations(store: ItemStore, params: AddTranslationsParams): List<DbItem> =
-		WordMerge.addTranslations(store, params)
-
-	/**
 	 * Renames an item.
+	 * - a blank name refuses, since no export format round-trips it.
 	 * - a word colliding with another word of the same subject merges into it.
 	 * - links and translations move to the surviving row.
 	 * - the renamed row is deleted.
 	 */
 	@JvmStatic
 	fun rename(id: Int, name: String): DbItem = query {
-		it.withTransaction { renameInternal(it.itemDao(), id, name) }
-	}
-
-	private suspend fun renameInternal(dao: ItemDao, id: Int, name: String): DbItem {
-		val item = dao.get(id) ?: throw IllegalArgumentException("No item $id")
-		// the same trim as creation, so the merge lookup and the stored name
-		// see the trimmed form
-		val trimmed = name.trim()
-		if (item.type == ItemKind.WORD) {
-			val scope = dao.subjectRootOf(id, ROOT_ID) ?: id
-			val target = dao.findWordInSubject(scope, trimmed)
-			if (target != null && target.id != id) return FlipService.mergeWords(dao, id, target)
-		}
-		dao.updateById(id, trimmed, item.description)
-		return dao.get(id)!!
+		it.withTransaction { WordEditService.rename(it.itemDao(), id, name) }
 	}
 
 	@JvmStatic
@@ -384,18 +364,12 @@ object ItemRepository {
 	 * Whether the edit forks, when a shared word is renamed and loses a translation.
 	 * - the word is shared when a chapter holds it through a plain link.
 	 * - the rename licenses the fork, which avoids a duplicate row.
+	 * - a word that no longer exists throws, like the edit itself.
 	 * - the UI asks first to show the reference popup.
 	 */
 	@JvmStatic
 	fun editForks(edit: WordEdit): Boolean = query {
-		it.withTransaction { forks(it.itemDao(), edit) }
-	}
-
-	private suspend fun forks(dao: ItemDao, edit: WordEdit): Boolean {
-		val word = dao.get(edit.wordId) ?: return false
-		val plainParents = dao.plainParentsOf(edit.wordId)
-		return edit.parentId in plainParents && plainParents.any { it != edit.parentId } &&
-			edit.removed.isNotEmpty() && edit.name != word.name
+		it.withTransaction { WordEditService.forks(it.itemDao(), edit) }
 	}
 
 	/** Items showing the word through a reference link, the fork popup list. */
@@ -406,129 +380,12 @@ object ItemRepository {
 	 * Applies a committed word edit.
 	 * - it forks when the word is shared, renamed and lost a translation.
 	 * - otherwise it edits in place, and a rename-join keeps the survivor.
-	 * - it refuses an edit that leaves the word without a translation.
+	 * - a blank name refuses, since no export format round-trips it.
+	 * - an edit that leaves the word without a translation refuses.
 	 */
 	@JvmStatic
 	fun editWord(edit: WordEdit): DbItem = query {
-		// name content counts, so empty-named additions land nothing
-		if (edit.kept.isEmpty() && edit.additions.none { it.first.isNotEmpty() })
-			throw IllegalArgumentException("A word without a translation: '${edit.name}'")
-		it.withTransaction { editWordInternal(it.itemDao(), edit) }
-	}
-
-	private suspend fun editWordInternal(dao: ItemDao, edit: WordEdit): DbItem {
-		dao.get(edit.wordId) ?: throw IllegalArgumentException("No item ${edit.wordId}")
-		val scope = dao.subjectRootOf(edit.wordId, ROOT_ID) ?: edit.wordId
-		val keptRows = edit.kept.map { kept ->
-			val current = dao.get(kept.id) ?: throw IllegalArgumentException("No item ${kept.id}")
-			kept to current
-		}
-		// rows kept renames merged into, so later same-name rows join
-		val joinedTargets = HashSet<Int>()
-		if (forks(dao, edit)) return forkWord(dao, edit, keptRows, scope, joinedTargets)
-		// in-place half, with removals first to avoid carrying them over
-		for (trl in edit.removed) {
-			dao.deleteLink(edit.wordId, trl)
-			if (dao.parentCount(trl) == 0) GraphDelete.delete(dao, trl)
-		}
-		for ((kept, current) in keptRows)
-			applyKeptTranslation(dao, scope, kept, current, edit.wordId, edit.wordId, null, joinedTargets)
-		val merged = renameInternal(dao, edit.wordId, edit.name)
-		// a rename-join carries the deleted description over, and the editor value joins
-		val desc = if (merged.id != edit.wordId) Descriptions.merge(merged.description, edit.description)
-		else edit.description ?: ""
-		dao.updateById(merged.id, merged.name, desc)
-		insertWord(DaoItemStore(dao), InsertWordParams(edit.parentId, edit.name, desc,
-			edit.additions.map { NewTranslation(it.first, it.second) }))
-		return dao.get(merged.id)!!
-	}
-
-	/**
-	 * Fork half of the edit.
-	 * - the continuing word takes the original slot, the kept rows and the additions.
-	 * - its references follow it.
-	 * - the original keeps the removed translations, other chapters and counters.
-	 */
-	private suspend fun forkWord(
-		dao: ItemDao, edit: WordEdit,
-		keptRows: List<Pair<KeptTranslation, DbItem>>, scope: Int, joinedTargets: MutableSet<Int>,
-	): DbItem {
-		val slot = dao.linkPosition(edit.parentId, edit.wordId)
-		val existing = dao.findWordInSubject(scope, edit.name)?.takeIf { it.id != edit.wordId }
-		val fork = if (existing != null) {
-			val merged = Descriptions.merge(existing.description, edit.description)
-			if (merged != existing.description) dao.updateById(existing.id, existing.name, merged)
-			existing
-		} else dao.insert(
-			DbItem(name = edit.name, description = edit.description ?: "", type = ItemKind.WORD)
-		).let { dao.get(it.toInt())!! }
-		dao.deleteLink(edit.parentId, edit.wordId)
-		if (dao.linkPosition(edit.parentId, fork.id) == null)
-			dao.insertLink(DbLink(edit.parentId, fork.id, slot ?: dao.nextPosition(edit.parentId)))
-		// editor order indexes a fresh list, so joined words append after the existing ones
-		val base = if (existing != null)
-			dao.getChildren(fork.id).count { it.type == ItemKind.TRANSLATION } else 0
-		for ((index, row) in keptRows.withIndex())
-			applyKeptTranslation(dao, scope, row.first, row.second, edit.wordId, fork.id, base + index, joinedTargets)
-		addTranslations(DaoItemStore(dao), AddTranslationsParams(scope, fork.id,
-			edit.additions.map { NewTranslation(it.first, it.second) }))
-		// kept references follow the fork, removed ones keep the original.
-		for (parent in edit.referencesToFork) {
-			if (dao.linkIsReference(parent, edit.wordId) != true) continue
-			dao.deleteLink(parent, edit.wordId)
-			if (dao.linkPosition(parent, fork.id) == null)
-				dao.insertLink(DbLink(parent, fork.id, dao.nextPosition(parent), isReference = true))
-		}
-		// the fork changes the word set of the edited chapter, so the containers above recompute
-		recomputeCounterChain(dao, edit.parentId, dao::subgraphWordCounters, dao::parentsPlainFirst)
-		return dao.get(fork.id)!!
-	}
-
-	/**
-	 * Applies one kept row.
-	 * - a rename onto an existing translation joins that row.
-	 * - shared rows stay, and the edited word gets its own row.
-	 * - joined descriptions merge.
-	 */
-	private suspend fun applyKeptTranslation(
-		dao: ItemDao, scope: Int,
-		kept: KeptTranslation, current: DbItem,
-		oldOwnerId: Int, newOwnerId: Int, position: Int?, joinedTargets: MutableSet<Int>,
-	) {
-		var target = current.id
-		if (kept.name == current.name) {
-		// a sibling rename may have merged here, so the kept text joins the live content
-			val live = dao.get(current.id)!!
-			val desc = if (current.id in joinedTargets) Descriptions.merge(live.description, kept.description)
-				else kept.description
-			if (desc != live.description)
-				dao.updateById(current.id, current.name, desc)
-		} else {
-			val existing = dao.findWordInSubject(scope, kept.name, ItemKind.TRANSLATION)
-			if (existing != null && existing.id != current.id) {
-				val desc = Descriptions.merge(
-					Descriptions.merge(existing.description, current.description), kept.description)
-				if (desc != existing.description) dao.updateById(existing.id, existing.name, desc)
-			// merge adopts the more-tested counters.
-				if (current.passedTests + current.failedTests > existing.passedTests + existing.failedTests)
-					dao.updateCounters(existing.id, current.passedTests, current.failedTests)
-				joinedTargets.add(existing.id)
-				target = existing.id
-			} else if (dao.parentCount(current.id) > 1) {
-			// a replacement starts at zero counters.
-				target = dao.insert(
-					DbItem(name = kept.name, description = kept.description, type = ItemKind.TRANSLATION))
-					.let { dao.get(it.toInt())!! }.id
-			} else {
-				dao.updateById(current.id, kept.name, kept.description)
-			}
-		}
-		// the row leaves the previous word on fork, join or shared replacement.
-		if (oldOwnerId != newOwnerId || target != current.id) {
-			dao.deleteLink(oldOwnerId, current.id)
-			if (target != current.id && dao.parentCount(current.id) == 0) GraphDelete.delete(dao, current.id)
-		}
-		if (dao.linkPosition(newOwnerId, target) == null) LinkOrder.linkAt(dao, newOwnerId, target, position)
+		it.withTransaction { WordEditService.edit(it.itemDao(), edit) }
 	}
 
 	/**
@@ -787,8 +644,8 @@ object ItemRepository {
 	}
 
 	/**
-	 * Persists the manual child order, where every id takes the zero-based slot it holds.
-	 * Unknown ids are ignored, so stale entries cannot corrupt the order.
+	 * Persists the manual child order.
+	 * See [LinkOrder.setOrder] for the slot rules.
 	 */
 	@JvmStatic
 	fun setOrder(parentId: Int, orderedChildIds: List<Int>): Unit = query {

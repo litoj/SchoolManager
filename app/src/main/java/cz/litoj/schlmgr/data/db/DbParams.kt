@@ -44,7 +44,7 @@ data class KeptTranslation(
 )
 
 /**
- * - fork decision lives with repository.
+ * - fork decision lives with WordEditService.
  */
 data class WordEdit(
 	val wordId: Int,

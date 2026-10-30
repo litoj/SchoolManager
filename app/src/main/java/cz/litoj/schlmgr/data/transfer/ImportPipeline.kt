@@ -13,6 +13,7 @@ import cz.litoj.schlmgr.data.legacy.LegacySubjectImporter
 import cz.litoj.schlmgr.data.wordlist.WordListImporter
 import cz.litoj.schlmgr.data.DataImporter
 import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.data.db.ImportResult
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ROOT_ID
 
@@ -30,7 +31,7 @@ abstract class FileWorker(
 	 * - it runs on the worker thread.
 	 * - the import mover uses it to open a single imported container.
 	 */
-	var onImported: ((ItemRepository.ImportResult) -> Unit)? = null
+	var onImported: ((ImportResult) -> Unit)? = null
 
 	/** The view may be gone while the worker runs, so nothing binds the thread to it. */
 	fun start(): Thread =
@@ -76,10 +77,10 @@ abstract class FileWorker(
 	protected fun persist(
 		importer: DataImporter, progress: FileProgress,
 		anchorId: Int = ROOT_ID,
-	): ItemRepository.ImportResult =
+	): ImportResult =
 		ItemRepository.import(progress.importer(importer), anchorId)
 
-	protected fun notifyImported(result: ItemRepository.ImportResult) {
+	protected fun notifyImported(result: ImportResult) {
 		Startup.onImportSuccess(result.words, result.chapters)
 		onImported?.invoke(result)
 	}

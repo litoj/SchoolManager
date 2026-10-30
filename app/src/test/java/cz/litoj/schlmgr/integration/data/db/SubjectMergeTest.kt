@@ -40,6 +40,7 @@ class SubjectMergeTest {
 	@After
 	fun tearDown() {
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	private fun noDesc() = null as String?

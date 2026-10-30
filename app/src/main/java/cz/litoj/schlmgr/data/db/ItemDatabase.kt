@@ -8,6 +8,9 @@ import androidx.room.TypeConverters
 import cz.litoj.schlmgr.data.db.dao.ItemDao
 import cz.litoj.schlmgr.data.db.dao.WordDao
 
+/** The id budget of one bulk statement, below the 999 host-parameter cap of SQLite. */
+internal const val SQL_IDS_PER_STATEMENT = 900
+
 @Database(
 	entities = [DbItem::class, DbLink::class],
 	version = 5,

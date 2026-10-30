@@ -40,6 +40,7 @@ class TestEngineAnswerTest {
 	@After
 	fun tearDown() {
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	private fun answer(entry: TestEntry, text: String?): Boolean {

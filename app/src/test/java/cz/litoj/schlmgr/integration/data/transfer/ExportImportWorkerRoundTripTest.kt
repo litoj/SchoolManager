@@ -52,10 +52,12 @@ class ExportImportWorkerRoundTripTest {
 	@After
 	fun tearDown() {
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	private fun freshDatabase() {
 		db.close()
+		ItemRepository.resetForTest()
 		val app = RuntimeEnvironment.getApplication()
 		db = Room.inMemoryDatabaseBuilder(app, ItemDatabase::class.java)
 			.allowMainThreadQueries()

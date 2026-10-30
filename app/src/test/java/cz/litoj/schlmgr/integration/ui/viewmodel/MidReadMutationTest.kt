@@ -63,6 +63,7 @@ class MidReadMutationTest {
 	@After
 	fun tearDown() {
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	@Test

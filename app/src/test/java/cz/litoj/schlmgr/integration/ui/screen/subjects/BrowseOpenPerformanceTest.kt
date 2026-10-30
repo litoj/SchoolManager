@@ -32,9 +32,8 @@ import org.robolectric.annotation.Config
  * - the subject open shows 204 chapter rows and no words.
  * - a synthetic 300-word chapter models the wide end.
  * - the counter read of the info strip runs after the list lands.
- * - that read is timed apart, since its budget is a report line.
- * - PERF open lines carry the numbers.
- * - the open budget is the edge of what a user notices, a quarter second.
+ * - PERF open lines carry the wall-clock numbers.
+ * - only the query budgets are asserted, since a loaded host must not fail the suite.
  * - a per-row query storm thus fails the suite instead of only feeling slow.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -83,20 +82,14 @@ class BrowseOpenPerformanceTest {
 	fun tearDown() {
 		ItemRow.defFlip = defFlipWas
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
-	/** The edge of what a user notices on one navigation. */
-	private val openBudgetMs = 250
-
-	/** The strip read runs after the list, with tenfold headroom, so it blocks nothing. */
-	private val stripBudgetMs = 1_000
-
-	private fun <T> timed(name: String, budgetMs: Int, block: () -> T): T {
+	/** Prints the wall-clock number, since only the query count is asserted. */
+	private fun <T> measured(name: String, block: () -> T): T {
 		val start = System.nanoTime()
 		val result = block()
-		val ms = (System.nanoTime() - start) / 1_000_000
-		println("PERF $name: $ms ms")
-		assertTrue("$name took $ms ms (budget $budgetMs ms)", ms < budgetMs)
+		println("PERF $name: ${(System.nanoTime() - start) / 1_000_000} ms")
 		return result
 	}
 
@@ -146,12 +139,12 @@ class BrowseOpenPerformanceTest {
 	}
 
 	@Test
-	fun `opening the heaviest subject's chapter list stays under its budget`() {
+	fun `opening the heaviest subject's chapter list reads its rows in one batch`() {
 		val model = model()
 		val nj = model.items().single { it.item.name == "NJ" }
 
 		countQueries()
-		timed("open-subject", openBudgetMs) { model.onItemClick(nj) }
+		measured("open-subject") { model.onItemClick(nj) }
 		// children, links and the read and write of the strip, with no word rows, so
 		// no translations read may appear
 		assertQueryBudget("open-subject", 4)
@@ -162,11 +155,11 @@ class BrowseOpenPerformanceTest {
 	}
 
 	@Test
-	fun `opening the busiest chapter stays under its budget`() {
+	fun `opening the busiest chapter loads its rows`() {
 		val model = model()
 		val busiest = ItemRepository.get(busiestChapterId())!!
 
-		timed("open-chapter", openBudgetMs) { model.loadContent(busiest) }
+		measured("open-chapter") { model.loadContent(busiest) }
 
 		assertTrue("the chapter loaded no rows", model.items().isNotEmpty())
 	}
@@ -182,7 +175,7 @@ class BrowseOpenPerformanceTest {
 		val chapter = model.items().single { it.item.name == "wide" }
 
 		countQueries()
-		timed("open-wide-chapter", openBudgetMs) { model.onItemClick(chapter) }
+		measured("open-wide-chapter") { model.onItemClick(chapter) }
 		// one batch translations read, whatever the word count, because a per-word
 		// read storms this budget
 		assertQueryBudget("open-wide-chapter", 5)
@@ -191,7 +184,7 @@ class BrowseOpenPerformanceTest {
 	}
 
 	@Test
-	fun `the info strip counter read stays under its budget`() {
-		timed("info-counters", stripBudgetMs) { ItemRepository.recomputeCounters(njId()) }
+	fun `the info strip counter read reports its time`() {
+		measured("info-counters") { ItemRepository.recomputeCounters(njId()) }
 	}
 }

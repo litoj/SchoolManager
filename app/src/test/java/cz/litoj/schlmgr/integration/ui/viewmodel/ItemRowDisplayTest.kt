@@ -47,6 +47,7 @@ class ItemRowDisplayTest {
 		ItemRow.parse = savedParse
 		ItemRow.defFlip = savedDefFlip
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	private fun wordWithTranslations(): Pair<Int, DbItem> {
@@ -63,7 +64,7 @@ class ItemRowDisplayTest {
 		val row = ItemRow(word, parentId, 1)
 		assertTrue(row.flipped)
 		assertEquals("house\nhome", row.toShow)
-		assertEquals("no joint description — the lines carry their own", "", row.info)
+		assertEquals("no joint description, the lines carry their own", "", row.info)
 		assertEquals(listOf("dwell", ""), row.translationLines.map { it.description })
 	}
 
@@ -87,7 +88,7 @@ class ItemRowDisplayTest {
 		row.flip()
 		assertTrue(row.flipped)
 		assertEquals("house\nhome", row.toShow)
-		assertEquals("no joint description — the lines carry their own", "", row.info)
+		assertEquals("no joint description, the lines carry their own", "", row.info)
 		assertEquals(2, row.translationLines.size)
 
 		row.flip()

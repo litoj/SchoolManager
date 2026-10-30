@@ -113,8 +113,8 @@ java {
 }
 
 // The unit test runs report to the shell: every failed test with its full
-// exception, every class one summary line, the whole run one total line —
-// the XML results stay an IDE artifact, not the only place to read the
+// exception, every class one summary line, the whole run one total line.
+// The XML results stay an IDE artifact, not the only place to read the
 // outcome from.
 tasks.withType<Test>().configureEach {
     testLogging {
@@ -169,18 +169,19 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
 
-    // The component tests drive real gestures on a composed list (Robolectric hosts
-    // the activity the rule needs, so the manifest artifact is a debug dependency).
+    // The component tests drive real gestures on a composed list.
+    // Robolectric hosts the activity the rule needs, so its manifest
+    // artifact is a debug dependency.
     testImplementation(composeBom)
     testImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
 
-// The app is Material 2 throughout — material 3 only ever arrives transitively
-// (the debug ui-tooling pulls it in). Dropping it keeps the classpath honest and
-// keeps the material2/material3 mixing lint check from firing on the tooling's
-// own dependency (a plain dependency exclude does not survive the artifact's
-// android variant).
+// The app is Material 2 throughout, and material 3 only ever arrives transitively.
+// - the debug ui-tooling pulls it in.
+// - dropping it keeps the classpath honest.
+// - it also keeps the material2/material3 mixing lint check from firing.
+// - a plain dependency exclude does not survive the artifact's android variant.
 configurations.configureEach {
     exclude(group = "androidx.compose.material3", module = "material3")
 }

@@ -6,6 +6,8 @@ import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -37,6 +39,7 @@ class ChildOrderTest {
 	@After
 	fun tearDown() {
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	private fun names(): List<String> = ItemRepository.children(subject.id).map { it.name }
@@ -81,6 +84,32 @@ class ChildOrderTest {
 
 		// the raw positions are gapped, so the visual slot 1 belongs to c3
 		assertEquals(listOf("c1", "c4", "c3"), names())
+	}
+
+	@Test
+	fun `a blank name refuses the chapter create`() {
+		try {
+			ItemRepository.createChapter(subject.id, "   ", null)
+			fail("a chapter with no name cannot be stored, since no export format round-trips it")
+		} catch (e: IllegalArgumentException) {
+			// expected, because a blank name is not a chapter
+		}
+		assertTrue(ItemRepository.children(subject.id).isEmpty())
+	}
+
+	@Test
+	fun `an order list short of the live children appends the unseen rows`() {
+		for (name in listOf("c1", "c2", "c3", "c4", "c5"))
+			ItemRepository.createChapter(subject.id, name, null)
+		val c3 = ItemRepository.children(subject.id).first { it.name == "c3" }
+		val c5 = ItemRepository.children(subject.id).first { it.name == "c5" }
+
+		// the drag list holds c3 twice, a dead id and c5
+		ItemRepository.setOrder(subject.id, listOf(c3.id, c3.id, 9_999, c5.id))
+
+		// the drag order stands, the repeated id keeps one slot.
+		// the dead id drops out, the unseen rows take the end in their live order
+		assertEquals(listOf("c3", "c5", "c1", "c2", "c4"), names())
 	}
 
 	@Test

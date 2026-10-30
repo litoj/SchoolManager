@@ -93,7 +93,7 @@ Three test packages, one per layer:
 
 | Package | Runs | Covers |
 |---------|------|--------|
-| `unit` | plain JVM | pure logic: codecs, engines, detectors, state machines |
+| `unit` | JVM, Robolectric only where Android APIs are read | pure logic: codecs, engines, detectors, state machines |
 | `integration` | Robolectric with a real in-memory Room | repository and view model flows |
 | `e2e` | a Compose rule over the real screen | what only the composed screen shows: taps, focus, keyboard, scroll, visibility |
 
@@ -118,6 +118,5 @@ What does not:
 | On-device SAF import re-verification | Not done after the perf round |
 | Scroll stutter on the physical phone | Emulator clean. Recipe: `adb shell dumpsys gfxinfo cz.litoj.schlmgr reset`, fling `\W/` results, `adb shell dumpsys gfxinfo cz.litoj.schlmgr` |
 | Test results success rate | Prints a raw float, rounding undecided |
-| `GradleDependency` lint errors on `libs.versions.toml` | Since Kotlin 2.4.0, bump or baseline undecided |
 | Main-path pins missing against §8 | Governed by the meaningfulness rule, no gap list kept |
 

@@ -39,6 +39,7 @@ class ItemFlipTest {
 	@After
 	fun tearDown() {
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	private fun word(parentId: Int, name: String, vararg translations: String): DbItem =

@@ -54,6 +54,7 @@ class SubjectsScreenFabTest {
 	@After
 	fun tearDown() {
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	@Test

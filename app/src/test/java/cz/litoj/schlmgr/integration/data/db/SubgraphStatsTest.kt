@@ -34,6 +34,7 @@ class SubgraphStatsTest {
 	@After
 	fun tearDown() {
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	@Test

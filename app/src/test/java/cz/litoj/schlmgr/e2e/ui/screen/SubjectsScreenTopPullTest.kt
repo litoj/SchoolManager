@@ -51,6 +51,7 @@ class SubjectsScreenTopPullTest {
 	@After
 	fun tearDown() {
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	private fun show(): MainExplorerViewModel {
@@ -129,7 +130,7 @@ class SubjectsScreenTopPullTest {
 		rule.waitForIdle()
 
 		rule.runOnIdle {
-			assertEquals("the gesture began mid-list — no pull", SearchUi.OFF, model.state.value.searchUi)
+			assertEquals("the gesture began mid-list, no pull", SearchUi.OFF, model.state.value.searchUi)
 		}
 
 		pullDown("c1")

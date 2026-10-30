@@ -97,6 +97,7 @@ class FileWorkerTest {
 	@After
 	fun tearDown() {
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	private fun picked(text: String): Uri {

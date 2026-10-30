@@ -13,10 +13,9 @@ internal object LinkOrder {
 	suspend fun linkAt(dao: ItemDao, parentId: Int, childId: Int, position: Int?) {
 		// position is a visual index, since raw positions carry gaps
 		val links = dao.linksOf(parentId).sortedBy { it.position }
-		val pos = when {
-			position == null || position >= links.size -> dao.nextPosition(parentId)
-			else -> links[position].position
-		}
+		// an out-of-range index lands at the end, like the append of a null position
+		val pos = if (position != null && position in 0 until links.size) links[position].position
+		else dao.nextPosition(parentId)
 		// occupants from the target up make room.
 		dao.shift(ShiftRange(parentId, 1, pos, dao.nextPosition(parentId) - 1))
 		dao.insertLink(DbLink(parentId, childId, pos))
@@ -41,9 +40,20 @@ internal object LinkOrder {
 
 	/**
 	 * Persists the manual child order, where every id takes the zero-based slot it holds.
-	 * Unknown ids are ignored, so stale entries cannot corrupt the order.
+	 * - unknown ids drop out, so stale entries cannot corrupt the order.
+	 * - a repeated id keeps its first slot.
+	 * - children the list never saw append at the end, since a row that landed
+	 *   after the drag holds no slot of the user.
 	 */
 	suspend fun setOrder(dao: ItemDao, parentId: Int, orderedChildIds: List<Int>) {
-		orderedChildIds.forEachIndexed { index, id -> dao.setLinkPosition(parentId, id, index) }
+		val live = LinkedHashSet(dao.linksOf(parentId).sortedBy { it.position }.map { it.childId })
+		val seen = HashSet<Int>()
+		val ordered = ArrayList<Int>(live.size)
+		for (id in orderedChildIds) {
+			if (id !in live || !seen.add(id)) continue
+			ordered.add(id)
+		}
+		for (id in live) if (seen.add(id)) ordered.add(id)
+		ordered.forEachIndexed { index, id -> dao.setLinkPosition(parentId, id, index) }
 	}
 }

@@ -1,7 +1,7 @@
 package cz.litoj.schlmgr.data.legacy
 
 import androidx.documentfile.provider.DocumentFile
-import cz.litoj.schlmgr.app.Progress
+import cz.litoj.schlmgr.data.Progress
 import cz.litoj.schlmgr.data.DataImporter
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.StreamItem

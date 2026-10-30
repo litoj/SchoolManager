@@ -43,6 +43,7 @@ class ReferenceMoveTest {
 	@After
 	fun tearDown() {
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	@Test

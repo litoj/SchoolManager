@@ -48,7 +48,8 @@ test:
     GRADLE_USER_HOME: $CI_PROJECT_DIR/.gradle-home
   script:
     # one invocation pays the daemon start and the configuration cache once
-    # release lint too: it checks each variant, and that one carries the release build config
+    # release lint too: it checks each variant.
+    # that one carries the release build config, so it must not pass unchecked
     - ./gradlew :app:testDebugUnitTest :app:lintDebug :app:lintRelease --stacktrace
   cache:
     # the toolchain inputs key the dependency, wrapper and build caches

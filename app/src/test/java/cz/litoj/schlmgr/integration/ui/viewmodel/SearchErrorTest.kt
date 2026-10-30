@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -37,12 +38,10 @@ class SearchErrorTest {
 		}
 		// the shared flow has no replay:
 		// - an emit before the subscription of the collector lands is lost.
-		// - wait for the subscription first.
-		// - the wait is bounded, so a collector that never starts fails the test.
-		var waits = 0
-		while (GlobalDependencies.messages.subscriptionCount.value == 0) {
-			assertTrue("the collector never subscribed", waits++ < 500)
-			Thread.sleep(10)
+		// - wait for the subscription first, bounded so a collector that never
+		//   starts fails the test.
+		runBlocking {
+			withTimeout(5_000) { GlobalDependencies.messages.subscriptionCount.first { it > 0 } }
 		}
 
 		vm.submitSearch("\\r[")

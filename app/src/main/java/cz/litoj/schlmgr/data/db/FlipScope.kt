@@ -1,6 +1,5 @@
 package cz.litoj.schlmgr.data.db
 
-import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.dao.ItemDao
 
 /**
@@ -142,11 +141,11 @@ internal class FlipScope private constructor(
 		 */
 		suspend fun of(dao: ItemDao, seeds: Collection<Int>): FlipScope {
 			if (seeds.isEmpty()) return FlipScope(dao, emptyList(), emptyList())
-			if (seeds.size <= ItemRepository.SQL_IDS_PER_STATEMENT)
+			if (seeds.size <= SQL_IDS_PER_STATEMENT)
 				return FlipScope(dao, dao.flipScopeRows(seeds), dao.flipScopeLinks(seeds))
 			val rows = ArrayList<DbItem>()
 			val links = ArrayList<DbLink>()
-			for (chunk in seeds.chunked(ItemRepository.SQL_IDS_PER_STATEMENT)) {
+			for (chunk in seeds.chunked(SQL_IDS_PER_STATEMENT)) {
 				rows.addAll(dao.flipScopeRows(chunk))
 				links.addAll(dao.flipScopeLinks(chunk))
 			}

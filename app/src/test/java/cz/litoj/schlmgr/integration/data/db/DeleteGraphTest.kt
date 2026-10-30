@@ -39,6 +39,7 @@ class DeleteGraphTest {
 	@After
 	fun tearDown() {
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	@Test

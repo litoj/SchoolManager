@@ -47,6 +47,7 @@ class PickerViewModelTest {
 		// the saved position of the picker is process-wide, so leave the root for the next class
 		PickerViewModel.resetSavedHistory()
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	private fun vm(): PickerViewModel {
@@ -149,7 +150,7 @@ class PickerViewModelTest {
 		assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
 		assertEquals(SearchUi.RESULTS, model.state.value.searchUi)
 
-		assertFalse("the selection belonged to the left list — none carries over",
+		assertFalse("the selection belonged to the left list, none carries over",
 			model.items().any { it.selected })
 	}
 }

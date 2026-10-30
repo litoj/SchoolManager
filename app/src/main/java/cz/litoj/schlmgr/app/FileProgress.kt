@@ -10,17 +10,9 @@ import android.os.SystemClock
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.DataExporter
 import cz.litoj.schlmgr.data.DataImporter
+import cz.litoj.schlmgr.data.Progress
 import cz.litoj.schlmgr.data.StreamItem
 import java.util.concurrent.atomic.AtomicInteger
-
-/**
- * Reports the amount that has flowed through one long file operation.
- * It bridges the counting streams of [FileText] to the implementations that drive a bar.
- */
-fun interface Progress {
-	/** Reports more processed: bytes in the file phase, rows in the row phase. */
-	fun advance(amount: Int)
-}
 
 /**
  * A progress-bar notification for one long file operation, one counted phase at a time.
@@ -31,6 +23,9 @@ fun interface Progress {
  * - a call before the delay never flashes a bar for a finished operation.
  * - without POST_NOTIFICATIONS on Android 13 and later posts are dropped.
  * - the run goes on without a bar.
+ * - workers advance the bar, the main thread runs the pending show post.
+ * - one lock orders those threads.
+ * - a close bars every late post, so the bar never outlives the operation.
  *
  * @param clock elapsed-ms source, injectable so tests can drive the throttle
  */
@@ -82,6 +77,14 @@ class FileProgress @JvmOverloads constructor(
 	private val start = clock()
 	/** Whether the bar passed the show delay, so later posts skip it. */
 	private var shown = false
+	/** Workers advance the bar while the main thread runs the pending show post. */
+	private val lock = Any()
+
+	// the posts stay under the lock, so a close can never cancel before a late
+	// post lands. The short binder call is the price of that order.
+
+	/** Whether close ran, so a late post cannot revive the bar. */
+	private var closed = false
 	private val show = Handler(Looper.getMainLooper())
 	/**
 	 * Drops posts that arrive within the step.
@@ -124,9 +127,11 @@ class FileProgress @JvmOverloads constructor(
 
 	/** Targets the bar at the read or write phase, total bytes, 0 or below when unknown. */
 	fun bytes(total: Long) {
-		phase = Phase.Bytes(total)
-		done = 0
-		post()
+		synchronized(lock) {
+			phase = Phase.Bytes(total)
+			done = 0
+			post()
+		}
 	}
 
 	/** Wraps [importer] to report each taken entry, re-targeted to the stream size. */
@@ -163,31 +168,42 @@ class FileProgress @JvmOverloads constructor(
 	 * A value of 0 or below means an unknown count.
 	 */
 	fun rows(total: Int) {
-		phase = if (total <= 0) Phase.RowsUnknown else Phase.RowsKnown(total)
-		done = 0
-		post()
+		synchronized(lock) {
+			phase = if (total <= 0) Phase.RowsUnknown else Phase.RowsKnown(total)
+			done = 0
+			post()
+		}
 	}
 
 	override fun advance(amount: Int) {
-		done += amount
-		if (!shown && clock() - start < SHOW_DELAY_MS) return
-		shown = true
-		if (!throttle.gate(complete(), fillPerMille())) return
-		manager.notify(id, build())
+		synchronized(lock) {
+			if (closed) return
+			done += amount
+			if (!shown && clock() - start < SHOW_DELAY_MS) return
+			shown = true
+			if (!throttle.gate(complete(), fillPerMille())) return
+			manager.notify(id, build())
+		}
 	}
 
 	override fun close() {
-		show.removeCallbacksAndMessages(null)
-		manager.cancel(id)
+		synchronized(lock) {
+			closed = true
+			show.removeCallbacksAndMessages(null)
+			manager.cancel(id)
+		}
 	}
 
 	private fun post() {
-		if (!shown) {
-			if (clock() - start < SHOW_DELAY_MS) return
-			shown = true
+		synchronized(lock) {
+			if (closed) return
+			if (!shown) {
+				if (clock() - start < SHOW_DELAY_MS) return
+				shown = true
+			}
+			throttle.posted(fillPerMille())
+			manager.notify(id, build())
 		}
-		throttle.posted(fillPerMille())
-		manager.notify(id, build())
 	}
 
 	private fun complete(): Boolean = phase.isComplete(done)

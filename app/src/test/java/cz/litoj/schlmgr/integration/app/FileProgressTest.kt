@@ -97,6 +97,23 @@ class FileProgressTest {
 	}
 
 	@Test
+	fun `an advance after close never re-posts the bar`() {
+		val progress = FileProgress("test") { now }
+		progress.rows(4)
+		now = 5_000
+		progress.advance(2)
+		assertEquals(1, shadowOf(manager).allNotifications.size)
+
+		progress.close()
+		assertEquals(0, shadowOf(manager).allNotifications.size)
+
+		// both the time step and the fill step pass, so an unchecked post would return
+		now += 5_000
+		progress.advance(2)
+		assertEquals(0, shadowOf(manager).allNotifications.size)
+	}
+
+	@Test
 	fun `the importer proxy re-targets the bar to the parsed rows and counts them`() {
 		barShownAfterDelay().use { progress ->
 			val item = StreamItem(DbItem(name = "w", description = "", type = ItemKind.WORD), null)

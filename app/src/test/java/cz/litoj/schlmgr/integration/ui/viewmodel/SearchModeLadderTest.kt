@@ -67,7 +67,7 @@ class SearchModeLadderTest {
 		vm.closeSearchField()
 
 		assertEquals(SearchUi.OFF, vm.state.value.searchUi)
-		assertEquals("nothing ran — no reload needed", 0, vm.contentReloads)
+		assertEquals("nothing ran, no reload needed", 0, vm.contentReloads)
 	}
 
 	@Test

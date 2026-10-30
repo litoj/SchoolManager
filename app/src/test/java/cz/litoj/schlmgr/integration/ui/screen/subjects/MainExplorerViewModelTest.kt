@@ -62,6 +62,7 @@ class MainExplorerViewModelTest {
 	@After
 	fun tearDown() {
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	private fun vm(): MainExplorerViewModel {
@@ -624,7 +625,7 @@ class MainExplorerViewModelTest {
 
 		model.openSearchField()
 
-		assertEquals("the run has no container to walk — the field never opened",
+		assertEquals("the run has no container to walk, the field never opened",
 			SearchUi.OFF, model.state.value.searchUi)
 	}
 
@@ -652,7 +653,7 @@ class MainExplorerViewModelTest {
 		assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
 		assertEquals(SearchUi.RESULTS, model.state.value.searchUi)
 
-		assertFalse("the selection belonged to the left list — none carries over",
+		assertFalse("the selection belonged to the left list, none carries over",
 			model.items().any { it.selected })
 	}
 

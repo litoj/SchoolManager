@@ -45,6 +45,7 @@ class WordAddMergeTest {
 	@After
 	fun tearDown() {
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	@Test
@@ -115,12 +116,25 @@ class WordAddMergeTest {
 	}
 
 	@Test
+	fun `a blank name refuses the word create`() {
+		val subject = ItemRepository.createSubject("s", null)
+
+		try {
+			ItemRepository.createWord(subject.id, "   ", null, listOf("trl" to null))
+			fail("a word with no name cannot be stored, since no export format round-trips it")
+		} catch (e: IllegalArgumentException) {
+			// expected, because a blank name is not a word
+		}
+		assertTrue(ItemRepository.children(subject.id).isEmpty())
+	}
+
+	@Test
 	fun `a word without translations is refused`() {
 		val subject = ItemRepository.createSubject("s", null)
 
 		try {
 			ItemRepository.createWord(subject.id, "lonely", null, emptyList())
-			fail("a translation-less word must not be created — make a note instead")
+			fail("a translation-less word must not be created, make a note instead")
 		} catch (e: IllegalArgumentException) {
 			// expected, because every word carries at least one translation
 		}

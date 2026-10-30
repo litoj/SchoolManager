@@ -46,6 +46,7 @@ class ImportStreamSaveTest {
 	@After
 	fun tearDown() {
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	private fun item(name: String, type: ItemKind, description: String = "") =
@@ -75,6 +76,25 @@ class ImportStreamSaveTest {
 		val own = kids.single { it.id != chapter.id }
 		assertFalse(ItemRepository.linkIsReference(holder.id, own.id))
 		assertEquals(listOf("w"), ItemRepository.children(own.id).map { it.name })
+	}
+
+	@Test
+	fun `a stream with an unnamed item is refused whole`() {
+		val chapter = StreamItem(item("chapter", ItemKind.CHAPTER), null)
+		val word = StreamItem(item("word", ItemKind.WORD), chapter)
+		val translation = StreamItem(item("translation", ItemKind.TRANSLATION), word)
+		try {
+			ItemRepository.import(object : DataImporter {
+				override val items = listOf(
+					chapter, StreamItem(item("  ", ItemKind.NOTE), chapter), word, translation)
+				override val references: List<StreamReference> = emptyList()
+			})
+			fail("an item with no name cannot be stored, since no export format round-trips it")
+		} catch (e: IllegalArgumentException) {
+			// expected, because a blank name is not an item
+		}
+		// the refusal runs before the save, so nothing landed
+		assertEquals(emptyList<String>(), ItemRepository.subjects().map { it.name })
 	}
 
 	@Test

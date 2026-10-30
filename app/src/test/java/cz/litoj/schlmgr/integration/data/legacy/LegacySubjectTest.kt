@@ -4,7 +4,7 @@ import androidx.documentfile.provider.DocumentFile
 import androidx.room.Room
 import cz.litoj.schlmgr.app.FileText
 import cz.litoj.schlmgr.app.GlobalDependencies
-import cz.litoj.schlmgr.app.Progress
+import cz.litoj.schlmgr.data.Progress
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.db.ItemKind
@@ -57,6 +57,7 @@ class LegacySubjectTest {
 	@After
 	fun tearDown() {
 		db.close()
+		ItemRepository.resetForTest()
 		root.deleteRecursively()
 	}
 

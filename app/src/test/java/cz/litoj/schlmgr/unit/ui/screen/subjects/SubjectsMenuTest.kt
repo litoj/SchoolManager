@@ -62,7 +62,7 @@ class SubjectsMenuTest {
 	@Test
 	fun `the root menu offers no creation and flip with a selection`() {
 		val plain = subjectsMenu(MainExplorerViewModel.MenuKind.ROOT, selecting = false)
-		assertTrue("the floating button owns creation — no menu row offers it",
+		assertTrue("the floating button owns creation, no menu row offers it",
 			plain.none { it.id == MenuId.NEW_SUBJECT })
 
 		val selecting = subjectsMenu(MainExplorerViewModel.MenuKind.ROOT, selecting = true)

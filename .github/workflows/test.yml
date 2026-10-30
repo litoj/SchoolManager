@@ -35,7 +35,8 @@ jobs:
       - name: Unit tests
         run: ./gradlew :app:testDebugUnitTest --stacktrace
 
-      # Release too: it is the only variant that sees the minified and shrunk build.
+      # Release too: lint checks each variant.
+      # This one carries the release build config, so it must not pass unchecked.
       - name: Lint
         run: ./gradlew :app:lintDebug :app:lintRelease --stacktrace
 

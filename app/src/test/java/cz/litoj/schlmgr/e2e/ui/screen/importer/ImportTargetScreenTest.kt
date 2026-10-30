@@ -59,6 +59,7 @@ class ImportTargetScreenTest {
 	@After
 	fun tearDown() {
 		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	/** The mover over a named document, with the rows of the seeded subject. */
