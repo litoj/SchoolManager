@@ -8,7 +8,6 @@ object MenuId {
 	const val NEW_CHAPTER = 2
 	const val NEW_WORD = 3
 	const val NEW_NOTE = 4
-	const val IMPORT_DIR = 5
 	const val IMPORT_FILE = 6
 	const val EXPORT_WORD = 7
 	const val EXPORT_JSON = 8

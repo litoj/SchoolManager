@@ -5,10 +5,7 @@ import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import cz.litoj.schlmgr.app.FileProgress
 import cz.litoj.schlmgr.app.FileText
-import cz.litoj.schlmgr.data.Progress
 import cz.litoj.schlmgr.app.Startup
-import cz.litoj.schlmgr.data.legacy.LegacyFileSource
-import cz.litoj.schlmgr.data.legacy.LegacyJsonLoader
 
 /**
  * The import/export document boundary.
@@ -49,35 +46,6 @@ object FileGateway {
 
 	fun titledProgress(ctx: Context, labelRes: Int, name: String): FileProgress =
 		FileProgress(ctx.getString(labelRes) + name)
-
-	/**
-	 * The texts come off [dir] through [FileText], so the bytes that flow report to [progress].
-	 */
-	fun loadLegacySubject(
-		dir: DocumentFile, progress: FileProgress,
-	): LegacyJsonLoader.LegacySubject? {
-		val name = dir.name ?: return null
-		return LegacyJsonLoader.parseSubjectDir(DocSource(dir, progress), name)
-	}
-
-	/**
-	 * A missing or empty file reads as nothing, and an unreadable one reports its own failure.
-	 */
-	private class DocSource(
-		private val dir: DocumentFile,
-		private val progress: Progress,
-	) : LegacyFileSource {
-		override fun read(relativePath: String): String? {
-			// findFile, never a creating lookup, since a missing file must not be born here
-			var file = dir
-			for (segment in relativePath.split('/')) {
-				if (segment.isEmpty()) continue
-				file = file.findFile(segment) ?: return null
-			}
-			if (file.isDirectory || file.length() == 0L) return null
-			return FileText.readText(file.uri, progress)
-		}
-	}
 
 	/**
 	 * - nothing counts the text.

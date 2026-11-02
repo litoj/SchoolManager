@@ -2,14 +2,11 @@ package cz.litoj.schlmgr.data.transfer
 
 import android.content.Context
 import android.net.Uri
-import androidx.documentfile.provider.DocumentFile
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.FileProgress
 import cz.litoj.schlmgr.app.FileText
 import cz.litoj.schlmgr.app.Startup
 import cz.litoj.schlmgr.data.json.HJsonImporter
-import cz.litoj.schlmgr.data.legacy.LegacyJsonLoader
-import cz.litoj.schlmgr.data.legacy.LegacySubjectImporter
 import cz.litoj.schlmgr.data.wordlist.WordListImporter
 import cz.litoj.schlmgr.data.DataImporter
 import cz.litoj.schlmgr.data.db.DbItem
@@ -48,14 +45,10 @@ abstract class FileWorker(
 			// pathologically nested input, a parse failure rather than a process crash
 			onParseFail(IllegalArgumentException("The file nests too deeply", e))
 		}
-		onSettled()
 	}
 
 	/** Read -> parse -> persist -> refresh/notify. Runs on the worker thread. */
 	protected abstract fun doRun()
-
-	/** Runs after the attempt, failure or not, for the root reload of the dir import. */
-	protected open fun onSettled() {}
 
 	protected open fun onParseFail(e: IllegalArgumentException) {
 		Startup.onParseFail(e.message ?: "")
@@ -181,60 +174,6 @@ class JsonTreeImport(
 	}
 
 	override fun failureName(): String = uri.toString()
-}
-
-/**
- * A subject-directory import from files, a one-time conversion with no link back to the folder.
- * - every file parses before anything is written.
- * - a non-subject directory reports the load failure, leaving nothing behind.
- * - the root reload runs past validation, even on a failed import.
- * - it never runs on a rejected pick.
- */
-class LegacyDirImport(
-	appContext: Context,
-	postToUi: (Runnable) -> Unit,
-	private val uri: Uri,
-	private val atRoot: () -> Boolean,
-	private val onRootReload: () -> Unit,
-) : FileWorker(appContext, postToUi, "Legacy dir import") {
-
-	private var attempted = false
-
-	private var dirName: String? = null
-
-	override fun doRun() {
-		val dir = DocumentFile.fromTreeUri(appContext, uri)
-		val name = dir?.name ?: uri.toString()
-		dirName = name
-		if (dir == null || !LegacyJsonLoader.isSubjectDir(dir)) {
-			Startup.onLoadFail(
-				IllegalArgumentException("Not an old-format subject directory"), name)
-			return
-		}
-		attempted = true
-		FileGateway.titledProgress(appContext, R.string.progress_import, name).use { progress ->
-			progress.bytes(LegacyJsonLoader.subjectSize(dir))
-			// the gateway reads the directory files as pure text, so the bytes report to the bar.
-			// - an unreadable file already reported itself through FileText.
-			// - returning quietly here keeps the one real failure report.
-			val subject = FileGateway.loadLegacySubject(dir, progress) ?: return
-			val result = persist(LegacySubjectImporter(subject), progress)
-			notifyImported(result)
-		}
-	}
-
-	override fun onSettled() {
-		if (attempted && atRoot()) post { onRootReload() }
-	}
-
-	// a directory read failure is no parse failure, so it reports as a load failure
-	override fun onParseFail(e: IllegalArgumentException) = onLoadFail(e)
-
-	override fun failureName(): String =
-		// the fallback re-queries the SAF, since the first query may be exactly
-		// what failed. Guarded, or the failure handler itself would crash the process
-		dirName ?: runCatching { DocumentFile.fromTreeUri(appContext, uri)?.name }.getOrNull()
-			?: uri.toString()
 }
 
 /**

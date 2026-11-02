@@ -71,9 +71,6 @@ fun SubjectsScreen(
 	val createWordFile = rememberLauncherForActivityResult(
 		ActivityResultContracts.CreateDocument("text/plain"),
 	) { uri -> if (uri != null) viewModel.onWordTargetPicked(uri) }
-	val importDirLauncher = rememberLauncherForActivityResult(
-		ActivityResultContracts.OpenDocumentTree(),
-	) { uri -> if (uri != null) viewModel.onDirPicked(uri) }
 	val importAnyFile = rememberLauncherForActivityResult(
 		ActivityResultContracts.OpenDocument(),
 	) { uri -> if (uri != null) viewModel.onAnyFilePicked(uri) }
@@ -113,8 +110,6 @@ fun SubjectsScreen(
 		viewModel.requests.collect { request ->
 			when (request) {
 				MainExplorerViewModel.Request.OpenTest -> onOpenTest()
-				MainExplorerViewModel.Request.PickImportDir ->
-					withProgressPermission { importDirLauncher.launch(null) }
 				MainExplorerViewModel.Request.PickImportFile ->
 					withProgressPermission { importFile() }
 				is MainExplorerViewModel.Request.PickWordExport ->

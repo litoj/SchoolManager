@@ -17,7 +17,6 @@
     <string name="data_name">Název</string>
     <string name="data_translate">Překlad</string>
     <string name="delete">Odstranit</string>
-    <string name="dir_import">Stará složka předmětu</string>
     <string name="done">Hotovo</string>
     <string name="edit">Upravit</string>
     <string name="exception_handler">"Při posledním chodu nastala neočekávaná chyba.
@@ -77,8 +76,6 @@
         \nIkona zrušení vpravo od překladu ho odstraní.</string>
     <string name="help_extra">Další užitečné funkce</string>
     <string name="help_extra_how">Tento program obsahuje pár dalších zajímavých funkcí, zde je jejich přehled.</string>
-    <string name="help_extra_import_mch">Import starých předmětů</string>
-    <string name="help_extra_import_mch_how">Importuje složku s předmětem staré verze aplikace.\nPředmět se stejným názvem se neimportuje dvakrát.</string>
     <string name="help_extra_naming">Způsoby pojmenovávání</string>
     <string name="help_extra_naming_how">Tato aplikace umožňuje pojmenovávat slovíčka a další položky specifickým způsobem, díky kterému máte při testu více možností, jak odpovědět.
         \nK dosažení se používá těchto znaků: /()
@@ -182,7 +179,6 @@
     <string name="more_import">Import</string>
     <string name="import_here">Importovat sem</string>
     <string name="import_file_title">Import %1$s</string>
-    <string name="more_import_file">Soubor</string>
     <string name="more_export_json">Soubor JSON (včetně úspěšnosti)</string>
     <string name="more_flip">Obrátit slova a překlady</string>
     <string name="more_go_to">Přejít na umístění</string>

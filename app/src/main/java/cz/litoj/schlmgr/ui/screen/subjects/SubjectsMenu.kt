@@ -5,7 +5,7 @@ import cz.litoj.schlmgr.ui.shell.MenuEntry
 
 /**
  * The menu kind for the shown content.
- * - the search list takes the search menu, and the depth picks the browse kind.
+ * - both browse kinds share the menu, the FAB palette tells them apart.
  */
 fun menuKindFor(searching: Boolean, pathSize: Int): MainExplorerViewModel.MenuKind = when {
 	searching -> MainExplorerViewModel.MenuKind.SEARCH
@@ -18,9 +18,8 @@ fun subjectsMenu(
 	selecting: Boolean,
 ): List<MenuEntry> {
 	val menu = when (kind) {
-		MainExplorerViewModel.MenuKind.ROOT -> rootMenu
-		MainExplorerViewModel.MenuKind.CONTAINER -> containerMenu
 		MainExplorerViewModel.MenuKind.SEARCH -> searchMenu()
+		else -> browseMenu
 	}
 	return menu.filter { it.always || it.selectionAction == selecting }
 }
@@ -41,22 +40,8 @@ private val exportMenu = listOf(
 	MenuEntry(MenuId.EXPORT_JSON, R.string.more_export_json),
 )
 
-private val importMenu = listOf(
-	MenuEntry(MenuId.IMPORT_DIR, R.string.dir_import),
-	MenuEntry(MenuId.IMPORT_FILE, R.string.more_import_file),
-)
-
-private val rootMenu = listOf(
+private val browseMenu = listOf(
 	MenuEntry(0, R.string.sort, icon = R.drawable.ic_sort_black, children = sortMenu),
-	MenuEntry(0, R.string.more_import, icon = R.drawable.ic_import_black, children = importMenu),
-	MenuEntry(0, R.string.more_export, icon = R.drawable.ic_export_black, children = exportMenu, selectionAction = true),
-	MenuEntry(MenuId.FLIP, R.string.more_flip, icon = R.drawable.ic_flip_black, selectionAction = true),
-	MenuEntry(MenuId.REFERENCE, R.string.more_reference, icon = R.drawable.ic_reference_black, selectionAction = true),
-)
-
-private val containerMenu = listOf(
-	MenuEntry(0, R.string.sort, icon = R.drawable.ic_sort_black, children = sortMenu),
-	// single import needs no submenu.
 	MenuEntry(MenuId.IMPORT_FILE, R.string.more_import, icon = R.drawable.ic_import_black),
 	MenuEntry(0, R.string.more_export, icon = R.drawable.ic_export_black, children = exportMenu, selectionAction = true),
 	MenuEntry(MenuId.FLIP, R.string.more_flip, icon = R.drawable.ic_flip_black, selectionAction = true),

@@ -45,9 +45,8 @@ Its DB part is the model for this project.
 
 ### Import
 
-- One import button, folders and text files.
+- One import button, text files.
 - Keep the word text format.
-- Keep the old loader separate for legacy JSON.
 - Shared files open the import mover.
 - The explorer picks the import target.
 - Done opens the main screen at the path.
@@ -173,6 +172,10 @@ Its DB part is the model for this project.
 - No active task.
 - Open items live in `DEVELOPMENT.md`.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
+- 2026-11-02: legacy subject folder import dropped with the whole `data.legacy`
+  package. The import menu is one plain entry everywhere, the root and the
+  container share one browse menu. The perf suites seed NJ from `nj.hjson`.
+  666 tests.
 - 2026-11-02: test setup explains itself on its screen, the help page keeps
   only the extras. Literal examples render as code blocks. 675 tests.
 - 2026-11-02: picker starts at the explorer position, search field stays

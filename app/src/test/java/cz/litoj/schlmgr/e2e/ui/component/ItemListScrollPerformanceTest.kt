@@ -18,9 +18,7 @@ import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
-import cz.litoj.schlmgr.data.legacy.LegacyFileSource
-import cz.litoj.schlmgr.data.legacy.LegacyJsonLoader
-import cz.litoj.schlmgr.data.legacy.LegacySubjectImporter
+import cz.litoj.schlmgr.data.json.HJsonImporter
 import cz.litoj.schlmgr.ui.component.ItemList
 import cz.litoj.schlmgr.ui.component.ItemListCallbacks
 import cz.litoj.schlmgr.ui.search.SearchEngine
@@ -55,7 +53,7 @@ import org.robolectric.annotation.Config
  * - the wall time of a frame is composition, layout and draw of the rows.
  * - the harness cost per frame is the same for both lists.
  * - the difference between passes is thus scroll work in frames.
- * - the NJ pass loads the legacy fixture and runs the production search.
+ * - the NJ pass loads the real subject fixture and runs the production search.
  * - matched words carry a variant slash.
  * - the height pass builds a synthetic sample of all row shapes.
  * - that sample is half one-line, half multi-line and interleaved.
@@ -119,20 +117,16 @@ class ItemListScrollPerformanceTest {
 
 	/** The NJ words whose names carry a variant slash, from the production search. */
 	private fun njVariantRows(): List<ItemUiModel> {
-		val dir = File(javaClass.getResource("/perf/legacy/NJ")!!.toURI())
-		val subject = LegacyJsonLoader.parseSubjectDir(
-			LegacyFileSource { rel -> File(dir, rel).takeIf { it.isFile && it.length() > 0 }?.readText() },
-			"NJ",
-		) ?: throw IllegalStateException("missing legacy NJ fixture")
-		ItemRepository.import(LegacySubjectImporter(subject))
-		val nj = ItemRepository.subjects().single()
+		val nj = File(javaClass.getResource("/perf/nj.hjson")!!.toURI())
+		ItemRepository.import(HJsonImporter(nj.readText()))
+		val subject = ItemRepository.subjects().single()
 		val index = SearchIndex(
-			ItemRepository.subgraph(nj.id),
-			ItemRepository.subgraphLinks(nj.id),
-			ItemRepository.subgraphChildLinks(nj.id),
+			ItemRepository.subgraph(subject.id),
+			ItemRepository.subgraphLinks(subject.id),
+			ItemRepository.subgraphChildLinks(subject.id),
 		)
 		val rows = ArrayList<ItemRow>()
-		SearchEngine("\\W/").search(index, listOf(nj)) { item, hitPath ->
+		SearchEngine("\\W/").search(index, listOf(subject)) { item, hitPath ->
 			rows.add(ItemRow.ofSearchHit(item, hitPath, rows.size + 1, index.linksOf(item.id)))
 		}
 		return rows.map { it.toUi() }

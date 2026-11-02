@@ -12,7 +12,6 @@ import cz.litoj.schlmgr.data.json.HJsonExporter
 import cz.litoj.schlmgr.data.transfer.ExportFormat
 import cz.litoj.schlmgr.data.transfer.ExportPipeline
 import cz.litoj.schlmgr.data.transfer.ImporterFactory
-import cz.litoj.schlmgr.data.transfer.LegacyDirImport
 import cz.litoj.schlmgr.data.wordlist.WordListExporter
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
@@ -328,20 +327,5 @@ class FileWorkerTest {
 
 		assertEquals("", text)
 		assertFalse(started)
-	}
-
-	@Test
-	fun `a rejected directory pick imports nothing and reloads nothing`() {
-		var rootReloads = 0
-		// a tree uri for which the SAF query of Robolectric answers no children,
-		// not a subject directory
-		LegacyDirImport(
-			GlobalDependencies.appContext, { it.run() },
-			Uri.parse("content://schlmgr.test/tree/1"),
-			{ true },
-		) { rootReloads++ }.start().join()
-
-		assertEquals(0, ItemRepository.subjects().size)
-		assertEquals(0, rootReloads)
 	}
 }

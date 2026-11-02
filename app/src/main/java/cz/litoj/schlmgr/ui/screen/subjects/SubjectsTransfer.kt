@@ -7,7 +7,6 @@ import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.transfer.ExportFormat
 import cz.litoj.schlmgr.data.transfer.ExportPipeline
 import cz.litoj.schlmgr.data.transfer.ImporterFactory
-import cz.litoj.schlmgr.data.transfer.LegacyDirImport
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel.Request
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import kotlinx.coroutines.CoroutineDispatcher
@@ -117,14 +116,6 @@ internal class SubjectsTransfer(
 	fun onJsonTargetPicked(uri: Uri) {
 		val selected = exportRows()
 		ExportPipeline(host.ctx, host::postToUi, uri, ExportFormat.JSON, { selected }, host::clearSelection).start()
-	}
-
-	fun onDirPicked(uri: Uri) {
-		val atRoot = host.path.isEmpty()
-		LegacyDirImport(host.ctx, host::postToUi, uri, { atRoot }) {
-			host.requestScrollToBottom()
-			host.setContent(null)
-		}.start()
 	}
 }
 

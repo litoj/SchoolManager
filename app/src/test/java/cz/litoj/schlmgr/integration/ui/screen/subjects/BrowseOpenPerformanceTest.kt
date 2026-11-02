@@ -4,9 +4,7 @@ import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
-import cz.litoj.schlmgr.data.legacy.LegacyFileSource
-import cz.litoj.schlmgr.data.legacy.LegacyJsonLoader
-import cz.litoj.schlmgr.data.legacy.LegacySubjectImporter
+import cz.litoj.schlmgr.data.json.HJsonImporter
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
 import cz.litoj.schlmgr.support.setRowOptions
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
@@ -69,12 +67,8 @@ class BrowseOpenPerformanceTest {
 			.build()
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
-		val dir = File(javaClass.getResource("/perf/legacy/NJ")!!.toURI())
-		val subject = LegacyJsonLoader.parseSubjectDir(
-			LegacyFileSource { rel -> File(dir, rel).takeIf { it.isFile && it.length() > 0 }?.readText() },
-			"NJ",
-		) ?: throw IllegalStateException("missing legacy NJ fixture")
-		ItemRepository.import(LegacySubjectImporter(subject))
+		val nj = File(javaClass.getResource("/perf/nj.hjson")!!.toURI())
+		ItemRepository.import(HJsonImporter(nj.readText()))
 		// the open path renders flipped words, according to the setting of the user
 		setRowOptions(defFlip = true)
 	}

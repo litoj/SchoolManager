@@ -9,9 +9,6 @@ import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.db.ROOT_ID
 import cz.litoj.schlmgr.data.json.HJsonExporter
 import cz.litoj.schlmgr.data.json.HJsonImporter
-import cz.litoj.schlmgr.data.legacy.LegacyFileSource
-import cz.litoj.schlmgr.data.legacy.LegacyJsonLoader
-import cz.litoj.schlmgr.data.legacy.LegacySubjectImporter
 import cz.litoj.schlmgr.data.wordlist.WordListExporter
 import cz.litoj.schlmgr.data.wordlist.WordListImporter
 import java.io.File
@@ -219,12 +216,8 @@ class ExportImportMatrixTest {
 	fun `the root export of the real NJ data round trips exactly`() {
 		// the heaviest real subject with 204 chapters, shared words and a reference,
 		// plus a second subject referencing into it
-		val dir = File(javaClass.getResource("/perf/legacy/NJ")!!.toURI())
-		val subject = LegacyJsonLoader.parseSubjectDir(
-			LegacyFileSource { rel -> File(dir, rel).takeIf { it.isFile && it.length() > 0 }?.readText() },
-			"NJ",
-		) ?: throw IllegalStateException("missing legacy fixture")
-		ItemRepository.import(LegacySubjectImporter(subject))
+		val nj = File(javaClass.getResource("/perf/nj.hjson")!!.toURI())
+		ItemRepository.import(HJsonImporter(nj.readText()))
 		val other = ItemRepository.createSubject("Other", null)
 		val holder = ItemRepository.createChapter(other.id, "holder", null)
 		ItemRepository.reference(

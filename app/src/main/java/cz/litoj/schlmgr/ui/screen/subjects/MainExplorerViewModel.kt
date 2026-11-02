@@ -44,8 +44,6 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 	sealed interface Request {
 		data object OpenTest : Request
 
-		data object PickImportDir : Request
-
 		data object PickImportFile : Request
 
 		data class PickWordExport(val fileName: String) : Request
@@ -207,7 +205,6 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		MenuId.NEW_CHAPTER -> newAction { newChapter() }
 		MenuId.NEW_WORD -> newAction { newWord() }
 		MenuId.NEW_NOTE -> newAction { newNote() }
-		MenuId.IMPORT_DIR -> { emitRequest(Request.PickImportDir); true }
 		MenuId.IMPORT_FILE -> { emitRequest(Request.PickImportFile); true }
 		MenuId.EXPORT_WORD -> { exportWordFile(); true }
 		MenuId.EXPORT_JSON -> { exportJsonFile(); true }
@@ -418,6 +415,4 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 	fun onWordTargetPicked(uri: Uri) = transfer.onWordTargetPicked(uri)
 
 	fun onJsonTargetPicked(uri: Uri) = transfer.onJsonTargetPicked(uri)
-
-	fun onDirPicked(uri: Uri) = transfer.onDirPicked(uri)
 }

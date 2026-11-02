@@ -5,9 +5,6 @@ import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.db.ROOT_ID
 import cz.litoj.schlmgr.data.json.HJsonImporter
-import cz.litoj.schlmgr.data.legacy.LegacyFileSource
-import cz.litoj.schlmgr.data.legacy.LegacyJsonLoader
-import cz.litoj.schlmgr.data.legacy.LegacySubjectImporter
 import cz.litoj.schlmgr.data.wordlist.WordListImporter
 import java.io.File
 import org.junit.After
@@ -59,15 +56,6 @@ class ImportPerformanceTest {
 	private fun fixture(path: String): File =
 		File(javaClass.getResource(path)!!.toURI())
 
-	private fun legacyImporter(): LegacySubjectImporter {
-		val dir = fixture("/perf/legacy/NJ")
-		val subject = LegacyJsonLoader.parseSubjectDir(
-			LegacyFileSource { rel -> File(dir, rel).takeIf { it.isFile && it.length() > 0 }?.readText() },
-			"NJ",
-		) ?: throw IllegalStateException("missing legacy fixture")
-		return LegacySubjectImporter(subject)
-	}
-
 	/** Prints the wall-clock number, since only the row counts are asserted. */
 	private fun <T> measured(name: String, block: () -> T): T {
 		val start = System.nanoTime()
@@ -81,15 +69,6 @@ class ImportPerformanceTest {
 			cursor.moveToFirst()
 			cursor.getInt(0)
 		}
-
-	@Test
-	fun `the directory import of NJ lands its rows`() {
-		val importer = legacyImporter()
-		val result = measured("legacy-dir") { ItemRepository.import(importer) }
-		assertEquals(njWords, result.words)
-		assertEquals(njChapters, result.chapters)
-		assertEquals(njRows, rowCount())
-	}
 
 	@Test
 	fun `the tree JSON import of NJ lands its rows`() {
@@ -128,10 +107,11 @@ class ImportPerformanceTest {
 
 	@Test
 	fun `re-importing NJ merges and adds nothing`() {
-		ItemRepository.import(legacyImporter())
-		val importer = legacyImporter()
+		ItemRepository.import(HJsonImporter(fixture("/perf/nj.hjson").readText()))
 		// the merge path, where every name lookup hits an existing row and nothing doubles
-		val result = measured("legacy-dir-reimport") { ItemRepository.import(importer) }
+		val result = measured("json-tree-reimport") {
+			ItemRepository.import(HJsonImporter(fixture("/perf/nj.hjson").readText()))
+		}
 		assertEquals(njWords, result.words)
 		assertEquals(njChapters, result.chapters)
 		assertEquals(njRows, rowCount())

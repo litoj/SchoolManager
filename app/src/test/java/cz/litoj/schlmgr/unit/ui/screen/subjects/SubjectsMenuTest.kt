@@ -101,25 +101,15 @@ class SubjectsMenuTest {
 	}
 
 	@Test
-	fun `the root menu groups both imports under one submenu`() {
-		val plain = subjectsMenu(MainExplorerViewModel.MenuKind.ROOT, selecting = false)
-		// no import leaf sits at the top level of the root, because both hide in the submenu
-		assertTrue(plain.none { it.id == MenuId.IMPORT_DIR || it.id == MenuId.IMPORT_FILE })
-		val imports = plain.single { submenu -> submenu.children.any { it.id == MenuId.IMPORT_DIR } }
-		assertEquals(listOf(MenuId.IMPORT_DIR, MenuId.IMPORT_FILE), imports.children.map { it.id })
-		// the submenu is not a selection action, so a selection drops it with the rest
-		assertTrue(subjectsMenu(MainExplorerViewModel.MenuKind.ROOT, selecting = true)
-			.none { it.children == imports.children })
-	}
-
-	@Test
-	fun `the container menu offers the plain file import only`() {
-		val plain = subjectsMenu(MainExplorerViewModel.MenuKind.CONTAINER, selecting = false)
-		// the only import a container offers is the file import, as a plain row,
-		// so no submenu tells it apart
-		assertEquals(1, plain.count { it.id == MenuId.IMPORT_FILE || it.id == MenuId.IMPORT_DIR })
-		assertTrue(plain.any { it.id == MenuId.IMPORT_FILE && it.children.isEmpty() })
-		assertTrue("a container offers no folder import", plain.none { it.id == MenuId.IMPORT_DIR })
+	fun `both browse menus offer one plain import row`() {
+		for (kind in listOf(MainExplorerViewModel.MenuKind.ROOT, MainExplorerViewModel.MenuKind.CONTAINER)) {
+			val plain = subjectsMenu(kind, selecting = false)
+			// a single import needs no submenu, so the row sits plain in every depth
+			assertTrue("$kind offers the import row",
+				plain.any { it.id == MenuId.IMPORT_FILE && it.children.isEmpty() })
+			assertEquals("$kind offers exactly one import row",
+				1, plain.count { it.id == MenuId.IMPORT_FILE })
+		}
 	}
 
 	@Test

@@ -102,11 +102,6 @@ private val sections = listOf(
 				R.string.help_extra_words_export, R.string.help_extra_words_export_how,
 				paths = listOf(R.array.help_path_export),
 			),
-			HelpSection(
-				R.string.help_extra_import_mch, R.string.help_extra_import_mch_how,
-				paths = listOf(R.array.help_path_import_dir),
-				icon = R.drawable.ic_import_help,
-			),
 		),
 	),
 )

@@ -11,7 +11,7 @@
 | `ItemRepository` | all data access and invariants | UI state |
 | `data.db` | schema, DAOs, graph operations, counters | UI, codecs |
 | `data.transfer` | SAF picking, import and export workers | codec formats |
-| `data.json`, `data.wordlist`, `data.legacy` | pure parse and render of item streams | DB, SAF, UI |
+| `data.json`, `data.wordlist` | pure parse and render of item streams | DB, SAF, UI |
 | `testing` | test run, grading, selection | persistence |
 
 - View models emit `Request` and `UiNotice`. The shell resolves the strings.
