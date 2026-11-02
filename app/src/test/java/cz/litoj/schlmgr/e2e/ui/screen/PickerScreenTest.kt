@@ -37,6 +37,7 @@ import org.robolectric.annotation.Config
  * - the select strip shows only while rows are selected.
  * - the corner button is the select-all of the picker, always present.
  * - a tap while selecting toggles the row, no click-through like the explorer.
+ * - the heading names the task at every level, the crumbs name the location.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -132,6 +133,20 @@ class PickerScreenTest {
 			(cancel.left + cancel.right) / 2 < half)
 		assertTrue("select sits in the right half: $select",
 			(select.left + select.right) / 2 > half)
+	}
+
+	@Test
+	fun `the heading stays inside a container and the crumb shows the location`() {
+		val model = PickerViewModel(Dispatchers.Unconfined)
+		rule.setContent { PickerScreen(model, {}) }
+		rule.waitForIdle()
+		rule.onNodeWithText(text(R.string.test_add)).assertExists()
+
+		rule.onNodeWithText("A").performClick()
+		rule.waitForIdle()
+
+		rule.onNodeWithText(text(R.string.test_add)).assertExists()
+		rule.onNodeWithText("A").assertExists()
 	}
 
 	@Test

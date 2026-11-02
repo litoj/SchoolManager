@@ -34,8 +34,6 @@ import cz.litoj.schlmgr.ui.viewmodel.SearchUi
 @Composable
 fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 	val state by viewModel.state.collectAsStateWithLifecycle()
-	// the toolbar title is derived: the crumb of the open container, the picker label at the root
-	val title = state.breadcrumbs.lastOrNull() ?: stringResource(R.string.test_add)
 	val query by viewModel.query.collectAsStateWithLifecycle()
 	// chrome derives from the one search mode, see [SearchUi]
 	// the field stays through the results, since the query marks what the list shows
@@ -60,7 +58,7 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 				Modifier.weight(1f),
 				onHelp = { InfoPopup(R.string.help_search_types, R.string.help_search_types_how) },
 			)
-			else TopBarTitle(title)
+			else TopBarTitle(stringResource(R.string.test_add))
 			TopBarIconButton(
 				icon = R.drawable.ic_search,
 				visible = !fieldOpen,
