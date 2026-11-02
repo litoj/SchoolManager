@@ -205,6 +205,11 @@ abstract class ExplorerViewModel<R>(
 
 	fun closeSearchField() = searchFlow.closeField()
 
+	fun dismissSearch() = searchFlow.dismissField()
+
+	/** The nav back out of a search: it ends and returns to the plain container view. */
+	fun cancelSearch() = searchFlow.cancel()
+
 	fun onQueryChange(text: String) = searchFlow.onTextChange(text)
 
 	fun onQuerySubmit(text: String) = searchFlow.onSubmit(text)
@@ -281,12 +286,13 @@ abstract class ExplorerViewModel<R>(
 			return BackOutcome.HANDLED
 		}
 		when (state.value.searchUi) {
+			// the drop rule applies: a written query keeps the field with its results
 			SearchUi.TYPING -> {
-				closeSearchField()
+				dismissSearch()
 				return BackOutcome.HANDLED
 			}
 			SearchUi.RESULTS -> {
-				endSearch()
+				cancelSearch()
 				return BackOutcome.HANDLED
 			}
 			SearchUi.OFF -> {}

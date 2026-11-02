@@ -20,11 +20,13 @@ class SearchInputPolicyTest {
 		var superseded = 0
 		var opened = 0
 		var closed = 0
+		var idled = 0
 		override fun runQuery(text: String) { run.add(text) }
 		override fun clearQuery() { cleared++ }
 		override fun supersedeRun() { superseded++ }
 		override fun openField() { opened++ }
 		override fun closeField() { closed++ }
+		override fun idleField() { idled++ }
 	}
 
 	@Test
@@ -126,5 +128,42 @@ class SearchInputPolicyTest {
 		input.close()
 		assertEquals("the close cancels the pending run", 0, host.run.size)
 		assertTrue(input.query.value == "abc")
+	}
+
+	@Test
+	fun `a keyboard drop with an empty query closes the field`() = runTest {
+		val host = RecordingHost()
+		val input = SearchInput(CoroutineScope(UnconfinedTestDispatcher(testScheduler)), host)
+
+		input.open()
+		input.dismiss()
+
+		assertEquals(1, host.closed)
+		assertEquals(0, host.idled)
+	}
+
+	@Test
+	fun `a keyboard drop with a written query idles the field`() = runTest {
+		val host = RecordingHost()
+		val input = SearchInput(CoroutineScope(UnconfinedTestDispatcher(testScheduler)), host)
+
+		input.onTextChange("ab")
+		input.dismiss()
+
+		assertEquals("the written query keeps the field", 1, host.idled)
+		assertEquals(0, host.closed)
+	}
+
+	@Test
+	fun `a cancel resets the query`() = runTest {
+		val host = RecordingHost()
+		val input = SearchInput(CoroutineScope(UnconfinedTestDispatcher(testScheduler)), host)
+
+		input.onTextChange("ab")
+		input.clear()
+		testScheduler.advanceUntilIdle()
+
+		assertTrue(input.query.value.isEmpty())
+		assertEquals("the cleared query never runs", 0, host.run.size)
 	}
 }

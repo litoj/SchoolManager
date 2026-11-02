@@ -37,7 +37,8 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 	val title = state.breadcrumbs.lastOrNull() ?: stringResource(R.string.test_add)
 	val query by viewModel.query.collectAsStateWithLifecycle()
 	// chrome derives from the one search mode, see [SearchUi]
-	val fieldOpen = state.searchUi == SearchUi.TYPING
+	// the field stays through the results, since the query marks what the list shows
+	val fieldOpen = state.searchUi != SearchUi.OFF
 	val searchVisible = state.breadcrumbs.isNotEmpty()
 
 	// the one navigation step of the picker, where confirm or cancel closes it
@@ -51,8 +52,9 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 
 	Column(Modifier.fillMaxSize()) {
 		TopBar {
-			TopBarNav(up = true, onNavigate = onExit)
-			if (fieldOpen) TopBarSearchField(query, viewModel::onQueryChange, viewModel::onQuerySubmit, viewModel::closeSearchField, Modifier.weight(1f))
+			// the arrow cancels a search first, so leaving the picker needs a second press
+			TopBarNav(up = true, onNavigate = if (fieldOpen) viewModel::cancelSearch else onExit)
+			if (fieldOpen) TopBarSearchField(query, viewModel::onQueryChange, viewModel::onQuerySubmit, viewModel::dismissSearch, Modifier.weight(1f))
 			else TopBarTitle(title)
 			TopBarIconButton(
 				icon = R.drawable.ic_search,

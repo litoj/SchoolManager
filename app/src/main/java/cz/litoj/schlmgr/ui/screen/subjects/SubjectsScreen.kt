@@ -62,7 +62,8 @@ fun SubjectsScreen(
 	val listState by viewModel.listState.collectAsStateWithLifecycle()
 	val selecting = listState.selectionActive
 	// the mode decides the chrome, see [SearchUi].
-	val fieldOpen = state.searchUi == SearchUi.TYPING
+	// the field stays through the results, since the query marks what the list shows
+	val fieldOpen = state.searchUi != SearchUi.OFF
 	val searchVisible = state.breadcrumbs.isNotEmpty() && !viewModel.pasteArmed && !fieldOpen
 	val menuKind = menuKindFor(listState.variant == ExplorerRowVariant.Search, state.breadcrumbs.size)
 
@@ -172,8 +173,8 @@ fun SubjectsScreen(
 
 	Column(Modifier.fillMaxSize()) {
 		TopBar {
-			TopBarNav(onNavigate = openDrawer)
-			if (fieldOpen) TopBarSearchField(query, viewModel::onQueryChange, viewModel::onQuerySubmit, viewModel::closeSearchField, Modifier.weight(1f))
+			TopBarNav(up = fieldOpen, onNavigate = if (fieldOpen) viewModel::cancelSearch else openDrawer)
+			if (fieldOpen) TopBarSearchField(query, viewModel::onQueryChange, viewModel::onQuerySubmit, viewModel::dismissSearch, Modifier.weight(1f))
 			else TopBarTitle(title)
 			TopBarIconButton(
 				icon = if (selecting) R.drawable.ic_check_all else R.drawable.ic_search,

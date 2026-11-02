@@ -146,6 +146,17 @@ Its DB part is the model for this project.
 - A screen explains itself in one short text, the help page holds only the necessary extras.
 - Literal examples render as monospace code blocks, apart from the explanation text.
 
+### Test
+
+- The picker starts at the explorer's position and never moves it.
+
+### Search
+
+- The field stays while it holds text, with or without the keyboard.
+- A keyboard drop with an empty query closes the field.
+- The nav back arrow cancels the search: the results leave and the query resets.
+- System back follows the same rule as the arrow.
+
 ### CI
 
 - The tag CI waits for a green Test run of a main commit.
@@ -162,6 +173,9 @@ Its DB part is the model for this project.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
 - 2026-11-02: test setup explains itself on its screen, the help page keeps
   only the extras. Literal examples render as code blocks. 675 tests.
+- 2026-11-02: picker starts at the explorer position, search field stays
+  through results with a cancel arrow, test help rewritten. 674 tests.
+  Help chevron paths remain open.
 - 2026-10-30: help search, three header levels and folded one-line topics.
   The filter is `HelpFilter` with a unit pin, 668 tests.
 - 2026-10-29: the testing standard lives in `DEVELOPMENT.md` §8, commits

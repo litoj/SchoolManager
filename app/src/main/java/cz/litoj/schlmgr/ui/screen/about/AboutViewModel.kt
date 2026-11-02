@@ -37,6 +37,11 @@ class AboutViewModel : ViewModel() {
 		query = text
 	}
 
+	/** The keyboard drop: an empty query closes the field, a written one keeps it. */
+	fun dismissSearch() {
+		if (query.isBlank()) closeSearchField()
+	}
+
 	var version by mutableStateOf<String?>(null)
 		private set
 

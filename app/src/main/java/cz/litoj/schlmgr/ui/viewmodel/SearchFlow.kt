@@ -196,10 +196,20 @@ internal class SearchFlow(
 
 		override fun supersedeRun() = run.abort()
 		override fun openField() = host.setSearchUi(SearchUi.TYPING)
+		override fun idleField() = host.setSearchUi(SearchUi.RESULTS)
 
 		override fun closeField() =
 			host.setSearchUi(
 				if (host.searchUi() == SearchUi.RESULTS || (host.isSearching() && history.onSearchHop()))
 					SearchUi.RESULTS else SearchUi.OFF)
+	}
+
+	/** The keyboard drop, where the query decides whether the field stays. */
+	fun dismissField() = searchInput.dismiss()
+
+	/** The nav back out of the search: the results leave and the query resets. */
+	fun cancel() {
+		searchInput.clear()
+		endSearch()
 	}
 }

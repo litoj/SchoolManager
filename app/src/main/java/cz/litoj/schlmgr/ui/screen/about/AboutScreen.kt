@@ -1,5 +1,6 @@
 package cz.litoj.schlmgr.ui.screen.about
 
+import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
@@ -108,16 +109,18 @@ private val sections = listOf(
 fun AboutScreen(viewModel: AboutViewModel, openDrawer: () -> Unit) {
 	val context = LocalContext.current
 	LaunchedEffect(viewModel) { viewModel.loadVersion(context) }
+	// the search owns the back press, so the screen survives a cancel
+	BackHandler(viewModel.searchOpen) { viewModel.closeSearchField() }
 	Column(Modifier.fillMaxSize()) {
 		TopBar {
-			TopBarNav(onNavigate = openDrawer)
+			TopBarNav(up = viewModel.searchOpen, onNavigate = if (viewModel.searchOpen) viewModel::closeSearchField else openDrawer)
 			if (viewModel.searchOpen) {
 				TopBarSearchField(
 					viewModel.query,
 					viewModel::onQueryChange,
 					// the tree filters live, so the submit only drops the keyboard
 					{},
-					viewModel::closeSearchField,
+					viewModel::dismissSearch,
 					Modifier.weight(1f),
 					hint = stringResource(R.string.help_search_hint),
 				)

@@ -26,6 +26,9 @@ internal class SearchInput(
 		fun openField()
 
 		fun closeField()
+
+		/** The field stays open with its results, only the keyboard left. */
+		fun idleField()
 	}
 
 	val query = MutableStateFlow("")
@@ -44,6 +47,22 @@ internal class SearchInput(
 		debounceJob?.cancel()
 		debounceJob = null
 		host.closeField()
+	}
+
+	/**
+	 * A dropped keyboard: an empty query leaves the field, a written one keeps it.
+	 * - the pending debounce stays, so the written query still runs.
+	 */
+	fun dismiss() {
+		if (query.value.isBlank()) close() else host.idleField()
+	}
+
+	/** Resets the query, so the next search starts empty. */
+	fun clear() {
+		debounceJob?.cancel()
+		debounceJob = null
+		runningQuery = null
+		query.value = ""
 	}
 
 	/**
