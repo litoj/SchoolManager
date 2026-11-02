@@ -64,6 +64,12 @@ class SubjectsScreenNavTest {
 	private fun text(res: Int, vararg args: Any): String =
 		RuntimeEnvironment.getApplication().getString(res, *args)
 
+	// the chapter strip of the seed: two untested words
+	private fun countLine(): String {
+		val res = RuntimeEnvironment.getApplication().resources
+		return res.getQuantityString(R.plurals.stat_words, 2, 2) + ", " + text(R.string.data_untested)
+	}
+
 	private fun openChapter() {
 		rule.onNodeWithText("A").performClick()
 		rule.waitForIdle()
@@ -114,7 +120,7 @@ class SubjectsScreenNavTest {
 
 		// the armed status takes the top line from the count
 		rule.onNodeWithText(text(R.string.paste_status_move, 1)).assertExists()
-		rule.onNodeWithText(text(R.string.data_children_untested, 2, "")).assertDoesNotExist()
+		rule.onNodeWithText(countLine()).assertDoesNotExist()
 
 		// the strip gives each action its half
 		val cancel = rule.onNodeWithText(text(R.string.objects_cancel)).getBoundsInRoot()
@@ -131,6 +137,6 @@ class SubjectsScreenNavTest {
 		rule.waitForIdle()
 		rule.runOnIdle { assertFalse(model.pasteArmed) }
 		rule.onNodeWithText(text(R.string.paste_status_move, 1)).assertDoesNotExist()
-		rule.onNodeWithText(text(R.string.data_children_untested, 2, "")).assertExists()
+		rule.onNodeWithText(countLine()).assertExists()
 	}
 }

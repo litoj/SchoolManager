@@ -26,11 +26,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.viewmodel.InfoBar
 
 private val HeaderGreen @Composable get() = ExplorerColors.header
@@ -118,6 +120,19 @@ fun CrumbChain(
 	}
 }
 
+/** A chapter never holds translation rows, so these kinds cover a browsed list. */
+private val KindPlurals = listOf(
+	ItemKind.WORD to R.plurals.stat_words,
+	ItemKind.CHAPTER to R.plurals.stat_chapters_count,
+	ItemKind.NOTE to R.plurals.stat_notes,
+)
+
+@Composable
+private fun kindCounts(kinds: Map<ItemKind, Int>): List<String> =
+	KindPlurals.mapNotNull { (kind, plural) ->
+		kinds[kind]?.let { pluralStringResource(plural, it, it) }
+	}
+
 /**
  * The info strip, which reads the laid-out line count so a wrapped description
  * expands too. Counting '\n' would stick it at the 2-line height, hiding the rest.
@@ -134,13 +149,13 @@ private fun InfoStrip(
 	// formatting belongs here.
 	val text = status ?: when (info) {
 		null -> ""
-		is InfoBar.Root -> stringResource(R.string.data_child_count, info.count)
+		is InfoBar.Root -> pluralStringResource(R.plurals.stat_subjects, info.count, info.count)
 		is InfoBar.Children -> {
 			val suffix = if (info.description.isEmpty()) "" else "\n" + info.description
-			// -1 marks an untested container, so no percent sign follows.
-			if (info.ratio < 0)
-				stringResource(R.string.data_children_untested, info.count, suffix)
-			else stringResource(R.string.data_children_sf, info.count, info.ratio, "%$suffix")
+			// -1 marks an untested container.
+			val rate = if (info.ratio < 0) stringResource(R.string.data_untested)
+			else stringResource(R.string.data_rate, info.ratio)
+			(kindCounts(info.kinds) + rate).joinToString(", ") + suffix
 		}
 		is InfoBar.Search -> stringResource(R.string.data_search_chapters, info.count, info.chapters)
 		InfoBar.InvalidSearch -> stringResource(R.string.data_search_invalid)

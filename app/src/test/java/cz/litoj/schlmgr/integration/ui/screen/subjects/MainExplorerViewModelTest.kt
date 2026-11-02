@@ -217,6 +217,24 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
+	fun `the root strip counts the subjects`() {
+		seed()
+
+		assertEquals(InfoBar.Root(2), vm().state.value.info)
+	}
+
+	@Test
+	fun `the strip counts the open rows per kind and a kind without rows stays absent`() {
+		val (aId, _) = seed()
+		ItemRepository.createChapter(aId, "c2", null, 0)
+		ItemRepository.createWord(aId, "w1", null, listOf("t1" to null))
+		val model = vmIn("A")
+
+		val kinds = (model.state.value.info as InfoBar.Children).kinds
+		assertEquals(mapOf(ItemKind.CHAPTER to 2, ItemKind.WORD to 1), kinds)
+	}
+
+	@Test
 	fun `doPaste in search moves the hit with its row`() {
 		val (model, row) = searchedWord()
 		model.setSelected(row, true)

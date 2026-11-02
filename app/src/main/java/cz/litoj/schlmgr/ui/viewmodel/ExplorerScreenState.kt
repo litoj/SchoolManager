@@ -1,5 +1,7 @@
 package cz.litoj.schlmgr.ui.viewmodel
 
+import cz.litoj.schlmgr.data.db.ItemKind
+
 /** Immutable screen state, where the query lives in [SearchInput]. */
 data class ExplorerScreenState(
 	val breadcrumbs: List<String> = emptyList(),
@@ -31,7 +33,8 @@ enum class SearchUi {
 
 /** The info strip semantics, where the view resolves the text. */
 sealed interface InfoBar {
-	data class Children(val count: Int, val ratio: Int, val description: String) : InfoBar
+	/** @param kinds the row count per kind, a kind without rows stays absent */
+	data class Children(val kinds: Map<ItemKind, Int>, val ratio: Int, val description: String) : InfoBar
 
 	data class Root(val count: Int) : InfoBar
 

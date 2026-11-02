@@ -168,7 +168,7 @@ abstract class ExplorerViewModel<R>(
 
 	private inner class InfoStripHost : InfoStrip.Host {
 		override val path get() = history.path
-		override fun listSize() = list.items().size
+		override fun rows() = list.items()
 		override fun isSearching() = searching
 		override fun loadPending() = list.loadJob?.isActive == true
 		override var lastSearchInfo: InfoBar?

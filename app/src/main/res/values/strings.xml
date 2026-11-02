@@ -11,9 +11,8 @@
     <string name="cancel">Cancel</string>
     <string name="continue_delete">Do you really want to delete the selected items?</string>
     <string name="cut">Cut</string>
-    <string name="data_child_count">"Elements: %1$d"</string>
-    <string name="data_children_sf">"Elements: %1$d, Success rate: %2$d%3$s"</string>
-    <string name="data_children_untested">"Elements: %1$d, Success rate: Untested%2$s"</string>
+    <string name="data_rate">"Success rate: %1$d%%"</string>
+    <string name="data_untested">Success rate: Untested</string>
     <string name="data_search_chapters">"Results: %1$d;\tChapters: %2$d"</string>
     <string name="data_search_bad_pattern">Invalid regular expression.</string>
     <string name="data_search_invalid">Invalid search. A valid form: \\WR=0</string>
@@ -45,6 +44,19 @@
     <plurals name="stat_chapters">
         <item quantity="one">%1$d chapter</item>
         <item quantity="other">%1$d chapters</item>
+    </plurals>
+    <!-- Czech stat_chapters is the locative of its sentence, so a bare count needs its own form. -->
+    <plurals name="stat_chapters_count">
+        <item quantity="one">%1$d chapter</item>
+        <item quantity="other">%1$d chapters</item>
+    </plurals>
+    <plurals name="stat_subjects">
+        <item quantity="one">%1$d subject</item>
+        <item quantity="other">%1$d subjects</item>
+    </plurals>
+    <plurals name="stat_notes">
+        <item quantity="one">%1$d note</item>
+        <item quantity="other">%1$d notes</item>
     </plurals>
     <string name="stat_imported">"Imported %1$s in %2$s."</string>
     <string name="stat_exported">"Exported %1$s in %2$s."</string>

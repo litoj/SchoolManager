@@ -11,9 +11,8 @@
     <string name="cancel">Zrušit</string>
     <string name="continue_delete">Opravdu chcete odstranit vybrané položky?</string>
     <string name="cut">Vyjmout</string>
-    <string name="data_child_count">"Položek: %1$d"</string>
-    <string name="data_children_sf">"Položek: %1$d, Úspěšnost: %2$d%3$s"</string>
-    <string name="data_children_untested">"Položek: %1$d, Úspěšnost: Netestováno%2$s"</string>
+    <string name="data_rate">"Úspěšnost: %1$d%%"</string>
+    <string name="data_untested">Úspěšnost: Netestováno</string>
     <string name="data_search_chapters">"Výsledků: %1$d;\tKapitol: %2$d"</string>
     <string name="data_search_bad_pattern">Neplatný regulární výraz.</string>
     <string name="data_search_invalid">Neplatné hledání. Správný zápis: \\WR=0</string>
@@ -49,6 +48,24 @@
         <item quantity="few">%1$d kapitolách</item>
         <item quantity="many">%1$d kapitolách</item>
         <item quantity="other">%1$d kapitolách</item>
+    </plurals>
+    <plurals name="stat_chapters_count">
+        <item quantity="one">%1$d kapitola</item>
+        <item quantity="few">%1$d kapitoly</item>
+        <item quantity="many">%1$d kapitol</item>
+        <item quantity="other">%1$d kapitol</item>
+    </plurals>
+    <plurals name="stat_subjects">
+        <item quantity="one">%1$d předmět</item>
+        <item quantity="few">%1$d předměty</item>
+        <item quantity="many">%1$d předmětů</item>
+        <item quantity="other">%1$d předmětů</item>
+    </plurals>
+    <plurals name="stat_notes">
+        <item quantity="one">%1$d poznámka</item>
+        <item quantity="few">%1$d poznámky</item>
+        <item quantity="many">%1$d poznámek</item>
+        <item quantity="other">%1$d poznámek</item>
     </plurals>
     <string name="stat_imported">"Importováno %1$s v %2$s."</string>
     <string name="stat_exported">"Exportováno %1$s v %2$s."</string>
