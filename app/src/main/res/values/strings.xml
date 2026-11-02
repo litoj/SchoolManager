@@ -159,6 +159,7 @@
         \n\t= - must be equal to the value</string>
     <string name="help_search_types_examples" formatted="false">\WD\t- all words with some description
         \n\R>50\t- items with success rate above 50%
+        \n\WR=0\t- tested words never answered correctly
         \n\sD\t- items starting with \'D\'
         \n\C\K72\t- all chapters with name containing \'k72\'</string>
     <string name="help_select">Editing</string>

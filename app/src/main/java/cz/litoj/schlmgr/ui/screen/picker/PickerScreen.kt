@@ -13,6 +13,7 @@ import cz.litoj.schlmgr.ui.component.ExplorerScaffold
 import cz.litoj.schlmgr.ui.component.TopBarSearchField
 import cz.litoj.schlmgr.ui.component.ItemListCallbacks
 import cz.litoj.schlmgr.ui.component.PickerActionBar
+import cz.litoj.schlmgr.ui.popup.InfoPopup
 import cz.litoj.schlmgr.ui.shell.ExplorerBackHandler
 import cz.litoj.schlmgr.ui.shell.TopBar
 import cz.litoj.schlmgr.ui.shell.TopBarIconButton
@@ -54,7 +55,11 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 		TopBar {
 			// the arrow cancels a search first, so leaving the picker needs a second press
 			TopBarNav(up = true, onNavigate = if (fieldOpen) viewModel::cancelSearch else onExit)
-			if (fieldOpen) TopBarSearchField(query, viewModel::onQueryChange, viewModel::onQuerySubmit, viewModel::dismissSearch, Modifier.weight(1f))
+			if (fieldOpen) TopBarSearchField(
+				query, viewModel::onQueryChange, viewModel::onQuerySubmit, viewModel::dismissSearch,
+				Modifier.weight(1f),
+				onHelp = { InfoPopup(R.string.help_search_types, R.string.help_search_types_how) },
+			)
 			else TopBarTitle(title)
 			TopBarIconButton(
 				icon = R.drawable.ic_search,

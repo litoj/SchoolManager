@@ -141,6 +141,7 @@
         \n\t= - musí být rovno dané hodnotě</string>
     <string name="help_search_types_examples" formatted="false">\WD\t- všechna slova s poznámkou
         \n\R>50\t- položky s úspěšností nad 50%
+        \n\WR=0\t- testovaná slova bez jediné správné odpovědi
         \n\sD\t- položky začínající na \'D\'
         \n\C\K72\t- všechny kapitoly se jménem obsahujícím \'k72\'</string>
     <string name="help_select">Upravování</string>

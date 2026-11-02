@@ -22,6 +22,7 @@ import cz.litoj.schlmgr.ui.popup.ContinuePopup
 import cz.litoj.schlmgr.ui.popup.CreatorContent
 import cz.litoj.schlmgr.ui.popup.CreatorPopup
 import cz.litoj.schlmgr.ui.popup.FlipConflictPopup
+import cz.litoj.schlmgr.ui.popup.InfoPopup
 import cz.litoj.schlmgr.ui.popup.ReferencePopup
 import cz.litoj.schlmgr.ui.popup.SourcePickPopup
 import cz.litoj.schlmgr.ui.shell.ExplorerBackHandler
@@ -179,7 +180,11 @@ fun SubjectsScreen(
 					else -> openDrawer
 				},
 			)
-			if (fieldOpen) TopBarSearchField(query, viewModel::onQueryChange, viewModel::onQuerySubmit, viewModel::dismissSearch, Modifier.weight(1f))
+			if (fieldOpen) TopBarSearchField(
+				query, viewModel::onQueryChange, viewModel::onQuerySubmit, viewModel::dismissSearch,
+				Modifier.weight(1f),
+				onHelp = { InfoPopup(R.string.help_search_types, R.string.help_search_types_how) },
+			)
 			else TopBarTitle(title)
 			TopBarIconButton(
 				icon = if (selecting) R.drawable.ic_check_all else R.drawable.ic_search,
