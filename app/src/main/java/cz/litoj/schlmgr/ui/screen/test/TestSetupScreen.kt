@@ -108,6 +108,11 @@ private fun TestSetupContent(viewModel: TestSetupViewModel, modifier: Modifier =
 	val keyboard = LocalSoftwareKeyboardController.current
 	Box(modifier.fillMaxSize()) {
 		Column(Modifier.fillMaxSize()) {
+			Text(
+				stringResource(R.string.test_setup_help),
+				Modifier.padding(8.dp),
+				style = TextStyle(fontSize = 13.sp, color = DefaultTextColor),
+			)
 			SettingNumberRow(
 				stringResource(R.string.test_size), TestSetupState.amountText,
 				viewModel::setAmount,

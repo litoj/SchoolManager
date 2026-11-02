@@ -82,9 +82,8 @@
         \nA subject with the same name is not imported twice.</string>
     <string name="help_extra_naming">Naming convention</string>
     <string name="help_extra_naming_how">If you have similar names of certain words, and they have identical translations, combine them using these: /().
-        \nSlash character signals two different options ending by a whitespace, an interpunction character or a bracket.
-        \nExamples:
-        \nI/They come = \'I come\' or \'They come\'
+        \nSlash character signals two different options ending by a whitespace, an interpunction character or a bracket.</string>
+    <string name="help_extra_naming_examples">I/They come = \'I come\' or \'They come\'
         \n(I go)/(He goes). = \'I go.\' or \'He goes\'.</string>
     <string name="help_extra_words_export">Export words</string>
     <string name="help_extra_words_export_how">Selected rows export. Nothing selected exports the open container, or all subjects at the root.\nWord file: compact, no success rates, no references.\nJSON file: complete, success rates, notes and references included.</string>
@@ -138,12 +137,11 @@
         \n -for number value:
         \n\t&gt; - must be higher than the given value
         \n\t&lt; - must be lower
-        \n\t= - must be equal to the value
-        \n\nExamples:
-        \n\t\\WD\t- all words with some description
-        \n\t\\R>50\t- items with success rate above 50%
-        \n\t\\sD  \t - items starting with \'D\'
-        \n\t\\C\\K72\t- all chapters with name containing \'k72\'</string>
+        \n\t= - must be equal to the value</string>
+    <string name="help_search_types_examples" formatted="false">\WD\t- all words with some description
+        \n\R>50\t- items with success rate above 50%
+        \n\sD\t- items starting with \'D\'
+        \n\C\K72\t- all chapters with name containing \'k72\'</string>
     <string name="help_select">Editing</string>
     <string name="help_select_delete">Permanently deletes the selected items after accepting the delete-check dialog.</string>
     <string name="help_select_edit">Only one item can be edited at a time. A window with parameters of the selected item pops up. The style of the editing window is same as when creating that type of item.
@@ -156,23 +154,21 @@
     <string name="help_select_move">Cuts all selected items and shows the paste sheet (cancel and paste buttons). After you open the target chapter, click \'Paste\'.
         \nThe armed move survives switching chapters, the side swipe included — the swipe only cancels the row selection.</string>
     <string name="help_test">Tests</string>
-    <string name="help_test_how">The test asks for the words of the chosen sources.
-        \nYou can choose the test\'s length and number of tested items.
-        \nThe switch on the test screen turns the direction around: the translations are shown and the word is answered, or the other way.
-        \nThe test can only contain items from one subject.</string>
+    <string name="help_test_how">The test asks for the words of the picked sources.</string>
     <string name="help_test_results">Test results</string>
-    <string name="help_test_results_how">After the time is up or you finished the test a window with the test\'s success rate and all tested items.
-        \nEvery item shows the word with its valid translations, how many times it was tested, its success rate (successful/total) and your answer.</string>
+    <string name="help_test_results_how">A window shows the success rate and one row per item.
+        \nEach row shows the word with its translations and its success rate, your answer below colored by the outcome.</string>
     <string name="help_test_run">Test progress</string>
-    <string name="help_test_run_how">After pressing the button \'Start\' the test is started and the remaining time can be seen in the top.
-        \nWhen you are done with the test click \'Done\' to submit the test.
-        \nYou are alerted in the last 30 seconds.
-        \nEach item has a field for the name/translation to fill in.
-        \nWhenever you decide to abolish the test press twice the back button.</string>
+    <string name="help_test_run_how">\'Start\' needs at least one source.
+        \nEach word is asked at most once, in a shuffled order.
+        \nThe countdown blinks red for the last 30 seconds.
+        \n\'Done\' submits, a run-out time submits too.
+        \nA double back press ends the run without grading.</string>
     <string name="help_test_select">Selecting items for the test</string>
-    <string name="help_test_select_how">The variety of items to create the test from can be added to using the \'Add source\' button.
-        \nThen a item chooser pops up, where you can repeatedly select items for the test (but only from on one subject).
-        \nA test can also be prepared straight from the explorer: select the rows to test and tap \'Test\' on the selection bar.</string>
+    <string name="help_test_select_how">The \'Add source\' tile opens the picker, which browses like the explorer.
+        \n\'Select\' on the strip adds the picked rows.
+        \nA picked chapter stands for the words inside it.
+        \nAll sources must belong to one subject.</string>
     <string name="menu_label">Menu</string>
     <string name="menu_about">About</string>
     <string name="menu_objects">Subjects</string>
@@ -242,6 +238,11 @@
     <string name="test_one_subject">Test sources must come from one subject.</string>
     <string name="test_one_subject_of">Test sources must come from one subject (%s).</string>
     <string name="test_reverse">Reverse test direction</string>
+    <string name="test_setup_help">Rows set how many items are asked and how many seconds one item takes.
+        \nThe total time is the amount times the seconds.
+        \nEmpty or zero falls back to the settings default.
+        \nThe switch sets the direction: off asks for the word, on asks for a translation.
+        \nA test draws from one subject only.</string>
     <string name="test_size">Tested amount</string>
     <string name="test_time">Duration (s)</string>
     <string name="time_left">%1$ds</string>

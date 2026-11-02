@@ -61,7 +61,9 @@ private val sections = listOf(
 	HelpSection(
 		R.string.help_search, intro = R.string.help_search_how, icon = R.drawable.ic_search,
 		children = listOf(
-			HelpSection(R.string.help_search_types, R.string.help_search_types_how),
+			HelpSection(R.string.help_search_types, R.string.help_search_types_how, customIntro = {
+				CodeBlock(stringResource(R.string.help_search_types_examples))
+			}),
 			HelpSection(R.string.help_search_regex, customIntro = { RegexIntro() }),
 		),
 	),
@@ -76,13 +78,18 @@ private val sections = listOf(
 	HelpSection(
 		R.string.help_extra, intro = R.string.help_extra_how, icon = R.drawable.ic_extra,
 		children = listOf(
-			HelpSection(R.string.help_extra_naming, R.string.help_extra_naming_how),
+			HelpSection(R.string.help_extra_naming, R.string.help_extra_naming_how, customIntro = {
+				CodeBlock(stringResource(R.string.help_extra_naming_examples))
+			}),
 			HelpSection(
 				R.string.help_extra_words_import, R.string.help_extra_words_import_how,
 				children = listOf(
 					HelpSection(
-						R.string.help_import_format, R.string.help_import_format_how,
-						customIntro = { WordListExample() },
+						R.string.help_import_format,
+						customIntro = {
+							CodeBlock(stringResource(R.string.help_import_format_how))
+							CodeBlock(stringResource(R.string.help_import_example_text))
+						},
 					),
 				),
 			),
@@ -258,11 +265,16 @@ private fun BodyText(text: String) {
 	)
 }
 
+/** A block of literal text, set apart from the explanation around it. */
 @Composable
-private fun WordListExample() {
+private fun CodeBlock(text: String) {
 	Text(
-		stringResource(R.string.help_import_example_text),
-		Modifier.padding(8.dp),
+		text,
+		Modifier
+			.padding(8.dp)
+			.fillMaxWidth()
+			.background(colorResource(R.color.colorSubBackground))
+			.padding(8.dp),
 		style = TextStyle(
 			fontSize = 13.sp,
 			fontFamily = FontFamily.Monospace,
@@ -290,7 +302,8 @@ private fun RegexTable(@StringRes column: Int, @StringRes description: Int, widt
 		Text(
 			stringResource(column),
 			Modifier.width(width),
-			style = TextStyle(fontSize = 13.sp, color = DefaultTextColor),
+			// the syntax tokens align only in a monospace column
+			style = TextStyle(fontSize = 13.sp, fontFamily = FontFamily.Monospace, color = DefaultTextColor),
 		)
 		Text(
 			stringResource(description),

@@ -143,6 +143,8 @@ Its DB part is the model for this project.
 - Closing the field clears the query.
 - Header levels differ by band and size, the deepest carries depth by indentation.
 - A one-line topic folds into body text, never gets its own section.
+- A screen explains itself in one short text, the help page holds only the necessary extras.
+- Literal examples render as monospace code blocks, apart from the explanation text.
 
 ### CI
 
@@ -158,6 +160,8 @@ Its DB part is the model for this project.
 - No active task.
 - Open items live in `DEVELOPMENT.md`.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
+- 2026-11-02: test setup explains itself on its screen, the help page keeps
+  only the extras. Literal examples render as code blocks. 675 tests.
 - 2026-10-30: help search, three header levels and folded one-line topics.
   The filter is `HelpFilter` with a unit pin, 668 tests.
 - 2026-10-29: the testing standard lives in `DEVELOPMENT.md` §8, commits

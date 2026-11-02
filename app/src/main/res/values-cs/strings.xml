@@ -89,9 +89,8 @@
     <string name="help_extra_naming">Způsoby pojmenovávání</string>
     <string name="help_extra_naming_how">Tato aplikace umožňuje pojmenovávat slovíčka a další položky specifickým způsobem, díky kterému máte při testu více možností, jak odpovědět.
         \nK dosažení se používá těchto znaků: /()
-        \nLomítko značí dvě možnosti, jejichž délka je ohraničena mezerou, interpunkčním znaménkem, nebo závorkami.
-        \nPříklady:
-        \noni/ony jdou = \'oni jdou\', nebo \'ony jdou\'
+        \nLomítko značí dvě možnosti, jejichž délka je ohraničena mezerou, interpunkčním znaménkem, nebo závorkami.</string>
+    <string name="help_extra_naming_examples">oni/ony jdou = \'oni jdou\', nebo \'ony jdou\'
         \n(Já jdu)/(Ty jdeš). = \'Já jdu.\', nebo \'Ty jdeš.\'</string>
     <string name="help_extra_words_export">Export slovíček</string>
     <string name="help_extra_words_export_how">Exportují se vybrané položky. Bez výběru se exportuje otevřený kontejner, na obrazovce předmětů všechny předměty.\nSoubor se slovíčky: kompaktní, bez úspěšnosti a referencí.\nSoubor JSON: úplný, včetně úspěšnosti, poznámek a referencí.</string>
@@ -144,12 +143,11 @@
         \n -pro číselnou hodnotu:
         \n\t&gt; - musí být větší než dané číslo
         \n\t&lt; - musí být menší
-        \n\t= - musí být rovno dané hodnotě
-        \n\nPříklady:
-        \n\t\\WD\t- všechna slova s poznámkou
-        \n\t\\R>50\t- položky s úspěšností nad 50%
-        \n\t\\sD  \t - položky začínající na \'D\'
-        \n\t\\C\\K72\t- všechny kapitoly se jménem obsahujícím \'k72\'</string>
+        \n\t= - musí být rovno dané hodnotě</string>
+    <string name="help_search_types_examples" formatted="false">\WD\t- všechna slova s poznámkou
+        \n\R>50\t- položky s úspěšností nad 50%
+        \n\sD\t- položky začínající na \'D\'
+        \n\C\K72\t- všechny kapitoly se jménem obsahujícím \'k72\'</string>
     <string name="help_select">Upravování</string>
     <string name="help_select_delete">Po potvrzení odstraňovacího dialogu nenávratně smaže všechny vybrané položky.</string>
     <string name="help_select_edit">Upravovat lze vždy pouze jednu položku, zobrazí se okno s parametry zvolené položky.
@@ -163,22 +161,21 @@
     <string name="help_select_move">Vyjme všechny vybrané položky ze seznamu a zobrazí vkládací lištu (možnosti zrušit a vložit). Po otevření cílové kapitoly stiskněte tlačítko \'Vložit\'.
         \nOzbrojené přesouvání přežije přepnutí kapitoly, boční smyk včetně — smyk pouze zruší výběr položek.</string>
     <string name="help_test">Testy</string>
-    <string name="help_test_how">Test se ptá na slovíčka ze zvolených zdrojů.
-        \nU testů si můžete zvolit jejich délku a počet položek, které budete v testu muset vyplnit.
-        \nPřepínač na obrazovce testu obrátí směr: zobrazí se překlady a odpovídá se slovíčkem, nebo naopak.
-        \nTest musí tvořit položky pouze z jednoho předmětu.</string>
+    <string name="help_test_how">Test se ptá na slovíčka ze zvolených zdrojů.</string>
     <string name="help_test_results">Výsledky testu</string>
-    <string name="help_test_results_how">Po uplynutí času na test nebo kliknutím na tlačítko \'Hotovo\' se test ukončí a zobrazí se okno s úspěšností testu a pod záhlavím seznam s položkami testu. U každé položky se zobrazí slovo s překlady, počet jeho testování, úspěšnost (úspěšné/celkem) a vaše odpověď.</string>
+    <string name="help_test_results_how">Okno ukazuje úspěšnost a řádek pro každou položku.
+        \nŘádek ukazuje slovíčko s překlady a jeho úspěšnost, odpověď pod ním obarvená podle výsledku.</string>
     <string name="help_test_run">Průběh testu</string>
-    <string name="help_test_run_how">Po započetí testu se bude v horní liště zobrazovat čas do konce testu.
-        \nPo dokončení testu klikněte na tlačítko \'Hotovo\'.
-        \nPři posledních 30s budete upozorněni.
-        \nU každé položky je políčko určené pro doplnění názvu/překladu.
-        \nTest můžete kdykoli v průběhu zrušit dvojitým stiskem šipky \'zpět\'.</string>
+    <string name="help_test_run_how">\'Začít\' potřebuje aspoň jeden zdroj.
+        \nKaždé slovíčko se ptá nejvýše jednou, v zamíchaném pořadí.
+        \nOdpočet posledních 30 sekund bliká červeně.
+        \n\'Hotovo\' odešle odpovědi, vypršený čas je odešle také.
+        \nDvojitým stiskem tlačítka zpět běh ukončíte bez hodnocení.</string>
     <string name="help_test_select">Výběr položek do testu</string>
-    <string name="help_test_select_how">Soubor položek, ze kterých se vytvoří test se vybírá tlačítkem \'Přidat zdroj\'.
-        \nPo stisknutí se otevře prohlížeč předmětů, ve kterém můžete opakovaně vybrat položky do testu (pouze z jednoho předmětu).
-        \nTest lze připravit i přímo z průzkumníku: vyberte položky k otestování a klepněte na \'Test\' na liště výběru.</string>
+    <string name="help_test_select_how">Dlaždice \'Přidat zdroj\' otevře prohlížeč, který funguje jako průzkumník.
+        \n\'Zvolit\' na liště přidá vybrané řádky.
+        \nVybraná kapitola zastupuje slovíčka uvnitř.
+        \nVšechny zdroje musí patřit jednomu předmětu.</string>
     <string name="menu_label">Menu</string>
     <string name="menu_about">O programu</string>
     <string name="menu_objects">Předměty</string>
@@ -248,6 +245,11 @@
     <string name="test_one_subject">Zdroje testu musí pocházet z jednoho předmětu.</string>
     <string name="test_one_subject_of">Zdroje testu musí pocházet z jednoho předmětu (%s).</string>
     <string name="test_reverse">Opačný směr testu</string>
+    <string name="test_setup_help">Řádky určují počet položek a počet sekund na jednu položku.
+        \nCelkový čas je počet položek krát sekundy na položku.
+        \nPrázdné nebo nulové políčko se vrátí na výchozí hodnotu z nastavení.
+        \nPřepínač určuje směr: vypnutý se ptá na slovíčko, zapnutý na překlad.
+        \nTest čerpá jen z jednoho předmětu.</string>
     <string name="test_size">Testované množství</string>
     <string name="test_time">Délka testu (s)</string>
     <string name="time_left">%1$ds</string>
