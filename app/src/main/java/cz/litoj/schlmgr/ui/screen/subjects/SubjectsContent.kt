@@ -45,6 +45,10 @@ internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifie
 	// the New button visibility follows the drag gesture, not the list scroll
 	val fabVisibility = rememberFabVisibility()
 	ListEndReveal(listState, scrollState)
+	// the anchor lands before the slide composes the incoming pane, so it shows in place
+	LaunchedEffect(listState.anchor) {
+		listState.anchor?.let { scrollState.scrollToItem(it.index, it.offset) }
+	}
 	// a load landing resets the button, an insert or delete keeps it hidden
 	LaunchedEffect(state.contentStep) { fabVisibility.show() }
 	Box(modifier) {

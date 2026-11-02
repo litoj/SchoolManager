@@ -34,6 +34,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -268,7 +269,6 @@ class MainExplorerViewModelTest {
 		model.move(false)
 
 		model.openSibling(1)
-
 		assertEquals(listOf("A", "c2"), model.history.path.map { it.name })
 		assertTrue("the armed move survived the switch", model.pasteArmed)
 
@@ -276,6 +276,49 @@ class MainExplorerViewModelTest {
 
 		assertFalse(model.pasteArmed)
 		assertEquals(listOf("w"), ItemRepository.children(c2.id).map { it.name })
+	}
+
+	@Test
+	fun `opening another container anchors its list at the top`() {
+		val (aId, _) = seed()
+		ItemRepository.createChapter(aId, "c2", null, 1)
+		val model = vmIn("A")
+		val c1 = model.items().single { it.item.name == "c1" }
+
+		model.onItemClick(c1)
+
+		assertEquals(0, model.listState.value.anchor?.index)
+		assertEquals(0, model.listState.value.anchor?.offset)
+		assertEquals("the state carries the opened container", c1.item.id, model.listState.value.containerId)
+	}
+
+	@Test
+	fun `reopening a container anchors again`() {
+		val (aId, _) = seed()
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		val first = model.listState.value.anchor
+
+		model.onBackRequested()
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+
+		assertNotEquals("a repeated landing is a new anchor request", first, model.listState.value.anchor)
+	}
+
+	@Test
+	fun `a reload of the open container keeps the list in place`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		val anchor = model.listState.value.anchor
+		model.setSelected(model.items().single { it.item.name == "w1" }, true)
+
+		model.flipSelected()
+
+		assertEquals("the reload of the open chapter re-anchors nothing",
+			anchor, model.listState.value.anchor)
 	}
 
 	@Test

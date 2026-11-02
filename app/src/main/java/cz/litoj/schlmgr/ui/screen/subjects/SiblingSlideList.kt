@@ -11,7 +11,6 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -84,11 +83,9 @@ internal fun SiblingSlideList(
 				listState = scrollState,
 			)
 		} else {
-			val frozenScroll = rememberLazyListState()
-			// the frozen pane keeps the scroll of the switch frame: its state
-			// jumps there on the frame it first runs
-			LaunchedEffect(frozenScroll) {
-				frozenScroll.scrollToItem(
+			// built at the live position, so the pane swap shows no jump to the top
+			val frozenScroll = remember(state.sibling) {
+				LazyListState(
 					scrollState.firstVisibleItemIndex, scrollState.firstVisibleItemScrollOffset)
 			}
 			ItemList(

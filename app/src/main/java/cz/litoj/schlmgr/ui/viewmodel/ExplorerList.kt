@@ -51,6 +51,12 @@ internal class ExplorerList(
 
 	private var models = mutableListOf<ItemRow>()
 
+	/** The container whose children the rows hold, the root id at the subjects screen. */
+	private var currentContainerId = ROOT_ID
+
+	/** Tells the container loads apart, so each re-anchor request is a distinct one. */
+	private var loadStep = 0
+
 	var loadJob: Job? = null
 
 	private var listMutationGen = 0
@@ -85,14 +91,25 @@ internal class ExplorerList(
 		load(sorted, isSearch = searching, isPicker = pickerMode)
 	}
 
-	private fun publish(content: List<ItemRow>, isSearch: Boolean, isPicker: Boolean) {
+	private fun publish(
+		content: List<ItemRow>,
+		isSearch: Boolean,
+		isPicker: Boolean,
+		landedContainer: Int? = null,
+	) {
 		pickerMode = isPicker || host.picker
 		host.resetDragSelect()
 		models = content.toMutableList()
-		val scroll = if (scrollToBottomPending) {
+		val bottomRequested = scrollToBottomPending
+		val scroll = if (bottomRequested) {
 			scrollToBottomPending = false
 			_listState.value.scrollToBottom + 1
 		} else _listState.value.scrollToBottom
+		// a landing on another container re-anchors the list at its top,
+		// while a bottom request owns the position
+		val anchor = if (landedContainer != null && landedContainer != currentContainerId && !bottomRequested)
+			ScrollAnchor(++loadStep, 0, 0) else null
+		if (landedContainer != null) currentContainerId = landedContainer
 		_listState.update {
 			it.copy(
 				items = models.map { row -> row.toUi() },
@@ -101,6 +118,8 @@ internal class ExplorerList(
 				pickerMode = pickerMode,
 				contentStep = it.contentStep + 1,
 				scrollToBottom = scroll,
+				containerId = landedContainer ?: it.containerId,
+				anchor = anchor ?: it.anchor,
 			)
 		}
 		if (isSearch) host.onSearchRowsChanged()
@@ -113,12 +132,13 @@ internal class ExplorerList(
 	 */
 	fun loadContent(container: DbItem?) {
 		loadJob?.cancel()
+		val containerId = container?.id ?: ROOT_ID
 		loadJob = scope.launch {
 			var gen = listMutationGen
 			while (true) {
 				val rows = withContext(io) { readRows(container) } ?: return@launch
 				if (gen == listMutationGen) {
-					publish(rows, isSearch = false, isPicker = false)
+					publish(rows, isSearch = false, isPicker = false, landedContainer = containerId)
 					break
 				}
 				gen = listMutationGen

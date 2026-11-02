@@ -1,5 +1,7 @@
 package cz.litoj.schlmgr.ui.viewmodel
 
+import cz.litoj.schlmgr.data.db.ROOT_ID
+
 /**
  * The state rendered by [cz.litoj.schlmgr.ui.component.ItemList].
  * - [ExplorerViewModel] maintains it.
@@ -9,6 +11,8 @@ package cz.litoj.schlmgr.ui.viewmodel
  * @property variant the row metrics that apply, see [ExplorerRowVariant]
  * @property contentStep moves on a publish, insert or removal.
  * - not on a selection remap, drag reorder or streamed append, where indexes stay valid.
+ * @property containerId the container whose children show, the root id at the subjects screen
+ * @property anchor where a container load re-anchors the list, null keeps the position
  */
 data class ItemListState(
 	val items: List<ItemUiModel> = emptyList(),
@@ -18,6 +22,8 @@ data class ItemListState(
 	val contentStep: Int = 0,
 	/** A reload or a row appended at the end asks the list to show its last row. */
 	val scrollToBottom: Int = 0,
+	val containerId: Int = ROOT_ID,
+	val anchor: ScrollAnchor? = null,
 ) {
 	/** Selection mode is on, derived from the selected rows. */
 	val selectionActive: Boolean get() = items.any { it.selected }
@@ -31,3 +37,9 @@ data class ItemListState(
 	/** How many rows are selected, the number behind [singleSelected]. */
 	val selectionCount: Int get() = items.count { it.selected }
 }
+
+/**
+ * The re-anchor request of one container load.
+ * - [step] tells the loads apart, so an equal position must re-fire.
+ */
+data class ScrollAnchor(val step: Int, val index: Int, val offset: Int)

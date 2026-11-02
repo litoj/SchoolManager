@@ -134,6 +134,12 @@ Its DB part is the model for this project.
 - An append at the list end reveals the end.
 - An insert in the middle does not scroll.
 
+### View state
+
+- A container load re-anchors the list at the top of the new view.
+- A bottom request of an import wins over the re-anchor.
+- The frozen pane of the sibling slide starts at the live position, so the swap shows no jump.
+
 ### Help
 
 - The help top bar search filters the tree live while typing.
@@ -180,6 +186,8 @@ Its DB part is the model for this project.
 - No active task.
 - Open items live in `DEVELOPMENT.md`.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
+- 2026-11-02: a container load re-anchors the list at the top, the frozen
+  pane of the sibling slide starts at the live position. 672 tests.
 - 2026-11-02: test screens reshaped. The setup states its units, pool and
   total, the run shows progress, pauses away and confirms exits, results
   pair answers with expectations and offer a retake. 668 tests.
