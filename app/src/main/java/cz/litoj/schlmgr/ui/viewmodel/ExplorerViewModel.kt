@@ -92,6 +92,9 @@ abstract class ExplorerViewModel<R>(
 
 	fun requestScrollToBottom() = list.requestScrollToBottom()
 
+	/** The composable reports the live browse scroll, which the view state keeps per container. */
+	fun onScrollPosition(index: Int, offset: Int) = list.onScrollPosition(index, offset)
+
 	fun load(content: List<ItemRow>, isSearch: Boolean = false, isPicker: Boolean = false) =
 		list.load(content, isSearch, isPicker)
 

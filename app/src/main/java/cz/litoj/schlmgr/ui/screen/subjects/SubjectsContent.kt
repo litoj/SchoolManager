@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -48,6 +49,14 @@ internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifie
 	// the anchor lands before the slide composes the incoming pane, so it shows in place
 	LaunchedEffect(listState.anchor) {
 		listState.anchor?.let { scrollState.scrollToItem(it.index, it.offset) }
+	}
+	// the browse scroll files under the open container, a search list reports nothing
+	LaunchedEffect(scrollState) {
+		snapshotFlow {
+			scrollState.firstVisibleItemIndex to scrollState.firstVisibleItemScrollOffset
+		}.collect { (index, offset) ->
+			if (listState.variant != ExplorerRowVariant.Search) viewModel.onScrollPosition(index, offset)
+		}
 	}
 	// a load landing resets the button, an insert or delete keeps it hidden
 	LaunchedEffect(state.contentStep) { fabVisibility.show() }

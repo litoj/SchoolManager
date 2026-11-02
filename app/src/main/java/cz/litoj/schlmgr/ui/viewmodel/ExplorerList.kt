@@ -63,6 +63,19 @@ internal class ExplorerList(
 
 	private var scrollToBottomPending = false
 
+	private val viewStates = ViewStateStore()
+
+	/** The scroll the composable last reported for the open container. */
+	private var scrollIndex = 0
+
+	private var scrollOffset = 0
+
+	/** The composable reports the live browse scroll, which the next capture files away. */
+	fun onScrollPosition(index: Int, offset: Int) {
+		scrollIndex = index
+		scrollOffset = offset
+	}
+
 	/** The next publish moves the list to its last row. */
 	fun requestScrollToBottom() {
 		scrollToBottomPending = true
@@ -79,6 +92,8 @@ internal class ExplorerList(
 	 */
 	fun load(content: List<ItemRow>, isSearch: Boolean = false, isPicker: Boolean = false) {
 		loadJob?.cancel()
+		// leaving the browse view for a search keeps its state for the return
+		if (isSearch && !searching) viewStates.capture(currentContainerId, scrollIndex, scrollOffset, models)
 		publish(content, isSearch, isPicker)
 	}
 
@@ -96,6 +111,7 @@ internal class ExplorerList(
 		isSearch: Boolean,
 		isPicker: Boolean,
 		landedContainer: Int? = null,
+		anchor: ScrollAnchor? = null,
 	) {
 		pickerMode = isPicker || host.picker
 		host.resetDragSelect()
@@ -105,11 +121,8 @@ internal class ExplorerList(
 			scrollToBottomPending = false
 			_listState.value.scrollToBottom + 1
 		} else _listState.value.scrollToBottom
-		// a landing on another container re-anchors the list at its top,
-		// while a bottom request owns the position
-		val anchor = if (landedContainer != null && landedContainer != currentContainerId && !bottomRequested)
-			ScrollAnchor(++loadStep, 0, 0) else null
-		if (landedContainer != null) currentContainerId = landedContainer
+		// a bottom request owns the position, so the re-anchor stands down
+		val anchored = if (bottomRequested) null else anchor
 		_listState.update {
 			it.copy(
 				items = models.map { row -> row.toUi() },
@@ -119,7 +132,7 @@ internal class ExplorerList(
 				contentStep = it.contentStep + 1,
 				scrollToBottom = scroll,
 				containerId = landedContainer ?: it.containerId,
-				anchor = anchor ?: it.anchor,
+				anchor = anchored ?: it.anchor,
 			)
 		}
 		if (isSearch) host.onSearchRowsChanged()
@@ -129,16 +142,24 @@ internal class ExplorerList(
 	/**
 	 * Loads the open content of a container from a preloaded link set on [io].
 	 * - a mid-read mutation retries once.
+	 * - the leaving view keeps its state for the way back.
 	 */
 	fun loadContent(container: DbItem?) {
 		loadJob?.cancel()
 		val containerId = container?.id ?: ROOT_ID
+		// search rows are not the view of the container, so they capture nothing
+		if (!searching) viewStates.capture(currentContainerId, scrollIndex, scrollOffset, models)
+		val saved = viewStates.stateOf(containerId)
+		currentContainerId = containerId
 		loadJob = scope.launch {
 			var gen = listMutationGen
 			while (true) {
 				val rows = withContext(io) { readRows(container) } ?: return@launch
 				if (gen == listMutationGen) {
-					publish(rows, isSearch = false, isPicker = false, landedContainer = containerId)
+					viewStates.applyFlips(containerId, rows)
+					// the remembered place of the view, a first visit starts at the top
+					publish(rows, isSearch = false, isPicker = false, landedContainer = containerId,
+						anchor = ScrollAnchor(++loadStep, saved?.scrollIndex ?: 0, saved?.scrollOffset ?: 0))
 					break
 				}
 				gen = listMutationGen

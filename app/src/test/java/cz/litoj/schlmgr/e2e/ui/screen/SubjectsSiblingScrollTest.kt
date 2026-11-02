@@ -3,6 +3,7 @@ package cz.litoj.schlmgr.e2e.ui.screen
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
@@ -23,6 +24,7 @@ import org.robolectric.annotation.Config
 
 /**
  * - a sibling switch opens the new chapter at its top.
+ * - the way back restores the scrolled place and the flip side.
  * - a top row composes only while the list sits at its start, so the node
  * answers for the position.
  */
@@ -82,5 +84,36 @@ class SubjectsSiblingScrollTest {
 		rule.waitForIdle()
 
 		rule.onNodeWithText("u0").assertExists()
+	}
+
+	@Test
+	fun `the way back to a sibling restores its scrolled place`() {
+		val model = scrolledFirstChapter()
+
+		model.openSibling(1)
+		rule.waitForIdle()
+		model.openSibling(-1)
+		rule.waitForIdle()
+
+		// the first chapter comes back at its scrolled place, its top stays away
+		rule.onNodeWithText("t30").assertExists()
+		rule.onNodeWithText("t0").assertDoesNotExist()
+	}
+
+	@Test
+	fun `a flipped word keeps its side through a sibling round trip`() {
+		val model = scrolledFirstChapter()
+		// a tap flips the word onto its name side
+		rule.onNodeWithText("t30").performClick()
+		rule.waitForIdle()
+		rule.onNodeWithText("w30").assertExists()
+
+		model.openSibling(1)
+		rule.waitForIdle()
+		model.openSibling(-1)
+		rule.waitForIdle()
+
+		rule.onNodeWithText("w30").assertExists()
+		rule.onNodeWithText("t30").assertDoesNotExist()
 	}
 }

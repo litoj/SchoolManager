@@ -139,6 +139,10 @@ Its DB part is the model for this project.
 - A container load re-anchors the list at the top of the new view.
 - A bottom request of an import wins over the re-anchor.
 - The frozen pane of the sibling slide starts at the live position, so the swap shows no jump.
+- The view state of a container is its scroll and the flip sides of its rows.
+- A load leaving a view captures its state, a returning view restores it.
+- The store lives with the view model: a rotation keeps it, a restart drops it.
+- A search round trip restores the view through the same store.
 
 ### Help
 
@@ -188,6 +192,9 @@ Its DB part is the model for this project.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
 - 2026-11-02: a container load re-anchors the list at the top, the frozen
   pane of the sibling slide starts at the live position. 672 tests.
+- 2026-11-02: each container view remembers its scroll and flip sides for
+  the session. `ViewStateStore` captures on leave and restores on return,
+  search round trips included. 677 tests.
 - 2026-11-02: test screens reshaped. The setup states its units, pool and
   total, the run shows progress, pauses away and confirms exits, results
   pair answers with expectations and offer a retake. 668 tests.

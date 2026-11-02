@@ -312,13 +312,74 @@ class MainExplorerViewModelTest {
 		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
 		val model = vmIn("A")
 		model.onItemClick(model.items().single { it.item.name == "c1" })
-		val anchor = model.listState.value.anchor
+		model.onScrollPosition(3, 12)
 		model.setSelected(model.items().single { it.item.name == "w1" }, true)
 
 		model.flipSelected()
 
-		assertEquals("the reload of the open chapter re-anchors nothing",
-			anchor, model.listState.value.anchor)
+		// the reload re-anchors at the remembered place, which is the current one
+		assertEquals(3, model.listState.value.anchor?.index)
+		assertEquals(12, model.listState.value.anchor?.offset)
+	}
+
+	@Test
+	fun `a returning container restores its scroll and flip sides`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
+		ItemRepository.createWord(c1.id, "w2", null, listOf("t2" to null))
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		model.onScrollPosition(1, 40)
+		model.flipWord(model.items().single { it.item.name == "w1" })
+
+		model.onBackRequested()
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+
+		assertEquals(1, model.listState.value.anchor?.index)
+		assertEquals(40, model.listState.value.anchor?.offset)
+		assertTrue("the flip side of the row survived the round trip",
+			!model.items().single { it.item.name == "w1" }.flipped)
+		assertTrue("an untouched row keeps its default side",
+			model.items().single { it.item.name == "w2" }.flipped)
+	}
+
+	@Test
+	fun `a sibling round trip restores the flip sides`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
+		val c2 = ItemRepository.createChapter(aId, "c2", null, 1)
+		ItemRepository.createWord(c2.id, "w2", null, listOf("t2" to null))
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		model.flipWord(model.items().single { it.item.name == "w1" })
+
+		model.openSibling(1)
+		model.openSibling(-1)
+
+		assertTrue("the flip side survived the sibling round trip",
+			!model.items().single { it.item.name == "w1" }.flipped)
+	}
+
+	@Test
+	fun `a search round trip restores the view state`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		model.onScrollPosition(2, 60)
+		model.flipWord(model.items().single { it.item.name == "w1" })
+
+		model.openSearchField()
+		model.onQuerySubmit("w1")
+		model.endSearch()
+
+		assertTrue("the flip side survived the search round trip",
+			!model.items().single { it.item.name == "w1" }.flipped)
+		assertEquals(2, model.listState.value.anchor?.index)
+		assertEquals(60, model.listState.value.anchor?.offset)
 	}
 
 	@Test
