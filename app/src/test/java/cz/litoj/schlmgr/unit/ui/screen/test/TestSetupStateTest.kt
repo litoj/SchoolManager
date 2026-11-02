@@ -240,6 +240,80 @@ class TestSetupStateTest {
 		assertFalse(TestSetupState.hasSources())
 	}
 
+	private fun pick(vararg chains: List<DbItem>) {
+		TestSetupState.addPicked(chains.map {
+			TestSetupState.seedOf(ItemRow.ofSearchHit(it.last(), it.dropLast(1), 1, emptyList()))
+		})
+	}
+
+	@Test
+	fun `removeSource returns the index and a repeated tap finds nothing`() {
+		val subject = item(1, "subject")
+		val first = listOf(subject, item(2))
+		val second = listOf(subject, item(3))
+		pick(first, second)
+
+		assertEquals(1, TestSetupState.removeSource(second))
+
+		assertEquals(null, TestSetupState.removeSource(second))
+		assertEquals(listOf(first), TestSetupState.list)
+	}
+
+	@Test
+	fun `restoreSource puts the chain back at its index`() {
+		val subject = item(1, "subject")
+		val first = listOf(subject, item(2))
+		val middle = listOf(subject, item(3))
+		val last = listOf(subject, item(4))
+		pick(first, middle, last)
+		val index = TestSetupState.removeSource(middle)!!
+
+		assertTrue(TestSetupState.restoreSource(middle, index))
+
+		assertEquals(listOf(first, middle, last), TestSetupState.list)
+	}
+
+	@Test
+	fun `restoreSource caps the index of a list that shrank`() {
+		val subject = item(1, "subject")
+		val first = listOf(subject, item(2))
+		val last = listOf(subject, item(3))
+		pick(first, last)
+		val index = TestSetupState.removeSource(last)!!
+		TestSetupState.removeSource(first)
+
+		assertTrue(TestSetupState.restoreSource(last, index))
+
+		assertEquals(listOf(last), TestSetupState.list)
+	}
+
+	@Test
+	fun `restoreSource refuses a chain of another subject`() {
+		val removed = listOf(item(1, "a"), item(2))
+		pick(removed)
+		val index = TestSetupState.removeSource(removed)!!
+		val other = listOf(item(3, "b"), item(4))
+		pick(other)
+
+		assertFalse(TestSetupState.restoreSource(removed, index))
+
+		assertEquals(listOf(other), TestSetupState.list)
+	}
+
+	@Test
+	fun `restoreSource dedups against a pick made since the removal`() {
+		val subject = item(1, "subject")
+		val word = listOf(subject, item(2), item(3))
+		pick(word)
+		val index = TestSetupState.removeSource(word)!!
+		val chapter = listOf(subject, item(2))
+		pick(chapter)
+
+		TestSetupState.restoreSource(word, index)
+
+		assertEquals(listOf(chapter), TestSetupState.list)
+	}
+
 	@Test
 	fun `hierarchyPicked reports a whole subject source`() {
 		assertFalse(TestSetupState.hierarchyPicked())

@@ -16,9 +16,12 @@ import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.ui.popup.MessagePopup
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.launch
 
 /**
- * Renders [GlobalDependencies.messages] as snackbars, with a full text or a share action.
+ * Renders [GlobalDependencies.messages] as snackbars, with a full text, share or undo action.
  * - the full text action opens the [MessagePopup] dialog with the whole text.
  * - every activity composes it, so a worker-thread report shows on the foreground screen.
  * - the flow delivers only while it is collected.
@@ -29,7 +32,19 @@ fun messageSnackbarHost(): SnackbarHostState {
 	val ctx = LocalContext.current
 	val fullTextLabel = stringResource(R.string.action_full_text)
 	val shareLabel = stringResource(R.string.action_share)
+	val undoLabel = stringResource(R.string.action_undo)
 	LaunchedEffect(snackbar) {
+		// only the last undoable message undoes, while the loop below sits in a showing snackbar.
+		// so it needs its own collector, and the host still queues it behind other messages
+		launch {
+			GlobalDependencies.messages
+				.filterIsInstance<GlobalDependencies.UiMessage.Undoable>()
+				.collectLatest { msg ->
+					val (text) = noticeMessage(ctx, msg.notice)
+					val action = snackbar.showSnackbar(text, undoLabel)
+					if (action == SnackbarResult.ActionPerformed) msg.onUndo()
+				}
+		}
 		GlobalDependencies.messages.collect { msg ->
 			// notices resolve here at display time, never at the reporter
 			when (msg) {
@@ -46,6 +61,7 @@ fun messageSnackbarHost(): SnackbarHostState {
 					else snackbar.showSnackbar(text)
 					if (action == SnackbarResult.ActionPerformed) MessagePopup(text, fullText)
 				}
+				is GlobalDependencies.UiMessage.Undoable -> Unit
 				is GlobalDependencies.UiMessage.ShareFile -> {
 					// the share has no other entry point, so the window runs long
 					val action = snackbar.showSnackbar(
@@ -89,6 +105,8 @@ private fun noticeMessage(ctx: Context, notice: UiNotice): Triple<String, String
 			ctx.getString(R.string.flip_conflicts_blank).let { Triple(it, it, null) }
 		is UiNotice.ActionUnavailable ->
 			ctx.getString(notice.reason).let { Triple(it, it, null) }
+		is UiNotice.SourceRemoved ->
+			ctx.getString(R.string.test_source_removed, notice.name).let { Triple(it, it, null) }
 		is UiNotice.OneSubjectOnly -> {
 			// the named form tells the user which subject to return to
 			val text = if (notice.subject != null)

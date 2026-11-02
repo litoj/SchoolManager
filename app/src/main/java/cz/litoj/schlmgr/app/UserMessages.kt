@@ -24,6 +24,12 @@ object UserMessages {
 		GlobalDependencies.messages.tryEmit(GlobalDependencies.UiMessage.Notice(notice))
 	}
 
+	/** Reports one transient user notice with an undo, see [GlobalDependencies.UiMessage.Undoable]. */
+	@JvmStatic
+	fun showUndoable(notice: UiNotice, onUndo: () -> Unit) {
+		GlobalDependencies.messages.tryEmit(GlobalDependencies.UiMessage.Undoable(notice, onUndo))
+	}
+
 	/** Word-list parse failure with [msg] as both snackbar line and popup body. */
 	@JvmStatic
 	fun onParseFail(msg: String) = showMsg(msg, msg)

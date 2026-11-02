@@ -188,10 +188,27 @@ object TestSetupState {
 		return emptyList()
 	}
 
-	/** A removal refreshes the counts, so the caller keeps it off main. */
-	fun removeSource(chain: List<DbItem>) {
-		_list.remove(chain)
+	/** Returns the index for [restoreSource], null when a repeated tap finds the chain gone. */
+	fun removeSource(chain: List<DbItem>): Int? {
+		val index = _list.indexOf(chain)
+		if (index < 0) return null
+		_list.removeAt(index)
 		refreshCounts()
+		return index
+	}
+
+	/**
+	 * The undo of [removeSource], returning false when the chain is refused.
+	 * - the list can change in between, so the one subject rule and the dedup still apply.
+	 * - the list can also shrink, so the index caps at its end.
+	 */
+	fun restoreSource(chain: List<DbItem>, index: Int): Boolean {
+		val subject = pickedSubject()
+		if (subject != null && subject.id != chain[0].id) return false
+		_list.add(index.coerceAtMost(_list.size), chain)
+		dedup(_list)
+		refreshCounts()
+		return true
 	}
 
 	fun hasSources() = _list.isNotEmpty()

@@ -40,4 +40,7 @@ sealed interface UiNotice {
 
 	/** An action was refused, and [reason] is its display string. */
 	data class ActionUnavailable(@StringRes val reason: Int) : UiNotice
+
+	/** The source [name] left the test setup. */
+	data class SourceRemoved(val name: String) : UiNotice
 }

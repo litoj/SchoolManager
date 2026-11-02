@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import cz.litoj.schlmgr.app.AppSettings
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.testing.TestEngine
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -16,7 +17,9 @@ import kotlinx.coroutines.launch
  * - it also holds the two navigation steps, start test and open the source picker.
  * - answers and sources live in [TestSetupState], where this view model is the only writer.
  */
-class TestSetupViewModel : ViewModel() {
+class TestSetupViewModel(
+	private val io: CoroutineDispatcher = Dispatchers.IO,
+) : ViewModel() {
 
 	/**
 	 * One step that only the view layer can perform for this screen.
@@ -40,9 +43,21 @@ class TestSetupViewModel : ViewModel() {
 		TestSetupState.setTime(text)
 	}
 
-	// the count refresh reads the database, so the removal leaves the main thread
+	// the count refresh reads the database, so the removal and its undo leave the main thread
 	fun removeSource(chain: List<DbItem>) {
-		viewModelScope.launch(Dispatchers.IO) { TestSetupState.removeSource(chain) }
+		viewModelScope.launch(io) {
+			val index = TestSetupState.removeSource(chain) ?: return@launch
+			UserMessages.showUndoable(UiNotice.SourceRemoved(chain.toSourceRowUi().displayName)) {
+				restoreSource(chain, index)
+			}
+		}
+	}
+
+	private fun restoreSource(chain: List<DbItem>, index: Int) {
+		viewModelScope.launch(io) {
+			if (!TestSetupState.restoreSource(chain, index))
+				UserMessages.showNotice(UiNotice.OneSubjectOnly(TestSetupState.pickedSubject()?.name))
+		}
 	}
 
 	/**
