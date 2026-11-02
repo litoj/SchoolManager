@@ -1,6 +1,5 @@
 package cz.litoj.schlmgr.ui.screen.picker
 
-import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.viewModelScope
 import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.app.UserMessages
@@ -17,35 +16,19 @@ import kotlinx.coroutines.withContext
 
 /**
  * The test-source picker: the explorer core that selects like the subjects screen.
+ * - it starts at the position of the main explorer, on a copy it navigates alone.
  * - it adds the confirm to the source list.
  */
 class PickerViewModel(
+	start: NavigationHistory,
 	io: CoroutineDispatcher = Dispatchers.IO,
-) : ExplorerViewModel<PickerViewModel.Request>(ensureHistory(), picker = true, io = io) {
+) : ExplorerViewModel<PickerViewModel.Request>(NavigationHistory(start), picker = true, io = io) {
 
 	sealed interface Request {
 		data object Close : Request
 	}
 
-	companion object {
-		/**
-		 * The own [NavigationHistory] of the picker, kept across screens.
-		 * - so re-entering the picker restores the previous position.
-		 */
-		private var savedHistory: NavigationHistory? = null
-
-		private fun ensureHistory(): NavigationHistory =
-			savedHistory ?: NavigationHistory().also { savedHistory = it }
-
-		/** Drops the saved position, so the next picker starts at the root. */
-		@VisibleForTesting
-		@JvmStatic
-		internal fun resetSavedHistory() {
-			savedHistory = null
-		}
-	}
-
-	// the model is created at the browsing position the saved history holds.
+	// starts at the copied explorer position, the root included
 	init {
 		setContent(history.path.lastOrNull())
 	}

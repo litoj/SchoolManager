@@ -16,6 +16,7 @@ import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.ui.screen.picker.PickerScreen
 import cz.litoj.schlmgr.ui.screen.picker.PickerViewModel
+import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import java.time.Duration
 import kotlinx.coroutines.Dispatchers
 import org.junit.After
@@ -59,8 +60,6 @@ class PickerScreenTest {
 
 	@After
 	fun tearDown() {
-		// the saved position of the picker is process-wide, so leave the root for the next class
-		PickerViewModel.resetSavedHistory()
 		db.close()
 		ItemRepository.resetForTest()
 	}
@@ -99,7 +98,7 @@ class PickerScreenTest {
 
 	@Test
 	fun `the strip follows the selection and the corner button selects all`() {
-		val model = PickerViewModel(Dispatchers.Unconfined)
+		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
 		rule.setContent { PickerScreen(model, {}) }
 		rule.waitForIdle()
 
@@ -119,7 +118,7 @@ class PickerScreenTest {
 
 	@Test
 	fun `a tap while selecting toggles the row instead of opening it`() {
-		val model = PickerViewModel(Dispatchers.Unconfined)
+		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
 		rule.setContent { PickerScreen(model, {}) }
 		rule.waitForIdle()
 

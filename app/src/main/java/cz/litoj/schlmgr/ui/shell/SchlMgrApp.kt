@@ -137,7 +137,8 @@ fun SchlMgrApp(
 							)
 						}
 						composable(PICKER_ROUTE) { entry ->
-							val vm: PickerViewModel = viewModel(entry) { PickerViewModel() }
+							// the picker re-seeds from the explorer on every entry, see [PickerViewModel]
+							val vm: PickerViewModel = viewModel(entry) { PickerViewModel(mainHistory) }
 							PickerScreen(
 								viewModel = vm,
 								onExit = { navController.popBackStack() },

@@ -10,7 +10,7 @@ val mainHistory = NavigationHistory()
  * - [onePath] counts the hops the current entry stacks, descent and search alike.
  * - a fresh instance is a valid empty position, where [onePath] holds its base 0.
  */
-class NavigationHistory {
+class NavigationHistory() {
 	var path: MutableList<DbItem> = mutableListOf()
 		private set
 	private val prevPaths = mutableListOf<MutableList<DbItem>>()
@@ -23,6 +23,15 @@ class NavigationHistory {
 	 * - false means a search run, which left [path] alone.
 	 */
 	private val hopDescents = mutableListOf<Boolean>()
+
+	/**
+	 * A fresh history at the current position of [start].
+	 * - the copied elements count as descents, so back unwinds the position level by level.
+	 * - the two histories then navigate independently.
+	 */
+	constructor(start: NavigationHistory) : this() {
+		for (e in start.path) hop(e)
+	}
 
 	fun push(newPath: MutableList<DbItem>) {
 		prevPaths.add(path)

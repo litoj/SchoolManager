@@ -44,18 +44,13 @@ class PickerViewModelTest {
 
 	@After
 	fun tearDown() {
-		// the saved position of the picker is process-wide, so leave the root for the next class
-		PickerViewModel.resetSavedHistory()
 		db.close()
 		ItemRepository.resetForTest()
 	}
 
-	private fun vm(): PickerViewModel {
-		val model = PickerViewModel(Dispatchers.Unconfined)
+	private fun vm(source: NavigationHistory = NavigationHistory()): PickerViewModel {
+		val model = PickerViewModel(source, Dispatchers.Unconfined)
 		model.clock = { now }
-		// the browsing position of the picker survives its screens by design, so walk
-		// it back to the root where every test starts at the subjects list
-		while (model.history.path.isNotEmpty()) model.onBackRequested()
 		return model
 	}
 
@@ -63,6 +58,47 @@ class PickerViewModelTest {
 		val a = ItemRepository.createSubject("A", null)
 		ItemRepository.createChapter(a.id, "c1", null, 0)
 		return a.id
+	}
+
+	@Test
+	fun `the picker opens at the explorer position and never moves the explorer`() {
+		seed()
+		val explorer = NavigationHistory()
+		explorer.hop(ItemRepository.subjects().single())
+		val model = vm(explorer)
+
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+
+		assertEquals(listOf("A", "c1"), model.history.path.map { it.name })
+		assertEquals("the explorer keeps its position", listOf("A"), explorer.path.map { it.name })
+	}
+
+	@Test
+	fun `a second picker opens at the explorer position again`() {
+		seed()
+		val explorer = NavigationHistory()
+		explorer.hop(ItemRepository.subjects().single())
+		val first = vm(explorer)
+		first.onItemClick(first.items().single { it.item.name == "c1" })
+
+		val second = vm(explorer)
+
+		assertEquals(listOf("A"), second.state.value.breadcrumbs)
+	}
+
+	@Test
+	fun `back unwinds the seeded position to its root before the exit`() {
+		val aId = seed()
+		val explorer = NavigationHistory()
+		explorer.hop(ItemRepository.subjects().single())
+		explorer.hop(ItemRepository.children(aId).single())
+		val model = vm(explorer)
+
+		assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
+		assertEquals(listOf("A"), model.history.path.map { it.name })
+		assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
+		assertTrue("the root of the seed is the exit root", model.history.path.isEmpty())
+		assertEquals(ExplorerViewModel.BackOutcome.EXIT_HINT, model.onBackRequested())
 	}
 
 	@Test

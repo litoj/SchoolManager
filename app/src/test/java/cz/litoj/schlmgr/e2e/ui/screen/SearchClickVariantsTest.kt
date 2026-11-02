@@ -58,15 +58,13 @@ class SearchClickVariantsTest {
 
 	@After
 	fun tearDown() {
-		// the saved position of the picker is process-wide, so leave the root for the next class
-		PickerViewModel.resetSavedHistory()
 		db.close()
 		ItemRepository.resetForTest()
 	}
 
 	@Test
 	fun `picker - clicking a word of the results keeps the search`() {
-		val model = PickerViewModel(Dispatchers.Unconfined)
+		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
 		rule.setContent { PickerScreen(model, {}) }
 		rule.waitForIdle()
 		rule.onNodeWithText("A").performClick()
