@@ -21,6 +21,7 @@ import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import java.time.Duration
 import kotlinx.coroutines.Dispatchers
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -91,6 +92,16 @@ class PickerScreenTest {
 		rule.waitForIdle()
 	}
 
+	/** Taps the up arrow, the first slot of the top bar. */
+	private fun tapUpArrow() {
+		rule.onRoot().performTouchInput {
+			val x = with(rule.density) { 30.dp.toPx() }
+			val y = with(rule.density) { 27.5.dp.toPx() }
+			click(Offset(x, y))
+		}
+		rule.waitForIdle()
+	}
+
 	/** Advances the clock by hand, so the long-press fires while the finger is down. */
 	private fun settle() {
 		rule.mainClock.advanceTimeBy(1000)
@@ -136,8 +147,34 @@ class PickerScreenTest {
 	}
 
 	@Test
+	fun `the up arrow walks the back chain before it leaves`() {
+		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		var exits = 0
+		rule.setContent { PickerScreen(model, { exits++ }) }
+		rule.waitForIdle()
+
+		selectTheRow()
+		tapUpArrow()
+		rule.runOnIdle {
+			assertFalse("the press cleared the selection", model.items().any { it.selected })
+			assertEquals(0, exits)
+		}
+
+		rule.onNodeWithText("A").performClick()
+		rule.runOnIdle { assertEquals(listOf("A"), model.state.value.breadcrumbs) }
+		tapUpArrow()
+		rule.runOnIdle {
+			assertTrue("the press left the subject", model.history.path.isEmpty())
+			assertEquals(0, exits)
+		}
+
+		tapUpArrow()
+		rule.runOnIdle { assertEquals("one press at the root leaves", 1, exits) }
+	}
+
+	@Test
 	fun `the heading stays inside a container and the crumb shows the location`() {
-		val model = PickerViewModel(Dispatchers.Unconfined)
+		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
 		rule.setContent { PickerScreen(model, {}) }
 		rule.waitForIdle()
 		rule.onNodeWithText(text(R.string.test_add)).assertExists()

@@ -98,7 +98,8 @@ class PickerViewModelTest {
 		assertEquals(listOf("A"), model.history.path.map { it.name })
 		assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
 		assertTrue("the root of the seed is the exit root", model.history.path.isEmpty())
-		assertEquals(ExplorerViewModel.BackOutcome.EXIT_HINT, model.onBackRequested())
+		// the picker root leaves on one press, it is no app exit
+		assertEquals(ExplorerViewModel.BackOutcome.EXIT, model.onBackRequested())
 	}
 
 	@Test
@@ -116,12 +117,10 @@ class PickerViewModelTest {
 	}
 
 	@Test
-	fun `back at the root exits the picker through the window`() {
+	fun `one back at the root leaves the picker`() {
 		seed()
 		val model = vm()
 
-		assertEquals(ExplorerViewModel.BackOutcome.EXIT_HINT, model.onBackRequested())
-		now += 2_000
 		assertEquals(ExplorerViewModel.BackOutcome.EXIT, model.onBackRequested())
 	}
 

@@ -1,5 +1,7 @@
 package cz.litoj.schlmgr.unit.ui.screen.test
 
+import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind

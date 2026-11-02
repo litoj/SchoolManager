@@ -59,6 +59,9 @@ class PickerViewModel(
 		emitRequest(Request.Close)
 	}
 
+	/** Leaving the picker does not exit the app, so one press is enough. */
+	override fun registerExitPress() = false
+
 	/** Flip a word, otherwise open the container under the parent it was displayed in. */
 	fun onItemClick(row: ItemRow?) {
 		row ?: return

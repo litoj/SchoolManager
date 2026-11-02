@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cz.litoj.schlmgr.R
@@ -19,6 +20,7 @@ import cz.litoj.schlmgr.ui.shell.TopBar
 import cz.litoj.schlmgr.ui.shell.TopBarIconButton
 import cz.litoj.schlmgr.ui.shell.TopBarNav
 import cz.litoj.schlmgr.ui.shell.TopBarTitle
+import cz.litoj.schlmgr.ui.shell.explorerBack
 import cz.litoj.schlmgr.ui.shell.headerShadow
 import cz.litoj.schlmgr.ui.viewmodel.SearchUi
 
@@ -29,7 +31,7 @@ import cz.litoj.schlmgr.ui.viewmodel.SearchUi
  * - the explorer content sits below, with the back chain over it.
  * - the exit pops back to the test setup.
  *
- * @param onExit the up arrow and the exit back outcome, which pops this destination
+ * @param onExit the exit back outcome and the closing request, which pop this destination
  */
 @Composable
 fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
@@ -48,11 +50,12 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 	}
 
 	ExplorerBackHandler(viewModel, onExit)
+	val context = LocalContext.current
 
 	Column(Modifier.fillMaxSize()) {
 		TopBar {
-			// the arrow cancels a search first, so leaving the picker needs a second press
-			TopBarNav(up = true, onNavigate = if (fieldOpen) viewModel::cancelSearch else onExit)
+			// the arrow walks the back chain, so a search or a selection ends before the picker
+			TopBarNav(up = true, onNavigate = { explorerBack(viewModel, onExit, context) })
 			if (fieldOpen) TopBarSearchField(
 				query, viewModel::onQueryChange, viewModel::onQuerySubmit, viewModel::dismissSearch,
 				Modifier.weight(1f),

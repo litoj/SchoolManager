@@ -280,7 +280,7 @@ abstract class ExplorerViewModel<R>(
 
 	/**
 	 * Back, deepest layer out: selection, then search, then one level.
-	 * - a double press at the root exits.
+	 * - the root press goes through [registerExitPress].
 	 */
 	fun onBackRequested(): BackOutcome {
 		if (selectionCount() > 0) {
@@ -310,9 +310,11 @@ abstract class ExplorerViewModel<R>(
 	private var backTime = 0L
 
 	/**
+	 * The double press means exiting the app.
+	 *
 	 * @return true on the first press, and false on the second inside the window
 	 */
-	protected fun registerExitPress(): Boolean = if (clock() - backTime > EXIT_WINDOW_MS) {
+	protected open fun registerExitPress(): Boolean = if (clock() - backTime > EXIT_WINDOW_MS) {
 		backTime = clock()
 		true
 	} else false

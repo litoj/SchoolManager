@@ -18,7 +18,7 @@
 - Dialogs are a `DialogSpec` stack, each in its own window, so they survive rotation.
 - Screen state is synchronous. The repository blocks on IO and callers see a blocking facade.
 - `ExplorerViewModel` holds the shared explorer core: history, search, selection, list and info strip.
-- Back order: clear the selection, go up one level, double-press exit.
+- Back order: clear the selection, go up one level, double-press exit. The picker leaves on one press.
 
 ## 2. Data model
 
