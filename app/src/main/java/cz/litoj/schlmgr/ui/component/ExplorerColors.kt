@@ -39,4 +39,7 @@ object ExplorerColors {
 	/** The highlight of the selected row is subtle green, so selection shows without
 	 *  hiding the ratio tint. */
 	val selectedRow: Color @Composable get() = colorResource(R.color.colorSelectedRow)
+
+	/** The red of errors, tuned per theme to stay readable on the background surface. */
+	val failure: Color @Composable get() = colorResource(R.color.colorFailure)
 }

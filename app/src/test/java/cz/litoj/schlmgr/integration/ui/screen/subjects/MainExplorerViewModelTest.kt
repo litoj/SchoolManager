@@ -176,6 +176,30 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
+	fun `an invalid query fills the strip until a valid one or the end of the search`() {
+		seed()
+		val model = vmIn("A")
+		model.openSearchField()
+		model.onQuerySubmit("\\WX=0")
+
+		assertEquals(InfoBar.InvalidSearch, model.state.value.info)
+		assertTrue("nothing searched", model.items().isEmpty())
+		model.refreshInfo()
+		assertEquals("a count refresh keeps the message",
+			InfoBar.InvalidSearch, model.state.value.info)
+
+		model.onQuerySubmit("c1")
+		assertEquals(1, (model.state.value.info as InfoBar.Search).count)
+
+		model.onQuerySubmit("\\WR=abc")
+		assertEquals(InfoBar.InvalidSearch, model.state.value.info)
+
+		model.onQuerySubmit("")
+		assertTrue("the browse strip is back", model.state.value.info is InfoBar.Children)
+		assertEquals(listOf("c1"), model.items().map { it.item.name })
+	}
+
+	@Test
 	fun `doPaste in search moves the hit with its row`() {
 		val (model, row) = searchedWord()
 		model.setSelected(row, true)

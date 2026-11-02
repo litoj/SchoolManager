@@ -14,7 +14,8 @@
     <string name="data_child_count">"Položek: %1$d"</string>
     <string name="data_children_sf">"Položek: %1$d, Úspěšnost: %2$d%3$s"</string>
     <string name="data_children_untested">"Položek: %1$d, Úspěšnost: Netestováno%2$s"</string>
-    <string name="data_search_chapters">"Položek: %1$d;\tKapitol: %2$d"</string>
+    <string name="data_search_chapters">"Výsledků: %1$d;\tKapitol: %2$d"</string>
+    <string name="data_search_invalid">Neplatné hledání. Správný zápis: \\WR=0</string>
     <string name="data_desc">Popisek</string>
     <string name="data_name">Název</string>
     <string name="data_translate">Překlad</string>
@@ -138,7 +139,9 @@
         \n -pro číselnou hodnotu:
         \n\t&gt; - musí být větší než dané číslo
         \n\t&lt; - musí být menší
-        \n\t= - musí být rovno dané hodnotě</string>
+        \n\t= - musí být rovno dané hodnotě
+        \n\nČíselná podmínka nerozlišuje velká a malá písmena a ignoruje mezery, takže \\w r = 0 znamená totéž co \\WR=0.
+        \nVyžaduje S, F, N nebo R a celé číslo, jinak se zobrazí červená zpráva.</string>
     <string name="help_search_types_examples" formatted="false">\WD\t- všechna slova s poznámkou
         \n\R>50\t- položky s úspěšností nad 50%
         \n\WR=0\t- testovaná slova bez jediné správné odpovědi

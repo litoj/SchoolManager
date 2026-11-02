@@ -94,20 +94,20 @@ internal class SearchFlow(
 		run.abort()
 		// the search reads the toggle per run, so a settings change applies to the next one
 		val eng = SearchEngine(q, AppSettings.getBool("searchNoDiacritics", false))
-		if (!eng.valid) {
+		val detail = eng.regexError
+		if (detail != null) {
 			// an invalid pattern cannot search, so report it and keep the current list
-			val detail = eng.regexError
-			if (detail != null) UserMessages.showNotice(UiNotice.BadPattern(detail))
+			UserMessages.showNotice(UiNotice.BadPattern(detail))
 			return
 		}
 		// a live re-run keeps a single stacked hop.
 		if (!alreadySearching) history.hop(null)
 		// start empty, since batches fill the list.
 		host.load(ArrayList(), isSearch = true, isPicker = false)
-		// a new strip starts at zero.
-		lastSearchInfo = InfoBar.Search(0, 0)
+		// a new strip starts at zero, and a malformed query never runs.
+		lastSearchInfo = if (eng.valid) InfoBar.Search(0, 0) else InfoBar.InvalidSearch
 		host.publishSearchInfoCollapsed(lastSearchInfo)
-		run.start(eng, path)
+		if (eng.valid) run.start(eng, path)
 	}
 
 	private fun appendSearchRows(batch: List<ItemRow>) {

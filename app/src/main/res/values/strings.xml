@@ -14,7 +14,8 @@
     <string name="data_child_count">"Elements: %1$d"</string>
     <string name="data_children_sf">"Elements: %1$d, Success rate: %2$d%3$s"</string>
     <string name="data_children_untested">"Elements: %1$d, Success rate: Untested%2$s"</string>
-    <string name="data_search_chapters">"Elements: %1$d;\tChapters: %2$d"</string>
+    <string name="data_search_chapters">"Results: %1$d;\tChapters: %2$d"</string>
+    <string name="data_search_invalid">Invalid search. A valid form: \\WR=0</string>
     <string name="data_desc">Description</string>
     <string name="data_name">Name</string>
     <string name="data_translate">Translation</string>
@@ -156,7 +157,9 @@
         \n -for number value:
         \n\t&gt; - must be higher than the given value
         \n\t&lt; - must be lower
-        \n\t= - must be equal to the value</string>
+        \n\t= - must be equal to the value
+        \n\nA number condition ignores case and spaces, so \\w r = 0 equals \\WR=0.
+        \nIt needs S, F, N or R and a whole number, otherwise a red message shows.</string>
     <string name="help_search_types_examples" formatted="false">\WD\t- all words with some description
         \n\R>50\t- items with success rate above 50%
         \n\WR=0\t- tested words never answered correctly

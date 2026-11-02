@@ -143,6 +143,7 @@ private fun InfoStrip(
 			else stringResource(R.string.data_children_sf, info.count, info.ratio, "%$suffix")
 		}
 		is InfoBar.Search -> stringResource(R.string.data_search_chapters, info.count, info.chapters)
+		InfoBar.InvalidSearch -> stringResource(R.string.data_search_invalid)
 	}
 	// the laid-out line count of the current text. The wrapper Box always gives
 	// the text its full width, so the count is stable whatever the strip height.
@@ -169,7 +170,7 @@ private fun InfoStrip(
 		Text(
 			text,
 			fontSize = 15.sp,
-			color = InfoColor,
+			color = if (info == InfoBar.InvalidSearch) ExplorerColors.failure else InfoColor,
 			onTextLayout = { lines = it.lineCount },
 		)
 	}

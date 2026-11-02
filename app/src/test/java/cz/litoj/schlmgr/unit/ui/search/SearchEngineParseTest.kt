@@ -122,4 +122,60 @@ class SearchEngineParseTest {
 			assertEquals(false, engine.correct(chapter, emptyList()) { _, _ -> })
 		}
 	}
+
+	@Test
+	fun `a number query takes any case and spacing`() {
+		val word = DbItem(
+			name = "w", description = "", type = ItemKind.WORD,
+			passedTests = 2, failedTests = 3,
+		)
+		val chapter = DbItem(name = "c", description = "", type = ItemKind.CHAPTER)
+		for (query in listOf("\\w s = 2", "\\ws=2", "\\W S=2", "\\WS= 2", " \\WS=2 ", "\\ w=0")) {
+			val engine = SearchEngine(query)
+			assertTrue(query, engine.valid)
+			assertEquals(query, true, engine.correct(word, emptyList()) { _, _ -> })
+			assertEquals(query, false, engine.correct(chapter, emptyList()) { _, _ -> })
+		}
+		assertEquals(true, SearchEngine("\\f>2").correct(word, emptyList()) { _, _ -> })
+		assertEquals(true, SearchEngine("\\r = 40").correct(word, emptyList()) { _, _ -> })
+	}
+
+	@Test
+	fun `an unknown letter before an operator is invalid`() {
+		for (query in listOf("\\WX=0", "\\X=0", "\\w x > 0", "\\WD=0", "\\WW<1")) assertInvalid(query)
+	}
+
+	@Test
+	fun `a number operator without a number is invalid`() {
+		for (query in listOf("\\WR=abc", "\\R>", "\\W=abc", "\\=x", "\\WR=1.5", "\\WR=99999999999"))
+			assertInvalid(query)
+	}
+
+	private fun assertInvalid(query: String) {
+		val engine = SearchEngine(query)
+		val item = DbItem(name = "x", description = "", type = ItemKind.WORD)
+		assertFalse(query, engine.valid)
+		assertEquals("only a bad regex carries a detail", null, engine.regexError)
+		assertEquals(query, false, engine.correct(item, emptyList()) { _, _ -> })
+	}
+
+	@Test
+	fun `a text operator keeps any tail`() {
+		assertEquals(listOf("=abc"), hits("\\s=abc", "=abc", "x"))
+		assertEquals(listOf("=abc"), hits("\\r=a.c", "=abc", "x"))
+		assertEquals(listOf("x=5"), hits("\\c=5", "x=5", "x"))
+		assertEquals(listOf("x=5"), hits("\\e=5", "x=5", "x"))
+	}
+
+	@Test
+	fun `text markers stay case sensitive`() {
+		assertEquals(listOf("Dog"), hits("\\sD", "Dog", "dog"))
+		assertEquals(listOf("Dog", "dog"), hits("\\SD", "Dog", "dog"))
+	}
+
+	@Test
+	fun `only a backslash query is trimmed`() {
+		assertEquals(listOf("Dog"), hits("  \\sDog  ", "Dog", "x"))
+		assertEquals(listOf("a b c"), hits(" b ", "a b c", "b"))
+	}
 }

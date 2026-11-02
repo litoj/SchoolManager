@@ -13,12 +13,26 @@ import java.util.regex.Pattern
  * - a superseded run aborts via [abort].
  * - a leading backslash selects structured search: type, value source and op tail.
  * - the type is W, T or C, and the value source D, S, F, N or R.
+ * - a number query folds to the strict syntax first, see [strictForm].
  * - see the resolve cases below.
  * - [foldDiacritics] folds the plain text finders, the regex pattern stays as written.
  */
 class SearchEngine(query: String, private val foldDiacritics: Boolean = false) {
 
-	/** False when [query] had a bad backslash r regex. */
+	private companion object {
+		/** Type, letter, operator and tail, each in any case and spacing. */
+		val OPERATOR_SHAPE = Regex(
+			"""\\\s*([WTC]?)\s*(\p{L}?)\s*([<>=])\s*(.*)""",
+			setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
+		)
+
+		val NUMBER_SOURCES = setOf("", "S", "F", "N", "R")
+	}
+
+	/**
+	 * False when [query] cannot search.
+	 * - a malformed number query leaves [regexError] null.
+	 */
 	var valid = true
 		private set
 
@@ -72,7 +86,34 @@ class SearchEngine(query: String, private val foldDiacritics: Boolean = false) {
 	private fun folded(text: String): String =
 		if (foldDiacritics) DiacriticFold.of(text) else text
 
-	private val matcher: Correct = resolve(query)
+	private val matcher: Correct = parse(query)
+
+	/** Plain text keeps its spaces, since they are part of the searched name. */
+	private fun parse(query: String): Correct {
+		val trimmed = query.trim()
+		if (!trimmed.startsWith('\\')) return resolve(query)
+		val strict = strictForm(trimmed)
+		if (strict != null) return resolve(strict)
+		valid = false
+		return Correct { _ -> false }
+	}
+
+	/**
+	 * Folds a number query to the strict syntax.
+	 * - other queries pass unchanged, since their markers are case sensitive.
+	 * @return null for a malformed number query
+	 */
+	private fun strictForm(query: String): String? {
+		val shape = OPERATOR_SHAPE.matchEntire(query) ?: return query
+		val (type, value, operator, number) = shape.destructured
+		val marker = value.ifEmpty { type }
+		// c and e always mean text, while s and r name a source only before a number
+		if (marker == "c" || marker == "e") return query
+		val count = number.toIntOrNull()
+			?: return if (marker == "s" || marker == "r") query else null
+		val source = value.uppercase()
+		return if (source in NUMBER_SOURCES) "\\${type.uppercase()}$source$operator$count" else null
+	}
 
 	private fun resolve(query: String): Correct {
 		var kind: Correct = Correct { _ -> true }
