@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
@@ -78,8 +79,8 @@ private fun Breadcrumbs(breadcrumbs: List<String>, onClick: (Int) -> Unit) {
 }
 
 /**
- * One crumb chain, shared by the breadcrumbs of the titlebar and the paths of
- * the source picker.
+ * One crumb chain, shared by the breadcrumbs of the titlebar and the tap paths
+ * of the picker and the help.
  * @param onCrumbClick a tap on a crumb, null renders a plain chain
  */
 @Composable
@@ -88,12 +89,13 @@ fun CrumbChain(
 	crumbColor: Color,
 	modifier: Modifier = Modifier,
 	onCrumbClick: ((Int) -> Unit)? = null,
+	fontSize: TextUnit = 17.sp,
 ) {
 	Row(modifier, verticalAlignment = Alignment.CenterVertically) {
 		names.forEachIndexed { index, label ->
 			Text(
 				label,
-				fontSize = 17.sp,
+				fontSize = fontSize,
 				color = crumbColor,
 				maxLines = 1,
 				modifier = Modifier

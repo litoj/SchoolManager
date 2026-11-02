@@ -62,8 +62,6 @@
     <string name="help">Nápověda</string>
     <string name="help_create">Vytváření položek</string>
     <string name="help_create_ch">Kapitoly</string>
-    <string name="help_create_ch_how">Kapitoly se vytvářejí plovoucím tlačítkem \'+\' uvnitř kontejneru: tlačítko stiskněte a táhněte prstem na ikonu kapitoly, nebo na ikonu klepněte.
-        \nTaké obsahují pouze základní informace výše uvedené.</string>
     <string name="help_create_how">Každá položka se vytváří plovoucím tlačítkem \'+\' vpravo dole. Na obrazovce předmětů rovnou otevře tvůrce předmětu; uvnitř kontejneru rozvine kruhovou paletu nabízených typů — prstem přetáhněte na ikonu, nebo na ikonu klepněte po obyčejném tapnutí, které paletu nechá otevřenou. Klepnutím mimo ikony paletu zavřete.
         \nTlačítko se při posouvání seznamu dolů schová a při posouvání nahoru se vrátí.
         \nVšechny dialogy mají dva základní parametry k vyplnění.
@@ -71,21 +69,16 @@
         \nDále mohou dialogy obsahovat další doplňující parametry specifické pro různé typy vytvářených položek.
         \nPo vyplnění všech potřebných informací klikněte na tlačítko \'OK\' pro vytvoření položky, nebo můžete vytváření kdykoli ukončit kliknutím na tlačítko \'Zrušit\'. Kliknutím mimo okno dialog také zavřete, ale pouze dokud nebyla provedena žádná změna.</string>
     <string name="help_create_mch">Předměty</string>
-    <string name="help_create_mch_how">Předměty se vytvářejí plovoucím tlačítkem \'+\' na obrazovce předmětů — tapnutí rovnou otevře tvůrce.
-        \nObsahují pouze základní informace výše uvedené.</string>
     <string name="help_create_note">Poznámky</string>
-    <string name="help_create_note_how">Poznámky se vytvářejí plovoucím tlačítkem \'+\' uvnitř kontejneru, stejně jako kapitoly.
-        \nObsahují pouze základní informace výše uvedené — název a popis — a slouží pro text, který není slovíčkem, například pravidlo gramatiky.</string>
+    <string name="help_create_note_how">Poznámka nese název a popis a slouží pro text, který není slovíčkem, například pravidlo gramatiky.</string>
     <string name="help_create_word">Slovíčka</string>
-    <string name="help_create_word_how">Slovíčka se vytvářejí plovoucím tlačítkem \'+\' uvnitř kontejneru, stejně jako kapitoly.
-        \nKromě základních informací obsahují ikonu přidání pod poli, která vytvoří pole se základními parametry určené pro definování překladu.
-        \nPřeklad má opět svůj název a možnost vlastních poznámek.
-        \nPokud se rozhodnete libovolný z překladů odstranit, klikněte na ikonu zrušení vpravo od překladu.</string>
+    <string name="help_create_word_how">Pod poli sedí ikona přidání, která přidá další překlad.
+        \nPřeklad má svůj název a volitelné poznámky.
+        \nIkona zrušení vpravo od překladu ho odstraní.</string>
     <string name="help_extra">Další užitečné funkce</string>
     <string name="help_extra_how">Tento program obsahuje pár dalších zajímavých funkcí, zde je jejich přehled.</string>
     <string name="help_extra_import_mch">Import starých předmětů</string>
-    <string name="help_extra_import_mch_how">Složku s předmětem staré verze aplikace lze importovat na obrazovce předmětů: zvolte \'Stará složka předmětu\' v podmenu \'Import\' v menu \'více\'.
-        \nPředmět se stejným názvem se neimportuje dvakrát.</string>
+    <string name="help_extra_import_mch_how">Importuje složku s předmětem staré verze aplikace.\nPředmět se stejným názvem se neimportuje dvakrát.</string>
     <string name="help_extra_naming">Způsoby pojmenovávání</string>
     <string name="help_extra_naming_how">Tato aplikace umožňuje pojmenovávat slovíčka a další položky specifickým způsobem, díky kterému máte při testu více možností, jak odpovědět.
         \nK dosažení se používá těchto znaků: /()
@@ -93,9 +86,9 @@
     <string name="help_extra_naming_examples">oni/ony jdou = \'oni jdou\', nebo \'ony jdou\'
         \n(Já jdu)/(Ty jdeš). = \'Já jdu.\', nebo \'Ty jdeš.\'</string>
     <string name="help_extra_words_export">Export slovíček</string>
-    <string name="help_extra_words_export_how">Exportují se vybrané položky. Bez výběru se exportuje otevřený kontejner, na obrazovce předmětů všechny předměty.\nSoubor se slovíčky: kompaktní, bez úspěšnosti a referencí.\nSoubor JSON: úplný, včetně úspěšnosti, poznámek a referencí.</string>
+    <string name="help_extra_words_export_how">Menu zobrazí Export jen při vybraných řádcích.\nBez výběru se exportuje otevřený kontejner, na obrazovce předmětů všechny předměty.\nSoubor se slovíčky: kompaktní, bez úspěšnosti a referencí.\nSoubor JSON: úplný, včetně úspěšnosti, poznámek a referencí.</string>
     <string name="help_extra_words_import">Import slovíček</string>
-    <string name="help_extra_words_import_how">Uvnitř předmětu: Více, Import, zvolte soubor.\nNa obrazovce předmětů: Více, Import, Soubor, zvolte soubor. Vytvoří se nový předmět.\nChyba uvádí soubor a řádek. Opravte řádek a zvolte soubor znovu.</string>
+    <string name="help_extra_words_import_how">Uvnitř předmětu se slovíčka importují do něj, na obrazovce předmětů se vytvoří nový předmět.\nChyba uvádí soubor a řádek. Opravte řádek a zvolte soubor znovu.</string>
     <string name="help_import_format">Formát souboru</string>
     <string name="help_import_format_how">Kapitola: název { a } na samostatných řádcích.\nSlovíčko: slovíčko = překlad.\nPoznámka: = text.\nPopis: [text] za názvem.\nVarianty: první\\druhý.</string>
     <string name="help_no_match">Odpovídající nápověda neexistuje.</string>
@@ -180,6 +173,7 @@
     <string name="menu_about">O programu</string>
     <string name="menu_objects">Předměty</string>
     <string name="menu_settings">Nastavení</string>
+    <string name="more">Více</string>
     <string name="more_export">Export</string>
     <string name="more_reference">Vytvořit zástupce</string>
     <string name="reference_fork">Zástupci, kteří budou odkazovat na nové slovo</string>

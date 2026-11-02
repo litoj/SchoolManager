@@ -17,15 +17,26 @@ class HelpFilterTest {
 		30 to "Searching",
 	)
 
-	private fun section(title: Int, body: Int = 0, vararg children: HelpSection) =
-		HelpSection(title, body, children = children.toList())
+	private val paths = mapOf(
+		50 to listOf("Subject", "+", "New chapter"),
+	)
+
+	private fun section(
+		title: Int,
+		body: Int = 0,
+		pathIds: List<Int> = emptyList(),
+		children: List<HelpSection> = emptyList(),
+	) = HelpSection(title, body, paths = pathIds, children = children)
 
 	private val tree = listOf(
-		section(1, 2, section(10, 11), section(20, 21)),
+		section(1, 2, children = listOf(
+			section(10, 11, pathIds = listOf(50)),
+			section(20, 21),
+		)),
 		section(30),
 	)
 
-	private fun visible(query: String) = HelpFilter.visible(tree, query, texts::getValue)
+	private fun visible(query: String) = HelpFilter.visible(tree, query, texts::getValue, paths::getValue)
 
 	@Test
 	fun `a title match keeps only the section`() {
@@ -35,6 +46,11 @@ class HelpFilterTest {
 	@Test
 	fun `a body match keeps the section and its ancestors`() {
 		assertEquals(setOf(1, 10), visible("chapters are"))
+	}
+
+	@Test
+	fun `a path segment match keeps the section and its ancestors`() {
+		assertEquals(setOf(1, 10), visible("new chapter"))
 	}
 
 	@Test

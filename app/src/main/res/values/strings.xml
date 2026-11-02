@@ -56,8 +56,6 @@
     <string name="help">Help</string>
     <string name="help_create">Items creation</string>
     <string name="help_create_ch">Chapters</string>
-    <string name="help_create_ch_how">Chapters are created from the floating New button inside a container: press the button and drag onto the chapter icon, or tap the icon in the standing palette.
-        \nThey have only the basic information described above.</string>
     <string name="help_create_how">Every item is created from the floating New button at the bottom right. On the subjects screen it opens the subject creator right away; inside a container it fans out a circular palette of the offered types — drag the finger onto an icon, or tap the icon after a plain tap leaves the palette standing. A tap outside the icons closes the palette.
         \nThe button hides when the list scrolls down and returns when it scrolls back up.
         \nAll the creator dialogs have two columns for name of the new item and for its description (optional).
@@ -65,34 +63,63 @@
         \nAfter you are done with these two colums, there can be more stuff for each different type of item.
         \nWhen you are done with all that information, click \'OK\' to create the item, or click \'Cancel\' to exit the dialog. A click outside the window closes the dialog too, but only when nothing was changed.</string>
     <string name="help_create_mch">Subjects</string>
-    <string name="help_create_mch_how">Subjects are created from the floating New button on the subjects screen — the tap opens the creator directly.
-        \nThey have just the basic information described above.</string>
     <string name="help_create_note">Notes</string>
-    <string name="help_create_note_how">Notes are created from the floating New button inside a container, like chapters.
-        \nThey carry only the basic information described above — a name and a description — and serve for any text that is not a word, like a grammar rule.</string>
+    <string name="help_create_note_how">Notes carry a name and a description, and serve for any text that is not a word, like a grammar rule.</string>
     <string name="help_create_word">Words</string>
-    <string name="help_create_word_how">Words are created from the floating New button inside a container, like chapters.
-        \nOther than the basic information they contain an add icon below the fields, which adds a translate item.
-        \nTranslates consist of name and optional description.
-        \nTo remove a translate, click on the cancel icon on the right of the specified translate.</string>
+    <string name="help_create_word_how">Below the fields sits an add icon, which adds a translate item.
+        \nA translate consists of a name and an optional description.
+        \nThe cancel icon on its right removes it.</string>
     <string name="help_extra">More useful functions</string>
     <string name="help_extra_how">This application has some more functions that can sometimes help. Here is the list and explanation of them.</string>
     <string name="help_extra_import_mch">Legacy subjects import</string>
-    <string name="help_extra_import_mch_how">A subject folder of the old app version can be imported on the subjects screen: pick \'Legacy subject folder\' in the \'Import\' submenu of the \'more\' menu.
-        \nA subject with the same name is not imported twice.</string>
+    <string name="help_extra_import_mch_how">Imports a subject folder of the old app version.\nA subject with the same name is not imported twice.</string>
     <string name="help_extra_naming">Naming convention</string>
     <string name="help_extra_naming_how">If you have similar names of certain words, and they have identical translations, combine them using these: /().
         \nSlash character signals two different options ending by a whitespace, an interpunction character or a bracket.</string>
     <string name="help_extra_naming_examples">I/They come = \'I come\' or \'They come\'
         \n(I go)/(He goes). = \'I go.\' or \'He goes\'.</string>
     <string name="help_extra_words_export">Export words</string>
-    <string name="help_extra_words_export_how">Selected rows export. Nothing selected exports the open container, or all subjects at the root.\nWord file: compact, no success rates, no references.\nJSON file: complete, success rates, notes and references included.</string>
+    <string name="help_extra_words_export_how">The menu shows Export only while rows are selected.\nNothing selected exports the open container, or all subjects at the root.\nWord file: compact, no success rates, no references.\nJSON file: complete, success rates, notes and references included.</string>
     <string name="help_extra_words_import">Import words</string>
-    <string name="help_extra_words_import_how">Inside a subject: More, Import, pick the file.\nAt the subjects screen: More, Import, File, pick the file. A new subject is created.\nAn error names the file and line. Fix that line and pick the file again.</string>
+    <string name="help_extra_words_import_how">Inside a subject the words land in it, at the subjects screen a new subject is created.\nAn error names the file and line. Fix that line and pick the file again.</string>
     <string name="help_import_format">File format</string>
     <string name="help_import_format_how">Chapter: name { and } on their own lines.\nWord: word = translation.\nNote: = text.\nDescription: [text] after a name.\nVariants: first\\second.</string>
     <string name="help_import_example_text" translatable="false">Kapitel 1 {\n\tder Hund = pes\n\tdie Katze = kočka\n}</string>
     <string name="help_no_match">No matching help.</string>
+    <string-array name="help_path_create_chapter">
+        <item>+</item>
+        <item>@string/new_chapter</item>
+    </string-array>
+    <string-array name="help_path_create_mch">
+        <item>+</item>
+        <item>@string/new_mch</item>
+    </string-array>
+    <string-array name="help_path_create_note">
+        <item>+</item>
+        <item>@string/new_note</item>
+    </string-array>
+    <string-array name="help_path_create_word">
+        <item>+</item>
+        <item>@string/new_word</item>
+    </string-array>
+    <string-array name="help_path_export">
+        <item>@string/more</item>
+        <item>@string/more_export</item>
+    </string-array>
+    <string-array name="help_path_import_dir">
+        <item>@string/more</item>
+        <item>@string/more_import</item>
+        <item>@string/dir_import</item>
+    </string-array>
+    <string-array name="help_path_import_file">
+        <item>@string/more</item>
+        <item>@string/more_import</item>
+    </string-array>
+    <string-array name="help_path_import_root">
+        <item>@string/more</item>
+        <item>@string/more_import</item>
+        <item>@string/more_import_file</item>
+    </string-array>
     <string name="help_search">Searching</string>
     <string name="help_search_hint">Search help</string>
     <string name="help_search_how">Searching is enabled in all chapters and subjects.
@@ -173,6 +200,7 @@
     <string name="menu_about">About</string>
     <string name="menu_objects">Subjects</string>
     <string name="menu_settings">Options</string>
+    <string name="more">More</string>
     <string name="more_export">Export</string>
     <string name="more_reference">Create reference</string>
     <string name="reference_fork">References that follow the new word</string>

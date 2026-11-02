@@ -143,6 +143,8 @@ Its DB part is the model for this project.
 - Closing the field clears the query.
 - Header levels differ by band and size, the deepest carries depth by indentation.
 - A one-line topic folds into body text, never gets its own section.
+- An interaction path renders with chevrons, its segments reuse the menu labels.
+- A path starts at the first tap target, no screen or container anchor.
 - A screen explains itself in one short text, the help page holds only the necessary extras.
 - Literal examples render as monospace code blocks, apart from the explanation text.
 
@@ -174,8 +176,8 @@ Its DB part is the model for this project.
 - 2026-11-02: test setup explains itself on its screen, the help page keeps
   only the extras. Literal examples render as code blocks. 675 tests.
 - 2026-11-02: picker starts at the explorer position, search field stays
-  through results with a cancel arrow, test help rewritten. 674 tests.
-  Help chevron paths remain open.
+  through results with a cancel arrow, test help rewritten, help interaction
+  paths render with chevrons. 675 tests.
 - 2026-10-30: help search, three header levels and folded one-line topics.
   The filter is `HelpFilter` with a unit pin, 668 tests.
 - 2026-10-29: the testing standard lives in `DEVELOPMENT.md` §8, commits

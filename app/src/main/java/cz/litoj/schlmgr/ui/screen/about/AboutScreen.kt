@@ -1,6 +1,7 @@
 package cz.litoj.schlmgr.ui.screen.about
 
 import androidx.activity.compose.BackHandler
+import androidx.annotation.ArrayRes
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
@@ -22,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -30,6 +32,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.ui.component.CrumbChain
 import cz.litoj.schlmgr.ui.component.DefaultTextColor
 import cz.litoj.schlmgr.ui.component.TopBarSearchField
 import cz.litoj.schlmgr.ui.shell.TopBar
@@ -45,10 +48,10 @@ private val sections = listOf(
 	HelpSection(
 		R.string.help_create, intro = R.string.help_create_how, icon = R.drawable.ic_add_black,
 		children = listOf(
-			HelpSection(R.string.help_create_mch, R.string.help_create_mch_how, icon = R.drawable.ic_subject),
-			HelpSection(R.string.help_create_ch, R.string.help_create_ch_how, icon = R.drawable.ic_chapter),
-			HelpSection(R.string.help_create_word, R.string.help_create_word_how, icon = R.drawable.ic_word),
-			HelpSection(R.string.help_create_note, R.string.help_create_note_how, icon = R.drawable.ic_note),
+			HelpSection(R.string.help_create_mch, paths = listOf(R.array.help_path_create_mch), icon = R.drawable.ic_subject),
+			HelpSection(R.string.help_create_ch, paths = listOf(R.array.help_path_create_chapter), icon = R.drawable.ic_chapter),
+			HelpSection(R.string.help_create_word, R.string.help_create_word_how, paths = listOf(R.array.help_path_create_word), icon = R.drawable.ic_word),
+			HelpSection(R.string.help_create_note, R.string.help_create_note_how, paths = listOf(R.array.help_path_create_note), icon = R.drawable.ic_note),
 		),
 	),
 	HelpSection(
@@ -84,6 +87,7 @@ private val sections = listOf(
 			}),
 			HelpSection(
 				R.string.help_extra_words_import, R.string.help_extra_words_import_how,
+				paths = listOf(R.array.help_path_import_file, R.array.help_path_import_root),
 				children = listOf(
 					HelpSection(
 						R.string.help_import_format,
@@ -94,8 +98,15 @@ private val sections = listOf(
 					),
 				),
 			),
-			HelpSection(R.string.help_extra_words_export, R.string.help_extra_words_export_how),
-			HelpSection(R.string.help_extra_import_mch, R.string.help_extra_import_mch_how, icon = R.drawable.ic_import_help),
+			HelpSection(
+				R.string.help_extra_words_export, R.string.help_extra_words_export_how,
+				paths = listOf(R.array.help_path_export),
+			),
+			HelpSection(
+				R.string.help_extra_import_mch, R.string.help_extra_import_mch_how,
+				paths = listOf(R.array.help_path_import_dir),
+				icon = R.drawable.ic_import_help,
+			),
 		),
 	),
 )
@@ -139,14 +150,15 @@ fun AboutScreen(viewModel: AboutViewModel, openDrawer: () -> Unit) {
 
 /**
  * One collapsible help section.
- * - when expanded it shows the [intro] paragraph, the [body] text and the custom intro.
- * - that runs in this order, where a 0 resource or null hides its field.
+ * - when expanded it shows the [intro] paragraph, the [paths] rows, the [body] text and the custom intro.
+ * - that runs in this order, where a 0 resource or an empty list hides its field.
  * - [children] follow.
  */
 class HelpSection(
 	@param:StringRes val title: Int,
 	@param:StringRes val body: Int = 0,
 	@param:StringRes val intro: Int = 0,
+	val paths: List<Int> = emptyList(),
 	@param:DrawableRes val icon: Int = 0,
 	val iconTint: Color = Color.Unspecified,
 	val customIntro: (@Composable () -> Unit)? = null,
@@ -157,7 +169,11 @@ class HelpSection(
 private fun HelpTree(viewModel: AboutViewModel, modifier: Modifier = Modifier) {
 	val context = LocalContext.current
 	val searching = viewModel.query.isNotBlank()
-	val visible = if (searching) HelpFilter.visible(sections, viewModel.query, context::getString) else emptySet()
+	// stringArrayResource stays configuration aware, unlike a raw Resources read
+	val pathText = HelpFilter.pathIds(sections).associateWith { stringArrayResource(it).toList() }
+	val visible = if (searching) {
+		HelpFilter.visible(sections, viewModel.query, context::getString, pathText::getValue)
+	} else emptySet()
 	LazyColumn(modifier.fillMaxSize()) {
 		item { BigHeader(stringResource(R.string.help), R.drawable.ic_help) }
 		sections.filter { !searching || it.title in visible }.forEach { section ->
@@ -251,6 +267,7 @@ private fun Section(
 	}
 	if (expanded) {
 		if (section.intro != 0) BodyText(stringResource(section.intro))
+		section.paths.forEach { PathRow(it) }
 		if (section.body != 0) BodyText(stringResource(section.body))
 		section.customIntro?.invoke()
 		section.children
@@ -265,6 +282,17 @@ private fun BodyText(text: String) {
 		text,
 		Modifier.padding(8.dp),
 		style = TextStyle(fontSize = 15.sp, color = DefaultTextColor),
+	)
+}
+
+/** One interaction path, rendered like the object path of the explorer. */
+@Composable
+private fun PathRow(@ArrayRes path: Int) {
+	CrumbChain(
+		stringArrayResource(path).toList(),
+		DefaultTextColor,
+		Modifier.padding(start = 8.dp, end = 8.dp, bottom = 4.dp),
+		fontSize = 15.sp,
 	)
 }
 
