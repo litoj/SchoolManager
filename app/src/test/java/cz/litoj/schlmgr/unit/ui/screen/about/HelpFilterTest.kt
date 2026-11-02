@@ -11,7 +11,7 @@ class HelpFilterTest {
 		1 to "Items creation",
 		2 to "Every item is created from the floating New button.",
 		10 to "Chapters",
-		11 to "Chapters are created from the floating New button.",
+		11 to "Chapters are created from the standing palette.",
 		20 to "Words",
 		21 to "Words are created from the floating New button.",
 		30 to "Searching",
@@ -45,7 +45,7 @@ class HelpFilterTest {
 
 	@Test
 	fun `a body match keeps the section and its ancestors`() {
-		assertEquals(setOf(1, 10), visible("chapters are"))
+		assertEquals(setOf(1, 10), visible("standing palette"))
 	}
 
 	@Test
@@ -64,7 +64,7 @@ class HelpFilterTest {
 	}
 
 	@Test
-	fun `an empty query matches everything`() {
-		assertEquals(setOf(1, 10, 20, 30), visible(""))
+	fun `a whitespace query matches everything`() {
+		assertEquals(setOf(1, 10, 20, 30), visible(" "))
 	}
 }
