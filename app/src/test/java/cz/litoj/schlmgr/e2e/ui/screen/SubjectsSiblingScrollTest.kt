@@ -11,9 +11,11 @@ import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
 import cz.litoj.schlmgr.ui.screen.subjects.SubjectsScreen
+import cz.litoj.schlmgr.ui.viewmodel.CreatorResult
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import kotlinx.coroutines.Dispatchers
 import org.junit.After
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -53,7 +55,7 @@ class SubjectsSiblingScrollTest {
 		ItemRepository.resetForTest()
 	}
 
-	/** Seeds two chapters with forty words each and opens the first one. */
+	/** Seeds two chapters with forty words, a note in the first, opened scrolled deep. */
 	private fun scrolledFirstChapter(): MainExplorerViewModel {
 		val a = ItemRepository.createSubject("A", null)
 		val c1 = ItemRepository.createChapter(a.id, "c1", null)
@@ -62,6 +64,7 @@ class SubjectsSiblingScrollTest {
 			ItemRepository.createWord(c1.id, "w$i", null, listOf("t$i" to null))
 			ItemRepository.createWord(c2.id, "v$i", null, listOf("u$i" to null))
 		}
+		ItemRepository.createNote(c1.id, "n1", "note")
 		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
 		rule.setContent { SubjectsScreen(model, {}, {}, {}) }
 		rule.waitForIdle()
@@ -115,5 +118,24 @@ class SubjectsSiblingScrollTest {
 
 		rule.onNodeWithText("w30").assertExists()
 		rule.onNodeWithText("t30").assertDoesNotExist()
+	}
+
+	@Test
+	fun `an item edit keeps the scrolled place and the flip sides`() {
+		val model = scrolledFirstChapter()
+		rule.onNodeWithText("t30").performClick()
+		rule.waitForIdle()
+		val note = model.items().single { it.item.name == "n1" }
+
+		assertTrue(model.commitItemEdit(note, CreatorResult("n2", "new", emptyList(), emptyList())))
+		rule.waitForIdle()
+
+		// the flip side survived the edit and the list never left its place
+		rule.onNodeWithText("w30").assertExists()
+		rule.onNodeWithText("t30").assertDoesNotExist()
+		// the edited note keeps its slot at the end of the list
+		rule.onNode(hasScrollToIndexAction()).performScrollToIndex(40)
+		rule.waitForIdle()
+		rule.onNodeWithText("n2").assertExists()
 	}
 }

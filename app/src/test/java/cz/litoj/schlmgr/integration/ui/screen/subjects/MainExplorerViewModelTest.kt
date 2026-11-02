@@ -363,6 +363,52 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
+	fun `an item edit updates its row without a reload`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
+		ItemRepository.createNote(c1.id, "note1", "old")
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		model.flipWord(model.items().single { it.item.name == "w1" })
+		val step = model.listState.value.contentStep
+		val note = model.items().single { it.item.name == "note1" }
+
+		assertTrue(model.commitItemEdit(note, CreatorResult("note2", "new", emptyList(), emptyList())))
+
+		assertEquals("the edit rebuilt no list", step, model.listState.value.contentStep)
+		assertEquals("note2", model.items().single { it.item.name == "note2" }.item.name)
+		assertTrue("the flip side of the other row survived",
+			!model.items().single { it.item.name == "w1" }.flipped)
+	}
+
+	@Test
+	fun `a word edit updates its row in place and refreshes the shared rows`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "dog", null, listOf("pes" to null))
+		ItemRepository.createWord(c1.id, "hound", null, listOf("pes" to null))
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		val dog = model.items().single { it.item.name == "dog" }
+		val hound = model.items().single { it.item.name == "hound" }
+		model.flipWord(dog)
+		val step = model.listState.value.contentStep
+		// both words show one shared translation row
+		val pes = ItemRepository.translations(dog.item.id).single()
+
+		val result = CreatorResult("dog", "",
+			listOf(TranslationValue("pes", "psí pes", pes)), emptyList())
+		assertTrue(model.commitWordEdit(dog, result))
+
+		assertEquals("the edit rebuilt no list", step, model.listState.value.contentStep)
+		assertTrue("the flip side of the row survived", !dog.flipped)
+		assertEquals("dog", dog.toShow)
+		assertEquals("the shared row re-rendered its changed description",
+			listOf("psí pes"), hound.translationLines.map { it.description })
+	}
+
+	@Test
 	fun `a search round trip restores the view state`() {
 		val (aId, _) = seed()
 		val c1 = ItemRepository.children(aId).single()

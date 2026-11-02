@@ -44,6 +44,9 @@ internal class SubjectsWordEdit(
 
 		fun refreshInfo()
 
+		/** Republishes the rows in place, without a reload. */
+		fun notifyChanged()
+
 		fun addItem(item: ItemRow)
 
 		fun addItem(index: Int, item: ItemRow)
@@ -73,12 +76,11 @@ internal class SubjectsWordEdit(
 	fun commitWordEdit(row: ItemRow, result: CreatorResult): Boolean {
 		val edit = wordEditOf(result, row) ?: return false
 		val rowId = row.item.id
-		val rowParent = row.parentId
 		scope.launch(io) {
 			val references =
 				if (ItemRepository.editForks(edit)) ItemRepository.referencesOf(rowId)
 				else emptyList()
-			if (references.isEmpty()) commitWordEditNow(row, edit, rowId, rowParent)
+			if (references.isEmpty()) commitWordEditNow(row, edit, rowId)
 			else host.postToUi { host.emitRequest(Request.ForkReferences(row, edit, references)) }
 		}
 		return true
@@ -87,19 +89,35 @@ internal class SubjectsWordEdit(
 	/** Commits the fork, where only the kept references follow. */
 	fun commitForkReferences(row: ItemRow, edit: WordEdit, kept: List<Int>) {
 		val rowId = row.item.id
-		val rowParent = row.parentId
 		scope.launch(io) {
-			commitWordEditNow(row, edit.copy(referencesToFork = kept), rowId, rowParent)
+			commitWordEditNow(row, edit.copy(referencesToFork = kept), rowId)
 		}
 	}
 
-	/** An edit that changes the word id also changes its place, so read it again. */
-	private suspend fun commitWordEditNow(row: ItemRow, edit: WordEdit, rowId: Int, rowParent: Int?) {
+	/**
+	 * An edit that keeps the word id updates its row in place, since a reload
+	 * would drop the scroll and flip state of the view.
+	 * - a fork or a rename join moves rows around, so the list rebuilds whole.
+	 */
+	private suspend fun commitWordEditNow(row: ItemRow, edit: WordEdit, rowId: Int) {
 		val word = ItemRepository.editWord(edit)
-		val placement = if (word.id != rowId && rowParent != null) row.readPlacement(rowParent, word) else null
+		if (word.id != rowId) {
+			host.postToUi {
+				host.reloadContent()
+				host.clearSelection()
+				host.refreshInfo()
+			}
+			return
+		}
+		val flip = ItemRow.flipContentOf(word)
+		// a touched shared translation re-renders the rows that show it
+		val touched = edit.kept.map { it.id } + edit.removed
+		val contents = (touched.flatMap { ItemRepository.parentIds(it) }.toSet() - rowId)
+			.associateWith { id -> ItemRepository.get(id)?.let { ItemRow.flipContentOf(it) } }
 		host.postToUi {
-			placement?.let { row.applyPlacement(it) }
-			host.reloadContent()
+			row.applyFresh(word, flip)
+			for (shared in host.items()) contents[shared.item.id]?.let { shared.applyFresh(shared.item, it) }
+			host.notifyChanged()
 			host.clearSelection()
 			host.refreshInfo()
 		}
@@ -114,8 +132,13 @@ internal class SubjectsWordEdit(
 		scope.launch(io) {
 			ItemRepository.setDescription(rowId, description)
 			if (rename) ItemRepository.rename(rowId, result.name)
+			val fresh = ItemRepository.get(rowId)
+			// a word or a translation re-renders through its flip content
+			val flip = if (fresh != null && (fresh.type == ItemKind.WORD || fresh.type == ItemKind.TRANSLATION))
+				ItemRow.flipContentOf(fresh) else emptyList()
 			host.postToUi {
-				host.reloadContent()
+				row.applyFresh(fresh, flip)
+				host.notifyChanged()
 				host.clearSelection()
 				host.refreshInfo()
 			}

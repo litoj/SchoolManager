@@ -104,6 +104,7 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		override fun clearSelection() = this@MainExplorerViewModel.clearSelection()
 		override fun reloadContent() = this@MainExplorerViewModel.reloadContent()
 		override fun refreshInfo() = this@MainExplorerViewModel.refreshInfo()
+		override fun notifyChanged() = this@MainExplorerViewModel.notifyChanged()
 		override fun addItem(item: ItemRow) = this@MainExplorerViewModel.addItem(item)
 		override fun addItem(index: Int, item: ItemRow) = this@MainExplorerViewModel.addItem(index, item)
 	}

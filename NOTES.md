@@ -42,6 +42,9 @@ Its DB part is the model for this project.
 - Save immediately on every change.
 - No save button.
 - Keep `passed_tests` and `failed_tests`.
+- An edit that keeps the row identity updates its row in place, no reload.
+- Rows sharing a touched translation re-render.
+- A fork or a rename join rebuilds the list, the view state survives it.
 
 ### Import
 
@@ -195,6 +198,9 @@ Its DB part is the model for this project.
 - 2026-11-02: each container view remembers its scroll and flip sides for
   the session. `ViewStateStore` captures on leave and restores on return,
   search round trips included. 677 tests.
+- 2026-11-02: edits update their rows in place. Same-id word and item edits
+  re-render through `applyFresh`, shared-translation rows follow, forks and
+  rename joins keep the reload. 680 tests.
 - 2026-11-02: test screens reshaped. The setup states its units, pool and
   total, the run shows progress, pauses away and confirms exits, results
   pair answers with expectations and offer a retake. 668 tests.
