@@ -95,6 +95,7 @@ Example:
 5. Make a commit with a clear message and changelist.
    - **THE COMMIT SHOULD ONLY CONTAIN A CLEAR SHORT DESCRIPTION OF THE CHANGES**
    - **DO NOT WRITE ANY OF YOUR TEST STATE NONSENSE IN THERE.**
+   - **A FIX AMENDS THE COMMIT OF THE CHANGE IT BELONGS TO, ONLY DISTINCT WORK ADDS A NEW COMMIT**
    - **THE COMMIT MESSAGE MUST ADHERE TO THE Comments and documentation spec**
    - always add a `Co-Authored-By: opencode <noreply@opencode.ai>` line
 
