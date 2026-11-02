@@ -87,7 +87,7 @@ private val sections = listOf(
 			}),
 			HelpSection(
 				R.string.help_extra_words_import, R.string.help_extra_words_import_how,
-				paths = listOf(R.array.help_path_import_file, R.array.help_path_import_root),
+				paths = listOf(R.array.help_path_import),
 				children = listOf(
 					HelpSection(
 						R.string.help_import_format,

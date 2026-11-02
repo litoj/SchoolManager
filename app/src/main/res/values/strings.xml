@@ -83,6 +83,10 @@
     <string name="help_import_format_how">Chapter: name { and } on their own lines.\nWord: word = translation.\nNote: = text.\nDescription: [text] after a name.\nVariants: first\\second.</string>
     <string name="help_import_example_text" translatable="false">Kapitel 1 {\n\tder Hund = pes\n\tdie Katze = kočka\n}</string>
     <string name="help_no_match">No matching help.</string>
+    <string-array name="help_path_import">
+        <item>@string/more</item>
+        <item>@string/more_import</item>
+    </string-array>
     <string-array name="help_path_create_chapter">
         <item>+</item>
         <item>@string/new_chapter</item>
@@ -102,14 +106,6 @@
     <string-array name="help_path_export">
         <item>@string/more</item>
         <item>@string/more_export</item>
-    </string-array>
-    <string-array name="help_path_import_file">
-        <item>@string/more</item>
-        <item>@string/more_import</item>
-    </string-array>
-    <string-array name="help_path_import_root">
-        <item>@string/more</item>
-        <item>@string/more_import</item>
     </string-array>
     <string name="help_search">Searching</string>
     <string name="help_search_hint">Search help</string>
