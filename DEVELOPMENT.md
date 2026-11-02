@@ -117,7 +117,6 @@ What does not:
 | UI chapter and note creator dedup | Open decision, the creator inserts freely today |
 | On-device SAF import re-verification | Not done after the perf round |
 | Scroll stutter on the physical phone | Emulator clean. Recipe: `adb shell dumpsys gfxinfo cz.litoj.schlmgr reset`, fling `\W/` results, `adb shell dumpsys gfxinfo cz.litoj.schlmgr` |
-| Test results success rate | Prints a raw float, rounding undecided |
 | Main-path pins missing against §8 | Governed by the meaningfulness rule, no gap list kept |
 
 ## 10. Code review mode

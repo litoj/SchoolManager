@@ -1,20 +1,18 @@
 package cz.litoj.schlmgr.ui.popup
 
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -25,7 +23,9 @@ import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.db.ratio
 import cz.litoj.schlmgr.data.db.testedCount
+import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestItemModel
+import cz.litoj.schlmgr.ui.activity.TestActivity
 import cz.litoj.schlmgr.ui.component.HairlineDivider
 import cz.litoj.schlmgr.ui.component.Item
 import cz.litoj.schlmgr.ui.component.positionColumnWidth
@@ -55,11 +55,17 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 
 	@Composable
 	override fun Content() {
-		val successText = stringResource(R.string.success_rate, success.toString())
+		val correct = rows.count { it.item.correct }
+		val successText = stringResource(
+			R.string.success_rate,
+			Math.round(success).toInt(),
+			correct,
+			rows.size,
+		)
 		// one width for every count cell, so the rows render at the browse number size.
 		// the widest count can lie below the largest one, since digit widths differ.
 		val positionWidth = positionColumnWidth(
-			rows.maxOfOrNull { it.model.position } ?: 1,
+			rows.size,
 			ExplorerRowVariant.Browse,
 		)
 		Box(Modifier.fillMaxSize().padding(25.dp)) {
@@ -72,43 +78,48 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 				PopupTitle(successText)
 				HairlineDivider()
 				LazyColumn(Modifier.weight(1f)) {
-					items(rows) { row -> WordResultRow(row, positionWidth) }
+					itemsIndexed(rows) { index, row -> WordResultRow(index, row, positionWidth) }
 				}
-			}
-			Button(
-				onClick = { Dialogs.dismiss(this@TestResultsPopup) },
-				// the theme colours of the app, since the Material default is the Compose purple.
-				colors = ButtonDefaults.buttonColors(
-					backgroundColor = colorResource(R.color.colorPrimaryHeader),
-					contentColor = colorResource(R.color.colorOnHeader),
-				),
-				modifier = Modifier
-					.align(Alignment.BottomCenter)
-					.padding(bottom = 10.dp)
-					.height(30.dp),
-			) {
-				Text(stringResource(R.string.ok), style = TextStyle(fontSize = 15.sp))
+				HairlineDivider()
+				PopupButtonRow {
+					val context = LocalContext.current
+					PopupButton(stringResource(R.string.test_retake), Modifier.weight(1f)) {
+						Dialogs.dismiss(this@TestResultsPopup)
+						// the setup keeps its sources, so the run rebuilds on the same ones
+						context.startActivity(Intent(context, TestActivity::class.java))
+					}
+					VerticalButtonSeparator()
+					PopupButton(stringResource(R.string.ok), Modifier.weight(1f)) { Dialogs.dismiss(this@TestResultsPopup) }
+				}
 			}
 		}
 	}
 
 	@Composable
-	private fun WordResultRow(row: ResultRow, positionWidth: Dp) {
+	private fun WordResultRow(index: Int, row: ResultRow, positionWidth: Dp) {
 		Item(
-			row.model,
+			row.model.copy(position = index + 1),
 			onClick = {},
 			onLongClick = {},
 			descVisible = true,
 			positionWidth = positionWidth,
 			answer = {
-				if (row.item.answer.isNotEmpty()) Text(
-					row.item.answer,
-					style = TextStyle(
-						fontSize = 15.sp,
-						color = if (row.item.correct) colorResource(R.color.colorPrimaryHeader)
-						else colorResource(R.color.colorFailure)
-					),
-				)
+				// the run outcome leads, the expected side follows on a wrong answer
+				if (row.item.correct) {
+					Text(
+						"✓ " + row.item.answer,
+						style = TextStyle(fontSize = 15.sp, color = colorResource(R.color.colorPrimaryHeader)),
+					)
+				} else {
+					Text(
+						stringResource(R.string.test_you, row.item.answer),
+						style = TextStyle(fontSize = 15.sp, color = colorResource(R.color.colorFailure)),
+					)
+					Text(
+						stringResource(R.string.test_expected, expectedOf(row.item)),
+						style = TextStyle(fontSize = 15.sp, color = colorResource(R.color.colorFailure)),
+					)
+				}
 			},
 			trailing = {
 				Text(
@@ -118,6 +129,11 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 			},
 		)
 	}
+
+	/** The asked side of the run, which a wrong answer failed to name. */
+	private fun expectedOf(item: TestItemModel): String =
+		if (TestEngine.isReversed) item.translations.joinToString("\n") { ItemRow.nameParser(it.name) }
+		else ItemRow.nameParser(item.word.name)
 
 	/** The explorer-row model of one result, the word as a plain unflipped row. */
 	private fun toModel(item: TestItemModel) = ItemUiModel(

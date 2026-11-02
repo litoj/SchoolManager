@@ -1,5 +1,6 @@
 package cz.litoj.schlmgr.ui.popup
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -16,7 +17,7 @@ import cz.litoj.schlmgr.ui.component.HairlineDivider
  * OK reports through [onOk] on the thread of the caller, which decides where the action runs.
  * - the Cancel button only dismisses.
  */
-class ContinuePopup(private val onOk: () -> Unit) : DialogSpec {
+class ContinuePopup(@StringRes private val title: Int = R.string.continue_delete, private val onOk: () -> Unit) : DialogSpec {
 
 	private var fired = false
 
@@ -28,7 +29,7 @@ class ContinuePopup(private val onOk: () -> Unit) : DialogSpec {
 	override fun Content() {
 		PopupCard {
 			Text(
-				stringResource(R.string.continue_delete),
+				stringResource(title),
 				Modifier.padding(5.dp),
 				style = TextStyle(fontSize = 20.sp, color = TextColor),
 			)

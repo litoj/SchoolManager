@@ -1,5 +1,6 @@
 package cz.litoj.schlmgr.unit.ui.screen.test
 
+import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.screen.test.TestSetupState
@@ -16,6 +17,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 class TestSetupViewModelTest {
@@ -23,6 +25,13 @@ class TestSetupViewModelTest {
 	@After
 	fun resetState() {
 		TestSetupState.reset()
+		TestSetupState.childrenLookup = ItemRepository::children
+	}
+
+	/** The doors refresh the counts, which read the database. */
+	@Before
+	fun fakeTree() {
+		TestSetupState.childrenLookup = { emptyList() }
 	}
 
 	@Test

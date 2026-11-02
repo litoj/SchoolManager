@@ -1,5 +1,6 @@
 package cz.litoj.schlmgr.unit.ui.screen.test
 
+import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.testing.TestEngine
@@ -12,6 +13,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.After
+import org.junit.Before
 import org.junit.Test
 
 class TestSetupStateTest {
@@ -20,6 +22,13 @@ class TestSetupStateTest {
 	@After
 	fun resetState() {
 		TestSetupState.reset()
+		TestSetupState.childrenLookup = ItemRepository::children
+	}
+
+	/** The doors refresh the counts, which read the database. */
+	@Before
+	fun fakeTree() {
+		TestSetupState.childrenLookup = { emptyList() }
 	}
 
 	private fun item(id: Int, name: String = "i$id") =
@@ -226,5 +235,30 @@ class TestSetupStateTest {
 		TestSetupState.addPicked(listOf(TestSetupState.seedOf(ItemRow.ofSearchHit(subject, emptyList(), 1, emptyList()))))
 		assertTrue(TestSetupState.hierarchyPicked())
 		TestSetupState.reset()
+	}
+
+	@Test
+	fun `the count refresh counts the pool deduped and each source alone`() {
+		val subject = item(1, "subject")
+		val chapter = item(2, "chapter")
+		val word3 = DbItem(id = 3, name = "w3", description = "", type = ItemKind.WORD)
+		val word4 = DbItem(id = 4, name = "w4", description = "", type = ItemKind.WORD)
+		val word9 = DbItem(id = 9, name = "w9", description = "", type = ItemKind.WORD)
+		TestSetupState.childrenLookup = { id ->
+			when (id) {
+				1 -> listOf(chapter, word9)
+				2 -> listOf(word3, word4)
+				else -> emptyList()
+			}
+		}
+		val chapterSource = ItemRow.ofSearchHit(chapter, listOf(subject), 1, emptyList())
+		val wordSource = ItemRow.ofSearchHit(word9, listOf(subject), 1, emptyList())
+
+		TestSetupState.fillFromSelection(listOf(chapterSource, wordSource).map(TestSetupState::seedOf))
+
+		// the chapter holds two words and the word source one, with none shared
+		assertEquals(3, TestSetupState.poolCount)
+		assertEquals(2, TestSetupState.sourceCounts[listOf(subject, chapter)])
+		assertEquals(1, TestSetupState.sourceCounts[listOf(subject, word9)])
 	}
 }

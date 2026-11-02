@@ -39,4 +39,25 @@ class TestEngineCountdownTest {
 		Thread.sleep(1_500)
 		assertEquals(1, ticks.get())
 	}
+
+	@Test
+	fun `a pause holds the countdown and the resume continues it`() {
+		val engine = TestEngine()
+		val ticks = AtomicInteger()
+		engine.setTested(1, { ticks.incrementAndGet(); true }, 30, listOf(entry()))
+
+		engine.startTest()
+		// the first tick runs before any sleep, so the wait only covers the thread start
+		Thread.sleep(1_500)
+		engine.pauseTest()
+		val held = ticks.get()
+
+		Thread.sleep(2_500)
+		assertEquals("a paused countdown does not tick", held, ticks.get())
+
+		engine.resumeTest()
+		Thread.sleep(1_500)
+		assertTrue("a resumed countdown ticks again", ticks.get() > held)
+		engine.stopTest()
+	}
 }

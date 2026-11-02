@@ -19,6 +19,10 @@ class TestEngine {
 	private var doOnSec: Timer? = null
 	private var timerThread: Thread? = null
 
+	// the pause flag crosses threads, since the lifecycle writes it from main
+	@Volatile
+	private var paused = false
+
 	/**
 	 * @param amount how many entries to use, -1 or more than [source] uses all of it.
 	 *   Clever mode picks by urgency, otherwise randomly.
@@ -48,13 +52,24 @@ class TestEngine {
 			try {
 				val timer = doOnSec
 				while (time >= 0) {
-					if (timer != null && !timer.doOnSec(time)) return@Thread
+					// a pause holds both the tick and the time, so the run continues where it held
+					if (!paused && timer != null && !timer.doOnSec(time)) return@Thread
 					Thread.sleep(1000)
-					time--
+					if (!paused) time--
 				}
 			} catch (_: InterruptedException) {
 			}
 		}, "Test timer").also { it.start() }
+	}
+
+	/** Pauses the countdown, so the remaining time holds. */
+	fun pauseTest() {
+		paused = true
+	}
+
+	/** Resumes the countdown where it held. */
+	fun resumeTest() {
+		paused = false
 	}
 
 	/**

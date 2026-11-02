@@ -16,6 +16,7 @@
     <string name="data_desc">Popisek</string>
     <string name="data_name">Název</string>
     <string name="data_translate">Překlad</string>
+    <string name="data_word">Slovíčko</string>
     <string name="delete">Odstranit</string>
     <string name="done">Hotovo</string>
     <string name="edit">Upravit</string>
@@ -230,17 +231,40 @@
     <string name="sort_sf_10">úspěšností ▲</string>
     <string name="sort_priority">priorita</string>
     <string name="start">Začít</string>
-    <string name="success_rate">"Úspěšnost: %1$s%%"</string>
+    <string name="success_rate">"Úspěšnost: %1$d%% — %2$d/%3$d"</string>
     <string name="test_add">Přidat zdroj</string>
+    <string name="test_direction">Směr</string>
+    <string name="test_dir_normal">Překlady → slovíčko</string>
+    <string name="test_dir_reverse">Slovíčko → překlady</string>
     <string name="test_one_subject">Zdroje testu musí pocházet z jednoho předmětu.</string>
     <string name="test_one_subject_of">Zdroje testu musí pocházet z jednoho předmětu (%s).</string>
-    <string name="test_reverse">Opačný směr testu</string>
-    <string name="test_setup_help">Řádky určují počet položek a počet sekund na jednu položku.
-        \nCelkový čas je počet položek krát sekundy na položku.
-        \nPrázdné nebo nulové políčko se vrátí na výchozí hodnotu z nastavení.
-        \nPřepínač určuje směr: vypnutý se ptá na slovíčko, zapnutý na překlad.
-        \nTest čerpá jen z jednoho předmětu.</string>
-    <string name="test_size">Testované množství</string>
-    <string name="test_time">Délka testu (s)</string>
+    <string name="test_size">Slovíčka k otestování</string>
+    <plurals name="test_available">
+        <item quantity="one">z %d dostupného</item>
+        <item quantity="few">z %d dostupných</item>
+        <item quantity="many">z %d dostupných</item>
+        <item quantity="other">z %d dostupných</item>
+    </plurals>
+    <string name="test_time">Sekundy na slovíčko</string>
+    <string name="test_total_time">%1$d s × %2$d = %3$d s</string>
+    <string name="test_sources_header">Zdroje · jeden předmět</string>
+    <string name="test_start_blocked">Přidejte aspoň jeden zdroj</string>
+    <plurals name="test_source_words">
+        <item quantity="one">%d slovíčko</item>
+        <item quantity="few">%d slovíčka</item>
+        <item quantity="many">%d slovíček</item>
+        <item quantity="other">%d slovíčka</item>
+    </plurals>
+    <string name="test_retake">Znovu</string>
+    <plurals name="test_answered">
+        <item quantity="one">%1$d z %2$d vyplněno</item>
+        <item quantity="few">%1$d z %2$d vyplněno</item>
+        <item quantity="many">%1$d z %2$d vyplněno</item>
+        <item quantity="other">%1$d z %2$d vyplněno</item>
+    </plurals>
+    <string name="test_exit_confirm">Ukončit test?</string>
+    <string name="test_you">vy: %1$s</string>
+    <string name="test_expected">správně: %1$s</string>
     <string name="time_left">%1$ds</string>
+    <string name="time_up">Čas vypršel</string>
 </resources>

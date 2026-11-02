@@ -150,6 +150,14 @@ Its DB part is the model for this project.
 ### Test
 
 - The picker starts at the explorer's position and never moves it.
+- The setup rows name their units, captions derive the pool and the total time.
+- The direction row names both sides, there is no relative switch.
+- Start waits for a source and says why.
+- The countdown pauses while the app is away.
+- Back confirms before ending a run without grading.
+- A run-out time reports itself before the grading.
+- The answer hint names the asked side.
+- Results round the rate, pair wrong answers with the expected one and offer a retake.
 
 ### Search
 
@@ -172,6 +180,9 @@ Its DB part is the model for this project.
 - No active task.
 - Open items live in `DEVELOPMENT.md`.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
+- 2026-11-02: test screens reshaped. The setup states its units, pool and
+  total, the run shows progress, pauses away and confirms exits, results
+  pair answers with expectations and offer a retake. 668 tests.
 - 2026-11-02: legacy subject folder import dropped with the whole `data.legacy`
   package. The import menu is one plain entry everywhere, the root and the
   container share one browse menu. The perf suites seed NJ from `nj.hjson`.

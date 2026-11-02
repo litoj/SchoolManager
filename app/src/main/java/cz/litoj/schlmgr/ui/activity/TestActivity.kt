@@ -8,6 +8,8 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -42,6 +44,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
@@ -55,6 +58,7 @@ import cz.litoj.schlmgr.ui.component.WideTextField
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestItemModel
+import cz.litoj.schlmgr.ui.popup.ContinuePopup
 import cz.litoj.schlmgr.ui.popup.DialogHost
 import cz.litoj.schlmgr.ui.popup.TestResultsPopup
 import cz.litoj.schlmgr.ui.screen.test.TestRunState
@@ -77,6 +81,10 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 		finish()
 	}
 
+	override fun onTimeUp() {
+		Toast.makeText(applicationContext, R.string.time_up, Toast.LENGTH_SHORT).show()
+	}
+
 	override fun onResults(items: List<TestItemModel>, ratio: Float) {
 		TestResultsPopup(items, ratio)
 		finish()
@@ -86,6 +94,16 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 		super.onCreate(savedInstanceState)
 		// the navigation bar stays black under edge-to-edge
 		enableEdgeToEdge(navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.BLACK))
+		// a run away from the front holds its countdown, since the user never left on purpose
+		lifecycle.addObserver(object : DefaultLifecycleObserver {
+			override fun onPause(owner: LifecycleOwner) {
+				TestRunState.pause()
+			}
+
+			override fun onResume(owner: LifecycleOwner) {
+				TestRunState.resume()
+			}
+		})
 		if (!TestRunState.hasRun()) TestRunState.start(this)
 		setContent {
 			val snackbar = messageSnackbarHost()
@@ -108,12 +126,10 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 
 	@Composable
 	private fun TestScreen() {
-		// a showing dialog takes the back key in its own focused window.
-		// so the double-press exit never sees it.
+		// the dialog takes the back key in its own focused window.
+		// so the confirm never sees a second press
 		BackHandler {
-			if (TestRunState.pressExit()) {
-				Toast.makeText(applicationContext, R.string.press_exit, Toast.LENGTH_SHORT).show()
-			} else {
+			ContinuePopup(R.string.test_exit_confirm) {
 				TestRunState.reset()
 				finish()
 			}
@@ -161,28 +177,41 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 		}
 	}
 
-	/** The countdown banner. It blinks dark red and light gray for the last 30 seconds. */
+	/** The countdown banner with the answered count below. It blinks dark red and light gray for the last 30 seconds. */
 	@Composable
 	private fun TimerHeader() {
 		val sl = TestRunState.secondsLeft
-		Text(
-			stringResource(R.string.time_left, sl),
+		Column(
 			Modifier
 				.fillMaxWidth()
 				.background(colorResource(R.color.colorPrimaryHeader))
-				.height(55.dp)
-				.padding(top = 5.dp),
-			style = TextStyle(
-				fontSize = 40.sp,
-				color = when {
-					// white on the green header until the timer flash takes over at 30s or less
-					sl > 30 -> colorResource(R.color.colorOnHeader)
-					sl % 2 == 0 -> TimerRed
-					else -> Color(0xFFDDDDDD)
-				},
-			),
-			textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-		)
+				.padding(bottom = 3.dp),
+		) {
+			Text(
+				stringResource(R.string.time_left, sl),
+				Modifier
+					.fillMaxWidth()
+					.height(50.dp),
+				style = TextStyle(
+					fontSize = 40.sp,
+					color = when {
+						// white on the green header until the timer flash takes over at 30s or less
+						sl > 30 -> colorResource(R.color.colorOnHeader)
+						sl % 2 == 0 -> TimerRed
+						else -> Color(0xFFDDDDDD)
+					},
+				),
+				textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+			)
+			// the header states the progress, since the countdown alone hides it
+			val answered = TestRunState.answers.count { it.value.isNotBlank() }
+			Text(
+				pluralStringResource(R.plurals.test_answered, answered, answered, TestRunState.items.size),
+				Modifier.fillMaxWidth(),
+				style = TextStyle(fontSize = 15.sp, color = colorResource(R.color.colorOnHeader)),
+				textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+			)
+		}
 	}
 
 	@Composable
@@ -204,8 +233,13 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 						color = colorResource(R.color.colorPrimaryFg),
 					),
 				)
-				AnswerField(index, R.string.data_translate, answerFocus, isLast,
-					listState, setPendingAnswer)
+				// the asked side names itself: the word in the default direction, a translation reversed
+				AnswerField(
+					index,
+					if (TestEngine.isReversed) R.string.data_translate else R.string.data_word,
+					answerFocus, isLast,
+					listState, setPendingAnswer,
+				)
 			}
 			// the line sits outside the content padding, so it reads clearly between items.
 			// - the style matches the source list of the setup screen.

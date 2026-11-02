@@ -1,11 +1,14 @@
 package cz.litoj.schlmgr.ui.screen.test
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import cz.litoj.schlmgr.app.AppSettings
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.testing.TestEngine
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
 
 /**
  * The logic of the test setup screen.
@@ -37,8 +40,9 @@ class TestSetupViewModel : ViewModel() {
 		TestSetupState.setTime(text)
 	}
 
+	// the count refresh reads the database, so the removal leaves the main thread
 	fun removeSource(chain: List<DbItem>) {
-		TestSetupState.removeSource(chain)
+		viewModelScope.launch(Dispatchers.IO) { TestSetupState.removeSource(chain) }
 	}
 
 	/**

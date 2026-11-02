@@ -9,7 +9,6 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.setValue
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestItemModel
-import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -33,6 +32,9 @@ object TestRunState {
 		/** The walk found nothing testable, so the screen reports and leaves. */
 		fun onNoObjects()
 
+		/** The run ran out of time, so the screen reports before the grading. */
+		fun onTimeUp()
+
 		/** The grading landed, so the screen shows the results and leaves. */
 		fun onResults(items: List<TestItemModel>, ratio: Float)
 	}
@@ -54,8 +56,6 @@ object TestRunState {
 	var secondsLeft by mutableIntStateOf(0)
 		private set
 
-	private var backTime = 0L
-
 	// the timer thread posts through it, so the posts must outlive any one screen.
 	// this works like the old runOnUiThread on the activity
 	private val mainHandler = Handler(Looper.getMainLooper())
@@ -66,15 +66,6 @@ object TestRunState {
 	fun setAnswer(index: Int, text: String) {
 		_answers[index] = text
 	}
-
-	/**
-	 * @return true for the first press, which shows the hint, and false for the exit
-	 */
-	fun pressExit(): Boolean =
-		if (System.currentTimeMillis() - backTime > ExplorerViewModel.EXIT_WINDOW_MS) {
-			backTime = System.currentTimeMillis()
-			true
-		} else false
 
 	/** The walk of the run that is starting, null once it lands. */
 	@Volatile
@@ -117,7 +108,10 @@ object TestRunState {
 					if (test == null) return@setTested false
 					mainHandler.post {
 						if (sl > 0) secondsLeft = sl
-						else submit(host)
+						else {
+							host.onTimeUp()
+							submit(host)
+						}
 					}
 					true
 				},
@@ -170,6 +164,16 @@ object TestRunState {
 		}
 	}
 
+	/** The app left the front, so the countdown holds its remaining time. */
+	fun pause() {
+		test?.pauseTest()
+	}
+
+	/** The app returned, so the countdown continues where it held. */
+	fun resume() {
+		test?.resumeTest()
+	}
+
 	/**
 	 * The run is over: stop the countdown outright.
 	 * - the timer thread would exit on its next tick, up to a second later.
@@ -183,8 +187,5 @@ object TestRunState {
 		secondsLeft = 0
 		_answers.clear()
 		_items.clear()
-		// a quick re-entry must get its own first-press hint, not the
-		// leftover window of this exit
-		backTime = 0
 	}
 }

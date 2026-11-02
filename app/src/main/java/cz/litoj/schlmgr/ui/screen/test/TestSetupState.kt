@@ -1,6 +1,8 @@
 package cz.litoj.schlmgr.ui.screen.test
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
@@ -62,6 +64,14 @@ object TestSetupState {
 	@JvmField
 	val list: List<List<DbItem>> = _list
 
+	/** The deduped word count of all sources, which the amount caption shows. */
+	var poolCount by mutableIntStateOf(0)
+		private set
+
+	/** The word count of one source chain, which its row shows. */
+	private val _sourceCounts = mutableStateMapOf<List<DbItem>, Int>()
+	val sourceCounts: Map<List<DbItem>, Int> = _sourceCounts
+
 	var amountText by mutableStateOf(TestEngine.amount.toString())
 		private set
 
@@ -90,8 +100,39 @@ object TestSetupState {
 	/** A settings change between visits reaches the next test. */
 	fun reset() {
 		_list.clear()
+		poolCount = 0
+		_sourceCounts.clear()
 		amountText = TestEngine.amount.toString()
 		timeText = TestEngine.getDefaultTime().toString()
+	}
+
+	/**
+	 * The counts of the setup captions, which read the database.
+	 * - the pool dedups, the single source counts may overlap.
+	 * - the caller keeps it off main, like the mutation doors.
+	 */
+	fun refreshCounts() {
+		poolCount = TestEngine.convertAll(_list, childrenLookup).size
+		_sourceCounts.clear()
+		_list.forEach { chain -> _sourceCounts[chain] = TestEngine.convertAll(listOf(chain), childrenLookup).size }
+	}
+
+	// the unit tests replace it with a fake tree, since the doors own the count refresh
+	internal var childrenLookup: (Int) -> List<DbItem> = ItemRepository::children
+
+	/**
+	 * The inputs of the total-time caption, where empty fields take the defaults.
+	 * - the count clamps to the pool, since the run asks no more than that.
+	 */
+	class TimeTotal(val perWord: Int, val count: Int) {
+		val total: Int get() = perWord * count
+	}
+
+	fun timeTotal(): TimeTotal {
+		val perWord = (timeText.toIntOrNull() ?: 0).takeIf { it >= 1 } ?: TestEngine.getDefaultTime()
+		val amount = (amountText.toIntOrNull() ?: 0).takeIf { it >= 1 } ?: TestEngine.amount
+		val count = if (poolCount > 0) minOf(amount, poolCount) else amount
+		return TimeTotal(perWord, count)
 	}
 
 	/**
@@ -124,6 +165,7 @@ object TestSetupState {
 		_list.clear()
 		_list.addAll(chains.map { it.second })
 		dedup(_list)
+		refreshCounts()
 		return emptyList()
 	}
 
@@ -141,11 +183,14 @@ object TestSetupState {
 		if (foreign.isNotEmpty()) return foreign
 		_list.addAll(0, chains.map { it.second })
 		dedup(_list)
+		refreshCounts()
 		return emptyList()
 	}
 
+	/** A removal refreshes the counts, so the caller keeps it off main. */
 	fun removeSource(chain: List<DbItem>) {
 		_list.remove(chain)
+		refreshCounts()
 	}
 
 	fun hasSources() = _list.isNotEmpty()
@@ -207,7 +252,7 @@ object TestSetupState {
  * - so the rows of the setup screen stay free of database imports.
  * - the explorer equivalent is [ItemRow.toUi].
  */
-data class SourceRowUi(val kind: RowKind, val displayName: String)
+data class SourceRowUi(val kind: RowKind, val displayName: String, val words: Int)
 
 fun List<DbItem>.toSourceRowUi() = SourceRowUi(
 	kind = when {
@@ -217,4 +262,5 @@ fun List<DbItem>.toSourceRowUi() = SourceRowUi(
 		else -> RowKind.CHAPTER
 	},
 	displayName = ItemRow.nameParser(last().name),
+	words = TestSetupState.sourceCounts[this] ?: 0,
 )

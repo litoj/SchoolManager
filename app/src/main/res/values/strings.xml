@@ -16,6 +16,7 @@
     <string name="data_desc">Description</string>
     <string name="data_name">Name</string>
     <string name="data_translate">Translation</string>
+    <string name="data_word">Word</string>
     <string name="delete">Delete</string>
     <string name="done">Done</string>
     <string name="edit">Edit</string>
@@ -247,17 +248,34 @@
     <string name="sort_sf_10">success ▲</string>
     <string name="sort_priority">priority</string>
     <string name="start">Start</string>
-    <string name="success_rate">"Success rate: %1$s%%"</string>
+    <string name="success_rate">"Success rate: %1$d%% — %2$d/%3$d"</string>
     <string name="test_add">Add source</string>
+    <string name="test_direction">Direction</string>
+    <string name="test_dir_normal">Translations → word</string>
+    <string name="test_dir_reverse">Word → translations</string>
     <string name="test_one_subject">Test sources must come from one subject.</string>
     <string name="test_one_subject_of">Test sources must come from one subject (%s).</string>
-    <string name="test_reverse">Reverse test direction</string>
-    <string name="test_setup_help">Rows set how many items are asked and how many seconds one item takes.
-        \nThe total time is the amount times the seconds.
-        \nEmpty or zero falls back to the settings default.
-        \nThe switch sets the direction: off asks for the word, on asks for a translation.
-        \nA test draws from one subject only.</string>
-    <string name="test_size">Tested amount</string>
-    <string name="test_time">Duration (s)</string>
+    <string name="test_size">Words to test</string>
+    <plurals name="test_available">
+        <item quantity="one">of %d available</item>
+        <item quantity="other">of %d available</item>
+    </plurals>
+    <string name="test_time">Seconds per word</string>
+    <string name="test_total_time">%1$d s × %2$d = %3$d s</string>
+    <string name="test_sources_header">Sources · one subject</string>
+    <string name="test_start_blocked">Add at least one source</string>
+    <plurals name="test_source_words">
+        <item quantity="one">%d word</item>
+        <item quantity="other">%d words</item>
+    </plurals>
+    <string name="test_retake">Retake</string>
+    <plurals name="test_answered">
+        <item quantity="one">%1$d of %2$d answered</item>
+        <item quantity="other">%1$d of %2$d answered</item>
+    </plurals>
+    <string name="test_exit_confirm">End the test?</string>
+    <string name="test_you">you: %1$s</string>
+    <string name="test_expected">expected: %1$s</string>
     <string name="time_left">%1$ds</string>
+    <string name="time_up">Time\'s up</string>
 </resources>
