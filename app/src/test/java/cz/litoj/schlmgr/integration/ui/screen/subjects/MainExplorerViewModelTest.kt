@@ -1165,15 +1165,17 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
-	fun `commitNewItem appends a new chapter and renumbers`() {
+	fun `commitNewItem opens the new chapter`() {
 		val (aId, _) = seed()
 		val model = vmIn("A")
 
 		assertTrue(model.commitNewItem(RowKind.CHAPTER,
 			CreatorResult("c0", "", emptyList(), emptyList())))
 
-		assertEquals(listOf("c1", "c0"), model.items().map { it.item.name })
-		assertEquals(listOf(1, 2), model.items().map { it.position })
+		assertEquals(listOf("A", "c0"), model.history.path.map { it.name })
+		val c0 = ItemRepository.children(aId).single { it.name == "c0" }
+		assertEquals(c0.id, model.listState.value.containerId)
+		assertTrue("the open chapter shows its empty content", model.items().isEmpty())
 		assertEquals("the append landed in the database too",
 			listOf("c1", "c0"), ItemRepository.children(aId).map { it.name })
 	}

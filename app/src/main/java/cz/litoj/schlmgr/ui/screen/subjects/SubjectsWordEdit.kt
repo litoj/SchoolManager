@@ -50,6 +50,9 @@ internal class SubjectsWordEdit(
 		fun addItem(item: ItemRow)
 
 		fun addItem(index: Int, item: ItemRow)
+
+		/** Descends into the container, like tapping it: extends the path and loads its content. */
+		fun openContainer(container: DbItem)
 	}
 
 	fun onEditAction() {
@@ -202,15 +205,23 @@ internal class SubjectsWordEdit(
 					host.postToUi { host.addItem(row) }
 				}
 			}
-			RowKind.CHAPTER, RowKind.NOTE -> {
+			RowKind.NOTE -> {
 				val par = host.path.lastOrNull() ?: return false
 				val description = result.description.replace("\\t", "\t")
 				scope.launch(io) {
-					val created = if (kind == RowKind.CHAPTER)
-						ItemRepository.createChapter(par.id, result.name, description)
-					else
-						ItemRepository.createNote(par.id, result.name, description)
+					val created = ItemRepository.createNote(par.id, result.name, description)
 					host.postToUi { host.addItem(ItemRow(created, par.id, 0)) }
+				}
+			}
+			RowKind.CHAPTER -> {
+				val par = host.path.lastOrNull() ?: return false
+				val description = result.description.replace("\\t", "\t")
+				scope.launch(io) {
+					val created = ItemRepository.createChapter(par.id, result.name, description)
+					host.postToUi {
+						host.addItem(ItemRow(created, par.id, 0))
+						host.openContainer(created)
+					}
 				}
 			}
 			RowKind.WORD -> {

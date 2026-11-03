@@ -107,6 +107,7 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		override fun notifyChanged() = this@MainExplorerViewModel.notifyChanged()
 		override fun addItem(item: ItemRow) = this@MainExplorerViewModel.addItem(item)
 		override fun addItem(index: Int, item: ItemRow) = this@MainExplorerViewModel.addItem(index, item)
+		override fun openContainer(container: DbItem) = this@MainExplorerViewModel.openContainer(container)
 	}
 
 	private val flip = SubjectsFlip(viewModelScope, io, FlipHost())
@@ -186,6 +187,17 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 				if (scrollToBottom) requestScrollToBottom()
 			}
 		}
+	}
+
+	/**
+	 * Opens the container the caller just created: the same landing as tapping it.
+	 * - the selection leaves, the path grows by one, and the new content loads.
+	 */
+	fun openContainer(container: DbItem) {
+		clearSelection()
+		history.hop(container)
+		setContent(container)
+		onChange()
 	}
 
 	// see [ExplorerViewModel.onBackRequested].

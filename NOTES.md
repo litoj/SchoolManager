@@ -193,6 +193,8 @@ Its DB part is the model for this project.
 - No active task.
 - Open items live in `DEVELOPMENT.md`.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
+- 2026-11-03: creating a chapter opens it on commit instead of only appending it,
+  the same landing as tapping it; notes still only append.
 - 2026-11-02: a container load re-anchors the list at the top, the frozen
   pane of the sibling slide starts at the live position. 672 tests.
 - 2026-11-02: each container view remembers its scroll and flip sides for
