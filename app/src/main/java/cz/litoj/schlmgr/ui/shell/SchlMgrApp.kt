@@ -65,6 +65,9 @@ fun SchlMgrApp(
 		val navController = rememberNavController()
 		fun openDrawer() = drawer.open()
 
+		// the one explorer model of the shell, so the drawer can reset it in place
+		val subjectsViewModel: MainExplorerViewModel = viewModel { MainExplorerViewModel(mainHistory) }
+
 		// an import Done returns to the subjects screen, which applies the target path.
 		LaunchedEffect(launchTarget) {
 			if (launchTarget != null) navController.navigate(Destination.SUBJECTS.name) {
@@ -94,6 +97,11 @@ fun SchlMgrApp(
 							context.startActivity(Intent(context, SettingsActivity::class.java))
 							return@AppDrawer
 						}
+						// a press on the open explorer itself returns to the subjects list
+						if (destination == Destination.SUBJECTS && route == Destination.SUBJECTS.name) {
+							subjectsViewModel.resetToRoot()
+							return@AppDrawer
+						}
 						// the flat-siblings rule applies to the start destination.
 						navController.navigate(destination.name) {
 							popUpTo(Destination.SUBJECTS.name) {
@@ -113,14 +121,11 @@ fun SchlMgrApp(
 						// the content stops above the navigation bar and the keyboard here, once.
 						modifier = Modifier.navigationBarsPadding().imePadding(),
 					) {
-						composable(Destination.SUBJECTS.name) { entry ->
-							val vm: MainExplorerViewModel = viewModel(entry) {
-								MainExplorerViewModel(mainHistory)
-							}
+						composable(Destination.SUBJECTS.name) {
 							// the app exit, since the shell owns the host activity
 							val activity = LocalActivity.current
 							SubjectsScreen(
-								viewModel = vm,
+								viewModel = subjectsViewModel,
 								openDrawer = ::openDrawer,
 								onOpenTest = { navController.navigate(Destination.TEST.name) },
 								onExitApp = { activity?.finish() },

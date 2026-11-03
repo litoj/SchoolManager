@@ -286,8 +286,7 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
-	fun `opening another container anchors its list at the top`() {
-		val (aId, _) = seed()
+	fun `opening another container anchors its list at the top`() {		val (aId, _) = seed()
 		ItemRepository.createChapter(aId, "c2", null, 1)
 		val model = vmIn("A")
 		val c1 = model.items().single { it.item.name == "c1" }
@@ -297,6 +296,21 @@ class MainExplorerViewModelTest {
 		assertEquals(0, model.listState.value.anchor?.index)
 		assertEquals(0, model.listState.value.anchor?.offset)
 		assertEquals("the state carries the opened container", c1.item.id, model.listState.value.containerId)
+	}
+
+	@Test
+	fun `a reset from the drawer returns the explorer to the root`() {
+		val (aId, _) = seed()
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		assertEquals(listOf("A", "c1"), model.history.path.map { it.name })
+
+		model.resetToRoot()
+
+		assertTrue("the path drops back to the root", model.history.path.isEmpty())
+		assertTrue("the breadcrumbs clear", model.state.value.breadcrumbs.isEmpty())
+		// the root list loads, with both subjects
+		assertEquals(listOf("A", "B"), model.items().map { it.item.name })
 	}
 
 	@Test

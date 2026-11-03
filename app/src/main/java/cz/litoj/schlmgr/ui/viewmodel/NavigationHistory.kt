@@ -102,4 +102,13 @@ class NavigationHistory() {
 	 */
 	fun onSearchHop(): Boolean =
 		onePath.last() > 0 && hopDescents.lastOrNull() == false
+
+	/** Drops every step, back to the fresh root position. */
+	fun reset() {
+		path = mutableListOf()
+		prevPaths.clear()
+		onePath.clear()
+		onePath.add(0)
+		hopDescents.clear()
+	}
 }

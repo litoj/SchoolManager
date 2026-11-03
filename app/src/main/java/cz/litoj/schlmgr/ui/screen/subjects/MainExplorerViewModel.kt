@@ -226,6 +226,19 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		onMenuItemClick(menuIdOf(action))
 	}
 
+	/**
+	 * The drawer press on the open explorer: back to the subjects list.
+	 * - a running search and an armed paste drop with the position.
+	 */
+	fun resetToRoot() {
+		if (searching) endSearch()
+		if (pasteArmed) cancelPaste()
+		clearSelection()
+		history.reset()
+		setContent(null)
+		onChange()
+	}
+
 	private fun newAction(action: () -> Unit): Boolean {
 		if (searching) return false
 		action()

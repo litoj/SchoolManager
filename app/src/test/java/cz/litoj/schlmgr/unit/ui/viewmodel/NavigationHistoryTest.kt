@@ -107,4 +107,19 @@ class NavigationHistoryTest {
 		assertEquals("back lands on the parent, not the pre-switch sibling",
 			subject.id, history.path.lastOrNull()?.id)
 	}
+
+	@Test
+	fun `a reset drops every step to the fresh root`() {
+		val history = NavigationHistory()
+		history.push(pathOf(item(1, "a")))
+		history.hop(item(2, "b"))
+		history.hop(null)
+
+		history.reset()
+
+		assertTrue(history.path.isEmpty())
+		assertFalse("the search hop is gone", history.onSearchHop())
+		// the fresh state pops as the base position, exactly like a new history
+		assertFalse(history.remove())
+	}
 }
