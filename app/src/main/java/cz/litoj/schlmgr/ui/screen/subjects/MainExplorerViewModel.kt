@@ -364,7 +364,6 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 	fun cancelFlipRound() = flip.cancelFlipRound()
 
-	/** Selection stays armed for export. */
 	fun prepareTest() {
 		val seeds = items().filter(ItemRow::selected).map(TestSetupState::seedOf)
 		if (seeds.isEmpty()) return
@@ -376,6 +375,7 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 			}
 			postToUi {
 				TestSetupState.markOpenedWithSelection()
+				clearSelection()
 				emitRequest(Request.OpenTest)
 			}
 		}

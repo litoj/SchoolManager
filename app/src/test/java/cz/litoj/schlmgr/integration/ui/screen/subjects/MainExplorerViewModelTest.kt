@@ -728,6 +728,34 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
+	fun `preparing a test finishes the selection`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
+		ItemRepository.createWord(c1.id, "w2", null, listOf("t2" to null))
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		model.onItemLongClick(model.items().single { it.item.name == "w1" })
+		model.setSelected(model.items().single { it.item.name == "w2" }, true)
+
+		model.prepareTest()
+
+		assertEquals("the test hop finished the selection", 0, model.selectionCount())
+	}
+
+	@Test
+	fun `a refused test preparation keeps the selection`() {
+		seed()
+		val model = vm()
+		model.onItemLongClick(model.items().single { it.item.name == "A" })
+		model.setSelected(model.items().single { it.item.name == "B" }, true)
+
+		model.prepareTest()
+
+		assertEquals("the refusal kept the selection for another try", 2, model.selectionCount())
+	}
+
+	@Test
 	fun `go to location opens the selected hit's directory`() {
 		val (model, row) = searchedWord()
 		model.setSelected(row, true)
