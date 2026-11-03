@@ -44,6 +44,22 @@ test:
   interruptible: true
   variables:
     GRADLE_USER_HOME: $CI_PROJECT_DIR/.gradle-home
+    # Robolectric resolves its SDK jar itself, outside Gradle, so its Maven
+    # repository lives in the project and rides the cache with the tests.
+    # The version matches the @Config(sdk = [35]) pins.
+    JAVA_TOOL_OPTIONS: -Dmaven.repo.local=$CI_PROJECT_DIR/.m2
+    ROBOLECTRIC_SDK: 15-robolectric-13954326-i7
+  before_script:
+    # A warm cache skips this, a cold one pulls the jar with retries that ride
+    # out a Maven Central rate limit.
+    - |
+      jar=".m2/repository/org/robolectric/android-all-instrumented/${ROBOLECTRIC_SDK}/android-all-instrumented-${ROBOLECTRIC_SDK}.jar"
+      if [ ! -f "$jar" ]; then
+        mkdir -p "$(dirname "$jar")"
+        curl -fsSL --retry 10 --retry-delay 5 \
+          "https://repo1.maven.org/maven2/org/robolectric/android-all-instrumented/${ROBOLECTRIC_SDK}/android-all-instrumented-${ROBOLECTRIC_SDK}.jar" \
+          -o "$jar"
+      fi
   script:
     # One invocation pays the daemon start and the configuration cache once.
     # Release lint is the only variant that sees the minified build.
@@ -57,12 +73,20 @@ test:
       paths:
         - .gradle-home/caches/
         - .gradle-home/wrapper/
+      # A failed run still saves its caches, so a fetched jar survives it.
+      when: always
     # Gradle rebuilds on any input change, so staleness self-corrects.
     # The state carries the built classes, so unchanged sources skip the compile and their tests.
     - key: project-state
       paths:
         - .gradle/
         - app/build/
+      when: always
+    # Robolectric's own Maven repo, untouched by the Gradle cache.
+    - key: robolectric-sdk
+      paths:
+        - .m2/
+      when: always
   artifacts:
     # A failed run still carries its junit xml for the merge request widget.
     when: always

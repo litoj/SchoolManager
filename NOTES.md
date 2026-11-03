@@ -198,6 +198,7 @@ Its DB part is the model for this project.
 - GitLab CI runs the tests only, tagging stays on GitHub.
 - The GitLab test job caches `app/build`, artifacts hold only the junit report.
 - The test image lives in the project registry and ships the JDK and the compileSdk platform only.
+- Robolectric resolves its SDK jar outside Gradle, so the CI caches its Maven repository.
 - A kaniko job rebuilds the image when `ci/Dockerfile` changes.
 
 ## Current
