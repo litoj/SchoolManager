@@ -1,9 +1,7 @@
 package cz.litoj.schlmgr.ui.screen.settings
 
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -13,7 +11,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -27,6 +24,7 @@ import cz.litoj.schlmgr.ui.component.BigHeader
 import cz.litoj.schlmgr.ui.component.SectionHeader
 import cz.litoj.schlmgr.ui.component.HairlineDivider
 import cz.litoj.schlmgr.ui.component.SettingChoiceRow
+import cz.litoj.schlmgr.ui.component.SettingFieldRow
 import cz.litoj.schlmgr.ui.component.SettingNumberRow
 import cz.litoj.schlmgr.ui.component.SettingSwitchRow
 import cz.litoj.schlmgr.ui.component.DefaultTextColor
@@ -110,22 +108,13 @@ private fun SettingsList(state: SettingsState, modifier: Modifier = Modifier) {
 
 @Composable
 private fun WordSplitRow(state: SettingsState) {
-	Row(
-		Modifier
-			.fillMaxWidth()
-			.padding(5.dp),
-		verticalAlignment = Alignment.CenterVertically,
-	) {
-		Text(
-			stringResource(R.string.setts_word_splitter),
-			Modifier.weight(1f),
-			style = TextStyle(fontSize = 18.sp, color = DefaultTextColor),
-		)
+	SettingFieldRow(stringResource(R.string.setts_word_splitter)) { focus ->
 		BareTextField(
 			value = state.wordSplitText,
 			onValueChange = state::setWordSplit,
 			fontSize = 18.sp,
 			onFocusLost = state::wordSplitFocusLost,
+			focusRequester = focus,
 		)
 	}
 }

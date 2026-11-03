@@ -50,6 +50,7 @@ fun BareTextField(
 	keyboardType: KeyboardType = KeyboardType.Text,
 	style: BareTextFieldStyle = BareTextFieldStyle(),
 	onFocusLost: (() -> Unit)? = null,
+	focusRequester: FocusRequester? = null,
 ) = BareTextFieldCore(
 	value = value,
 	onValueChange = onValueChange,
@@ -58,6 +59,7 @@ fun BareTextField(
 	keyboardType = keyboardType,
 	style = style,
 	onFocusLost = onFocusLost,
+	focusRequester = focusRequester,
 )
 
 /**

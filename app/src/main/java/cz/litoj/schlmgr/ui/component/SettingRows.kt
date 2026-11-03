@@ -8,9 +8,12 @@ import androidx.compose.material.Switch
 import androidx.compose.material.SwitchDefaults
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
@@ -52,13 +55,7 @@ fun SettingNumberRow(
 	onValueChange: (String) -> Unit,
 	onFocusLost: () -> Unit,
 ) {
-	Row(
-		Modifier
-			.fillMaxWidth()
-			.padding(5.dp),
-		verticalAlignment = Alignment.CenterVertically,
-	) {
-		Text(label, Modifier.weight(1f), style = TextStyle(fontSize = 18.sp, color = DefaultTextColor))
+	SettingFieldRow(label) { focus ->
 		// the field takes the font size of the row label.
 		// the component enforces its own square minimum width, so no fixed width is needed.
 		BareTextField(
@@ -67,7 +64,36 @@ fun SettingNumberRow(
 			fontSize = 18.sp,
 			keyboardType = KeyboardType.Number,
 			onFocusLost = onFocusLost,
+			focusRequester = focus,
 		)
+	}
+}
+
+/**
+ * A label with its field on the right.
+ * - a tap on the label focuses the field, the same as a tap on the field.
+ */
+@Composable
+fun SettingFieldRow(label: String, field: @Composable (FocusRequester) -> Unit) {
+	val focus = remember { FocusRequester() }
+	val keyboard = LocalSoftwareKeyboardController.current
+	Row(
+		Modifier
+			.fillMaxWidth()
+			.padding(5.dp),
+		verticalAlignment = Alignment.CenterVertically,
+	) {
+		Text(
+			label,
+			Modifier
+				.weight(1f)
+				.clickable {
+					focus.requestFocus()
+					keyboard?.show()
+				},
+			style = TextStyle(fontSize = 18.sp, color = DefaultTextColor),
+		)
+		field(focus)
 	}
 }
 

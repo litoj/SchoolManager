@@ -114,6 +114,7 @@ Its DB part is the model for this project.
 - Settings are an exported activity.
 - The drawer starts Settings.
 - Its screen has a back arrow.
+- A field row focuses its field from the label, switch and choice rows act on any tap.
 
 ### Dialogs and creators
 
