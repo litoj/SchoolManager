@@ -25,6 +25,7 @@ class SettingsState(
 	clever: Boolean = false,
 	amountText: String = "10",
 	timeText: String = TestEngine.DEFAULT_TIME_SECONDS.toString(),
+	defaultReverse: Boolean = false,
 	searchDiacritics: Boolean = false,
 	selectionOrder: List<SelectionAction> = ActionConfig.DEFAULT_ORDER,
 	connections: Map<SelectionAction, SelectionAction> = ActionConfig.DEFAULT_CONNECTIONS,
@@ -46,6 +47,9 @@ class SettingsState(
 	var amountText by mutableStateOf(amountText)
 		private set
 	var timeText by mutableStateOf(timeText)
+		private set
+	/** The saved direction of a fresh test, where false asks for the word. */
+	var defaultReverse by mutableStateOf(defaultReverse)
 		private set
 	var searchDiacritics by mutableStateOf(searchDiacritics)
 		private set
@@ -108,6 +112,13 @@ class SettingsState(
 		clever = !clever
 		TestEngine.applyOptions(clever, TestEngine.amount)
 		AppSettings.set("isClever", clever)
+	}
+
+	/** A fresh setup reads the engine, so the next test takes the new default. */
+	fun toggleDefaultReverse() {
+		defaultReverse = !defaultReverse
+		TestEngine.applyReversed(defaultReverse)
+		AppSettings.set("reverseTest", defaultReverse)
 	}
 
 	/**
@@ -215,6 +226,7 @@ class SettingsViewModel : ViewModel() {
 		clever = TestEngine.isClever,
 		amountText = TestEngine.amount.toString(),
 		timeText = TestEngine.getDefaultTime().toString(),
+		defaultReverse = TestEngine.isReversed,
 		searchDiacritics = AppSettings.getBool("searchNoDiacritics", false),
 		selectionOrder = config.order,
 		connections = config.connections,

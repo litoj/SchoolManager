@@ -52,6 +52,18 @@ class TestSetupStateTest {
 	}
 
 	@Test
+	fun `the fresh-entry reset re-reads the saved direction`() {
+		TestEngine.applyReversed(true)
+		try {
+			TestSetupState.setReverse(false)
+			TestSetupState.reset()
+			assertTrue("the reset takes the engine direction", TestSetupState.reverseTest)
+		} finally {
+			TestEngine.applyReversed(false)
+		}
+	}
+
+	@Test
 	fun `the focus-lost doors restore a below-one field, keeping a valid one`() {
 		val model = TestSetupViewModel()
 		TestSetupState.setAmount("0")

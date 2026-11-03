@@ -26,6 +26,7 @@ import cz.litoj.schlmgr.ui.component.BareTextField
 import cz.litoj.schlmgr.ui.component.BigHeader
 import cz.litoj.schlmgr.ui.component.SectionHeader
 import cz.litoj.schlmgr.ui.component.HairlineDivider
+import cz.litoj.schlmgr.ui.component.SettingChoiceRow
 import cz.litoj.schlmgr.ui.component.SettingNumberRow
 import cz.litoj.schlmgr.ui.component.SettingSwitchRow
 import cz.litoj.schlmgr.ui.component.DefaultTextColor
@@ -96,6 +97,12 @@ private fun SettingsList(state: SettingsState, modifier: Modifier = Modifier) {
 		SettingNumberRow(
 			stringResource(R.string.setts_test_time), state.timeText, state::setTime,
 		) { state.timeFocusLost(); keyboard?.hide() }
+		HairlineDivider()
+		SettingChoiceRow(
+			stringResource(R.string.setts_test_direction),
+			stringResource(if (state.defaultReverse) R.string.test_dir_reverse else R.string.test_dir_normal),
+			state::toggleDefaultReverse,
+		)
 		HairlineDivider()
 		SettingSwitchRow(stringResource(R.string.setts_test_clever), state.clever, state::toggleClever)
 	}

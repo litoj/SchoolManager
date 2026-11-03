@@ -47,6 +47,7 @@ import cz.litoj.schlmgr.ui.activity.TestActivity
 import cz.litoj.schlmgr.ui.component.HairlineDivider
 import cz.litoj.schlmgr.ui.component.IconSize
 import cz.litoj.schlmgr.ui.component.iconRes
+import cz.litoj.schlmgr.ui.component.SettingChoiceRow
 import cz.litoj.schlmgr.ui.component.SettingNumberRow
 import cz.litoj.schlmgr.ui.component.DefaultTextColor
 import cz.litoj.schlmgr.ui.shell.TopBar
@@ -181,26 +182,14 @@ private fun RowCaption(text: String) {
 	)
 }
 
-/** The run direction as one setting row: the live side reads on the right, a tap flips it. */
+/** The run direction as one setting row: the typed side reads on the right, a tap flips it. */
 @Composable
 private fun DirectionRow(reverse: Boolean, onToggle: () -> Unit) {
-	Row(
-		Modifier
-			.fillMaxWidth()
-			.clickable(onClick = onToggle)
-			.padding(5.dp),
-		verticalAlignment = Alignment.CenterVertically,
-	) {
-		Text(
-			stringResource(R.string.test_direction),
-			Modifier.weight(1f),
-			style = TextStyle(fontSize = 18.sp, color = DefaultTextColor),
-		)
-		Text(
-			stringResource(if (reverse) R.string.test_dir_reverse else R.string.test_dir_normal),
-			style = TextStyle(fontSize = 18.sp, color = DefaultTextColor),
-		)
-	}
+	SettingChoiceRow(
+		label = stringResource(R.string.test_direction),
+		value = stringResource(if (reverse) R.string.test_dir_reverse else R.string.test_dir_normal),
+		onToggle = onToggle,
+	)
 }
 
 @Composable

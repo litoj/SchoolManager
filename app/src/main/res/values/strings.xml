@@ -239,9 +239,10 @@
     <string name="setts_explorer">Explorer</string>
     <string name="setts_desc_lines">Directly displayed description lines</string>
     <string name="setts_double_tap_ms">Flip-all doubleclick timeout</string>
-    <string name="setts_test_amount">Default tested amount</string>
+    <string name="setts_test_amount">Default words to test</string>
     <string name="setts_test_clever">Make tests by success rate</string>
-    <string name="setts_test_time">Default time per item</string>
+    <string name="setts_test_time">Default seconds per word</string>
+    <string name="setts_test_direction">Default tested side</string>
     <string name="setts_word_splitter">Sequence splitting words from translates when exporting</string>
     <string name="setts_search_diacritics">Search without diacritics</string>
     <string name="setts_selection_bar">Selection bar</string>
@@ -270,7 +271,7 @@
     <string name="start">Start</string>
     <string name="success_rate">"Success rate: %1$d%% — %2$d/%3$d"</string>
     <string name="test_add">Add source</string>
-    <string name="test_direction">What you type</string>
+    <string name="test_direction">Tested side</string>
     <string name="test_dir_normal">The word</string>
     <string name="test_dir_reverse">A translation</string>
     <string name="test_one_subject">Test sources must come from one subject.</string>

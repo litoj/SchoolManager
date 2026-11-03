@@ -70,3 +70,18 @@ fun SettingNumberRow(
 		)
 	}
 }
+
+/** A label with its current choice on the right, where a tap on the row flips it. */
+@Composable
+fun SettingChoiceRow(label: String, value: String, onToggle: () -> Unit) {
+	Row(
+		Modifier
+			.fillMaxWidth()
+			.clickable(onClick = onToggle)
+			.padding(5.dp),
+		verticalAlignment = Alignment.CenterVertically,
+	) {
+		Text(label, Modifier.weight(1f), style = TextStyle(fontSize = 18.sp, color = DefaultTextColor))
+		Text(value, style = TextStyle(fontSize = 18.sp, color = DefaultTextColor))
+	}
+}

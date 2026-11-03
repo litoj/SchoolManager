@@ -170,7 +170,8 @@ Its DB part is the model for this project.
 
 - The picker starts at the explorer's position and never moves it.
 - The setup rows name their units, captions derive the pool and the total time.
-- The direction row flips between its two sides on a tap.
+- The tested side row flips between its two sides on a tap.
+- The default tested side is a setting, the word side by default, and a fresh setup takes it.
 - Start waits for a source and says why.
 - The countdown pauses while the app is away.
 - Back confirms before ending a run without grading.

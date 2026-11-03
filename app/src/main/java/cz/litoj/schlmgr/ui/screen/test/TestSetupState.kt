@@ -104,6 +104,7 @@ object TestSetupState {
 		_sourceCounts.clear()
 		amountText = TestEngine.amount.toString()
 		timeText = TestEngine.getDefaultTime().toString()
+		reverseTest = TestEngine.isReversed
 	}
 
 	/**

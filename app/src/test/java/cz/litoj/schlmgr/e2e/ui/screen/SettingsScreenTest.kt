@@ -5,16 +5,21 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
+import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.app.AppSettings
+import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.ui.screen.settings.SettingsScreen
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction.CUT
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction.DELETE
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction.EDIT
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction.GOTO
 import cz.litoj.schlmgr.ui.viewmodel.SettingsViewModel
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -42,6 +47,9 @@ class SettingsScreenTest {
 	@Before
 	fun setUp() {
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
+		// the engine survives between tests, so the direction pin starts from the word
+		TestEngine.applyReversed(false)
+		AppSettings.set("reverseTest", false)
 		model = SettingsViewModel()
 		rule.setContent { SettingsScreen(model) {} }
 		rule.waitForIdle()
@@ -119,6 +127,21 @@ class SettingsScreenTest {
 		rule.mainClock.autoAdvance = true
 		rule.waitForIdle()
 		rule.onNodeWithTag("goto_marker").assertDoesNotExist()
+	}
+
+	@Test
+	fun `the default direction flips and persists`() {
+		val label = RuntimeEnvironment.getApplication().getString(R.string.setts_test_direction)
+		val row = rule.onNodeWithText(label)
+		row.performScrollTo()
+		rule.waitForIdle()
+		assertFalse("the word is typed by default, a translation shows", TestEngine.isReversed)
+
+		row.performClick()
+		rule.waitForIdle()
+
+		assertTrue("the default flipped to the typed translation", TestEngine.isReversed)
+		assertTrue("the default reached the storage", AppSettings.getBool("reverseTest", false))
 	}
 
 	@Test
