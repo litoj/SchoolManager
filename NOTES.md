@@ -191,6 +191,7 @@ Its DB part is the model for this project.
 
 - The tag CI waits for a green Test run of a main commit.
 - It tags the tested sha.
+- A tag comes only from the Tag workflow, never from a local command.
 - GitLab CI runs the tests only, tagging stays on GitHub.
 - The GitLab test job caches `app/build`, artifacts hold only the junit report.
 - The test image lives in the project registry and ships the JDK and the compileSdk platform only.
