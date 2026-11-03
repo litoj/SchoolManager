@@ -24,27 +24,10 @@ internal class SubjectsPaste(
 	private val host: Host,
 ) {
 
-	interface Host {
-		fun items(): List<ItemRow>
-
+	interface Host : SubjectsHost {
 		fun selectionCount(): Int
 
-		fun clearSelection()
-
-		/** The open chain, where the paste lands in the last entry. */
-		val path: List<DbItem>
-
-		val searching: Boolean
-
-		fun postToUi(work: Runnable)
-
-		/** Re-reads the open container, for a browse list only. */
-		fun reloadContent()
-
-		/** Re-maps the shown rows, for a search list only. */
 		fun notifyChanged()
-
-		fun refreshInfo()
 
 		fun refreshReorderable()
 	}

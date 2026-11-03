@@ -22,25 +22,16 @@ internal class SubjectsNavigation(
 	private val host: Host,
 ) {
 
-	interface Host {
-		val searching: Boolean
-
+	interface Host : SubjectsHost {
 		fun selectionCount(): Int
 
 		val pasteArmed: Boolean
-
-		fun postToUi(work: Runnable)
-
-		fun emitRequest(request: Request)
 
 		fun setContent(container: DbItem?)
 
 		fun openChain(path: MutableList<DbItem>)
 
 		fun switchedSibling(step: Int, delta: Int)
-
-		/** Drops the row selection, while an armed move stays. */
-		fun clearSelection()
 	}
 
 	/** Opens the reference original: a single source opens, several show the picker. */

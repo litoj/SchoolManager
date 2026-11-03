@@ -270,9 +270,9 @@
     <string name="start">Start</string>
     <string name="success_rate">"Success rate: %1$d%% — %2$d/%3$d"</string>
     <string name="test_add">Add source</string>
-    <string name="test_direction">Direction</string>
-    <string name="test_dir_normal">Translations → word</string>
-    <string name="test_dir_reverse">Word → translations</string>
+    <string name="test_direction">What you type</string>
+    <string name="test_dir_normal">The word</string>
+    <string name="test_dir_reverse">A translation</string>
     <string name="test_one_subject">Test sources must come from one subject.</string>
     <string name="test_one_subject_of">Test sources must come from one subject (%s).</string>
     <string name="test_size">Words to test</string>

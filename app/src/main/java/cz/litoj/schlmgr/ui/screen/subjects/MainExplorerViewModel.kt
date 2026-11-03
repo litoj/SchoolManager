@@ -71,6 +71,26 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 	enum class MenuKind { ROOT, CONTAINER, SEARCH }
 
+	/**
+	 * The one implementation of the satellite doors, see [SubjectsHost].
+	 * - the adapters below extend it through delegation.
+	 * - it must initialize first, since the satellite constructors capture it.
+	 */
+	private inner class SharedHost : SubjectsHost {
+		override fun items() = this@MainExplorerViewModel.items()
+		override val path get() = history.path
+		override val searching get() = this@MainExplorerViewModel.searching
+		override fun emitRequest(request: Request) = this@MainExplorerViewModel.emitRequest(request)
+		override fun postToUi(work: Runnable) {
+			this@MainExplorerViewModel.postToUi(work)
+		}
+		override fun clearSelection() = this@MainExplorerViewModel.clearSelection()
+		override fun reloadContent() = this@MainExplorerViewModel.reloadContent()
+		override fun refreshInfo() = this@MainExplorerViewModel.refreshInfo()
+	}
+
+	private val shared = SharedHost()
+
 	private val paste = SubjectsPaste(viewModelScope, io, PasteHost())
 
 	val pasteArmed: Boolean get() = paste.armed
@@ -82,68 +102,32 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 	override fun pasteArmed() = pasteArmed
 
-	private inner class PasteHost : SubjectsPaste.Host {
-		override fun items() = this@MainExplorerViewModel.items()
+	private inner class PasteHost : SubjectsPaste.Host, SubjectsHost by shared {
 		override fun selectionCount() = this@MainExplorerViewModel.selectionCount()
-		override fun clearSelection() = this@MainExplorerViewModel.clearSelection()
-		override val path get() = history.path
-		override val searching get() = this@MainExplorerViewModel.searching
-		override fun postToUi(work: Runnable) {
-			this@MainExplorerViewModel.postToUi(work)
-		}
-		override fun reloadContent() = this@MainExplorerViewModel.reloadContent()
 		override fun notifyChanged() = this@MainExplorerViewModel.notifyChanged()
-		override fun refreshInfo() = this@MainExplorerViewModel.refreshInfo()
 		override fun refreshReorderable() = this@MainExplorerViewModel.refreshReorderable()
 	}
 
 	private val wordEdit = SubjectsWordEdit(viewModelScope, io, WordEditHost())
 
-	private inner class WordEditHost : SubjectsWordEdit.Host {
-		override fun items() = this@MainExplorerViewModel.items()
+	private inner class WordEditHost : SubjectsWordEdit.Host, SubjectsHost by shared {
 		override fun selectionCount() = this@MainExplorerViewModel.selectionCount()
-		override val path get() = history.path
-		override fun emitRequest(request: Request) = this@MainExplorerViewModel.emitRequest(request)
-		override fun postToUi(work: Runnable) {
-			this@MainExplorerViewModel.postToUi(work)
-		}
-		override fun clearSelection() = this@MainExplorerViewModel.clearSelection()
-		override fun reloadContent() = this@MainExplorerViewModel.reloadContent()
-		override fun refreshInfo() = this@MainExplorerViewModel.refreshInfo()
 		override fun notifyChanged() = this@MainExplorerViewModel.notifyChanged()
 		override fun addItem(item: ItemRow) = this@MainExplorerViewModel.addItem(item)
 		override fun addItem(index: Int, item: ItemRow) = this@MainExplorerViewModel.addItem(index, item)
 		override fun openContainer(container: DbItem) = this@MainExplorerViewModel.openContainer(container)
 	}
 
+	// the flip needs no own door, only the shared ones
 	private val flip = SubjectsFlip(viewModelScope, io, FlipHost())
 
-	private inner class FlipHost : SubjectsFlip.Host {
-		override fun items() = this@MainExplorerViewModel.items()
-		override val searching get() = this@MainExplorerViewModel.searching
-		override val path get() = history.path
-		override fun emitRequest(request: Request) = this@MainExplorerViewModel.emitRequest(request)
-		override fun postToUi(work: Runnable) {
-			this@MainExplorerViewModel.postToUi(work)
-		}
-		override fun clearSelection() = this@MainExplorerViewModel.clearSelection()
-		override fun reloadContent() = this@MainExplorerViewModel.reloadContent()
-		override fun refreshInfo() = this@MainExplorerViewModel.refreshInfo()
-	}
+	private inner class FlipHost : SubjectsFlip.Host, SubjectsHost by shared
 
 	private val delete = SubjectsDelete(viewModelScope, io, DeleteHost())
 
-	private inner class DeleteHost : SubjectsDelete.Host {
-		override fun items() = this@MainExplorerViewModel.items()
-		override val searching get() = this@MainExplorerViewModel.searching
-		override val path get() = history.path
-		override fun emitRequest(request: Request) = this@MainExplorerViewModel.emitRequest(request)
-		override fun postToUi(work: Runnable) {
-			this@MainExplorerViewModel.postToUi(work)
-		}
+	private inner class DeleteHost : SubjectsDelete.Host, SubjectsHost by shared {
 		override fun removeItems(items: Collection<ItemRow>) = this@MainExplorerViewModel.removeItems(items)
 		override fun refreshSearchRows() = this@MainExplorerViewModel.refreshSearchRows()
-		override fun refreshInfo() = this@MainExplorerViewModel.refreshInfo()
 	}
 
 	/** Work that outlives the model drops. */
@@ -316,20 +300,14 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 	private val navigation = SubjectsNavigation(viewModelScope, io, history, NavigationHost())
 
-	private inner class NavigationHost : SubjectsNavigation.Host {
-		override val searching get() = this@MainExplorerViewModel.searching
+	private inner class NavigationHost : SubjectsNavigation.Host, SubjectsHost by shared {
 		override fun selectionCount() = this@MainExplorerViewModel.selectionCount()
 		override val pasteArmed get() = this@MainExplorerViewModel.pasteArmed
-		override fun postToUi(work: Runnable) {
-			this@MainExplorerViewModel.postToUi(work)
-		}
-		override fun emitRequest(request: Request) = this@MainExplorerViewModel.emitRequest(request)
 		override fun setContent(container: DbItem?) = this@MainExplorerViewModel.setContent(container)
 		override fun openChain(path: MutableList<DbItem>) = this@MainExplorerViewModel.openChain(path)
 		override fun switchedSibling(step: Int, delta: Int) {
 			updateState { it.copy(sibling = SiblingSwitch(step, delta)) }
 		}
-		override fun clearSelection() = this@MainExplorerViewModel.clearSelection()
 	}
 
 	fun onReferenceClick(ui: ItemUiModel) = navigation.onReferenceClick(ui)
@@ -418,19 +396,10 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 	private val transfer = SubjectsTransfer(viewModelScope, io, TransferHost())
 
-	private inner class TransferHost : SubjectsTransfer.Host {
+	private inner class TransferHost : SubjectsTransfer.Host, SubjectsHost by shared {
 		override val ctx get() = this@MainExplorerViewModel.ctx
-		override fun items() = this@MainExplorerViewModel.items()
-		override val path get() = history.path
-		override fun emitRequest(request: Request) = this@MainExplorerViewModel.emitRequest(request)
-		override fun postToUi(work: Runnable) {
-			this@MainExplorerViewModel.postToUi(work)
-		}
-		override fun clearSelection() = this@MainExplorerViewModel.clearSelection()
 		override fun setContent(container: DbItem?) = this@MainExplorerViewModel.setContent(container)
-		override fun reloadContent() = this@MainExplorerViewModel.reloadContent()
 		override fun requestScrollToBottom() = this@MainExplorerViewModel.requestScrollToBottom()
-		override fun refreshInfo() = this@MainExplorerViewModel.refreshInfo()
 	}
 
 	private fun exportWordFile() = transfer.exportWordFile()

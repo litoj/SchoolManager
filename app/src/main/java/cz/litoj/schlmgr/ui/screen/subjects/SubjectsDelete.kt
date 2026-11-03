@@ -19,23 +19,10 @@ internal class SubjectsDelete(
 	private val host: Host,
 ) {
 
-	interface Host {
-		fun items(): List<ItemRow>
-
-		val searching: Boolean
-
-		/** The open chain, where the searched region sits in the last entry. */
-		val path: List<DbItem>
-
-		fun emitRequest(request: Request)
-
-		fun postToUi(work: Runnable)
-
+	interface Host : SubjectsHost {
 		fun removeItems(items: Collection<ItemRow>)
 
 		fun refreshSearchRows()
-
-		fun refreshInfo()
 	}
 
 	fun onDeleteAction() {

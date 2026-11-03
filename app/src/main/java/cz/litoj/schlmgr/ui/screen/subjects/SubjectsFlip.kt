@@ -24,24 +24,8 @@ internal class SubjectsFlip(
 	private val host: Host,
 ) {
 
-	interface Host {
-		fun items(): List<ItemRow>
-
-		val searching: Boolean
-
-		/** The open chain, where the acting parent sits in the last entry. */
-		val path: List<DbItem>
-
-		fun emitRequest(request: Request)
-
-		fun postToUi(work: Runnable)
-
-		fun clearSelection()
-
-		fun reloadContent()
-
-		fun refreshInfo()
-	}
+	/** The shared doors, see [SubjectsHost]. */
+	interface Host : SubjectsHost
 
 	/**
 	 * A flip run between the start and its end: the io flight, an open

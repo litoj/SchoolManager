@@ -26,23 +26,8 @@ internal class SubjectsWordEdit(
 	private val host: Host,
 ) {
 
-	interface Host {
-		fun items(): List<ItemRow>
-
+	interface Host : SubjectsHost {
 		fun selectionCount(): Int
-
-		/** The open chain, where the new item lands in the last entry. */
-		val path: List<DbItem>
-
-		fun emitRequest(request: Request)
-
-		fun postToUi(work: Runnable)
-
-		fun clearSelection()
-
-		fun reloadContent()
-
-		fun refreshInfo()
 
 		/** Republishes the rows in place, without a reload. */
 		fun notifyChanged()

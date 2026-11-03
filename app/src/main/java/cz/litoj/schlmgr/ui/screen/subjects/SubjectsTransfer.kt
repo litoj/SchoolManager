@@ -23,26 +23,12 @@ internal class SubjectsTransfer(
 	private val host: Host,
 ) {
 
-	interface Host {
+	interface Host : SubjectsHost {
 		val ctx: Context
-
-		fun items(): List<ItemRow>
-
-		val path: List<DbItem>
-
-		fun emitRequest(request: Request)
-
-		fun postToUi(work: Runnable)
-
-		fun clearSelection()
 
 		fun setContent(container: DbItem?)
 
-		fun reloadContent()
-
 		fun requestScrollToBottom()
-
-		fun refreshInfo()
 	}
 
 	/**
