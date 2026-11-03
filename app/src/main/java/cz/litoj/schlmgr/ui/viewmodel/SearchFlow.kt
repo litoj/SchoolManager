@@ -1,5 +1,6 @@
 package cz.litoj.schlmgr.ui.viewmodel
 
+import cz.litoj.schlmgr.app.AppSettings
 import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.data.ItemRepository
@@ -91,7 +92,8 @@ internal class SearchFlow(
 		// a re-run on the same hop must not stack another search entry
 		val alreadySearching = history.onSearchHop()
 		run.abort()
-		val eng = SearchEngine(q)
+		// the search reads the toggle per run, so a settings change applies to the next one
+		val eng = SearchEngine(q, AppSettings.getBool("searchNoDiacritics", false))
 		if (!eng.valid) {
 			// an invalid pattern cannot search, so report it and keep the current list
 			val detail = eng.regexError

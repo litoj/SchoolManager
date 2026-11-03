@@ -14,8 +14,9 @@ import java.util.regex.Pattern
  * - a leading backslash selects structured search: type, value source and op tail.
  * - the type is W, T or C, and the value source D, S, F, N or R.
  * - see the resolve cases below.
+ * - [foldDiacritics] folds the plain text finders, the regex pattern stays as written.
  */
-class SearchEngine(query: String) {
+class SearchEngine(query: String, private val foldDiacritics: Boolean = false) {
 
 	/** False when [query] had a bad backslash r regex. */
 	var valid = true
@@ -67,13 +68,17 @@ class SearchEngine(query: String) {
 
 	private var compareText: String = ""
 
+	/** The candidate text under the fold setting, see the toggle in the settings. */
+	private fun folded(text: String): String =
+		if (foldDiacritics) DiacriticFold.of(text) else text
+
 	private val matcher: Correct = resolve(query)
 
 	private fun resolve(query: String): Correct {
 		var kind: Correct = Correct { _ -> true }
 		var numeric: Correct? = null
 		var sfm: SFManipulation? = null
-		var strCor: StringFinder = StringFinder { name -> name.lowercase().contains(compareText) }
+		var strCor: StringFinder = StringFinder { name -> folded(name).lowercase().contains(compareText) }
 		var start = 0
 		var searchDescription = false
 
@@ -124,14 +129,16 @@ class SearchEngine(query: String) {
 					}
 					strCor = StringFinder { name -> p.matcher(name).matches() }
 				}
-				's' -> strCor = StringFinder { name -> name.startsWith(compareText) }
-				'e' -> strCor = StringFinder { name -> name.endsWith(compareText) }
-				'c' -> strCor = StringFinder { name -> name.contains(compareText) }
+				's' -> strCor = StringFinder { name -> folded(name).startsWith(compareText) }
+				'e' -> strCor = StringFinder { name -> folded(name).endsWith(compareText) }
+				'c' -> strCor = StringFinder { name -> folded(name).contains(compareText) }
 				// must contain the written text, ignores case
 				'\\' -> compareText = compareText.lowercase()
 				else -> compareText = query.lowercase().substring(start + 1)
 			}
-		} else compareText = query.lowercase()
+			// the fold leaves the regex pattern alone, it is the user's own text
+			if (query[start + 1] != 'r') compareText = folded(compareText)
+		} else compareText = folded(query.lowercase())
 
 		val finalNumeric = numeric
 		return if (finalNumeric != null)

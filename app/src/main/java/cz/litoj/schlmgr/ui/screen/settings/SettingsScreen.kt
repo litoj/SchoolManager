@@ -73,6 +73,8 @@ private fun SettingsList(state: SettingsState, modifier: Modifier = Modifier) {
 		) { state.doubleTapMsFocusLost(); keyboard?.hide() }
 		HairlineDivider()
 		WordSplitRow(state)
+		HairlineDivider()
+		SettingSwitchRow(stringResource(R.string.setts_search_diacritics), state.searchDiacritics, state::toggleSearchDiacritics)
 		// no resource exists for the Test section label, so it stays a literal
 		SectionHeader("Test")
 		SettingNumberRow(

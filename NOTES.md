@@ -178,6 +178,7 @@ Its DB part is the model for this project.
 - A keyboard drop with an empty query closes the field.
 - The nav back arrow cancels the search: the results leave and the query resets.
 - System back follows the same rule as the arrow.
+- A settings toggle folds diacritics away, the regex pattern stays as written.
 
 ### CI
 
@@ -193,6 +194,9 @@ Its DB part is the model for this project.
 - No active task.
 - Open items live in `DEVELOPMENT.md`.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
+- 2026-11-03: diacritic-insensitive search behind a settings toggle. The fold
+  covers the plain text finders of the query and the names, the regex pattern
+  stays exact.
 - 2026-11-03: creating a chapter opens it on commit instead of only appending it,
   the same landing as tapping it; notes still only append.
 - 2026-11-02: a container load re-anchors the list at the top, the frozen

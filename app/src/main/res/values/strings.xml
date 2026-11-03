@@ -112,7 +112,9 @@
     <string name="help_search_hint">Search help</string>
     <string name="help_search_how">Searching is enabled in all chapters and subjects.
         \nIn a search list, a click on a found chapter opens its container.
-        \nThere are various methods for searching, the search engine accepts naming syntax.</string>
+        \nA word hit shows its translations directly, a settings toggle turns that off.
+        \nThere are various methods for searching, the search engine accepts naming syntax.
+        \nA settings switch turns on diacritic-insensitive search.</string>
     <string name="help_search_regex">Regex syntax</string>
     <string name="help_search_regex_char_class">"Char Class\n[abc]\n[^abc]\n[a-zA-Z]\n[a-d[m-p]]\n[a-z&amp;&amp;[def]]\n[a-z&amp;&amp;[^bc]]\n[a-z&amp;&amp;[^m-p]]"</string>
     <string name="help_search_regex_char_class_desc">"Description\na, b, or c\nAny character except a, b, or c\na through z or A through Z, inclusive\na through d, or m through p: [a-dm-p]\nd, e, or f \na through z, except for b and c: [ad-z]\na through z, and not m through p: [a-lq-z]"</string>
@@ -230,6 +232,7 @@
     <string name="select">Select</string>
     <string name="select_test">Test</string>
     <string name="setts_him_flipped">Translate words automatically</string>
+    <string name="setts_him_flipped_search">Translate search results automatically</string>
     <string name="setts_him_parse">Display item names parsed</string>
     <string name="setts_interface">Interface</string>
     <string name="setts_desc_lines">Directly displayed description lines</string>
@@ -238,6 +241,7 @@
     <string name="setts_test_clever">Make tests by success rate</string>
     <string name="setts_test_time">Default time per item</string>
     <string name="setts_word_splitter">Sequence splitting words from translates when exporting</string>
+    <string name="setts_search_diacritics">Search without diacritics</string>
     <string name="sort">Sort</string>
     <string name="sort_alpha_AZ">alphabet ▼</string>
     <string name="sort_alpha_ZA">alphabet ▲</string>

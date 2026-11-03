@@ -24,6 +24,7 @@ class SettingsState(
 	clever: Boolean = false,
 	amountText: String = "10",
 	timeText: String = TestEngine.DEFAULT_TIME_SECONDS.toString(),
+	searchDiacritics: Boolean = false,
 ) {
 	var parse by mutableStateOf(parse)
 		private set
@@ -40,6 +41,8 @@ class SettingsState(
 	var amountText by mutableStateOf(amountText)
 		private set
 	var timeText by mutableStateOf(timeText)
+		private set
+	var searchDiacritics by mutableStateOf(searchDiacritics)
 		private set
 
 	fun toggleParse() {
@@ -135,6 +138,12 @@ class SettingsState(
 			timeText = TestEngine.getDefaultTime().toString()
 	}
 
+	/** The search reads the flag per run, so nothing else needs to react. */
+	fun toggleSearchDiacritics() {
+		searchDiacritics = !searchDiacritics
+		AppSettings.set("searchNoDiacritics", searchDiacritics)
+	}
+
 	/** The row options move through the one door of ItemRow. */
 	private fun applyRowOptions() {
 		ItemRow.applyOptions(parse, defFlip,
@@ -163,5 +172,6 @@ class SettingsViewModel : ViewModel() {
 		clever = TestEngine.isClever,
 		amountText = TestEngine.amount.toString(),
 		timeText = TestEngine.getDefaultTime().toString(),
+		searchDiacritics = AppSettings.getBool("searchNoDiacritics", false),
 	)
 }

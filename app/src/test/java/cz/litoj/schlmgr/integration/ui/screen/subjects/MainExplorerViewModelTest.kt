@@ -20,6 +20,7 @@ import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 import cz.litoj.schlmgr.ui.viewmodel.SearchUi
+import cz.litoj.schlmgr.ui.viewmodel.SettingsState
 import cz.litoj.schlmgr.ui.viewmodel.TranslationValue
 import cz.litoj.schlmgr.ui.viewmodel.toUi
 import kotlinx.coroutines.CoroutineStart
@@ -698,6 +699,26 @@ class MainExplorerViewModelTest {
 		assertTrue("the first word kept its flip", w1.flipped)
 		assertTrue("the second word flipped alone", w2.flipped)
 		assertFalse("the third word stayed unflipped", w3.flipped)
+	}
+
+	@Test
+	fun `a settings toggle makes the search ignore diacritics`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "sídlo", null, listOf("byt" to null))
+		val model = vmIn("A")
+		model.openSearchField()
+		model.onQuerySubmit("sidlo")
+		assertTrue("the exact search misses the marked name",
+			model.items().none { it.item.name == "sídlo" })
+		model.endSearch()
+
+		SettingsState(searchDiacritics = false).toggleSearchDiacritics()
+		model.openSearchField()
+		model.onQuerySubmit("sidlo")
+
+		assertEquals("the folded search finds the marked name",
+			listOf("sídlo"), model.items().map { it.item.name })
 	}
 
 	@Test
