@@ -26,14 +26,20 @@ class ScrollStepTest {
 	@Test
 	fun `the deeper into the top edge zone, the faster the list scrolls up`() {
 		assertEquals(0f, step(zone), 0f)
-		assertEquals(-maxStep / 2f, step(zone / 2f), 0.001f)
+		assertEquals(-maxStep * 0.25f, step(zone / 2f), 0.001f)
 		assertEquals(-maxStep, step(0f), 0f)
+	}
+
+	@Test
+	fun `the ramp steepens near the edge`() {
+		// half the remaining distance more than doubles the step
+		assertEquals(-maxStep * 0.5625f, step(zone / 4f), 0.001f)
 	}
 
 	@Test
 	fun `the deeper into the bottom edge zone, the faster the list scrolls down`() {
 		assertEquals(0f, step(height - zone), 0f)
-		assertEquals(maxStep / 2f, step(height - zone / 2f), 0.001f)
+		assertEquals(maxStep * 0.25f, step(height - zone / 2f), 0.001f)
 		assertEquals(maxStep, step(height), 0f)
 	}
 
@@ -48,14 +54,14 @@ class ScrollStepTest {
 	fun `an overlapping viewport follows the nearer edge`() {
 		val small = 150f
 		fun smallStep(y: Float): Float = scrollStep(y, small, zone, maxStep)
-		assertEquals(-maxStep * 0.4f, smallStep(60f), 0.001f)
-		assertEquals(maxStep * 0.4f, smallStep(90f), 0.001f)
+		assertEquals(-maxStep * 0.16f, smallStep(60f), 0.001f)
+		assertEquals(maxStep * 0.16f, smallStep(90f), 0.001f)
 	}
 
 	@Test
 	fun `an overlapping tie scrolls up`() {
 		val small = 150f
 		fun smallStep(y: Float): Float = scrollStep(y, small, zone, maxStep)
-		assertEquals(-maxStep * 0.25f, smallStep(small / 2f), 0.001f)
+		assertEquals(-maxStep * 0.0625f, smallStep(small / 2f), 0.001f)
 	}
 }

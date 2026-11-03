@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -63,7 +64,13 @@ fun Item(
 			// success-ratio tint of the position cell, so the whole row highlights
 			.background(if (item.selected) ExplorerColors.selectedRow else Color.Transparent)
 			.successRatioBand(item, tintBandWidth(positionWidth))
-			.combinedClickable(onClick = onClick, onLongClick = onLongClick),
+			// no ripple: the press feedback is the selection tint and the drag itself
+			.combinedClickable(
+				interactionSource = remember { MutableInteractionSource() },
+				indication = null,
+				onClick = onClick,
+				onLongClick = onLongClick,
+			),
 	) {
 		PositionCell(item, variant, positionWidth, Modifier.align(Alignment.CenterVertically), onIconClick)
 		// the wrapper column holds the texts and the trailing actions.

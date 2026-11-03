@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -46,6 +47,8 @@ internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifie
 	var swipe by remember { mutableFloatStateOf(0f) }
 	val openSibling by rememberUpdatedState(viewModel::openSibling)
 	val scrollState = rememberLazyListState()
+	// a held long-press keeps the strip away, so the list never shrinks under the drag
+	var pressHeld by remember { mutableStateOf(false) }
 	// the New button visibility follows the drag gesture, not the list scroll
 	val fabVisibility = rememberFabVisibility()
 	ListEndReveal(listState, scrollState)
@@ -64,7 +67,7 @@ internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifie
 	// a load landing resets the button, an insert or delete keeps it hidden
 	LaunchedEffect(state.contentStep) { fabVisibility.show() }
 	Box(modifier) {
-		val callbacks = mainCallbacks(viewModel, listState.selectionActive)
+		val callbacks = mainCallbacks(viewModel, listState.selectionActive) { pressHeld = it }
 		ExplorerScaffold(
 			state = state,
 			listState = listState,
@@ -96,7 +99,8 @@ internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifie
 					onCancel = viewModel::cancelPaste,
 					onPaste = viewModel::doPaste,
 				)
-				listState.selectionActive -> {
+				// the row shows its selection tint at once, the strip only after the lift
+				listState.selectionActive && !pressHeld -> {
 					// the read lands on every recomposition, so a settings change reaches the next selection
 					val config = ActionConfig.load()
 					SelectionActionBar(
@@ -116,7 +120,11 @@ internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifie
 }
 
 /** The row intents, where hits carry their track path and a selection tap toggles. */
-private fun mainCallbacks(viewModel: MainExplorerViewModel, selectionActive: Boolean): ItemListCallbacks =
+private fun mainCallbacks(
+	viewModel: MainExplorerViewModel,
+	selectionActive: Boolean,
+	onPressHeld: (Boolean) -> Unit,
+): ItemListCallbacks =
 	ItemListCallbacks(
 		onItemClick = { ui ->
 			if (selectionActive) viewModel.setSelected(ui.payload, !ui.selected)
@@ -136,4 +144,5 @@ private fun mainCallbacks(viewModel: MainExplorerViewModel, selectionActive: Boo
 		onReorderMove = viewModel::moveRow,
 		onReorderDrop = viewModel::persistOrder,
 		onTopPull = viewModel::openSearchField,
+		onPressHeld = onPressHeld,
 	)

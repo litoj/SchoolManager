@@ -45,10 +45,10 @@ class ItemListDragTest {
 	@get:Rule
 	val rule = createComposeRule()
 
-	/** The live reorder steps the list reported, in order. */
+	/** The reorder moves the list reported, at most one per drag, at the drop. */
 	private val steps = mutableListOf<Pair<Int, Int>>()
 
-	/** The rows kept in order by the host, to which every reorder step is applied. */
+	/** The rows kept in order by the host, which the drop moves once. */
 	private val items = mutableStateListOf<ItemUiModel>()
 
 	/** The state published by the last composition, the way a test reads the republish back. */
@@ -93,7 +93,7 @@ class ItemListDragTest {
 		}
 	}
 
-	/** Mirrors the live reorder step of the view model, or the dragged row never moves. */
+	/** Mirrors the single move the drop reports, like the view model does. */
 	private fun moveRow(from: Int, to: Int) {
 		steps += from to to
 		items.add(to, items.removeAt(from))
@@ -200,8 +200,7 @@ class ItemListDragTest {
 	/**
 	 * Long-presses the row named [name] and drags it onto [onto] and back onto
 	 * the slot of the pressed row, then releases.
-	 * - the slot keeps the y of the press.
-	 * - the row that slid up into it holds that y after the first leg.
+	 * - the list stays frozen, so the press y still is the row's own slot.
 	 */
 	private fun roundTrip(name: String, onto: String) {
 		val startY = centerY(name)
@@ -281,6 +280,39 @@ class ItemListDragTest {
 	}
 
 	/**
+	 * The strip hold.
+	 * - the pressed row shows selected at once, which is the press feedback.
+	 * - the host hides its strip while the finger is down, and shows it on the lift.
+	 */
+	@Test
+	fun `a held press reports the strip hold`() {
+		val holds = mutableListOf<Boolean>()
+		items += rows(3)
+		rule.setContent {
+			Column(Modifier.size(300.dp, 400.dp)) {
+				ItemList(
+					state = ItemListState(items = items.toList(), maxPosition = items.size),
+					callbacks = ItemListCallbacks(onPressHeld = { holds += it }),
+					reorderable = true,
+				)
+			}
+		}
+		val from = row("item 1")
+		val px = with(rule.density) { (from.left + (from.right - from.left) / 2).toPx() }
+		val y = with(rule.density) { (from.top + (from.bottom - from.top) / 2).toPx() }
+		rule.mainClock.autoAdvance = false
+		rule.onRoot().performTouchInput {
+			down(Offset(px, y))
+			advanceEventTime(viewConfiguration.longPressTimeoutMillis + 100)
+		}
+		settle()
+		assertEquals("the press holds the strip", listOf(true), holds)
+		rule.onRoot().performTouchInput { up() }
+		settle()
+		assertEquals("the lift releases the strip", listOf(true, false), holds)
+	}
+
+	/**
 	 * The round-trip fallback.
 	 * - a reorder drag ending on the slot of the same row matches a long-press.
 	 * - no drop fires, so nothing persists and the selection stands.
@@ -295,7 +327,7 @@ class ItemListDragTest {
 
 		roundTrip("item 2", "item 4")
 
-		assertEquals("steps=$steps", listOf(1 to 3, 3 to 1), steps)
+		assertTrue("nothing moves before the drop: steps=$steps", steps.isEmpty())
 		assertEquals(0, drops)
 		assertTrue("the long-press's selection stands", items[1].selected)
 		assertTrue("the selection reached the composed state", published.selectionActive)

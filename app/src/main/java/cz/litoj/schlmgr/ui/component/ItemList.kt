@@ -9,6 +9,8 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -17,6 +19,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -28,11 +31,13 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 import cz.litoj.schlmgr.ui.viewmodel.ItemListState
@@ -40,6 +45,10 @@ import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 import cz.litoj.schlmgr.ui.viewmodel.TranslationLine
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import kotlin.math.roundToInt
 
 /**
  * User-intent callbacks for the explorer list.
@@ -74,7 +83,7 @@ class ItemListCallbacks(
 	val onSelectRange: (Int, Int) -> Unit = { _, _ -> },
 	/** A drag-select ended, so its selection becomes the new baseline. */
 	val onSelectEnd: () -> Unit = {},
-	/** A reorder drag moved the row at from onto to, live and not yet saved. */
+	/** A reorder drag ended onto another row, so the host moves it before the persist. */
 	val onReorderMove: (Int, Int) -> Unit = { _, _ -> },
 	/**
 	 * A reorder drag moved the row and ended, so persist the current row order.
@@ -83,6 +92,11 @@ class ItemListCallbacks(
 	val onReorderDrop: () -> Unit = {},
 	/** A pull down at the very top of the list, where the host opens its search field. */
 	val onTopPull: () -> Unit = {},
+	/**
+	 * A long-press holds the finger down, so the host hides its action strip until the lift.
+	 * - the row itself shows selected at once, which is the feedback of the press.
+	 */
+	val onPressHeld: (Boolean) -> Unit = {},
 )
 
 /**
@@ -96,6 +110,12 @@ internal class LongPressDragHandler {
 	private var mode: ListDragMode = ListDragMode.None
 
 	val isArmed: Boolean get() = index >= 0
+
+	/** The armed row, -1 when none waits. */
+	val armedIndex: Int get() = index
+
+	/** The mode snapshotted at the arm. */
+	val armedMode: ListDragMode get() = mode
 
 	fun arm(index: Int, mode: ListDragMode) {
 		this.index = index
@@ -194,14 +214,31 @@ fun ItemList(
 		state.variant == ExplorerRowVariant.Search,
 		reorderable,
 	)
+	// the drag-over reorder: the pressed row rides the finger, the list waits for the drop
+	var dragOver by remember { mutableStateOf<DragOver?>(null) }
 	val dragModifier = Modifier.rememberListDragModifier(
 		listState = listState,
 		contentStep = state.contentStep,
 		pending = pending,
 		onSelectRange = callbacks.onSelectRange,
 		onSelectEnd = callbacks.onSelectEnd,
-		onReorderMove = callbacks.onReorderMove,
-		onReorderDrop = callbacks.onReorderDrop,
+		onGestureEnd = { callbacks.onPressHeld(false) },
+		onReorderStart = { anchor, pressY ->
+			val top = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == anchor }?.offset ?: 0
+			dragOver = DragOver(anchor, pressY - top, pressY, null)
+		},
+		onReorderStep = { anchor, fingerY, target ->
+			dragOver = dragOver?.copy(fingerY = fingerY, target = target) ?: DragOver(anchor, 0f, fingerY, target)
+		},
+		onReorderDrop = { anchor, target ->
+			println("DIAG list drop anchor=$anchor target=$target")
+			dragOver = null
+			// the list moved nothing, so the drop lands the one move and persists it
+			if (target != null && target != anchor) {
+				callbacks.onReorderMove(anchor, target)
+				callbacks.onReorderDrop()
+			}
+		},
 	)
 	val pullModifier = Modifier.rememberTopPullModifier(listState, callbacks.onTopPull)
 	// the setting rebuilds the detector, its change applies to the next gesture
@@ -231,7 +268,8 @@ fun ItemList(
 			}
 		}
 	}
-	LazyColumn(modifier.then(dragModifier).then(pullModifier).then(tapModifier), state = listState) {
+	Box(modifier) {
+	LazyColumn(Modifier.fillMaxSize().then(dragModifier).then(pullModifier).then(tapModifier), state = listState) {
 		itemsIndexed(
 			state.items,
 			key = { _, item -> item.key },
@@ -247,7 +285,9 @@ fun ItemList(
 				onLongClick = {
 					// the haptic rides on the long-press of combinedClickable
 					pending.arm(index, dragMode)
+					// the row shows selected at once, the strip waits for the lift
 					callbacks.onItemLongClick(item)
+					if (dragMode != ListDragMode.Select) callbacks.onPressHeld(true)
 				},
 				// the icon selects while a selection runs or the picker shows
 				onIconClick = if (state.selectionActive || state.pickerMode) {
@@ -263,7 +303,22 @@ fun ItemList(
 				// - the layout derives the offsets below it from that box.
 				// - no placement animation can move a row entering at the edge.
 				modifier = Modifier
-					.animateItem(placementSpec = RowPlacementSpec)
+					// the dragged row floats at the finger over the frozen list
+					.then(
+						dragOver?.takeIf { it.anchor == index }?.let { drag ->
+							Modifier
+								.zIndex(1f)
+								.offset {
+									val top = listState.layoutInfo.visibleItemsInfo
+										.firstOrNull { it.index == index }?.offset ?: 0
+									IntOffset(0, (drag.fingerY - drag.grab - top).roundToInt())
+								}
+								.background(colorResource(R.color.colorPrimaryBg))
+						} ?: Modifier,
+					)
+					// no fade-out: a container swap removes the old rows at once, while
+					// the fade of the old list lingers over the restored scroll
+					.animateItem(placementSpec = RowPlacementSpec, fadeOutSpec = null)
 					.animateContentSize(animationSpec = RowSizeSpec),
 				infoAction = if (!state.pickerMode && item.description.isNotEmpty() && !ItemRow.showsDescription(item.description)) {
 					{ InfoActionIcon { callbacks.onInfo(item) } }
@@ -278,7 +333,39 @@ fun ItemList(
 			)
 		}
 	}
+	// the drop marker: the row boundary where the dragged row lands on release
+	val drag = dragOver
+	val target = drag?.target
+	if (drag != null && target != null) {
+		// the slot counts the remaining rows, so the boundary sits before its display row
+		val boundary = if (target < drag.anchor) target else target + 1
+		Box(
+			Modifier
+				// the row position reads in placement, since the layout info must not compose
+				.offset {
+					val info = listState.layoutInfo.visibleItemsInfo
+					val row = info.firstOrNull { it.index == boundary }
+					val y = when {
+						row != null -> row.offset
+						boundary <= (info.firstOrNull()?.index ?: 0) -> 0
+						else -> info.lastOrNull()?.let { it.offset + it.size } ?: 0
+					}
+					IntOffset(0, y)
+				}
+				.fillMaxWidth()
+				.height(2.dp)
+				.background(colorResource(R.color.colorPrimaryHeader)),
+		)
+	}
+	}
 }
+
+/**
+ * The floating reorder drag: the pressed row rides the finger while the list stays.
+ * - [grab] is the press offset inside the row, so the grabbed spot stays under the finger.
+ * - [target] is the row boundary the line marks, null before any crossing.
+ */
+private data class DragOver(val anchor: Int, val grab: Float, val fingerY: Float, val target: Int?)
 
 /**
  * Reveals the last row of the list whenever [ItemListState.scrollToBottom] asks.

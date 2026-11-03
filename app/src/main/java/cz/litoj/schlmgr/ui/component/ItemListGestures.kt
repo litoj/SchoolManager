@@ -55,12 +55,16 @@ internal fun Modifier.rememberListDragModifier(
 	pending: LongPressDragHandler,
 	onSelectRange: (Int, Int) -> Unit,
 	onSelectEnd: () -> Unit,
-	onReorderMove: (Int, Int) -> Unit,
-	onReorderDrop: () -> Unit,
+	onGestureEnd: () -> Unit,
+	onReorderStart: (Int, Float) -> Unit,
+	onReorderStep: (Int, Float, Int?) -> Unit,
+	onReorderDrop: (Int, Int?) -> Unit,
 ): Modifier {
 	val currentSelect by rememberUpdatedState(onSelectRange)
 	val currentSelectEnd by rememberUpdatedState(onSelectEnd)
-	val currentReorder by rememberUpdatedState(onReorderMove)
+	val currentGestureEnd by rememberUpdatedState(onGestureEnd)
+	val currentStart by rememberUpdatedState(onReorderStart)
+	val currentReorderStep by rememberUpdatedState(onReorderStep)
 	val currentDrop by rememberUpdatedState(onReorderDrop)
 	// a moved step against the claim means the list changed structurally during the drag
 	val currentStep by rememberUpdatedState(contentStep)
@@ -81,6 +85,8 @@ internal fun Modifier.rememberListDragModifier(
 			// the content step the drag indexes belong to.
 			// a mismatch stops every step and the drop
 			var claimedStep = -1
+			// where the drop would land, null for the anchor slot or none
+			var pendingTarget: Int? = null
 			// shared with the auto-scroll loop, so the access stays atomic.
 			val pointerY = AtomicReference(down.position.y)
 			var autoScroll: Job? = null
@@ -97,15 +103,10 @@ internal fun Modifier.rememberListDragModifier(
 
 			fun stepReorder(y: Float) {
 				if (!stillValid()) return
-				val target = reorderTarget(listState, dragIndex, y, edge) ?: return
-				// a reorder re-anchors the scroll on the first row, so put it back.
-				val first = listState.firstVisibleItemIndex
-				val offset = listState.firstVisibleItemScrollOffset
-				currentReorder(dragIndex, target)
+				// the list stays put until the drop, so the insert slot measures against the anchor
+				pendingTarget = insertIndex(listState, anchorIndex, y)
 				reported = true
-				// the list already moved the row, so follow its new slot
-				dragIndex = target
-				listState.requestScrollToItem(first, offset)
+				currentReorderStep(anchorIndex, y, pendingTarget)
 			}
 
 			while (true) {
@@ -123,6 +124,7 @@ internal fun Modifier.rememberListDragModifier(
 						anchorIndex = anchor
 						claimedStep = currentStep
 						change.consume()
+						if (mode == ListDragMode.Reorder) currentStart(anchorIndex, down.position.y)
 						if (mode != ListDragMode.None) {
 							autoScroll = scope.launch {
 								while (isActive) {
@@ -159,10 +161,13 @@ internal fun Modifier.rememberListDragModifier(
 					ListDragMode.Select -> currentSelectEnd()
 					// a round trip back to its own slot is the selection intent of the long-press.
 					// it is not a reorder, so the drop with its persist never fires.
-					ListDragMode.Reorder -> if (dragIndex != anchorIndex) currentDrop()
+					ListDragMode.Reorder -> {
+						currentDrop(anchorIndex, pendingTarget)
+					}
 					ListDragMode.None -> {}
 				}
 			}
+			currentGestureEnd()
 		}
 	}
 }
@@ -297,38 +302,38 @@ internal fun indexAtY(
 }
 
 /**
- * @return the row to swap with, or null for no row, the dragged row and a finger short of the middle
+ * The insertion slot of a dragged row at finger [y], counting the other rows the finger passed.
+ * - the dropped row lands before the row at that slot of the remaining list.
+ * - the rows above the viewport always count, since their middles sit above the finger.
+ * - free of [LazyListState], so it is unit-testable.
  */
-internal fun reorderTarget(listState: LazyListState, dragIndex: Int, y: Float, edgeZone: Float): Int? {
+internal fun insertIndex(listState: LazyListState, anchor: Int, y: Float): Int {
 	val info = listState.layoutInfo
-	return reorderTarget(
+	return insertIndexAt(
 		info.visibleItemsInfo.map { RowGeometry(it.index, it.offset, it.size) },
-		dragIndex,
+		anchor,
 		y,
-		info.viewportSize.height.toFloat(),
-		edgeZone,
 	)
 }
 
-/**
- * The pure swap decision behind [reorderTarget]: the row under the finger past its middle.
- * - no row, the dragged row itself and a finger short of the middle return null.
- * - the middle travels with the row, so undoing a swap takes a retreat onto the other half.
- * - free of [LazyListState], so it is unit-testable.
- */
-internal fun reorderTarget(
-	visible: List<RowGeometry>,
-	dragIndex: Int,
-	y: Float,
-	viewportHeight: Float,
-	edgeZone: Float,
-): Int? {
-	val target = indexAtY(visible, y, viewportHeight, edgeZone) ?: return null
-	if (target == dragIndex) return null
-	val row = visible.first { it.index == target }
-	val middle = row.offset + row.size / 2f
-	val crossed = if (target > dragIndex) y >= middle else y <= middle
-	return if (crossed) target else null
+internal fun insertIndexAt(visible: List<RowGeometry>, anchor: Int, y: Float): Int {
+	if (visible.isEmpty()) return 0
+	val first = visible.first().index
+	var count = first
+	if (anchor < first) count--
+	// a finger exactly on a middle counts for a downward drag only, so a tie keeps its side
+	val anchorRow = visible.firstOrNull { it.index == anchor }
+	val down = when {
+		anchorRow != null -> y > anchorRow.offset + anchorRow.size / 2f
+		anchor < first -> true
+		else -> false
+	}
+	count += visible.count { row ->
+		if (row.index == anchor) return@count false
+		val middle = row.offset + row.size / 2f
+		if (down) middle <= y else middle < y
+	}
+	return count
 }
 
 /**
@@ -349,13 +354,14 @@ internal fun scrollStep(y: Float, viewportHeight: Float, edgeZone: Float, maxSte
 	}
 	val depth = if (useTop) (edgeZone - y) / edgeZone
 		else (y - (viewportHeight - edgeZone)) / edgeZone
-	val step = maxStep * depth.coerceIn(0f, 1f)
+	// the squared ramp keeps the band's outer half gentle and the edge fast
+	val step = maxStep * depth.coerceIn(0f, 1f).let { it * it }
 	return if (useTop) -step else step
 }
 
-private val EdgeZone = 48.dp
+private val EdgeZone = 120.dp
 /** The auto-scroll step at the very edge. Inside [EdgeZone] it ramps up to this. */
-private val ScrollStep = 8.dp
+private val ScrollStep = 12.dp
 /** How long the auto-scroll loop waits between steps: one step per frame at 60 Hz. */
 private const val FrameMillis = 16L
 private val TopPullThreshold = 40.dp

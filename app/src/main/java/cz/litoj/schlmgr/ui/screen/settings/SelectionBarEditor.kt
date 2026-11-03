@@ -1,11 +1,15 @@
 package cz.litoj.schlmgr.ui.screen.settings
 
+import androidx.annotation.ColorRes
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.Text
@@ -14,6 +18,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.key
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,15 +27,20 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.component.DefaultTextColor
 import cz.litoj.schlmgr.ui.component.IconSize
@@ -48,85 +59,149 @@ import cz.litoj.schlmgr.ui.viewmodel.label
 @Composable
 internal fun SelectionBarEditor(state: SettingsState) {
 	var dragging by remember { mutableStateOf<SelectionAction?>(null) }
-	var pressY by remember { mutableFloatStateOf(0f) }
-	var dragOffset by remember { mutableFloatStateOf(0f) }
+	var fingerY by remember { mutableFloatStateOf(0f) }
+	var grabOffset by remember { mutableFloatStateOf(0f) }
+	// the finger reads in the editor's own coordinates, so a scrolled host never skews the marker
+	var localFingerX by remember { mutableFloatStateOf(0f) }
+	var localFingerY by remember { mutableFloatStateOf(0f) }
 	val rowBounds = remember { mutableMapOf<Int, Rect>() }
+	val haptic = LocalHapticFeedback.current
 	val connectDrag = dragging?.connectable == true
 
-	fun hoveredIndex(): Int? {
-		val y = pressY + dragOffset
-		return rowBounds.entries.firstOrNull { y >= it.value.top && y < it.value.bottom }?.key
+	fun middleOf(index: Int): Float =
+		rowBounds[index]?.let { (it.top + it.bottom) / 2f } ?: 0f
+
+	/** The floating row sits at the finger, keeping the grabbed spot under it. */
+	fun draggedOffset(action: SelectionAction): Float {
+		val slot = state.selectionOrder.indexOf(action).takeIf { it >= 0 } ?: return 0f
+		val top = rowBounds[slot]?.top ?: return 0f
+		return fingerY - grabOffset - top
+	}
+
+	/** The insertion slot among the other rows, where the finger passed their middles. */
+	fun insertAt(dragged: SelectionAction): Int {
+		val from = state.selectionOrder.indexOf(dragged)
+		return state.selectionOrder.indices.count { it != from && middleOf(it) < fingerY }
+	}
+
+	/** The row the insertion line stands before, null for after the last row. */
+	fun lineBefore(dragged: SelectionAction): Int? {
+		val from = state.selectionOrder.indexOf(dragged)
+		return state.selectionOrder.indices.firstOrNull { it != from && middleOf(it) >= fingerY }
 	}
 
 	fun endDrag() {
 		val dragged = dragging ?: return
-		val hovered = hoveredIndex()
 		if (dragged.connectable) {
 			// only a strip slot takes the connection, so the drop elsewhere releases it
-			state.connectGoto(hovered?.takeIf { it < ActionConfig.BAR_SLOTS }?.let(state.selectionOrder::get))
-		} else if (hovered != null) {
+			val slot = rowBounds.entries
+				.firstOrNull { fingerY >= it.value.top && fingerY < it.value.bottom }
+				?.key
+				?.takeIf { it in 0 until ActionConfig.BAR_SLOTS }
+			state.connectGoto(slot?.let(state.selectionOrder::get))
+		} else {
+			// the list moved nothing during the drag, so the drop lands the one move
 			val from = state.selectionOrder.indexOf(dragged)
-			if (hovered != from) state.moveSelectionAction(from, hovered)
+			val to = insertAt(dragged)
+			if (to != from) state.moveSelectionAction(from, to)
 		}
 		dragging = null
-		dragOffset = 0f
 	}
 
-	fun startDrag(action: SelectionAction, index: Int, y: Float) {
+	fun startGoto(yInRow: Float) {
+		dragging = SelectionAction.GOTO
+		grabOffset = yInRow
+		fingerY = (rowBounds[GOTO_ROW]?.top ?: 0f) + yInRow
+		haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+	}
+
+	fun startDrag(action: SelectionAction, yInRow: Float) {
+		// the slot resolves live, since a reorder moved the row since its composition
+		val index = state.selectionOrder.indexOf(action)
 		dragging = action
-		dragOffset = 0f
-		pressY = (rowBounds[index]?.top ?: 0f) + y
+		grabOffset = yInRow
+		fingerY = (rowBounds[index]?.top ?: 0f) + yInRow
+		haptic.performHapticFeedback(HapticFeedbackType.LongPress)
 	}
 
-	Column(Modifier.fillMaxWidth()) {
-		state.selectionOrder.forEachIndexed { index, action ->
-			val hovered = hoveredIndex()
-			ActionSettingRow(
-				action = action,
-				index = index,
-				tint = when {
-					dragging != null && hovered == index -> colorResource(R.color.colorGroupBackground)
-					// the strip slots wear the primary wash, the rest stay plain
-					index < ActionConfig.BAR_SLOTS -> colorResource(R.color.colorSelectedRow)
-					else -> Color.Transparent
-				},
-				dragged = dragging == action,
-				offset = if (dragging == action) ({ dragOffset }) else ({ 0f }),
-				boundGoto = state.connections[SelectionAction.GOTO] == action,
-				onBounds = { rowBounds[index] = it },
-				onDragStart = { y -> startDrag(action, index, y) },
-				onDrag = { dy -> dragOffset += dy },
-				onDragEnd = ::endDrag,
-				onDragCancel = { dragging = null; dragOffset = 0f },
-			)
-		}
-		val bound = state.connections[SelectionAction.GOTO]
-		ActionSettingRow(
-			action = SelectionAction.GOTO,
-			index = GOTO_ROW,
-			tint = if (dragging?.connectable == true) colorResource(R.color.colorSubBackground) else Color.Transparent,
-			dragged = dragging == SelectionAction.GOTO,
-			offset = if (dragging == SelectionAction.GOTO) ({ dragOffset }) else ({ 0f }),
-			onBounds = { rowBounds[GOTO_ROW] = it },
-			onDragStart = { y -> startDrag(SelectionAction.GOTO, GOTO_ROW, y) },
-			onDrag = { dy -> dragOffset += dy },
-			onDragEnd = ::endDrag,
-			onDragCancel = { dragging = null; dragOffset = 0f },
-			extra = {
-				Text(
-					stringResource(R.string.setts_goto_connect),
-					style = TextStyle(fontSize = 13.sp, color = DefaultTextColor),
-				)
-				// the connection state reads as a fact under the hint
-				Text(
-					stringResource(
-						if (bound == null) R.string.setts_goto_loose else R.string.setts_goto_bound,
-						if (bound == null) "" else stringResource(bound.label),
-					),
-					style = TextStyle(fontSize = 13.sp, color = DefaultTextColor),
-				)
+	val dragged = dragging
+	val lineBeforeIndex = if (dragged != null && !dragged.connectable) lineBefore(dragged) else null
+	val lineAtEnd = dragged != null && !dragged.connectable && lineBeforeIndex == null
+
+	Box(
+		Modifier
+			.fillMaxWidth()
+			// the initial pass sees the finger before the dragged row consumes it
+			.pointerInput(Unit) {
+				awaitPointerEventScope {
+					while (true) {
+						val change = awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull() ?: continue
+						localFingerX = change.position.x
+						localFingerY = change.position.y
+					}
+				}
 			},
-		)
+	) {
+		Column(Modifier.fillMaxWidth()) {
+			state.selectionOrder.forEachIndexed { index, action ->
+				// the strip ends after the fourth slot, and the connectable row follows a divider
+				if (index == ActionConfig.BAR_SLOTS) Divider(R.color.colorDivider)
+				if (lineBeforeIndex == index) InsertionLine()
+				key(action) {
+					ActionSettingRow(
+						action = action,
+						tint = when {
+							connectDrag && rowBounds.entries.firstOrNull { fingerY >= it.value.top && fingerY < it.value.bottom }?.key == index ->
+								colorResource(R.color.colorGroupBackground)
+							// the strip slots wear the primary wash, the rest stay plain
+							index < ActionConfig.BAR_SLOTS -> colorResource(R.color.colorSelectedRow)
+							else -> Color.Transparent
+						},
+						boundGoto = state.connections[SelectionAction.GOTO] == action,
+						tag = "action_${action.name}",
+						dragged = dragging == action,
+						offset = if (dragging == action) ({ draggedOffset(action) }) else ({ 0f }),
+						onBounds = { rowBounds[index] = it },
+						onDragStart = { y -> startDrag(action, y) },
+						onDrag = { dy -> fingerY += dy },
+						onDragEnd = ::endDrag,
+						onDragCancel = { dragging = null },
+					)
+				}
+			}
+			if (lineAtEnd) InsertionLine()
+			Divider(R.color.colorDivider)
+			val bound = state.connections[SelectionAction.GOTO]
+			key(SelectionAction.GOTO) {
+				ActionSettingRow(
+					action = SelectionAction.GOTO,
+					tint = if (connectDrag) colorResource(R.color.colorSubBackground) else Color.Transparent,
+					tag = "action_${SelectionAction.GOTO.name}",
+					dragged = dragging == SelectionAction.GOTO,
+					offset = { 0f },
+					onBounds = { rowBounds[GOTO_ROW] = it },
+					onDragStart = { y -> startGoto(y) },
+					onDrag = { dy -> fingerY += dy },
+					onDragEnd = ::endDrag,
+					onDragCancel = { dragging = null },
+					extra = {
+						Text(
+							stringResource(R.string.setts_goto_connect),
+							style = TextStyle(fontSize = 13.sp, color = DefaultTextColor),
+						)
+						// the connection state reads as a fact under the hint
+						Text(
+							stringResource(
+								if (bound == null) R.string.setts_goto_loose else R.string.setts_goto_bound,
+								if (bound == null) "" else stringResource(bound.label),
+							),
+							style = TextStyle(fontSize = 13.sp, color = DefaultTextColor),
+						)
+					},
+				)
+			}
+		}
+		if (dragging == SelectionAction.GOTO) GotoMarker({ localFingerX }, { localFingerY })
 	}
 }
 
@@ -134,8 +209,8 @@ internal fun SelectionBarEditor(state: SettingsState) {
 @Composable
 private fun ActionSettingRow(
 	action: SelectionAction,
-	index: Int,
 	tint: Color,
+	tag: String,
 	dragged: Boolean,
 	offset: () -> Float,
 	onBounds: (Rect) -> Unit,
@@ -146,24 +221,34 @@ private fun ActionSettingRow(
 	boundGoto: Boolean = false,
 	extra: (@Composable () -> Unit)? = null,
 ) {
+	// the row keeps its gesture handler across reorders, so the callbacks read current state
+	val currentStart by rememberUpdatedState(onDragStart)
+	val currentDrag by rememberUpdatedState(onDrag)
+	val currentEnd by rememberUpdatedState(onDragEnd)
+	val currentCancel by rememberUpdatedState(onDragCancel)
 	Row(
 		Modifier
 			.fillMaxWidth()
-			.onGloballyPositioned { onBounds(it.boundsInRoot()) }
+			.testTag(tag)
+			// positionInRoot stays unclipped, so a row scrolled out still reports its place
+			.onGloballyPositioned { onBounds(Rect(0f, it.positionInRoot().y, 1f, it.positionInRoot().y + it.size.height)) }
+			// the dragged row draws over every sibling and rides the finger
+			.zIndex(if (dragged) 1f else 0f)
 			.graphicsLayer {
 				translationY = offset()
-				alpha = if (dragged) 0.7f else 1f
 			}
+			// the dragged row hides the rows it passes, the slot tint sits over that
+			.background(if (dragged) colorResource(R.color.colorPrimaryBg) else Color.Transparent)
 			.background(tint)
-			.pointerInput(index) {
+			.pointerInput(action) {
 				detectDragGesturesAfterLongPress(
-					onDragStart = { position -> onDragStart(position.y) },
+					onDragStart = { position -> currentStart(position.y) },
 					onDrag = { change, amount ->
 						change.consume()
-						onDrag(amount.y)
+						currentDrag(amount.y)
 					},
-					onDragEnd = onDragEnd,
-					onDragCancel = onDragCancel,
+					onDragEnd = { currentEnd() },
+					onDragCancel = { currentCancel() },
 				)
 			}
 			.padding(horizontal = 5.dp, vertical = 2.dp),
@@ -213,7 +298,60 @@ private fun ActionSettingRow(
 	}
 }
 
+/**
+ * The marker that rides the finger during a Go-to drag.
+ * - it stays centred under the finger in both axes, so the target keeps its merge highlight.
+ */
+@Composable
+private fun GotoMarker(fingerX: () -> Float, fingerY: () -> Float) {
+	Box(
+		Modifier
+			.testTag("goto_marker")
+			// the layer reads the finger, so a move never recomposes the editor
+			.graphicsLayer {
+				translationX = fingerX() - GotoMarkerSize.toPx() / 2f
+				translationY = fingerY() - GotoMarkerSize.toPx() / 2f
+			}
+			.zIndex(1f)
+			.background(colorResource(R.color.colorPrimaryBg))
+			.size(GotoMarkerSize),
+		contentAlignment = Alignment.Center,
+	) {
+		Image(
+			painterResource(SelectionAction.GOTO.icon),
+			contentDescription = null,
+			colorFilter = ColorFilter.tint(DefaultTextColor),
+			modifier = Modifier.size(IconSize),
+		)
+	}
+}
+
+/** The drop marker: where the dragged row lands on release. */
+@Composable
+private fun InsertionLine() {
+	Box(
+		Modifier
+			.fillMaxWidth()
+			.padding(horizontal = 8.dp)
+			.background(colorResource(R.color.colorPrimaryHeader))
+			.height(2.dp),
+	)
+}
+
+/** A hairline between the strip, the overflow and the connectable row. */
+@Composable
+private fun Divider(@ColorRes color: Int) {
+	Box(
+		Modifier
+			.fillMaxWidth()
+			.padding(horizontal = 8.dp)
+			.background(colorResource(color))
+			.height(1.dp),
+	)
+}
+
 /** The bounds key of the Go-to row, which no drop ever targets. */
 private const val GOTO_ROW = -1
 
-
+/** The finger marker of a Go-to drag, sized to stay clear of the target's highlight. */
+private val GotoMarkerSize = 36.dp

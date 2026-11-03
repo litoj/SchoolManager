@@ -333,13 +333,13 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		if (searching || listState.value.pickerMode) return
 		val parentId = history.path.lastOrNull()?.id ?: ROOT_ID
 		val ordered = items().map { it.item.id }
+		// the drop ends the selection at once, so the strip never flashes before the io lands
+		clearSelection()
 		viewModelScope.launch(io) {
 			ItemRepository.setOrder(parentId, ordered)
 			postToUi {
 				// a late read retries via the moved generation.
 				orderPersisted()
-				// the drop ends the selection the drag started.
-				clearSelection()
 				refreshInfo()
 			}
 		}
