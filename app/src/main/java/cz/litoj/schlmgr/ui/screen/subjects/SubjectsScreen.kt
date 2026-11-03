@@ -36,6 +36,7 @@ import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 import cz.litoj.schlmgr.ui.viewmodel.SearchUi
+import cz.litoj.schlmgr.ui.viewmodel.ActionConfig
 
 private fun creatorKind(kind: RowKind) = when (kind) {
 	RowKind.SUBJECT -> CreatorPopup.Kind.NEW_SUBJECT
@@ -178,7 +179,8 @@ fun SubjectsScreen(
 				if (selecting) viewModel.onSelectAllToggle() else viewModel.openSearchField()
 			}
 			TopBarMoreButton(
-				subjectsMenu(menuKind, selecting),
+				// the menu reads the config per build, so a settings change reaches the next open
+				subjectsMenu(menuKind, selecting, listState.singleSelected, ActionConfig.load()),
 			) { itemId ->
 				viewModel.onMenuItemClick(itemId)
 			}

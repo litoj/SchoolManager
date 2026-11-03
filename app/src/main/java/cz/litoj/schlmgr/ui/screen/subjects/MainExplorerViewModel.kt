@@ -24,6 +24,7 @@ import cz.litoj.schlmgr.ui.screen.test.TestSetupState
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
+import cz.litoj.schlmgr.ui.viewmodel.SelectionAction
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 import cz.litoj.schlmgr.ui.viewmodel.SiblingSwitch
 import cz.litoj.schlmgr.ui.viewmodel.TranslationRow
@@ -73,6 +74,11 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 	private val paste = SubjectsPaste(viewModelScope, io, PasteHost())
 
 	val pasteArmed: Boolean get() = paste.armed
+
+	/** What the armed paste carries, its kind and count for the strip status. */
+	val armedReferences: Boolean get() = paste.armedReferences
+
+	val armedCount: Int get() = paste.armedCount
 
 	override fun pasteArmed() = pasteArmed
 
@@ -223,7 +229,17 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		MenuId.EXPORT_JSON -> { exportJsonFile(); true }
 		MenuId.FLIP -> { flipSelected(); true }
 		MenuId.REFERENCE -> { move(true); true }
+		MenuId.TEST -> { prepareTest(); true }
+		MenuId.CUT -> { move(false); true }
+		MenuId.EDIT -> { onEditAction(); true }
+		MenuId.GOTO -> { onGoToAction(); true }
 		else -> false
+	}
+
+	/** Runs one strip action, where export opens its own chooser on the strip. */
+	fun onSelectionAction(action: SelectionAction) {
+		if (action == SelectionAction.EXPORT) return
+		onMenuItemClick(menuIdOf(action))
 	}
 
 	private fun newAction(action: () -> Unit): Boolean {

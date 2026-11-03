@@ -6,6 +6,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -13,17 +14,28 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.ui.shell.MenuEntry
+import cz.litoj.schlmgr.ui.shell.MoreMenu
+import cz.litoj.schlmgr.ui.viewmodel.SelectionAction
+import cz.litoj.schlmgr.ui.viewmodel.icon
+import cz.litoj.schlmgr.ui.viewmodel.label
 
 private val BarColor @Composable get() = ExplorerColors.actionBar
 
@@ -37,59 +49,62 @@ private class Action(
 )
 
 /**
- * The bottom-strip selection actions: test, cut, edit, delete.
- * - the search strip swaps cut for go-to.
- * - the strip renders only while rows are selected, so test, cut and delete stay enabled.
- * - edit follows [editEnabled], the single-target rule.
- * - the cut of a hit is ambiguous, since the same word can live in several containers.
- * - so the search strip shows a go-to instead, disabled without the single target.
+ * The bottom-strip selection actions of one list kind.
+ * - the slots come from the settings order, a search list substitutes its connected Go-to.
+ * - edit and go-to act on one row, so a wider selection keeps them disabled.
+ * - export opens its word and JSON chooser right on the strip.
  */
 @Composable
 fun SelectionActionBar(
-	editEnabled: Boolean,
-	onTest: () -> Unit,
-	onEdit: () -> Unit,
-	onDelete: () -> Unit,
+	actions: List<SelectionAction>,
+	singleSelected: Boolean,
+	onAction: (SelectionAction) -> Unit,
+	exportEntries: List<MenuEntry>,
+	onExport: (Int) -> Unit,
 	modifier: Modifier = Modifier,
-	onCut: (() -> Unit)? = null,
-	onGoTo: (() -> Unit)? = null,
-	goToEnabled: Boolean = true,
 ) {
 	ActionStrip(modifier) {
-		ActionButton(
-			Action(R.drawable.ic_test, R.string.select_test, onTest),
-			true,
-		)
-		if (onGoTo != null) ActionButton(
-			Action(R.drawable.ic_goto, R.string.more_go_to, onGoTo),
-			goToEnabled,
-		)
-		if (onCut != null) ActionButton(
-			Action(R.drawable.ic_cut, R.string.cut, onCut),
-			true,
-		)
-		ActionButton(
-			Action(R.drawable.ic_edit, R.string.edit, onEdit),
-			editEnabled,
-		)
-		ActionButton(
-			Action(R.drawable.ic_delete, R.string.delete, onDelete),
-			true,
-		)
+		for (action in actions) {
+			val enabled = action != SelectionAction.EDIT && action != SelectionAction.GOTO || singleSelected
+			if (action == SelectionAction.EXPORT) ExportStripButton(action, enabled, exportEntries, onExport)
+			else ActionButton(Action(action.icon, action.label) { onAction(action) }, enabled, Modifier.weight(1f))
+		}
+	}
+}
+
+/** The export slot, which hosts its format chooser as a dropdown. */
+@Composable
+private fun RowScope.ExportStripButton(
+	action: SelectionAction,
+	enabled: Boolean,
+	entries: List<MenuEntry>,
+	onExport: (Int) -> Unit,
+) {
+	var open by remember { mutableStateOf(false) }
+	// the box holds the strip share of the slot, since the button loses the row scope
+	Box(Modifier.weight(1f).fillMaxHeight()) {
+		ActionButton(Action(action.icon, action.label) { open = true }, enabled)
+		if (open) MoreMenu(entries, { open = false; onExport(it) }) { open = false }
 	}
 }
 
 /**
- * The bottom-strip paste actions: cancel and paste. Both stay enabled, because
- * arming the paste clears the selection first, so no state can disable them.
+ * The bottom-strip paste actions with the armed operation as the leading status.
+ * - the status names the operation and its rows, since the bar alone says neither.
  */
 @Composable
 fun PasteActionBar(
+	status: String,
 	onCancel: () -> Unit,
 	onPaste: () -> Unit,
 	modifier: Modifier = Modifier,
 ) {
 	ActionStrip(modifier) {
+		Text(
+			status,
+			Modifier.weight(1f).padding(horizontal = 8.dp),
+			style = TextStyle(fontSize = 15.sp, color = ExplorerColors.actionText),
+		)
 		ActionButton(
 			Action(R.drawable.ic_cancel, R.string.objects_cancel, onCancel),
 			true,
@@ -168,10 +183,9 @@ private fun ActionStrip(
 
 /** One icon-over-label button. A false enabled dims the icon and label, and disables the click. */
 @Composable
-private fun RowScope.ActionButton(action: Action, enabled: Boolean) {
+private fun ActionButton(action: Action, enabled: Boolean, modifier: Modifier = Modifier) {
 	Column(
-		Modifier
-			.weight(1f)
+		modifier
 			.fillMaxHeight()
 			.clickable(enabled = enabled, onClick = action.onClick),
 		horizontalAlignment = Alignment.CenterHorizontally,

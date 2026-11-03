@@ -26,6 +26,8 @@ class SettingsState(
 	amountText: String = "10",
 	timeText: String = TestEngine.DEFAULT_TIME_SECONDS.toString(),
 	searchDiacritics: Boolean = false,
+	selectionOrder: List<SelectionAction> = ActionConfig.DEFAULT_ORDER,
+	connections: Map<SelectionAction, SelectionAction> = ActionConfig.DEFAULT_CONNECTIONS,
 ) {
 	var parse by mutableStateOf(parse)
 		private set
@@ -46,6 +48,14 @@ class SettingsState(
 	var timeText by mutableStateOf(timeText)
 		private set
 	var searchDiacritics by mutableStateOf(searchDiacritics)
+		private set
+
+	/** The ordered selection actions, where the first four hold the strip slots. */
+	var selectionOrder by mutableStateOf(selectionOrder)
+		private set
+
+	/** The search connections of the connectable actions, Go-to among them. */
+	var connections by mutableStateOf(connections)
 		private set
 
 	fun toggleParse() {
@@ -153,6 +163,27 @@ class SettingsState(
 		AppSettings.set("searchNoDiacritics", searchDiacritics)
 	}
 
+	/** Moves one action in the order, where a connection of a lost slot clears. */
+	fun moveSelectionAction(from: Int, to: Int) {
+		val moved = ActionConfig(selectionOrder, connections).moved(from, to)
+		selectionOrder = moved.order
+		connections = moved.connections
+		persistSelectionBar()
+	}
+
+	/** Connects Go-to to a strip action, null leaves it in the search overflow. */
+	fun connectGoto(target: SelectionAction?) {
+		// a target off the strip would show nothing, so the door refuses it
+		if (target != null && target !in selectionOrder.take(ActionConfig.BAR_SLOTS)) return
+		connections = connections.filterKeys { it != SelectionAction.GOTO } +
+			(if (target == null) emptyMap() else mapOf(SelectionAction.GOTO to target))
+		persistSelectionBar()
+	}
+
+	private fun persistSelectionBar() {
+		ActionConfig.save(selectionOrder, connections)
+	}
+
 	/** The row options move through the one door of ItemRow. */
 	private fun applyRowOptions() {
 		ItemRow.applyOptions(parse, defFlip, searchDefFlip,
@@ -172,6 +203,8 @@ class SettingsState(
  * The state survives rotation and the back stack, so edits stay visible on return.
  */
 class SettingsViewModel : ViewModel() {
+	private val config = ActionConfig.load()
+
 	val state = SettingsState(
 		parse = ItemRow.parse,
 		defFlip = ItemRow.defFlip,
@@ -183,5 +216,7 @@ class SettingsViewModel : ViewModel() {
 		amountText = TestEngine.amount.toString(),
 		timeText = TestEngine.getDefaultTime().toString(),
 		searchDiacritics = AppSettings.getBool("searchNoDiacritics", false),
+		selectionOrder = config.order,
+		connections = config.connections,
 	)
 }

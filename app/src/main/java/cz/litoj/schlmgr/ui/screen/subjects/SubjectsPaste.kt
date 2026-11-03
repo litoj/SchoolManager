@@ -67,6 +67,11 @@ internal class SubjectsPaste(
 		host.refreshReorderable()
 	}
 
+	/** What the armed paste holds, its kind and the rows it carries. */
+	val armedReferences: Boolean get() = pasteData?.referencing == true
+
+	val armedCount: Int get() = pasteData?.src?.size ?: 0
+
 	/** Arms the paste from the selection, where true means references, see [doPaste]. */
 	fun move(reference: Boolean) {
 		if (host.selectionCount() == 0) return

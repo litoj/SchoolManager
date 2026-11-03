@@ -102,6 +102,10 @@ Its DB part is the model for this project.
 - The row tap keeps its own meaning.
 - A picker row tap toggles while selecting.
 - It never opens the row.
+- The strip holds four configurable actions, the settings order drives it and the more menu.
+- Go-to connects to a strip action and takes its slot in search, unbound it sits in the search menu.
+- A connection whose target leaves the strip clears.
+- The paste strip names its armed operation and count.
 
 ### Settings
 
@@ -196,6 +200,8 @@ Its DB part is the model for this project.
 - No active task.
 - Open items live in `DEVELOPMENT.md`.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
+- 2026-11-03: the selection strip actions became configurable with the
+  connectable Go-to, the paste strip states its operation. 708 tests.
 - 2026-11-03: diacritic-insensitive search behind a settings toggle. The fold
   covers the plain text finders of the query and the names, the regex pattern
   stays exact.

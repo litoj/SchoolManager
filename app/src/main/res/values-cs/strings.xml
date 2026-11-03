@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="action_full_text">Celý Text</string>
+    <string name="action_reference">Zástupci</string>
+    <string name="action_flip">Překlopit</string>
     <string name="action_sw_success">" zapsáno úspěšně"</string>
     <string name="action_share">Sdílet</string>
     <string name="about_text">Tento program byl vyvinut, aby pomohl lidem se školními předměty, zvláště s cizími jazyky a biologií.\n\nPro další pomoc mě kontaktujte na litos@tuta.io</string>
@@ -175,7 +177,6 @@
     <string name="menu_settings">Nastavení</string>
     <string name="more">Více</string>
     <string name="more_export">Export</string>
-    <string name="more_reference">Vytvořit zástupce</string>
     <string name="reference_fork">Zástupci, kteří budou odkazovat na nové slovo</string>
     <string name="ref_source_pick">Zvolte zdroj zástupce:</string>
     <string name="more_export_word">Soubor se slovíčky (bez úspěšnosti)</string>
@@ -183,7 +184,6 @@
     <string name="import_here">Importovat sem</string>
     <string name="import_file_title">Import %1$s</string>
     <string name="more_export_json">Soubor JSON (včetně úspěšnosti)</string>
-    <string name="more_flip">Obrátit slova a překlady</string>
     <string name="more_go_to">Přejít na umístění</string>
     <string name="flip_conflicts_title">Kolidující slova</string>
     <string name="flip_conflicts_ok">Obrátit</string>
@@ -205,6 +205,8 @@
     <string name="note_copied">Zkopírováno</string>
     <string name="objects_cancel">Storno</string>
     <string name="paste">Vložit</string>
+    <string name="paste_status_references">Zástupci: %1$d</string>
+    <string name="paste_status_move">Přesun: %1$d</string>
     <string name="pattern_err">"Špatná syntax regexu:\n%1$s"</string>
     <string name="popup_copy">Kopírovat</string>
     <string name="popup_copy_failed">Kopírování do schránky se nezdařilo</string>
@@ -225,6 +227,20 @@
     <string name="setts_test_time">Výchozí čas na položku</string>
     <string name="setts_word_splitter">Sekvence dělící slova od překladů při exportu</string>
     <string name="setts_search_diacritics">Vyhledávání bez diakritiky</string>
+    <string name="setts_selection_bar">Výběrová lišta</string>
+    <string name="setts_bar_hint">První čtyři sedí na výběrové liště, zbytek v menu více. Přetahováním změníte pořadí.</string>
+    <string name="setts_act_test">Spustí test z vybraných řádků</string>
+    <string name="setts_act_cut">Přenese řádky do jiného kontejneru</string>
+    <string name="setts_act_edit">Otevře jediný vybraný řádek k úpravám</string>
+    <string name="setts_act_delete">Smaže vybrané řádky</string>
+    <string name="setts_act_reference">Vytvoří z řádků zástupce v kontejneru</string>
+    <string name="setts_act_flip">Překlopí vybraná slovíčka na druhou stranu</string>
+    <string name="setts_act_export">Exportuje vybrané řádky do souboru</string>
+    <string name="setts_act_goto">Otevře kontejner jediného nálezu</string>
+    <string name="setts_goto_connect">Přetáhněte ho na akci lišty, kterou má ve vyhledávání nahradit</string>
+    <string name="setts_goto_bound">Ve vyhledávání nahradí: %1$s</string>
+    <string name="setts_goto_loose">Leží v menu více při vyhledávání</string>
+    <string name="setts_bound_marker">vyhledávání</string>
     <string name="sort">Seřadit</string>
     <string name="sort_alpha_AZ">abecedně ▼</string>
     <string name="sort_alpha_ZA">abecedně ▲</string>

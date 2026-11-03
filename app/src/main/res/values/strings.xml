@@ -1,5 +1,7 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="action_full_text">Full Text</string>
+    <string name="action_reference">References</string>
+    <string name="action_flip">Flip</string>
     <string name="action_sw_success">" written with success"</string>
     <string name="action_share">Share</string>
     <string name="about_text">This program was developed to help people with school subjects, especially with foreign languages and biology.\n\nFor any further help contact me at litos@tuta.io</string>
@@ -192,7 +194,6 @@
     <string name="menu_settings">Options</string>
     <string name="more">More</string>
     <string name="more_export">Export</string>
-    <string name="more_reference">Create reference</string>
     <string name="reference_fork">References that follow the new word</string>
     <string name="ref_source_pick">Choose the source of the reference:</string>
     <string name="more_export_word">Word file (no success rates)</string>
@@ -200,7 +201,6 @@
     <string name="import_here">Import here</string>
     <string name="import_file_title">Import %1$s</string>
     <string name="more_export_json">JSON file (success rates included)</string>
-    <string name="more_flip">Flip words and translations</string>
     <string name="more_go_to">Go to location</string>
     <string name="flip_conflicts_title">Conflicting words</string>
     <string name="flip_conflicts_ok">Flip</string>
@@ -222,6 +222,8 @@
     <string name="note_copied">Copied</string>
     <string name="objects_cancel">Cancel</string>
     <string name="paste">Paste</string>
+    <string name="paste_status_references">References: %1$d</string>
+    <string name="paste_status_move">Move: %1$d</string>
     <string name="pattern_err">"Invalid regex syntax:\n%1$s"</string>
     <string name="popup_copy">Copy</string>
     <string name="popup_copy_failed">Copying to the clipboard failed</string>
@@ -242,6 +244,20 @@
     <string name="setts_test_time">Default time per item</string>
     <string name="setts_word_splitter">Sequence splitting words from translates when exporting</string>
     <string name="setts_search_diacritics">Search without diacritics</string>
+    <string name="setts_selection_bar">Selection bar</string>
+    <string name="setts_bar_hint">The first four sit on the selection strip, the rest in the more menu. Drag to reorder.</string>
+    <string name="setts_act_test">Starts a test from the selected rows</string>
+    <string name="setts_act_cut">Takes the rows into another container</string>
+    <string name="setts_act_edit">Opens the one selected row for editing</string>
+    <string name="setts_act_delete">Deletes the selected rows</string>
+    <string name="setts_act_reference">Links the rows as references into a container</string>
+    <string name="setts_act_flip">Flips the selected words to the other side</string>
+    <string name="setts_act_export">Exports the selected rows into a file</string>
+    <string name="setts_act_goto">Opens the container of the single hit</string>
+    <string name="setts_goto_connect">Drag it onto a strip action to take its place in search</string>
+    <string name="setts_goto_bound">Replaces %1$s in search</string>
+    <string name="setts_goto_loose">Sits in the more menu of a search</string>
+    <string name="setts_bound_marker">search</string>
     <string name="sort">Sort</string>
     <string name="sort_alpha_AZ">alphabet ▼</string>
     <string name="sort_alpha_ZA">alphabet ▲</string>

@@ -15,7 +15,9 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import cz.litoj.schlmgr.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cz.litoj.schlmgr.ui.component.ExplorerScaffold
 import cz.litoj.schlmgr.ui.component.ItemListCallbacks
@@ -25,6 +27,7 @@ import cz.litoj.schlmgr.ui.component.fabDragVisibility
 import cz.litoj.schlmgr.ui.component.ListEndReveal
 import cz.litoj.schlmgr.ui.component.rememberFabVisibility
 import cz.litoj.schlmgr.ui.popup.MessagePopup
+import cz.litoj.schlmgr.ui.viewmodel.ActionConfig
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 
 /**
@@ -86,18 +89,24 @@ internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifie
 		) {
 			when {
 				viewModel.pasteArmed -> PasteActionBar(
+					status = stringResource(
+						if (viewModel.armedReferences) R.string.paste_status_references else R.string.paste_status_move,
+						viewModel.armedCount,
+					),
 					onCancel = viewModel::cancelPaste,
 					onPaste = viewModel::doPaste,
 				)
-				listState.selectionActive -> SelectionActionBar(
-					editEnabled = listState.singleSelected,
-					onTest = viewModel::prepareTest,
-					onCut = if (searching) null else ({ viewModel.move(false) }),
-					onEdit = viewModel::onEditAction,
-					onDelete = viewModel::onDeleteAction,
-					onGoTo = if (searching) viewModel::onGoToAction else null,
-					goToEnabled = listState.singleSelected,
-				)
+				listState.selectionActive -> {
+					// the read lands on every recomposition, so a settings change reaches the next selection
+					val config = ActionConfig.load()
+					SelectionActionBar(
+						actions = config.bar(searching),
+						singleSelected = listState.singleSelected,
+						onAction = viewModel::onSelectionAction,
+						exportEntries = exportMenu,
+						onExport = viewModel::onMenuItemClick,
+					)
+				}
 				else -> {}
 			}
 		}
