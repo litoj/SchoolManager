@@ -64,12 +64,12 @@ adb shell am start -n cz.litoj.schlmgr/.ui.activity.MainActivity
 Run the unit tests:
 
 ```bash
-./gradlew :app:testDebugUnitTest -Pksp.incremental=false --rerun-tasks
+./gradlew :app:testDebugUnitTest
 ```
 
 - Tests need JDK 21. Robolectric cannot read JDK 27 class files.
-- `-Pksp.incremental=false` is required after package moves, otherwise KSP crashes.
-- `--rerun-tasks` when cached results can lie.
+- Add `-Pksp.incremental=false` only after package moves, otherwise KSP crashes.
+- Add `--rerun-tasks` only when cached results cannot be trusted.
 
 Build the release APK:
 
