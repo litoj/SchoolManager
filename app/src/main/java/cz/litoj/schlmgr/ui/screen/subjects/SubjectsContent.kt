@@ -68,6 +68,10 @@ internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifie
 	LaunchedEffect(state.contentStep) { fabVisibility.show() }
 	Box(modifier) {
 		val callbacks = mainCallbacks(viewModel, listState.selectionActive) { pressHeld = it }
+		val armedStatus = if (viewModel.pasteArmed) stringResource(
+			if (viewModel.armedReferences) R.string.paste_status_references else R.string.paste_status_move,
+			viewModel.armedCount,
+		) else null
 		ExplorerScaffold(
 			state = state,
 			listState = listState,
@@ -76,6 +80,8 @@ internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifie
 			callbacks = callbacks,
 			scrollState = scrollState,
 			listArea = { SiblingSlideList(state, listState, callbacks, scrollState, Modifier.weight(1f)) },
+			// the armed status takes the top line, so the bottom strip holds only its actions
+			statusLine = armedStatus,
 			modifier = Modifier.fillMaxSize()
 				.fabDragVisibility(fabVisibility) { scrollState.canScrollForward || scrollState.canScrollBackward }
 				.pointerInput(swipeThreshold) {
@@ -92,10 +98,6 @@ internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifie
 		) {
 			when {
 				viewModel.pasteArmed -> PasteActionBar(
-					status = stringResource(
-						if (viewModel.armedReferences) R.string.paste_status_references else R.string.paste_status_move,
-						viewModel.armedCount,
-					),
 					onCancel = viewModel::cancelPaste,
 					onPaste = viewModel::doPaste,
 				)

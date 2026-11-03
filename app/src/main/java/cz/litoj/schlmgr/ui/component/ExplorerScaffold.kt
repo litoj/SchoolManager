@@ -35,6 +35,8 @@ fun ExplorerScaffold(
 			listState = scrollState,
 		)
 	},
+	/** A transient line that replaces the info strip, such as an armed move. */
+	statusLine: String? = null,
 	actionBar: @Composable () -> Unit = {},
 ) {
 	// the displayed list, browse content and search results alike, comes from
@@ -46,6 +48,7 @@ fun ExplorerScaffold(
 			info = state.info,
 			isInfoExpanded = state.isInfoExpanded,
 			onInfoClick = onInfoClick,
+			statusLine = statusLine,
 		)
 		listArea()
 		actionBar()

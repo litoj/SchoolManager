@@ -31,6 +31,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -71,6 +72,7 @@ fun TopBar(content: @Composable RowScope.() -> Unit) {
 fun RowScope.TopBarNav(up: Boolean = false, onNavigate: () -> Unit) {
 	Box(
 		Modifier
+			.testTag("top_bar_nav")
 			.width(60.dp)
 			.fillMaxHeight()
 			.clickable(onClick = onNavigate),

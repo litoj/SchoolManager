@@ -169,7 +169,16 @@ fun SubjectsScreen(
 
 	Column(Modifier.fillMaxSize()) {
 		TopBar {
-			TopBarNav(up = fieldOpen, onNavigate = if (fieldOpen) viewModel::cancelSearch else openDrawer)
+			// the arrow leaves the deepest layer: the field, a selection or an armed move
+			TopBarNav(
+				up = fieldOpen || selecting || viewModel.pasteArmed,
+				onNavigate = when {
+					fieldOpen -> viewModel::cancelSearch
+					selecting -> viewModel::clearSelection
+					viewModel.pasteArmed -> viewModel::cancelPaste
+					else -> openDrawer
+				},
+			)
 			if (fieldOpen) TopBarSearchField(query, viewModel::onQueryChange, viewModel::onQuerySubmit, viewModel::dismissSearch, Modifier.weight(1f))
 			else TopBarTitle(title)
 			TopBarIconButton(

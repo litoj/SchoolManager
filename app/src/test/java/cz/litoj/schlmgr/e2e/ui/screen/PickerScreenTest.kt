@@ -3,6 +3,7 @@ package cz.litoj.schlmgr.e2e.ui.screen
 import android.os.Looper
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -114,6 +115,23 @@ class PickerScreenTest {
 		tapCornerButton()
 		rule.runOnIdle { assertFalse(model.items().any { it.selected }) }
 		rule.onNodeWithText(text(R.string.select)).assertDoesNotExist()
+	}
+
+	@Test
+	fun `the strip gives each action its half`() {
+		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		rule.setContent { PickerScreen(model, {}) }
+		rule.waitForIdle()
+		selectTheRow()
+
+		val cancel = rule.onNodeWithText(text(R.string.objects_cancel)).getBoundsInRoot()
+		val select = rule.onNodeWithText(text(R.string.select)).getBoundsInRoot()
+		val root = rule.onRoot().getBoundsInRoot()
+		val half = (root.right - root.left) / 2
+		assertTrue("cancel sits in the left half: $cancel",
+			(cancel.left + cancel.right) / 2 < half)
+		assertTrue("select sits in the right half: $select",
+			(select.left + select.right) / 2 > half)
 	}
 
 	@Test

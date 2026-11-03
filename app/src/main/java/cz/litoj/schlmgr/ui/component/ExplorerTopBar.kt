@@ -42,6 +42,7 @@ private val InfoColor @Composable get() = ExplorerColors.body
 /**
  * The top chrome of the explorer: the breadcrumb strip and the info strip,
  * stacked. Stateless, both hosts drive it from their state.
+ * @param statusLine a transient line that replaces the info strip, such as an armed move
  */
 @Composable
 fun ExplorerTopBar(
@@ -51,10 +52,11 @@ fun ExplorerTopBar(
 	isInfoExpanded: Boolean,
 	onInfoClick: () -> Unit,
 	modifier: Modifier = Modifier,
+	statusLine: String? = null,
 ) {
 	Column(modifier.fillMaxWidth()) {
 		Breadcrumbs(breadcrumbs, onBreadcrumbClick)
-		InfoStrip(info, isInfoExpanded, onInfoClick)
+		InfoStrip(info, isInfoExpanded, onInfoClick, statusLine)
 		HairlineDivider()
 	}
 }
@@ -119,16 +121,18 @@ fun CrumbChain(
 /**
  * The info strip, which reads the laid-out line count so a wrapped description
  * expands too. Counting '\n' would stick it at the 2-line height, hiding the rest.
+ * - a [status] replaces the info text, so an armed move owns the line.
  */
 @Composable
 private fun InfoStrip(
 	info: InfoBar?,
 	isExpanded: Boolean,
 	onClick: () -> Unit,
+	status: String?,
 ) {
 	// the strip resolves the display text from the semantics, because the resource
 	// formatting belongs here.
-	val text = when (info) {
+	val text = status ?: when (info) {
 		null -> ""
 		is InfoBar.Root -> stringResource(R.string.data_child_count, info.count)
 		is InfoBar.Children -> {
@@ -143,7 +147,8 @@ private fun InfoStrip(
 	// the laid-out line count of the current text. The wrapper Box always gives
 	// the text its full width, so the count is stable whatever the strip height.
 	var lines by remember { mutableIntStateOf(1) }
-	val expandable = lines > 2
+	// a status is a single line and never expands
+	val expandable = status == null && lines > 2
 	val scroll = rememberScrollState()
 	// keep the top visible
 	LaunchedEffect(text) { scroll.scrollTo(0) }
@@ -151,8 +156,11 @@ private fun InfoStrip(
 		Modifier
 			.fillMaxWidth()
 			.then(
-				if (expandable && isExpanded) Modifier.heightIn(min = 18.dp)
-				else Modifier.height(if (lines == 1) 18.dp else 36.dp),
+				when {
+					status != null -> Modifier.height(18.dp)
+					expandable && isExpanded -> Modifier.heightIn(min = 18.dp)
+					else -> Modifier.height(if (lines == 1) 18.dp else 36.dp)
+				},
 			)
 			.verticalScroll(scroll)
 			.clickable(enabled = expandable, onClick = onClick)

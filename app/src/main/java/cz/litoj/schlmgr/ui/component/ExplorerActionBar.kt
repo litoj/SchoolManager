@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -27,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
@@ -90,29 +88,25 @@ private fun RowScope.ExportStripButton(
 }
 
 /**
- * The bottom-strip paste actions with the armed operation as the leading status.
- * - the status names the operation and its rows, since the bar alone says neither.
+ * The bottom-strip paste actions of an armed move.
+ * - the armed status reads on the top strip, so the bar carries only the two actions.
  */
 @Composable
 fun PasteActionBar(
-	status: String,
 	onCancel: () -> Unit,
 	onPaste: () -> Unit,
 	modifier: Modifier = Modifier,
 ) {
 	ActionStrip(modifier) {
-		Text(
-			status,
-			Modifier.weight(1f).padding(horizontal = 8.dp),
-			style = TextStyle(fontSize = 15.sp, color = ExplorerColors.onHeader),
-		)
 		ActionButton(
 			Action(R.drawable.ic_cancel, R.string.objects_cancel, onCancel),
 			true,
+			Modifier.weight(1f),
 		)
 		ActionButton(
 			Action(R.drawable.ic_paste, R.string.paste, onPaste),
 			true,
+			Modifier.weight(1f),
 		)
 	}
 }
@@ -128,10 +122,12 @@ fun PickerActionBar(
 		ActionButton(
 			Action(R.drawable.ic_cancel, R.string.objects_cancel, onCancel),
 			true,
+			Modifier.weight(1f),
 		)
 		ActionButton(
 			Action(R.drawable.ic_check, R.string.select, onSelect),
 			true,
+			Modifier.weight(1f),
 		)
 	}
 }
@@ -151,15 +147,18 @@ fun ImportActionBar(
 			ActionButton(
 				Action(R.drawable.ic_check, R.string.done, onDone),
 				true,
+				Modifier.weight(1f),
 			)
 		} else {
 			ActionButton(
 				Action(R.drawable.ic_cancel, R.string.objects_cancel, onCancel),
 				!busy,
+				Modifier.weight(1f),
 			)
 			ActionButton(
 				Action(R.drawable.ic_import_black, R.string.import_here, onImport),
 				!busy,
+				Modifier.weight(1f),
 			)
 		}
 	}
