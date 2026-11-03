@@ -53,12 +53,15 @@ internal val sections = listOf(
 		children = listOf(
 			HelpSection(R.string.delete, R.string.help_select_delete, icon = R.drawable.ic_delete),
 			HelpSection(R.string.cut, R.string.help_select_move, icon = R.drawable.ic_cut),
+			HelpSection(R.string.action_reference, R.string.setts_act_reference, icon = R.drawable.ic_reference_black),
 			HelpSection(R.string.edit, R.string.help_select_edit, icon = R.drawable.ic_edit),
+			HelpSection(R.string.action_flip, R.string.setts_act_flip, icon = R.drawable.ic_flip_black),
 		),
 	),
 	HelpSection(
 		R.string.help_search, intro = R.string.help_search_how, icon = R.drawable.ic_search,
 		children = listOf(
+			HelpSection(R.string.more_go_to, R.string.setts_act_goto, icon = R.drawable.ic_goto),
 			HelpSection(R.string.help_search_types, R.string.help_search_types_how, customIntro = {
 				CodeBlock(stringResource(R.string.help_search_types_examples))
 			}),
@@ -66,7 +69,7 @@ internal val sections = listOf(
 		),
 	),
 	HelpSection(
-		R.string.help_test, intro = R.string.help_test_how, icon = R.drawable.ic_test_black,
+		R.string.help_test, intro = R.string.help_test_how, icon = R.drawable.ic_test,
 		children = listOf(
 			HelpSection(R.string.help_test_select, R.string.help_test_select_how),
 			HelpSection(R.string.help_test_run, R.string.help_test_run_how),
@@ -95,6 +98,7 @@ internal val sections = listOf(
 			HelpSection(
 				R.string.help_extra_words_export, R.string.help_extra_words_export_how,
 				paths = listOf(R.array.help_path_export),
+				icon = R.drawable.ic_export_black,
 			),
 		),
 	),
