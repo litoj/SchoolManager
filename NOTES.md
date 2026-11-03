@@ -178,6 +178,8 @@ Its DB part is the model for this project.
 - A keyboard drop with an empty query closes the field.
 - The nav back arrow cancels the search: the results leave and the query resets.
 - System back follows the same rule as the arrow.
+- A word hit starts on its translations through the search translate setting.
+- A settings change needs a new run, live results keep their state.
 - A settings toggle folds diacritics away, the regex pattern stays as written.
 
 ### CI
@@ -199,6 +201,9 @@ Its DB part is the model for this project.
   stays exact.
 - 2026-11-03: creating a chapter opens it on commit instead of only appending it,
   the same landing as tapping it; notes still only append.
+- 2026-11-03: word search hits start on their translations through the search
+  translate toggle. The tap and sort pins run from the word side, the toggle
+  carries the default-side pins. 694 tests.
 - 2026-11-02: a container load re-anchors the list at the top, the frozen
   pane of the sibling slide starts at the live position. 672 tests.
 - 2026-11-02: each container view remembers its scroll and flip sides for

@@ -18,6 +18,7 @@ import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 class SettingsState(
 	parse: Boolean = true,
 	defFlip: Boolean = true,
+	searchDefFlip: Boolean = true,
 	descLinesText: String = ItemRow.DEFAULT_DESC_LINES.toString(),
 	doubleTapMsText: String = ItemRow.doubleTapMs.toString(),
 	wordSplitText: String = ";",
@@ -29,6 +30,8 @@ class SettingsState(
 	var parse by mutableStateOf(parse)
 		private set
 	var defFlip by mutableStateOf(defFlip)
+		private set
+	var searchDefFlip by mutableStateOf(searchDefFlip)
 		private set
 	var descLinesText by mutableStateOf(descLinesText)
 		private set
@@ -55,6 +58,12 @@ class SettingsState(
 		defFlip = !defFlip
 		applyRowOptions()
 		AppSettings.set("flipWord", defFlip)
+	}
+
+	fun toggleSearchDefFlip() {
+		searchDefFlip = !searchDefFlip
+		applyRowOptions()
+		AppSettings.set("flipSearch", searchDefFlip)
 	}
 
 	/** Zero stands for the icon-only display. */
@@ -146,7 +155,7 @@ class SettingsState(
 
 	/** The row options move through the one door of ItemRow. */
 	private fun applyRowOptions() {
-		ItemRow.applyOptions(parse, defFlip,
+		ItemRow.applyOptions(parse, defFlip, searchDefFlip,
 			descLinesText.toIntOrNull() ?: ItemRow.descLines,
 			doubleTapMsText.toIntOrNull() ?: ItemRow.doubleTapMs)
 	}
@@ -166,6 +175,7 @@ class SettingsViewModel : ViewModel() {
 	val state = SettingsState(
 		parse = ItemRow.parse,
 		defFlip = ItemRow.defFlip,
+		searchDefFlip = ItemRow.searchDefFlip,
 		descLinesText = ItemRow.descLines.toString(),
 		doubleTapMsText = ItemRow.doubleTapMs.toString(),
 		wordSplitText = WordListWriter.wordTranslationSplitter,

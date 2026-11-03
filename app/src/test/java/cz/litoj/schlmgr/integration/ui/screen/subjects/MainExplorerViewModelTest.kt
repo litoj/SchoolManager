@@ -9,6 +9,7 @@ import cz.litoj.schlmgr.data.db.FlipResolution
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.db.ROOT_ID
+import cz.litoj.schlmgr.support.setRowOptions
 import cz.litoj.schlmgr.support.wordRows
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
 import cz.litoj.schlmgr.ui.screen.subjects.MenuId
@@ -51,8 +52,12 @@ class MainExplorerViewModelTest {
 	private lateinit var db: ItemDatabase
 	private var now = 1_000_000L
 
+	/** The search pins run from the word side, the default flip carries its own pins. */
+	private val searchDefFlipWas = ItemRow.searchDefFlip
+
 	@Before
 	fun setUp() {
+		setRowOptions(searchDefFlip = false)
 		db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
 			.allowMainThreadQueries()
 			.build()
@@ -65,6 +70,7 @@ class MainExplorerViewModelTest {
 	fun tearDown() {
 		db.close()
 		ItemRepository.resetForTest()
+		setRowOptions(searchDefFlip = searchDefFlipWas)
 	}
 
 	private fun vm(): MainExplorerViewModel {

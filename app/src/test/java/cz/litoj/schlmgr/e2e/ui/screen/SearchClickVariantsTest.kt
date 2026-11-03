@@ -12,11 +12,13 @@ import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
+import cz.litoj.schlmgr.support.setRowOptions
 import cz.litoj.schlmgr.ui.screen.picker.PickerScreen
 import cz.litoj.schlmgr.ui.screen.picker.PickerViewModel
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
 import cz.litoj.schlmgr.ui.screen.subjects.SubjectsScreen
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
+import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import cz.litoj.schlmgr.ui.viewmodel.SearchUi
 import kotlinx.coroutines.Dispatchers
@@ -43,8 +45,12 @@ class SearchClickVariantsTest {
 
 	private lateinit var db: ItemDatabase
 
+	/** The tap pins run from the word side, the default flip carries its own pins. */
+	private val searchDefFlipWas = ItemRow.searchDefFlip
+
 	@Before
 	fun setUp() {
+		setRowOptions(searchDefFlip = false)
 		db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
 			.allowMainThreadQueries()
 			.build()
@@ -60,6 +66,7 @@ class SearchClickVariantsTest {
 	fun tearDown() {
 		db.close()
 		ItemRepository.resetForTest()
+		setRowOptions(searchDefFlip = searchDefFlipWas)
 	}
 
 	@Test

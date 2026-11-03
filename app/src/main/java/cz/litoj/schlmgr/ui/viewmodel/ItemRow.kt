@@ -166,12 +166,13 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	}
 
 	/**
-	 * The browse build form of the default flip.
+	 * The default flip of a built row, browse or search.
+	 * - the caller picks the setting that applies, browse and search each own one.
 	 * - it runs before the row is published, so the main-owned fields stay single-threaded.
 	 * - see the class doc.
 	 */
-	fun applyDefaultFlip(translations: List<DbItem>) {
-		if (item.type != ItemKind.WORD || !defFlip) return
+	private fun applyDefaultFlip(translations: List<DbItem>, on: Boolean) {
+		if (item.type != ItemKind.WORD || !on) return
 		flipped = true
 		toShow = renderTranslations(translations)
 	}
@@ -232,6 +233,10 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		var defFlip = true
 			private set
 
+		/** A search hit flips from its preloaded translations, so a settings change needs a new run. */
+		var searchDefFlip = true
+			private set
+
 		/** The double-tap window, a settings change rebuilds the list detector. */
 		var doubleTapMs by mutableIntStateOf(DEFAULT_DOUBLE_TAP_MS)
 			private set
@@ -255,6 +260,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 			applyOptions(
 				AppSettings.getBool("parseNames", true),
 				AppSettings.getBool("flipWord", true),
+				AppSettings.getBool("flipSearch", true),
 				AppSettings.getInt("descLines", DEFAULT_DESC_LINES),
 				AppSettings.getInt("doubleTapMs", DEFAULT_DOUBLE_TAP_MS),
 			)
@@ -262,9 +268,16 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 
 		/** One mutation door, the stored load and the settings screen share it. */
 		@JvmStatic
-		fun applyOptions(parse: Boolean, defFlip: Boolean, descLines: Int, doubleTapMs: Int) {
+		fun applyOptions(
+			parse: Boolean,
+			defFlip: Boolean,
+			searchDefFlip: Boolean,
+			descLines: Int,
+			doubleTapMs: Int,
+		) {
 			this.parse = parse
 			this.defFlip = defFlip
+			this.searchDefFlip = searchDefFlip
 			this.descLines = descLines
 			this.doubleTapMs = doubleTapMs
 		}
@@ -340,7 +353,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 			row.isReference = parentId != null && links.any { it.parentId == parentId && it.isReference }
 			row.hasSource = row.isReference && links.any { it.parentId != parentId }
 			row.preloadFlip(translations)
-			row.applyDefaultFlip(translations)
+			row.applyDefaultFlip(translations, defFlip)
 			return row
 		}
 
@@ -349,7 +362,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		 * - the chain serves the jump to directory action.
 		 * - its reference facts come from the preloaded [links].
 		 * - so a run with thousands of hits stays database-free after preload.
-		 * @param flipContent the translations of a word hit, null leaves the row to read on demand
+		 * @param flipContent the translations of a word hit, null leaves the row unflipped to read on demand
 		 */
 		@JvmStatic
 		fun ofSearchHit(
@@ -365,7 +378,10 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 			row.parentId = parent
 			row.isReference = links.any { it.parentId == parent && it.isReference }
 			row.hasSource = row.isReference && links.any { it.parentId != parent }
-			if (flipContent != null) row.preloadFlip(flipContent)
+			if (flipContent != null) {
+				row.preloadFlip(flipContent)
+				row.applyDefaultFlip(flipContent, searchDefFlip)
+			}
 			return row
 		}
 	}

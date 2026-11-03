@@ -3,7 +3,9 @@ package cz.litoj.schlmgr.unit.ui.viewmodel
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.DbLink
 import cz.litoj.schlmgr.data.db.ItemKind
+import cz.litoj.schlmgr.support.setRowOptions
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotSame
@@ -13,12 +15,23 @@ import org.junit.Test
 /**
  * - a search-hit row takes its reference facts from the preloaded parent links.
  * - building the row must touch no database.
+ * - a word hit starts on the search default flip, a missing preload never flips.
  */
 class SearchHitRowTest {
 
 	private val parent = DbItem(id = 1, name = "ch", description = "", type = ItemKind.CHAPTER)
 
 	private val word = DbItem(id = 2, name = "w", description = "", type = ItemKind.WORD)
+
+	private val translations =
+		listOf(DbItem(id = 3, name = "t1", description = "", type = ItemKind.TRANSLATION))
+
+	private val searchDefFlipWas = ItemRow.searchDefFlip
+
+	@After
+	fun restoreSearchDefFlip() {
+		setRowOptions(searchDefFlip = searchDefFlipWas)
+	}
 
 	@Test
 	fun `a referenced hit row with another parent is a reference with a source`() {
@@ -63,5 +76,35 @@ class SearchHitRowTest {
 		// the walk mutates its path list, so the row must own its copy
 		assertEquals(1, row.path?.size)
 		assertNotSame(path, row.path)
+	}
+
+	@Test
+	fun `a word hit starts flipped on the preloaded translations`() {
+		val row = ItemRow.ofSearchHit(word, listOf(parent), 1, emptyList(), translations)
+		assertTrue(row.flipped)
+		assertEquals("t1", row.toShow)
+		assertEquals(1, row.translationLines.size)
+	}
+
+	@Test
+	fun `a word hit stays on its name when the search default flip is off`() {
+		setRowOptions(searchDefFlip = false)
+		val row = ItemRow.ofSearchHit(word, listOf(parent), 1, emptyList(), translations)
+		assertFalse(row.flipped)
+		assertEquals("w", row.toShow)
+	}
+
+	@Test
+	fun `a hit without a preload stays unflipped and reads on demand`() {
+		val row = ItemRow.ofSearchHit(word, listOf(parent), 1, emptyList())
+		assertFalse(row.flipped)
+		assertEquals("w", row.toShow)
+	}
+
+	@Test
+	fun `a container hit never flips`() {
+		val row = ItemRow.ofSearchHit(parent, listOf(word), 1, emptyList(), translations)
+		assertFalse(row.flipped)
+		assertEquals("ch", row.toShow)
 	}
 }
