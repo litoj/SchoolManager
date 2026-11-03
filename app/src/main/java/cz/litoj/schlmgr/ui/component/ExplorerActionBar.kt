@@ -37,10 +37,11 @@ import cz.litoj.schlmgr.ui.viewmodel.SelectionAction
 import cz.litoj.schlmgr.ui.viewmodel.icon
 import cz.litoj.schlmgr.ui.viewmodel.label
 
-private val BarColor @Composable get() = ExplorerColors.actionBar
+// the strip wears the primary header treatment, so its items read as actions at once
+private val BarColor @Composable get() = ExplorerColors.header
 
-private val ForegroundEnabled @Composable get() = ExplorerColors.actionText
-private val ForegroundDisabled @Composable get() = ExplorerColors.actionTextDisabled
+private val ForegroundEnabled @Composable get() = ExplorerColors.onHeader
+private val ForegroundDisabled @Composable get() = ExplorerColors.onHeader.copy(alpha = 0.5f)
 
 private class Action(
 	@field:DrawableRes @param:DrawableRes val icon: Int,
@@ -103,7 +104,7 @@ fun PasteActionBar(
 		Text(
 			status,
 			Modifier.weight(1f).padding(horizontal = 8.dp),
-			style = TextStyle(fontSize = 15.sp, color = ExplorerColors.actionText),
+			style = TextStyle(fontSize = 15.sp, color = ExplorerColors.onHeader),
 		)
 		ActionButton(
 			Action(R.drawable.ic_cancel, R.string.objects_cancel, onCancel),

@@ -236,7 +236,7 @@
     <string name="setts_him_flipped">Translate words automatically</string>
     <string name="setts_him_flipped_search">Translate search results automatically</string>
     <string name="setts_him_parse">Display item names parsed</string>
-    <string name="setts_interface">Interface</string>
+    <string name="setts_explorer">Explorer</string>
     <string name="setts_desc_lines">Directly displayed description lines</string>
     <string name="setts_double_tap_ms">Flip-all doubleclick timeout</string>
     <string name="setts_test_amount">Default tested amount</string>

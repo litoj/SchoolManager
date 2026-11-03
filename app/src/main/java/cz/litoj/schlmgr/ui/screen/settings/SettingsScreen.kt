@@ -1,6 +1,5 @@
 package cz.litoj.schlmgr.ui.screen.settings
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,13 +16,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.component.BareTextField
+import cz.litoj.schlmgr.ui.component.BigHeader
+import cz.litoj.schlmgr.ui.component.SectionHeader
 import cz.litoj.schlmgr.ui.component.HairlineDivider
 import cz.litoj.schlmgr.ui.component.SettingNumberRow
 import cz.litoj.schlmgr.ui.component.SettingSwitchRow
@@ -34,8 +35,6 @@ import cz.litoj.schlmgr.ui.viewmodel.SettingsViewModel
 import cz.litoj.schlmgr.ui.shell.TopBarNav
 import cz.litoj.schlmgr.ui.shell.TopBarTitle
 import cz.litoj.schlmgr.ui.shell.headerShadow
-
-private val HeaderBackground @Composable get() = colorResource(R.color.colorSectionHeader)
 
 /**
  * The settings screen: the top bar above the settings list.
@@ -63,7 +62,7 @@ private fun SettingsList(state: SettingsState, modifier: Modifier = Modifier) {
 			.fillMaxSize()
 			.verticalScroll(rememberScrollState()),
 	) {
-		SectionHeader(stringResource(R.string.setts_interface))
+		BigHeader(stringResource(R.string.setts_explorer), R.drawable.ic_subject, colorResource(R.color.colorOnHeader))
 		SettingSwitchRow(stringResource(R.string.setts_him_parse), state.parse, state::toggleParse)
 		HairlineDivider()
 		SettingSwitchRow(stringResource(R.string.setts_him_flipped), state.defFlip, state::toggleDefFlip)
@@ -81,15 +80,15 @@ private fun SettingsList(state: SettingsState, modifier: Modifier = Modifier) {
 		WordSplitRow(state)
 		HairlineDivider()
 		SettingSwitchRow(stringResource(R.string.setts_search_diacritics), state.searchDiacritics, state::toggleSearchDiacritics)
-		// no resource exists for the Test section label, so it stays a literal
-		SectionHeader(stringResource(R.string.setts_selection_bar))
+		// the selection actions are a subsection of the explorer, since they act on its list
+		SectionHeader(stringResource(R.string.setts_selection_bar), level = 0)
 		Text(
 			stringResource(R.string.setts_bar_hint),
 			Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
 			style = TextStyle(fontSize = 13.sp, color = DefaultTextColor),
 		)
 		SelectionBarEditor(state)
-		SectionHeader("Test")
+		BigHeader(stringResource(R.string.help_test), R.drawable.ic_test, colorResource(R.color.colorOnHeader))
 		SettingNumberRow(
 			stringResource(R.string.setts_test_amount), state.amountText, state::setAmount,
 		) { state.amountFocusLost(); keyboard?.hide() }
@@ -100,18 +99,6 @@ private fun SettingsList(state: SettingsState, modifier: Modifier = Modifier) {
 		HairlineDivider()
 		SettingSwitchRow(stringResource(R.string.setts_test_clever), state.clever, state::toggleClever)
 	}
-}
-
-@Composable
-private fun SectionHeader(title: String) {
-	Text(
-		title,
-		Modifier
-			.fillMaxWidth()
-			.background(HeaderBackground)
-			.padding(horizontal = 15.dp, vertical = 2.dp),
-		style = TextStyle(fontSize = 15.sp, color = DefaultTextColor),
-	)
 }
 
 @Composable

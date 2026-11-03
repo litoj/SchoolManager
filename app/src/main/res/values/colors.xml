@@ -37,7 +37,6 @@
          Compose screens they color). Only icon drawables and the TestActivity
          timer flash may carry colors that do not come from this file. -->
     <color name="colorControlLine">#88888888</color>
-    <color name="colorSectionHeader">#28888888</color>
     <color name="colorGroupBackground">#55888888</color>
     <color name="colorSubBackground">#22888888</color>
     <color name="colorFailure">#FFAA0000</color>

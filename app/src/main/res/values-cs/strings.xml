@@ -219,7 +219,7 @@
     <string name="setts_him_flipped">Automaticky překládat slovíčka</string>
     <string name="setts_him_flipped_search">Automaticky překládat výsledky hledání</string>
     <string name="setts_him_parse">Zobrazovat názvy položek ve zpracované formě</string>
-    <string name="setts_interface">Rozhraní</string>
+    <string name="setts_explorer">Průzkumník</string>
     <string name="setts_desc_lines">Počet přímo zobrazených řádků poznámky</string>
     <string name="setts_double_tap_ms">Čas na dvojklik pro přeložení všeho</string>
     <string name="setts_test_amount">Výchozí počet položek v testu</string>

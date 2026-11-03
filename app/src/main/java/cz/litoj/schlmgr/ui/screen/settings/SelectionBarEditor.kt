@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
@@ -85,7 +86,8 @@ internal fun SelectionBarEditor(state: SettingsState) {
 				index = index,
 				tint = when {
 					dragging != null && hovered == index -> colorResource(R.color.colorGroupBackground)
-					index < ActionConfig.BAR_SLOTS -> colorResource(R.color.colorSubBackground)
+					// the strip slots wear the primary wash, the rest stay plain
+					index < ActionConfig.BAR_SLOTS -> colorResource(R.color.colorSelectedRow)
 					else -> Color.Transparent
 				},
 				dragged = dragging == action,
@@ -115,8 +117,7 @@ internal fun SelectionBarEditor(state: SettingsState) {
 					stringResource(R.string.setts_goto_connect),
 					style = TextStyle(fontSize = 13.sp, color = DefaultTextColor),
 				)
-			},
-			trailing = {
+				// the connection state reads as a fact under the hint
 				Text(
 					stringResource(
 						if (bound == null) R.string.setts_goto_loose else R.string.setts_goto_bound,
@@ -144,7 +145,6 @@ private fun ActionSettingRow(
 	onDragCancel: () -> Unit,
 	boundGoto: Boolean = false,
 	extra: (@Composable () -> Unit)? = null,
-	trailing: (@Composable () -> Unit)? = null,
 ) {
 	Row(
 		Modifier
@@ -172,6 +172,8 @@ private fun ActionSettingRow(
 		Image(
 			painterResource(action.icon),
 			contentDescription = null,
+			// the icon follows the row text, so no accent makes it faint
+			colorFilter = ColorFilter.tint(DefaultTextColor),
 			modifier = Modifier.size(IconSize),
 		)
 		Column(
@@ -198,6 +200,8 @@ private fun ActionSettingRow(
 				Image(
 					painterResource(R.drawable.ic_goto),
 					contentDescription = null,
+					// the untinted drawable is a light green that washes out on the row
+					colorFilter = ColorFilter.tint(DefaultTextColor),
 					modifier = Modifier.size(IconSize),
 				)
 				Text(
@@ -206,7 +210,6 @@ private fun ActionSettingRow(
 				)
 			}
 		}
-		trailing?.invoke()
 	}
 }
 

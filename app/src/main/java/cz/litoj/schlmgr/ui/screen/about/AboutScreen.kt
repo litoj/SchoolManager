@@ -33,6 +33,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.component.CrumbChain
+import cz.litoj.schlmgr.ui.component.BigHeader
+import cz.litoj.schlmgr.ui.component.sectionStyle
 import cz.litoj.schlmgr.ui.component.DefaultTextColor
 import cz.litoj.schlmgr.ui.component.TopBarSearchField
 import cz.litoj.schlmgr.ui.shell.TopBar
@@ -40,10 +42,6 @@ import cz.litoj.schlmgr.ui.shell.TopBarIconButton
 import cz.litoj.schlmgr.ui.shell.TopBarNav
 import cz.litoj.schlmgr.ui.shell.TopBarTitle
 import cz.litoj.schlmgr.ui.shell.headerShadow
-
-private val GroupBackground @Composable get() = colorResource(R.color.colorGroupBackground)
-private val SubBackground @Composable get() = colorResource(R.color.colorSubBackground)
-
 
 /**
  * The About screen: the top bar with the app name and version above the help tree.
@@ -108,39 +106,6 @@ private fun HelpTree(viewModel: AboutViewModel, modifier: Modifier = Modifier) {
 			}
 		}
 	}
-}
-
-@Composable
-private fun BigHeader(text: String, @DrawableRes icon: Int) {
-	Row(
-		Modifier
-			.fillMaxWidth()
-			.background(colorResource(R.color.colorPrimaryHeader))
-			.padding(horizontal = 15.dp, vertical = 3.dp),
-		verticalAlignment = Alignment.CenterVertically,
-	) {
-		Text(
-			text,
-			Modifier.weight(1f),
-			// the on-header colour keeps the green header chrome readable.
-			// it also works when the header turns bright and its text dark.
-			style = TextStyle(fontSize = 25.sp, color = colorResource(R.color.colorOnHeader)),
-		)
-		Icon(painterResource(icon), null, tint = Color.Unspecified)
-	}
-}
-
-private data class SectionStyle(val background: Color, val fontSize: TextUnit, val vertical: Dp, val indent: Dp)
-
-/**
- * The visuals of a section header for its level.
- * - the deepest level has no band left, so its indentation carries the depth.
- */
-@Composable
-private fun sectionStyle(level: Int): SectionStyle = when (level) {
-	0 -> SectionStyle(GroupBackground, 19.sp, 7.dp, 0.dp)
-	1 -> SectionStyle(SubBackground, 17.sp, 2.dp, 0.dp)
-	else -> SectionStyle(Color.Transparent, 15.sp, 2.dp, 15.dp * (level - 1))
 }
 
 /**
