@@ -3,7 +3,6 @@ package cz.litoj.schlmgr.ui.screen.test
 import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Text
@@ -31,7 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -125,8 +122,7 @@ private fun TestSetupContent(viewModel: TestSetupViewModel, modifier: Modifier =
 				viewModel::setTime,
 			) { viewModel.restoreTime(); keyboard?.hide() }
 			// the caption derives the run length, since the row itself holds only one word's share
-			val total = TestSetupState.timeTotal()
-			RowCaption(stringResource(R.string.test_total_time, total.perWord, total.count, total.total))
+			RowCaption(stringResource(R.string.test_total_time, TestSetupState.timeTotal().total))
 			HairlineDivider()
 			DirectionRow(TestSetupState.reverseTest, viewModel::toggleReverse)
 			HairlineDivider()
@@ -185,33 +181,24 @@ private fun RowCaption(text: String) {
 	)
 }
 
-/** The two directions of the run, where one chosen chip names both sides. */
+/** The run direction as one setting row: the live side reads on the right, a tap flips it. */
 @Composable
 private fun DirectionRow(reverse: Boolean, onToggle: () -> Unit) {
-	Column(Modifier.fillMaxWidth().padding(5.dp)) {
-		Text(stringResource(R.string.test_direction), style = TextStyle(fontSize = 18.sp, color = DefaultTextColor))
-		Row(Modifier.fillMaxWidth().padding(top = 3.dp)) {
-			DirectionChip(stringResource(R.string.test_dir_normal), !reverse, Modifier.weight(1f), onToggle)
-			DirectionChip(stringResource(R.string.test_dir_reverse), reverse, Modifier.weight(1f), onToggle)
-		}
-	}
-}
-
-/** One side of the direction, where a tap on an unselected chip flips the direction. */
-@Composable
-private fun DirectionChip(label: String, selected: Boolean, modifier: Modifier, onToggle: () -> Unit) {
-	Box(
-		modifier
-			.padding(end = 5.dp)
-			.clip(RoundedCornerShape(5.dp))
-			.background(if (selected) colorResource(R.color.colorPrimaryHeader) else colorResource(R.color.colorSubBackground))
+	Row(
+		Modifier
+			.fillMaxWidth()
 			.clickable(onClick = onToggle)
-			.padding(vertical = 4.dp),
-		contentAlignment = Alignment.Center,
+			.padding(5.dp),
+		verticalAlignment = Alignment.CenterVertically,
 	) {
 		Text(
-			label,
-			style = TextStyle(fontSize = 15.sp, color = if (selected) colorResource(R.color.colorOnHeader) else DefaultTextColor),
+			stringResource(R.string.test_direction),
+			Modifier.weight(1f),
+			style = TextStyle(fontSize = 18.sp, color = DefaultTextColor),
+		)
+		Text(
+			stringResource(if (reverse) R.string.test_dir_reverse else R.string.test_dir_normal),
+			style = TextStyle(fontSize = 18.sp, color = DefaultTextColor),
 		)
 	}
 }

@@ -266,7 +266,7 @@
         <item quantity="other">z %d dostupných</item>
     </plurals>
     <string name="test_time">Sekundy na slovíčko</string>
-    <string name="test_total_time">%1$d s × %2$d = %3$d s</string>
+    <string name="test_total_time">Celkový čas: %1$d s</string>
     <string name="test_sources_header">Zdroje · jeden předmět</string>
     <string name="test_start_blocked">Přidejte aspoň jeden zdroj</string>
     <plurals name="test_source_words">

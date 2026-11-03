@@ -106,7 +106,8 @@ Its DB part is the model for this project.
 - The strip holds four configurable actions, the settings order drives it and the more menu.
 - Go-to connects to a strip action and takes its slot in search, unbound it sits in the search menu.
 - A connection whose target leaves the strip clears.
-- The paste strip names its armed operation and count.
+- The top arrow cancels the selection and an armed move, like the search field.
+- An armed move reads on the top line, its strip holds cancel and paste.
 
 ### Settings
 
@@ -169,7 +170,7 @@ Its DB part is the model for this project.
 
 - The picker starts at the explorer's position and never moves it.
 - The setup rows name their units, captions derive the pool and the total time.
-- The direction row names both sides, there is no relative switch.
+- The direction row flips between its two sides on a tap.
 - Start waits for a source and says why.
 - The countdown pauses while the app is away.
 - Back confirms before ending a run without grading.
