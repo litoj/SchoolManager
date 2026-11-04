@@ -39,4 +39,7 @@ sealed interface InfoBar {
 
 	/** A malformed query, so the empty list does not read as no results. */
 	data object InvalidSearch : InfoBar
+
+	/** A regex that does not compile, its detail goes to the notice. */
+	data object InvalidPattern : InfoBar
 }

@@ -176,6 +176,23 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
+	fun `a bad regex empties the list like any invalid query`() {
+		seed()
+		val model = vmIn("A")
+		model.openSearchField()
+		model.onQuerySubmit("c1")
+		assertEquals(1, model.items().size)
+
+		model.onQuerySubmit("\\r[")
+
+		assertEquals(InfoBar.InvalidPattern, model.state.value.info)
+		assertTrue("the old results do not stay", model.items().isEmpty())
+		model.refreshInfo()
+		assertEquals("a count refresh keeps the message",
+			InfoBar.InvalidPattern, model.state.value.info)
+	}
+
+	@Test
 	fun `an invalid query fills the strip until a valid one or the end of the search`() {
 		seed()
 		val model = vmIn("A")

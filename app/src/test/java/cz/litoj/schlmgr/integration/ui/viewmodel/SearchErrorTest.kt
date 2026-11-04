@@ -4,6 +4,7 @@ import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.support.TestExplorerViewModel
+import cz.litoj.schlmgr.ui.viewmodel.InfoBar
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import cz.litoj.schlmgr.ui.viewmodel.SearchUi
 import java.util.concurrent.CountDownLatch
@@ -51,7 +52,7 @@ class SearchErrorTest {
 		assertTrue("the message is the pattern error by meaning, the detail carried as data: $message",
 			notice is UiNotice.BadPattern && notice.detail.isNotEmpty())
 		assertEquals("no run started", SearchUi.OFF, vm.state.value.searchUi)
-		assertTrue("no hop was stacked", vm.listState.value.items.isEmpty())
-		assertEquals(0, vm.history.onePath.lastOrNull())
+		assertTrue("nothing was searched", vm.listState.value.items.isEmpty())
+		assertEquals(InfoBar.InvalidPattern, vm.state.value.info)
 	}
 }
