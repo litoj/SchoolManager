@@ -1,5 +1,6 @@
 package cz.litoj.schlmgr.e2e.ui.screen
 
+import android.os.Looper
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -9,11 +10,13 @@ import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.ui.activity.TestActivity
+import cz.litoj.schlmgr.ui.popup.ContinuePopup
 import cz.litoj.schlmgr.ui.popup.Dialogs
 import cz.litoj.schlmgr.ui.popup.TestResultsPopup
 import cz.litoj.schlmgr.ui.screen.test.TestRunState
 import cz.litoj.schlmgr.ui.screen.test.TestSetupState
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
+import org.junit.After
 import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -24,11 +27,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
  * - a seeded run shows the picked word, the whole main path of the screen.
  * - the abort button drops the run with no trace in the statistics.
+ * - Done asks only about blank answers, so a timed end never waits for a tap.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -36,6 +41,22 @@ class TestActivityTest {
 
 	@get:Rule
 	val rule = createAndroidComposeRule<TestActivity>()
+
+	@After
+	fun tearDown() {
+		TestRunState.reset()
+		Dialogs.clear()
+	}
+
+	// the run lands through a posted message, which the compose wait alone never drains
+	private fun await(landed: () -> Boolean) = rule.waitUntil(WAIT_MS) {
+		shadowOf(Looper.getMainLooper()).idle()
+		landed()
+	}
+
+	private fun awaitRun() = await { TestRunState.items.isNotEmpty() }
+
+	private fun awaitResults() = await { Dialogs.isShowing<TestResultsPopup>() }
 
 	@Test
 	fun `a launched run shows the picked word`() {
@@ -66,7 +87,45 @@ class TestActivityTest {
 		assertEquals(before.failedTests, word.failedTests)
 	}
 
+	@Test
+	fun `done asks with the count while an answer is blank`() {
+		awaitRun()
+		TestRunState.setAnswer(0, "  ")
+
+		rule.onNodeWithText("Done").performClick()
+
+		rule.onNodeWithText("Missing 1 answer. Finish anyway?").assertExists()
+		assertTrue(TestRunState.hasRun())
+
+		rule.onNodeWithText("OK").performClick()
+
+		awaitResults()
+	}
+
+	@Test
+	fun `done submits directly with every answer filled`() {
+		awaitRun()
+		TestRunState.setAnswer(0, "house")
+
+		rule.onNodeWithText("Done").performClick()
+
+		assertFalse(Dialogs.isShowing<ContinuePopup>())
+		awaitResults()
+	}
+
+	@Test
+	fun `the timed submit never asks about blank answers`() {
+		awaitRun()
+
+		rule.runOnUiThread { TestRunState.submit(rule.activity) }
+
+		assertFalse(Dialogs.isShowing<ContinuePopup>())
+		awaitResults()
+	}
+
 	companion object {
+
+		private const val WAIT_MS = 5_000L
 
 		private lateinit var db: ItemDatabase
 		private var wordId = 0

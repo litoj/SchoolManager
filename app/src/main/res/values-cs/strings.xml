@@ -259,6 +259,12 @@
     <string name="test_direction">Testovaná strana</string>
     <string name="test_dir_normal">Slovíčko</string>
     <string name="test_dir_reverse">Překlad</string>
+    <plurals name="test_blank_answers">
+        <item quantity="one">Chybí %1$d odpověď. Přesto dokončit?</item>
+        <item quantity="few">Chybí %1$d odpovědi. Přesto dokončit?</item>
+        <item quantity="many">Chybí %1$d odpovědí. Přesto dokončit?</item>
+        <item quantity="other">Chybí %1$d odpovědí. Přesto dokončit?</item>
+    </plurals>
     <string name="test_one_subject">Zdroje testu musí pocházet z jednoho předmětu.</string>
     <string name="test_one_subject_of">Zdroje testu musí pocházet z jednoho předmětu (%s).</string>
     <string name="test_size">Slovíčka k otestování</string>

@@ -156,7 +156,7 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 				item {
 					// the app header colours mark the one commit action of the screen.
 					Button(
-						onClick = { TestRunState.submit(this@TestActivity) },
+						onClick = ::onDone,
 						colors = ButtonDefaults.buttonColors(
 							backgroundColor = colorResource(R.color.colorPrimaryHeader),
 							contentColor = colorResource(R.color.colorOnHeader),
@@ -173,6 +173,16 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 				}
 			}
 		}
+	}
+
+	private fun onDone() {
+		val blank = TestRunState.blankAnswers()
+		if (blank == 0) TestRunState.submit(this)
+		else TestRunState.confirm(
+			resources.getQuantityString(R.plurals.test_blank_answers, blank, blank),
+			20.dp,
+			TestRunState::submit,
+		)
 	}
 
 	/**

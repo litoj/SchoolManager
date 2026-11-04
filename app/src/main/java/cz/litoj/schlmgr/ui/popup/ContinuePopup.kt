@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -17,9 +18,11 @@ import cz.litoj.schlmgr.ui.component.HairlineDivider
  * - the Cancel button only dismisses.
  *
  * @param message the question, null asks about deleting the selection
+ * @param margin the gap around the card, which sets its width
  */
 class ContinuePopup(
 	private val message: String? = null,
+	private val margin: Dp = PopupMargin,
 	private val onOk: () -> Unit,
 ) : DialogSpec {
 
@@ -31,7 +34,7 @@ class ContinuePopup(
 
 	@Composable
 	override fun Content() {
-		PopupCard {
+		PopupCard(margin) {
 			Text(
 				message ?: stringResource(R.string.continue_delete),
 				Modifier.padding(5.dp),

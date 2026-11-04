@@ -7,10 +7,12 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.Dp
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestItemModel
 import cz.litoj.schlmgr.ui.popup.ContinuePopup
 import cz.litoj.schlmgr.ui.popup.Dialogs
+import cz.litoj.schlmgr.ui.popup.PopupMargin
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -72,6 +74,9 @@ object TestRunState {
 		_answers[index] = text
 	}
 
+	/** The items a submit would fail for having no answer. */
+	fun blankAnswers(): Int = _items.indices.count { _answers[it].isNullOrBlank() }
+
 	/** The living screen, which a rotation replaces while the question stays on the stack. */
 	private var host: Host? = null
 
@@ -84,10 +89,12 @@ object TestRunState {
 	/**
 	 * Asks before [action] runs, which then gets the screen alive at the answer.
 	 * - the end of the run closes the question, since nothing is left to act on.
+	 *
+	 * @param margin the gap around the card, which sets its width
 	 */
-	fun confirm(message: String, action: (Host) -> Unit) {
+	fun confirm(message: String, margin: Dp = PopupMargin, action: (Host) -> Unit) {
 		closeQuestion()
-		question = ContinuePopup(message) {
+		question = ContinuePopup(message, margin) {
 			question = null
 			host?.let(action)
 		}

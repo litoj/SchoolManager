@@ -33,21 +33,29 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.component.BareTextFieldStyle
 import cz.litoj.schlmgr.ui.component.WideTextField
 
+val PopupMargin = 30.dp
+
 /**
  * The shared look of the small dialogs: a theme-background card, only as tall as its content.
  * - it grows to the full height between the status-bar-height gaps.
  * - a centered [Box] hugs it, so no dead space surrounds the bar.
  * - a scrollable middle takes weight 1f without fill and fills the free height first.
+ *
+ * @param margin the gap around the card, which sets its width
  */
 @Composable
-internal fun PopupCard(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
-	// the band height gaps both ends: the 30dp margin measures from the status bar above.
+internal fun PopupCard(
+	margin: Dp = PopupMargin,
+	content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
+) {
+	// the band height gaps both ends: the margin measures from the status bar above.
 	// an equally tall gap sits above the screen bottom
 	val statusBar = with(LocalDensity.current) { WindowInsets.statusBars.getTop(this).toDp() }
 	Box(
@@ -58,7 +66,7 @@ internal fun PopupCard(content: @Composable androidx.compose.foundation.layout.C
 	) {
 		Column(
 			Modifier
-				.padding(30.dp)
+				.padding(margin)
 				.fillMaxWidth()
 				.background(colorResource(R.color.colorPrimaryBg))
 		) {
