@@ -46,6 +46,8 @@
 - A query matches names and translations. A typed translation finds its words.
 - A new query cancels the pending run. Results reach the UI in batches.
 - Free text stays valid. A malformed number query shows red in the info strip and never runs.
+- An operator after the markers always means a number query, text uses the `\\` form.
+- Every non-empty query runs once typing pauses, whatever its length.
 - Search is a screen state with three values: off, typing, results. Back restores the cached rows.
 
 ## 6. Build and release

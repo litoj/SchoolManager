@@ -100,17 +100,14 @@ class SearchEngine(query: String, private val foldDiacritics: Boolean = false) {
 
 	/**
 	 * Folds a number query to the strict syntax.
+	 * - an operator after the markers always makes a number query, text needs the \\ form.
 	 * - other queries pass unchanged, since their markers are case sensitive.
 	 * @return null for a malformed number query
 	 */
 	private fun strictForm(query: String): String? {
 		val shape = OPERATOR_SHAPE.matchEntire(query) ?: return query
 		val (type, value, operator, number) = shape.destructured
-		val marker = value.ifEmpty { type }
-		// c and e always mean text, while s and r name a source only before a number
-		if (marker == "c" || marker == "e") return query
-		val count = number.toIntOrNull()
-			?: return if (marker == "s" || marker == "r") query else null
+		val count = number.toIntOrNull() ?: return null
 		val source = value.uppercase()
 		return if (source in NUMBER_SOURCES) "\\${type.uppercase()}$source$operator$count" else null
 	}

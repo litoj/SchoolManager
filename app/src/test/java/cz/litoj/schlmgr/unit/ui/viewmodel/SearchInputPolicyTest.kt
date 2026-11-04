@@ -17,13 +17,11 @@ class SearchInputPolicyTest {
 	private class RecordingHost : SearchInput.Host {
 		val run = ArrayList<String>()
 		var cleared = 0
-		var superseded = 0
 		var opened = 0
 		var closed = 0
 		var idled = 0
 		override fun runQuery(text: String) { run.add(text) }
 		override fun clearQuery() { cleared++ }
-		override fun supersedeRun() { superseded++ }
 		override fun openField() { opened++ }
 		override fun closeField() { closed++ }
 		override fun idleField() { idled++ }
@@ -43,17 +41,17 @@ class SearchInputPolicyTest {
 	}
 
 	@Test
-	fun `a one-character input keeps the shown list`() = runTest {
+	fun `a one-character input runs like any other`() = runTest {
 		val host = RecordingHost()
 		val input = SearchInput(CoroutineScope(UnconfinedTestDispatcher(testScheduler)), host)
 
+		input.onTextChange("ab")
+		testScheduler.advanceUntilIdle()
 		input.onTextChange("a")
+		testScheduler.advanceUntilIdle()
 
-		// below the threshold, so no run starts and a running run is superseded
-		// the shown list stays as it is instead of keeping growing
-		assertEquals(0, host.run.size)
+		assertEquals("a shortened query replaces the shown results", listOf("ab", "a"), host.run)
 		assertEquals(0, host.cleared)
-		assertEquals(1, host.superseded)
 	}
 
 	@Test
@@ -74,7 +72,7 @@ class SearchInputPolicyTest {
 		val input = SearchInput(CoroutineScope(UnconfinedTestDispatcher(testScheduler)), host)
 
 		input.onSubmit("a")
-		assertEquals("the length gate does not apply", listOf("a"), host.run)
+		assertEquals("the submit skips the pause", listOf("a"), host.run)
 		input.onSubmit("")
 		assertEquals(1, host.cleared)
 	}

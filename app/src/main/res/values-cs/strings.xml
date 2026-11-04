@@ -141,7 +141,8 @@
         \n\t&lt; - musí být menší
         \n\t= - musí být rovno dané hodnotě
         \n\nČíselná podmínka nerozlišuje velká a malá písmena a ignoruje mezery, takže \\w r = 0 znamená totéž co \\WR=0.
-        \nVyžaduje S, F, N nebo R a celé číslo, jinak se zobrazí červená zpráva.</string>
+        \nVyžaduje S, F, N nebo R a celé číslo, jinak se zobrazí červená zpráva.
+        \n&gt;, &lt; nebo = za značkami vždy začíná číselnou podmínku, takže \\\\=5 najde text \'=5\'.</string>
     <string name="help_search_types_examples" formatted="false">\WD\t- všechna slova s poznámkou
         \n\R>50\t- položky s úspěšností nad 50%
         \n\WR=0\t- testovaná slova bez jediné správné odpovědi

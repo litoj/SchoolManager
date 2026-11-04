@@ -160,11 +160,16 @@ class SearchEngineParseTest {
 	}
 
 	@Test
-	fun `a text operator keeps any tail`() {
-		assertEquals(listOf("=abc"), hits("\\s=abc", "=abc", "x"))
-		assertEquals(listOf("=abc"), hits("\\r=a.c", "=abc", "x"))
-		assertEquals(listOf("x=5"), hits("\\c=5", "x=5", "x"))
-		assertEquals(listOf("x=5"), hits("\\e=5", "x=5", "x"))
+	fun `a text operator before an operator is invalid`() {
+		for (query in listOf("\\wr=a", "\\Wr=a", "\\w r = a", "\\s=abc", "\\r=a.c", "\\e=5", "\\Wc=5"))
+			assertInvalid(query)
+	}
+
+	@Test
+	fun `text starting with an operator needs the plain or regex form`() {
+		assertEquals(listOf("=abc"), hits("\\\\=abc", "=abc", "x"))
+		assertEquals(listOf("=abc"), hits("\\C\\=abc", "=abc", "x"))
+		assertEquals(listOf("=abc"), hits("\\r[=]a.c", "=abc", "x"))
 	}
 
 	@Test

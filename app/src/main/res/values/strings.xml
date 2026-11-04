@@ -159,7 +159,8 @@
         \n\t&lt; - must be lower
         \n\t= - must be equal to the value
         \n\nA number condition ignores case and spaces, so \\w r = 0 equals \\WR=0.
-        \nIt needs S, F, N or R and a whole number, otherwise a red message shows.</string>
+        \nIt needs S, F, N or R and a whole number, otherwise a red message shows.
+        \n&gt;, &lt; or = after the markers always starts a number condition, so \\\\=5 finds the text \'=5\'.</string>
     <string name="help_search_types_examples" formatted="false">\WD\t- all words with some description
         \n\R>50\t- items with success rate above 50%
         \n\WR=0\t- tested words never answered correctly

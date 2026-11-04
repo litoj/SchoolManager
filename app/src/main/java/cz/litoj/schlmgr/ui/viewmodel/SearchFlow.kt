@@ -196,7 +196,6 @@ internal class SearchFlow(
 			if (host.isSearching()) leaveSearchFlow()
 		}
 
-		override fun supersedeRun() = run.abort()
 		override fun openField() = host.setSearchUi(SearchUi.TYPING)
 		override fun idleField() = host.setSearchUi(SearchUi.RESULTS)
 

@@ -68,7 +68,6 @@ abstract class ExplorerViewModel<R>(
 	protected val searching get() = list.searching
 
 	companion object {
-		const val SEARCH_MIN_CHARS = 2
 		const val SEARCH_DEBOUNCE_MS = 300L
 		const val EXIT_WINDOW_MS = 3000L
 	}
