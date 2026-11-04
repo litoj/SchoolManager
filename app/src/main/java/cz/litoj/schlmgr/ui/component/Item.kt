@@ -49,6 +49,7 @@ fun Item(
 	/** The type icon tapped, a running selection or the picker selects the row with it. */
 	onIconClick: (() -> Unit)? = null,
 	descVisible: Boolean,
+	iconVisible: Boolean = true,
 	variant: ExplorerRowVariant = ExplorerRowVariant.Browse,
 	positionWidth: Dp,
 	infoAction: (@Composable () -> Unit)? = null,
@@ -63,7 +64,7 @@ fun Item(
 			// the selection rides the background of the row, which paints under the
 			// success-ratio tint of the position cell, so the whole row highlights
 			.background(if (item.selected) ExplorerColors.selectedRow else Color.Transparent)
-			.successRatioBand(item, tintBandWidth(positionWidth))
+			.successRatioBand(item, tintBandWidth(positionWidth, iconVisible))
 			// no ripple: the press feedback is the selection tint and the drag itself
 			.combinedClickable(
 				interactionSource = remember { MutableInteractionSource() },
@@ -72,7 +73,14 @@ fun Item(
 				onLongClick = onLongClick,
 			),
 	) {
-		PositionCell(item, variant, positionWidth, Modifier.align(Alignment.CenterVertically), onIconClick)
+		PositionCell(
+			item,
+			variant,
+			positionWidth,
+			iconVisible,
+			Modifier.align(Alignment.CenterVertically),
+			onIconClick,
+		)
 		// the wrapper column holds the texts and the trailing actions.
 		// so the separator below them spans the part of the row without the success-rate colour.
 		Column(Modifier.weight(1f)) {
@@ -130,6 +138,7 @@ private fun PositionCell(
 	item: ItemUiModel,
 	variant: ExplorerRowVariant,
 	width: Dp,
+	iconVisible: Boolean,
 	modifier: Modifier = Modifier,
 	onIconClick: (() -> Unit)? = null,
 ) {
@@ -147,7 +156,7 @@ private fun PositionCell(
 				.padding(horizontal = CellSidePadding)
 				.width(width),
 		)
-		Image(
+		if (iconVisible) Image(
 			painterResource(item.kind.iconRes),
 			// the name tells the accessibility service which row the icon selects
 			contentDescription = if (onIconClick == null) null else item.name,
@@ -212,7 +221,8 @@ internal fun successRatioBackground(item: ItemUiModel): Color = Color(successRat
 
 private val CellSidePadding = 2.dp
 
-private fun tintBandWidth(positionWidth: Dp) = positionWidth + CellSidePadding * 2 + IconSize
+private fun tintBandWidth(positionWidth: Dp, iconVisible: Boolean) =
+	positionWidth + CellSidePadding * 2 + if (iconVisible) IconSize else 0.dp
 
 /**
  * The success-ratio band behind the position cell, painted in the draw phase.

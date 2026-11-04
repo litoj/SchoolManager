@@ -1,9 +1,16 @@
 package cz.litoj.schlmgr.e2e.ui.component
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import cz.litoj.schlmgr.ui.component.IconSize
 import cz.litoj.schlmgr.ui.component.Item
 import cz.litoj.schlmgr.ui.component.positionColumnWidth
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
@@ -69,5 +76,44 @@ class ItemTintBandTest {
 		val rowTop = pixels[w - 5, 2]
 		assertNotEquals("the band must be painted beside the untinted row", bandTop, rowTop)
 		assertEquals("the band must reach the row's bottom", bandTop, bandBottom)
+	}
+
+	@Test
+	fun `a hidden icon shrinks the band and pulls the text in by the icon width`() {
+		fun row(name: String) = ItemUiModel(
+			key = name,
+			position = 1,
+			name = name,
+			description = "",
+			kind = RowKind.WORD,
+			ratio = 50,
+			isReference = false,
+			selected = false,
+		)
+
+		rule.setContent {
+			val positionWidth = positionColumnWidth(1, ExplorerRowVariant.Browse)
+			Column {
+				Item(row("shown"), {}, {}, Modifier.testTag("shown"), descVisible = false, positionWidth = positionWidth)
+				Item(
+					row("hidden"), {}, {}, Modifier.testTag("hidden"),
+					descVisible = false,
+					iconVisible = false,
+					positionWidth = positionWidth,
+				)
+			}
+		}
+
+		fun bandPx(tag: String): Int {
+			val pixels = rule.onNodeWithTag(tag).captureToImage().toPixelMap()
+			val tint = pixels[0, 2]
+			return (0 until pixels.width).takeWhile { pixels[it, 2] == tint }.size
+		}
+		fun textLeft(name: String) =
+			rule.onNodeWithText(name, useUnmergedTree = true).getUnclippedBoundsInRoot().left
+
+		val iconPx = with(rule.density) { IconSize.roundToPx() }
+		assertEquals(bandPx("shown") - iconPx, bandPx("hidden"))
+		assertEquals(IconSize, textLeft("shown") - textLeft("hidden"))
 	}
 }

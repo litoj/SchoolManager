@@ -175,8 +175,16 @@
     <string name="help_test">Tests</string>
     <string name="help_test_how">The test asks for the words of the picked sources.</string>
     <string name="help_test_results">Test results</string>
-    <string name="help_test_results_how">A window shows the success rate and one row per item.
-        \nEach row shows the word with its translations and its success rate, your answer below colored by the outcome.</string>
+    <string name="help_test_results_how">The report opens when you press \'Done\' or the time runs out.
+        \nThe title shows the score of this test.
+        \nEvery row is one tested word.
+        \nThe large text is what the test asked: the translations, or the word in the reversed test.
+        \nBelow it are the correct answer and yours, green when right, red when wrong.
+        \nThe number on the left counts how often the word was tested.
+        \nThe colour band runs from red to green with its overall success.
+        \nThe right end shows passed over tested.
+        \nAll counts already include this test.
+        \n\'Retake\' runs a new test on the same sources.</string>
     <string name="help_test_run">Test progress</string>
     <string name="help_test_run_how">\'Start\' needs at least one source.
         \nEach word is asked at most once, in a shuffled order.
@@ -269,7 +277,6 @@
     <string name="sort_sf_10">success ▲</string>
     <string name="sort_priority">priority</string>
     <string name="start">Start</string>
-    <string name="success_rate">"Success rate: %1$d%% — %2$d/%3$d"</string>
     <string name="test_abort">QUIT</string>
     <string name="test_abort_question">Abort this test? Your answers are dropped and the statistics stay unchanged.</string>
     <string name="test_add">Add source</string>
@@ -300,8 +307,10 @@
         <item quantity="one">%1$d of %2$d answered</item>
         <item quantity="other">%1$d of %2$d answered</item>
     </plurals>
-    <string name="test_you">you: %1$s</string>
-    <string name="test_expected">expected: %1$s</string>
+    <string name="test_correct">Correct: %1$s</string>
+    <string name="test_no_answer">(no answer)</string>
+    <string name="test_your_answer">Your answer: %1$s</string>
+    <string name="test_score">"Score: %1$d/%2$d (%3$d%%)"</string>
     <string name="time_left">%1$ds</string>
     <string name="time_up">Time\'s up</string>
 </resources>
