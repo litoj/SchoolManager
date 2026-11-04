@@ -50,8 +50,10 @@ private class Action(
 /**
  * The bottom-strip selection actions of one list kind.
  * - the slots come from the settings order, a search list substitutes its connected Go-to.
- * - edit and go-to act on one row, so a wider selection keeps them disabled.
+ * - edit and go-to act on one row, so a wider selection mutes them with a reason.
  * - export opens its word and JSON chooser right on the strip.
+ *
+ * @param exportBlockedReason the reason of an empty writable selection, 0 when it can export
  */
 @Composable
 fun SelectionActionBar(
@@ -61,12 +63,23 @@ fun SelectionActionBar(
 	exportEntries: List<MenuEntry>,
 	onExport: (Int) -> Unit,
 	modifier: Modifier = Modifier,
+	exportBlockedReason: Int = 0,
 ) {
 	ActionStrip(modifier) {
 		for (action in actions) {
-			val enabled = action != SelectionAction.EDIT && action != SelectionAction.GOTO || singleSelected
-			if (action == SelectionAction.EXPORT) ExportStripButton(action, enabled, exportEntries, onExport)
-			else ActionButton(Action(action.icon, action.label) { onAction(action) }, enabled, Modifier.weight(1f))
+			val blockedReason = when (action) {
+				SelectionAction.EDIT, SelectionAction.GOTO ->
+					if (singleSelected) 0 else R.string.unavailable_single_row
+				SelectionAction.EXPORT -> exportBlockedReason
+				else -> 0
+			}
+			if (action == SelectionAction.EXPORT)
+				ExportStripButton(action, blockedReason, exportEntries, onExport)
+			else ActionButton(
+				Action(action.icon, action.label) { onAction(action) },
+				blockedReason,
+				Modifier.weight(1f),
+			)
 		}
 	}
 }
@@ -75,14 +88,14 @@ fun SelectionActionBar(
 @Composable
 private fun RowScope.ExportStripButton(
 	action: SelectionAction,
-	enabled: Boolean,
+	blockedReason: Int,
 	entries: List<MenuEntry>,
 	onExport: (Int) -> Unit,
 ) {
 	var open by remember { mutableStateOf(false) }
 	// the box holds the strip share of the slot, since the button loses the row scope
 	Box(Modifier.weight(1f).fillMaxHeight()) {
-		ActionButton(Action(action.icon, action.label) { open = true }, enabled)
+		ActionButton(Action(action.icon, action.label) { open = true }, blockedReason)
 		if (open) MoreMenu(entries, { open = false; onExport(it) }) { open = false }
 	}
 }
@@ -100,12 +113,12 @@ fun PasteActionBar(
 	ActionStrip(modifier) {
 		ActionButton(
 			Action(R.drawable.ic_cancel, R.string.objects_cancel, onCancel),
-			true,
+			0,
 			Modifier.weight(1f),
 		)
 		ActionButton(
 			Action(R.drawable.ic_paste, R.string.paste, onPaste),
-			true,
+			0,
 			Modifier.weight(1f),
 		)
 	}
@@ -121,12 +134,12 @@ fun PickerActionBar(
 	ActionStrip(modifier) {
 		ActionButton(
 			Action(R.drawable.ic_cancel, R.string.objects_cancel, onCancel),
-			true,
+			0,
 			Modifier.weight(1f),
 		)
 		ActionButton(
 			Action(R.drawable.ic_check, R.string.select, onSelect),
-			true,
+			0,
 			Modifier.weight(1f),
 		)
 	}
@@ -146,18 +159,20 @@ fun ImportActionBar(
 		if (imported) {
 			ActionButton(
 				Action(R.drawable.ic_check, R.string.done, onDone),
-				true,
+				0,
 				Modifier.weight(1f),
 			)
 		} else {
+			// a busy mover keeps both buttons in place, so cancel and import explain their wait
+			val blockedReason = if (busy) R.string.unavailable_import_busy else 0
 			ActionButton(
 				Action(R.drawable.ic_cancel, R.string.objects_cancel, onCancel),
-				!busy,
+				blockedReason,
 				Modifier.weight(1f),
 			)
 			ActionButton(
 				Action(R.drawable.ic_import_black, R.string.import_here, onImport),
-				!busy,
+				blockedReason,
 				Modifier.weight(1f),
 			)
 		}
@@ -181,13 +196,18 @@ private fun ActionStrip(
 	)
 }
 
-/** One icon-over-label button. A false enabled dims the icon and label, and disables the click. */
+/** One icon-over-label button. A non-zero blocked reason mutes it and explains the tap. */
 @Composable
-private fun ActionButton(action: Action, enabled: Boolean, modifier: Modifier = Modifier) {
+private fun ActionButton(
+	action: Action,
+	blockedReason: Int,
+	modifier: Modifier = Modifier,
+) {
+	val enabled = blockedReason == 0
 	Column(
 		modifier
 			.fillMaxHeight()
-			.clickable(enabled = enabled, onClick = action.onClick),
+			.clickable { if (enabled) action.onClick() else reportUnavailable(blockedReason) },
 		horizontalAlignment = Alignment.CenterHorizontally,
 		verticalArrangement = Arrangement.Center,
 	) {

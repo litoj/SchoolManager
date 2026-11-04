@@ -37,7 +37,11 @@ import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
  * - the sibling swipe sits over all of it.
  */
 @Composable
-internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifier = Modifier) {
+internal fun SubjectsContent(
+	viewModel: MainExplorerViewModel,
+	exportBlockedReason: Int,
+	modifier: Modifier = Modifier,
+) {
 	val state by viewModel.state.collectAsStateWithLifecycle()
 	val listState by viewModel.listState.collectAsStateWithLifecycle()
 	// a horizontal swipe switches to the sibling.
@@ -111,6 +115,7 @@ internal fun SubjectsContent(viewModel: MainExplorerViewModel, modifier: Modifie
 						onAction = viewModel::onSelectionAction,
 						exportEntries = exportMenu,
 						onExport = viewModel::onMenuItemClick,
+						exportBlockedReason = exportBlockedReason,
 					)
 				}
 				else -> {}

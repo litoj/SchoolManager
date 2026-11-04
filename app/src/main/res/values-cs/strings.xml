@@ -310,4 +310,10 @@
     <string name="test_score">"Skóre: %1$d/%2$d (%3$d%%)"</string>
     <string name="time_left">%1$ds</string>
     <string name="time_up">Čas vypršel</string>
+    <string name="unavailable_add_source_full">Celý předmět už je zdrojem.</string>
+    <string name="unavailable_export_empty">Překlady nelze exportovat.</string>
+    <string name="unavailable_import_busy">Import právě probíhá.</string>
+    <string name="unavailable_search_move">Nejprve dokončete nebo zrušte přesun.</string>
+    <string name="unavailable_search_root">Hledání vyžaduje otevřený předmět.</string>
+    <string name="unavailable_single_row">Vyberte právě jeden řádek.</string>
 </resources>

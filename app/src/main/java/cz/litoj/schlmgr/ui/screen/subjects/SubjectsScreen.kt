@@ -66,7 +66,15 @@ fun SubjectsScreen(
 	// the mode decides the chrome, see [SearchUi].
 	// the field stays through the results, since the query marks what the list shows
 	val fieldOpen = state.searchUi != SearchUi.OFF
-	val searchVisible = state.breadcrumbs.isNotEmpty() && !viewModel.pasteArmed && !fieldOpen
+	// a blocked search keeps its button, so the reason shows instead of the place vanishing
+	val searchBlockedReason = when {
+		viewModel.pasteArmed -> R.string.unavailable_search_move
+		state.breadcrumbs.isEmpty() -> R.string.unavailable_search_root
+		else -> 0
+	}
+	// translations alone have no export line, so the export stays and explains
+	val exportBlockedReason =
+		if (viewModel.exportRows().isEmpty()) R.string.unavailable_export_empty else 0
 	val menuKind = menuKindFor(listState.variant == ExplorerRowVariant.Search, state.breadcrumbs.size)
 
 	// the pickers for the import and export requests.
@@ -188,21 +196,23 @@ fun SubjectsScreen(
 			else TopBarTitle(title)
 			TopBarIconButton(
 				icon = if (selecting) R.drawable.ic_check_all else R.drawable.ic_search,
-				visible = selectAllButtonVisible(selecting, searchVisible),
+				visible = !fieldOpen,
+				enabled = selecting || searchBlockedReason == 0,
+				blockedReason = if (selecting) 0 else searchBlockedReason,
 			) {
 				if (selecting) viewModel.onSelectAllToggle() else viewModel.openSearchField()
 			}
 			TopBarMoreButton(
 				// the menu reads the config per build, so a settings change reaches the next open
-				subjectsMenu(menuKind, selecting, listState.singleSelected, ActionConfig.load()),
+				subjectsMenu(
+					menuKind, selecting, listState.singleSelected, ActionConfig.load(),
+					exportBlockedReason,
+				),
 			) { itemId ->
 				viewModel.onMenuItemClick(itemId)
 			}
 		}
-		SubjectsContent(viewModel, Modifier.weight(1f).headerShadow())
+		SubjectsContent(viewModel, exportBlockedReason, Modifier.weight(1f).headerShadow())
 	}
 }
-
-internal fun selectAllButtonVisible(selecting: Boolean, searchVisible: Boolean): Boolean =
-	selecting || searchVisible
 

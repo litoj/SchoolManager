@@ -196,7 +196,7 @@ object TestSetupState {
 
 	fun hasSources() = _list.isNotEmpty()
 
-	/** Whether the whole hierarchy is picked, which hides the add-source tile. */
+	/** Whether the whole hierarchy is picked, which mutes the add-source tile. */
 	fun hierarchyPicked() = _list.any { it.size == 1 }
 
 	/**

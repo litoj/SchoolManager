@@ -63,7 +63,9 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 			else TopBarTitle(title)
 			TopBarIconButton(
 				icon = R.drawable.ic_search,
-				visible = searchVisible && !fieldOpen,
+				visible = !fieldOpen,
+				enabled = searchVisible,
+				blockedReason = if (searchVisible) 0 else R.string.unavailable_search_root,
 				onClick = viewModel::openSearchField,
 			)
 			TopBarIconButton(

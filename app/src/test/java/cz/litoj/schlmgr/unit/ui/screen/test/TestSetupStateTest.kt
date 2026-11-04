@@ -241,7 +241,7 @@ class TestSetupStateTest {
 	}
 
 	@Test
-	fun `hierarchyPicked hides the add tile once a whole subject is picked`() {
+	fun `hierarchyPicked reports a whole subject source`() {
 		assertFalse(TestSetupState.hierarchyPicked())
 		val subject = item(1, "subject")
 		TestSetupState.addPicked(listOf(TestSetupState.seedOf(ItemRow.ofSearchHit(subject, emptyList(), 1, emptyList()))))

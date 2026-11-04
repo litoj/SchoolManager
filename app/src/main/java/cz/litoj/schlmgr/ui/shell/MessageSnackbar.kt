@@ -87,6 +87,8 @@ private fun noticeMessage(ctx: Context, notice: UiNotice): Triple<String, String
 			ctx.getString(R.string.pattern_err, notice.detail).let { Triple(it, it, null) }
 		is UiNotice.FlipBlankName ->
 			ctx.getString(R.string.flip_conflicts_blank).let { Triple(it, it, null) }
+		is UiNotice.ActionUnavailable ->
+			ctx.getString(notice.reason).let { Triple(it, it, null) }
 		is UiNotice.OneSubjectOnly -> {
 			// the named form tells the user which subject to return to
 			val text = if (notice.subject != null)

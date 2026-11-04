@@ -319,4 +319,10 @@
     <string name="test_score">"Score: %1$d/%2$d (%3$d%%)"</string>
     <string name="time_left">%1$ds</string>
     <string name="time_up">Time\'s up</string>
+    <string name="unavailable_add_source_full">The whole subject is already a source.</string>
+    <string name="unavailable_export_empty">Translations cannot be exported.</string>
+    <string name="unavailable_import_busy">The import is running.</string>
+    <string name="unavailable_search_move">Finish or cancel the move first.</string>
+    <string name="unavailable_search_root">Search needs an open subject.</string>
+    <string name="unavailable_single_row">Select exactly one row.</string>
 </resources>

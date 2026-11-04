@@ -1,9 +1,9 @@
 package cz.litoj.schlmgr.unit.ui.screen.subjects
 
+import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
 import cz.litoj.schlmgr.ui.screen.subjects.MenuId
 import cz.litoj.schlmgr.ui.screen.subjects.menuKindFor
-import cz.litoj.schlmgr.ui.screen.subjects.selectAllButtonVisible
 import cz.litoj.schlmgr.ui.screen.subjects.subjectsMenu
 import cz.litoj.schlmgr.ui.viewmodel.ActionConfig
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction
@@ -122,12 +122,30 @@ class SubjectsMenuTest {
 		)
 		for (single in listOf(false, true)) {
 			val selecting = menu(MainExplorerViewModel.MenuKind.CONTAINER, selecting = true, singleSelected = single, config = custom)
-			assertEquals("edit follows the single selection", single,
-				selecting.single { it.id == MenuId.EDIT }.enabled)
+			val edit = selecting.single { it.id == MenuId.EDIT }
+			assertEquals("edit follows the single selection", single, edit.enabled)
+			if (!single) assertEquals("the blocked edit states its reason",
+				R.string.unavailable_single_row, edit.blockedReason)
 		}
 		val searching = menu(MainExplorerViewModel.MenuKind.SEARCH, selecting = true, singleSelected = false, config = custom)
-		assertFalse("goto follows the single selection",
-			searching.single { it.id == MenuId.GOTO }.enabled)
+		val goto = searching.single { it.id == MenuId.GOTO }
+		assertFalse("goto follows the single selection", goto.enabled)
+		assertEquals("the blocked goto states its reason",
+			R.string.unavailable_single_row, goto.blockedReason)
+	}
+
+	@Test
+	fun `an empty writable selection mutes the export with its reason`() {
+		for (kind in MainExplorerViewModel.MenuKind.entries) {
+			val selecting = subjectsMenu(
+				kind, selecting = true, singleSelected = true, config = config,
+				exportBlockedReason = R.string.unavailable_export_empty,
+			)
+			val export = selecting.single { it.selectionAction && it.children.isNotEmpty() }
+			assertFalse("$kind mutes the export", export.enabled)
+			assertEquals("$kind states why the export cannot run",
+				R.string.unavailable_export_empty, export.blockedReason)
+		}
 	}
 
 	@Test
@@ -180,13 +198,4 @@ class SubjectsMenuTest {
 		assertEquals(MainExplorerViewModel.MenuKind.CONTAINER, menuKindFor(searching = false, pathSize = 2))
 	}
 
-	@Test
-	fun `the select-all button shows wherever the search button does, and always in selection mode`() {
-		// on the subjects screen the search button stays hidden, but a selection
-		// still gets its select-all
-		assertTrue(selectAllButtonVisible(selecting = true, searchVisible = false))
-		assertTrue(selectAllButtonVisible(selecting = true, searchVisible = true))
-		assertTrue(selectAllButtonVisible(selecting = false, searchVisible = true))
-		assertFalse(selectAllButtonVisible(selecting = false, searchVisible = false))
-	}
 }

@@ -135,6 +135,12 @@ Its DB part is the model for this project.
 - There are no disabled variants.
 - The yellow success band uses alpha 40 at the ends and 80 at an equal score.
 
+### Actions
+
+- An unavailable action keeps its place and mutes.
+- A tap explains the reason in a notice.
+- Only a mode takeover may replace a control, never unavailability alone.
+
 ### FAB and list
 
 - A sideways FAB move does not climb.
@@ -206,6 +212,9 @@ Its DB part is the model for this project.
 - No active task.
 - Open items live in `DEVELOPMENT.md`.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
+- 2026-11-04: unavailable actions keep their place muted and name their
+  reason on tap. The test setup, selection strip, menu, export, search and
+  busy import follow it. Mode takeovers stay hidden. 750 tests.
 - 2026-11-03: preparing a test finishes the selection like every action, a
   refused preparation keeps it. 710 tests.
 - 2026-11-03: the selection strip actions became configurable with the

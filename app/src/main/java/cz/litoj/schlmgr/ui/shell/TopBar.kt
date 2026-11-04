@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.component.IconSize
+import cz.litoj.schlmgr.ui.component.reportUnavailable
 
 /**
  * The chrome of the top bar: the status strip above the 55dp row on the header colour.
@@ -67,21 +68,28 @@ fun TopBar(content: @Composable RowScope.() -> Unit) {
 
 /**
  * The navigation slot: [up] shows the up arrow instead of the drawer hamburger.
+ * - a false [enabled] keeps the arrow and explains its [blockedReason] on a tap.
  */
 @Composable
-fun RowScope.TopBarNav(up: Boolean = false, onNavigate: () -> Unit) {
+fun RowScope.TopBarNav(
+	up: Boolean = false,
+	onNavigate: () -> Unit,
+	enabled: Boolean = true,
+	blockedReason: Int = 0,
+) {
+	val tint = colorResource(R.color.colorOnHeader).let { if (enabled) it else it.copy(alpha = 0.5f) }
 	Box(
 		Modifier
 			.testTag("top_bar_nav")
 			.width(60.dp)
 			.fillMaxHeight()
-			.clickable(onClick = onNavigate),
+			.clickable { if (enabled) onNavigate() else reportUnavailable(blockedReason) },
 		contentAlignment = Alignment.Center,
 	) {
 		Icon(
 			if (up) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Menu,
 			contentDescription = null,
-			tint = colorResource(R.color.colorOnHeader),
+			tint = tint,
 		)
 	}
 }
@@ -99,26 +107,30 @@ fun RowScope.TopBarTitle(title: String) {
 /**
  * A 50dp bar button, where a false [visible] leaves the slot out.
  * - the search button hides while the search field takes the place of the title.
+ * - a false [enabled] mutes the icon and explains its [blockedReason] on a tap.
  */
 @Composable
 fun RowScope.TopBarIconButton(
 	@DrawableRes icon: Int,
 	visible: Boolean = true,
+	enabled: Boolean = true,
+	blockedReason: Int = 0,
 	onClick: () -> Unit,
 ) {
 	if (!visible) return
+	val tint = colorResource(R.color.colorOnHeader).let { if (enabled) it else it.copy(alpha = 0.5f) }
 	Box(
 		Modifier
 			.width(50.dp)
 			.fillMaxHeight()
-			.clickable(onClick = onClick),
+			.clickable { if (enabled) onClick() else reportUnavailable(blockedReason) },
 		contentAlignment = Alignment.Center,
 	) {
 		Image(
 			painter = painterResource(icon),
 			contentDescription = null,
 			modifier = Modifier.size(IconSize),
-			colorFilter = ColorFilter.tint(colorResource(R.color.colorOnHeader)),
+			colorFilter = ColorFilter.tint(tint),
 		)
 	}
 }

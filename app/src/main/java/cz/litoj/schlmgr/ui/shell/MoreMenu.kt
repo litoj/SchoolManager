@@ -1,9 +1,11 @@
 package cz.litoj.schlmgr.ui.shell
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.DropdownMenu
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
+import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.lightColors
@@ -22,13 +24,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.ui.component.reportUnavailable
 
 /**
  * @property icon the leading icon of the row, where 0 renders none
  * @property children a non-empty list opens a second menu level
  * @property selectionAction acts on selected rows, keeping the resource order
  * @property always stays in both menu forms, as the export rows do
- * @property enabled false keeps the place but mutes the row and ignores taps
+ * @property blockedReason the reason a muted row shows on a tap, 0 for an enabled row
  */
 data class MenuEntry(
 	val id: Int,
@@ -37,8 +40,10 @@ data class MenuEntry(
 	val children: List<MenuEntry> = emptyList(),
 	val selectionAction: Boolean = false,
 	val always: Boolean = false,
-	val enabled: Boolean = true,
-)
+	@StringRes val blockedReason: Int = 0,
+) {
+	val enabled: Boolean get() = blockedReason == 0
+}
 
 /**
  * The more-options dropdown: flat rows and one-level submenus, one visible level.
@@ -79,14 +84,14 @@ fun MoreMenu(entries: List<MenuEntry>, onPick: (Int) -> Unit, onDismiss: () -> U
 
 @Composable
 private fun MenuLeaf(entry: MenuEntry, onClick: () -> Unit) {
-	DropdownMenuItem(onClick = onClick, enabled = entry.enabled) {
+	DropdownMenuItem(
+		onClick = { if (entry.enabled) onClick() else reportUnavailable(entry.blockedReason) },
+		enabled = true,
+	) {
 		MenuIcon(entry)
 		Text(
 			stringResource(entry.label),
-			// the disabled alpha matches the muted text of Material.
-			// the menu carries no per-row theme, so the leaf picks the colour itself
-			color = if (entry.enabled) Color.Unspecified
-			else MaterialTheme.colors.onSurface.copy(alpha = 0.38f),
+			color = entryColor(entry),
 			modifier = Modifier.padding(start = entry.iconSpacing()),
 		)
 	}
@@ -94,23 +99,39 @@ private fun MenuLeaf(entry: MenuEntry, onClick: () -> Unit) {
 
 @Composable
 private fun MenuParentRow(entry: MenuEntry, onClick: () -> Unit) {
-	DropdownMenuItem(onClick = onClick) {
+	DropdownMenuItem(
+		onClick = {
+			if (entry.enabled) onClick() else reportUnavailable(entry.blockedReason)
+		},
+	) {
 		MenuIcon(entry)
 		Text(
 			stringResource(entry.label),
+			color = entryColor(entry),
 			modifier = Modifier.padding(start = entry.iconSpacing()),
 		)
 		Icon(
 			Icons.AutoMirrored.Filled.KeyboardArrowRight,
 			contentDescription = null,
+			tint = entryColor(entry),
 			modifier = Modifier.padding(start = 12.dp),
 		)
 	}
 }
 
+/** The disabled alpha matches the muted text of Material. */
+@Composable
+private fun entryColor(entry: MenuEntry): Color =
+	if (entry.enabled) LocalContentColor.current
+	else LocalContentColor.current.copy(alpha = 0.38f)
+
 @Composable
 private fun MenuIcon(entry: MenuEntry) {
-	if (entry.icon != 0) Icon(painterResource(entry.icon), contentDescription = null)
+	if (entry.icon != 0) Icon(
+		painterResource(entry.icon),
+		contentDescription = null,
+		tint = entryColor(entry),
+	)
 }
 
 private fun MenuEntry.iconSpacing() = if (icon != 0) 12.dp else 0.dp

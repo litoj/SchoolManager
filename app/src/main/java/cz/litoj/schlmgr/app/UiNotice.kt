@@ -1,5 +1,7 @@
 package cz.litoj.schlmgr.app
 
+import androidx.annotation.StringRes
+
 /**
  * A user notice by meaning, and the shell picks every string at display time.
  */
@@ -35,4 +37,7 @@ sealed interface UiNotice {
 	 * - null when the refused pick was first.
 	 */
 	data class OneSubjectOnly(val subject: String?) : UiNotice
+
+	/** An action was refused, and [reason] is its display string. */
+	data class ActionUnavailable(@StringRes val reason: Int) : UiNotice
 }

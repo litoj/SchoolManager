@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
@@ -50,6 +51,7 @@ import cz.litoj.schlmgr.ui.component.iconRes
 import cz.litoj.schlmgr.ui.component.SettingChoiceRow
 import cz.litoj.schlmgr.ui.component.SettingNumberRow
 import cz.litoj.schlmgr.ui.component.DefaultTextColor
+import cz.litoj.schlmgr.ui.component.reportUnavailable
 import cz.litoj.schlmgr.ui.shell.TopBar
 import cz.litoj.schlmgr.ui.shell.TopBarNav
 import cz.litoj.schlmgr.ui.shell.TopBarTitle
@@ -136,31 +138,31 @@ private fun TestSetupContent(viewModel: TestSetupViewModel, modifier: Modifier =
 			// so a background-thread change from the picker dedup recomposes this directly
 			LazyColumn(Modifier.weight(1f)) {
 				// the add action leads the list, so sources grow without scrolling.
-				// a fully picked hierarchy hides it, since nothing is left to add
-				if (!viewModel.hierarchyPicked()) item { AddSourceTile(viewModel::openPicker) }
+				// a fully picked hierarchy keeps it, muted, since nothing is left to add
+				item {
+					AddSourceTile(
+						blockedReason = if (viewModel.hierarchyPicked())
+							R.string.unavailable_add_source_full else 0,
+						onAdd = viewModel::openPicker,
+					)
+				}
 				// the chains are dedup-distinct, so each list is its own collision-free key
 				items(TestSetupState.list, key = { it }) { chain ->
 					SourceRow(chain.toSourceRowUi()) { viewModel.removeSource(chain) }
 				}
 			}
 		}
-		if (!TestSetupState.hasSources()) {
-			Text(
-				stringResource(R.string.test_start_blocked),
-				Modifier
-					.align(Alignment.BottomCenter)
-					.padding(bottom = 50.dp),
-				style = TextStyle(fontSize = 13.sp, color = DefaultTextColor),
-			)
-		}
+		val hasSources = TestSetupState.hasSources()
 		Button(
-			onClick = viewModel::startTest,
-			enabled = TestSetupState.hasSources(),
+			onClick = {
+				if (hasSources) viewModel.startTest()
+				else reportUnavailable(R.string.test_start_blocked)
+			},
 			colors = ButtonDefaults.buttonColors(
-				backgroundColor = colorResource(R.color.colorPrimaryHeader),
-				contentColor = colorResource(R.color.colorOnHeader),
-				disabledBackgroundColor = colorResource(R.color.colorPrimaryHeader).copy(alpha = 0.4f),
-				disabledContentColor = colorResource(R.color.colorOnHeader).copy(alpha = 0.6f),
+				backgroundColor = colorResource(R.color.colorPrimaryHeader)
+					.let { if (hasSources) it else it.copy(alpha = 0.4f) },
+				contentColor = colorResource(R.color.colorOnHeader)
+					.let { if (hasSources) it else it.copy(alpha = 0.6f) },
 			),
 			modifier = Modifier
 				.align(Alignment.BottomCenter)
@@ -235,11 +237,14 @@ private fun SourceRow(row: SourceRowUi, onRemove: () -> Unit) {
 /**
  * The add action leading the sources list: a full-width tile with a dashed outline.
  * - it holds a centered label, since it is an action rather than a config row.
+ * - a fully picked hierarchy mutes it and explains the tap.
  */
 @Composable
-private fun AddSourceTile(onAdd: () -> Unit) {
+private fun AddSourceTile(blockedReason: Int, onAdd: () -> Unit) {
+	val enabled = blockedReason == 0
 	val density = LocalDensity.current
-	val border = colorResource(R.color.colorPrimaryFg).copy(alpha = 0.5f)
+	val border = colorResource(R.color.colorPrimaryFg).copy(alpha = if (enabled) 0.5f else 0.25f)
+	val content = DefaultTextColor.let { if (enabled) it else it.copy(alpha = 0.5f) }
 	val corner = with(density) { 8.dp.toPx() }
 	// keyed on density, since its instance changes with configuration.
 	// the dash lengths must re-scale with it
@@ -258,7 +263,7 @@ private fun AddSourceTile(onAdd: () -> Unit) {
 			.drawBehind {
 				drawRoundRect(color = border, style = stroke, cornerRadius = CornerRadius(corner))
 			}
-			.clickable(onClick = onAdd)
+			.clickable { if (enabled) onAdd() else reportUnavailable(blockedReason) }
 			.padding(6.dp),
 		verticalAlignment = Alignment.CenterVertically,
 		horizontalArrangement = Arrangement.Center,
@@ -267,11 +272,12 @@ private fun AddSourceTile(onAdd: () -> Unit) {
 			painter = painterResource(R.drawable.ic_add),
 			contentDescription = null,
 			modifier = Modifier.size(IconSize),
+			colorFilter = if (enabled) null else ColorFilter.tint(content),
 		)
 		Spacer(Modifier.width(5.dp))
 		Text(
 			stringResource(R.string.test_add),
-			style = TextStyle(fontSize = 18.sp, color = DefaultTextColor),
+			style = TextStyle(fontSize = 18.sp, color = content),
 		)
 	}
 }

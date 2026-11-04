@@ -85,7 +85,12 @@ fun ImportTargetScreen(
 	Box(Modifier.fillMaxSize().navigationBarsPadding()) {
 		Column(Modifier.fillMaxSize()) {
 			TopBar {
-				TopBarNav(up = true, onNavigate = leave)
+				TopBarNav(
+					up = true,
+					onNavigate = leave,
+					enabled = !target.busy,
+					blockedReason = R.string.unavailable_import_busy,
+				)
 				TopBarTitle(stringResource(R.string.import_file_title, target.fileName))
 			}
 			ExplorerScaffold(

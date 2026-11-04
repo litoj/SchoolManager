@@ -20,16 +20,20 @@ fun menuKindFor(searching: Boolean, pathSize: Int): MainExplorerViewModel.MenuKi
 /**
  * The more menu of one list kind.
  * - the selection actions come from the config overflow, in the picked order.
- * - edit and go-to act on one row, so a wider selection keeps them disabled.
+ * - edit and go-to act on one row, so a wider selection mutes them with a reason.
+ * - an export of translations only stays in place with its reason.
+ *
+ * @param exportBlockedReason the reason of an empty writable selection, 0 when it can export
  */
 fun subjectsMenu(
 	kind: MainExplorerViewModel.MenuKind,
 	selecting: Boolean,
 	singleSelected: Boolean,
 	config: ActionConfig,
+	exportBlockedReason: Int = 0,
 ): List<MenuEntry> {
 	val search = kind == MainExplorerViewModel.MenuKind.SEARCH
-	val actions = config.overflow(search).map { it.menuEntry(singleSelected) }
+	val actions = config.overflow(search).map { it.menuEntry(singleSelected, exportBlockedReason) }
 	val menu = if (search) searchStatic + actions else browseStatic + actions
 	return menu.filter { it.always || it.selectionAction == selecting }
 }
@@ -63,18 +67,23 @@ private val searchStatic = listOf(
 )
 
 /** One overflowed action as a menu row. */
-private fun SelectionAction.menuEntry(singleSelected: Boolean): MenuEntry =
+private fun SelectionAction.menuEntry(
+	singleSelected: Boolean,
+	exportBlockedReason: Int,
+): MenuEntry =
 	if (this == SelectionAction.EXPORT) MenuEntry(
-		0, R.string.more_export, icon = R.drawable.ic_export_black, children = exportMenu, selectionAction = true,
+		0, R.string.more_export, icon = R.drawable.ic_export_black, children = exportMenu,
+		selectionAction = true, blockedReason = exportBlockedReason,
 	)
 	else MenuEntry(
 		menuIdOf(this),
 		label,
 		icon = icon,
 		selectionAction = true,
-		enabled = when (this) {
-			SelectionAction.EDIT, SelectionAction.GOTO -> singleSelected
-			else -> true
+		blockedReason = when (this) {
+			SelectionAction.EDIT, SelectionAction.GOTO ->
+				if (singleSelected) 0 else R.string.unavailable_single_row
+			else -> 0
 		},
 	)
 
