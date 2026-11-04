@@ -289,7 +289,7 @@
         <item quantity="one">%d slovíčko</item>
         <item quantity="few">%d slovíčka</item>
         <item quantity="many">%d slovíček</item>
-        <item quantity="other">%d slovíčka</item>
+        <item quantity="other">%d slovíček</item>
     </plurals>
     <string name="test_retake">Znovu</string>
     <plurals name="test_answered">
