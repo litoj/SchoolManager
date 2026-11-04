@@ -164,8 +164,8 @@
     <string name="help_test_run_how">\'Začít\' potřebuje aspoň jeden zdroj.
         \nKaždé slovíčko se ptá nejvýše jednou, v zamíchaném pořadí.
         \nOdpočet posledních 30 sekund bliká červeně.
-        \n\'Hotovo\' odešle odpovědi, vypršený čas je odešle také.
-        \nDvojitým stiskem tlačítka zpět běh ukončíte bez hodnocení.</string>
+        \n\'Hotovo\' odešle odpovědi a při chybějících se nejprve zeptá, vypršený čas je odešle také.
+        \n\'UKONČIT\' nebo tlačítko zpět po potvrzení ukončí běh bez hodnocení.</string>
     <string name="help_test_select">Výběr položek do testu</string>
     <string name="help_test_select_how">Dlaždice \'Přidat zdroj\' otevře prohlížeč, který funguje jako průzkumník.
         \n\'Zvolit\' na liště přidá vybrané řádky.
@@ -253,6 +253,8 @@
     <string name="sort_priority">priorita</string>
     <string name="start">Začít</string>
     <string name="success_rate">"Úspěšnost: %1$d%% — %2$d/%3$d"</string>
+    <string name="test_abort">UKONČIT</string>
+    <string name="test_abort_question">Zrušit tento test? Odpovědi se zahodí a statistiky zůstanou beze změny.</string>
     <string name="test_add">Přidat zdroj</string>
     <string name="test_direction">Testovaná strana</string>
     <string name="test_dir_normal">Slovíčko</string>
@@ -283,7 +285,6 @@
         <item quantity="many">%1$d z %2$d vyplněno</item>
         <item quantity="other">%1$d z %2$d vyplněno</item>
     </plurals>
-    <string name="test_exit_confirm">Ukončit test?</string>
     <string name="test_you">vy: %1$s</string>
     <string name="test_expected">správně: %1$s</string>
     <string name="time_left">%1$ds</string>

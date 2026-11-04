@@ -9,6 +9,8 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.setValue
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestItemModel
+import cz.litoj.schlmgr.ui.popup.ContinuePopup
+import cz.litoj.schlmgr.ui.popup.Dialogs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -17,7 +19,7 @@ import kotlinx.coroutines.launch
  * Process-wide state of one running test.
  * - it holds the engine, the item models, the typed answers and the grading.
  * - written only through the doors of this object.
- * - a rotation re-attaches to the same run, and the double-back exit resets it.
+ * - a rotation re-attaches to the same run, and a confirmed exit resets it.
  * - the io halves run on the scope of the host screen, so a landing after its death drops.
  * - so a run never outlives the screen that would show it.
  */
@@ -37,6 +39,9 @@ object TestRunState {
 
 		/** The grading landed, so the screen shows the results and leaves. */
 		fun onResults(items: List<TestItemModel>, ratio: Float)
+
+		/** The user dropped the run, so the screen leaves with no results. */
+		fun onAborted()
 	}
 
 	// the timer thread reads it, so the flag must be visible across threads
@@ -65,6 +70,44 @@ object TestRunState {
 
 	fun setAnswer(index: Int, text: String) {
 		_answers[index] = text
+	}
+
+	/** The living screen, which a rotation replaces while the question stays on the stack. */
+	private var host: Host? = null
+
+	private var question: ContinuePopup? = null
+
+	fun attach(host: Host) {
+		this.host = host
+	}
+
+	/**
+	 * Asks before [action] runs, which then gets the screen alive at the answer.
+	 * - the end of the run closes the question, since nothing is left to act on.
+	 */
+	fun confirm(message: String, action: (Host) -> Unit) {
+		closeQuestion()
+		question = ContinuePopup(message) {
+			question = null
+			host?.let(action)
+		}
+	}
+
+	private fun closeQuestion() {
+		question?.let(Dialogs::dismiss)
+		question = null
+	}
+
+	/**
+	 * Asks before dropping the run ungraded, so no counter moves.
+	 * - a run under grading is gone from here, its counters are already moving.
+	 */
+	fun abort(message: String) {
+		if (!hasRun()) return
+		confirm(message) { host ->
+			reset()
+			host.onAborted()
+		}
 	}
 
 	/** The walk of the run that is starting, null once it lands. */
@@ -135,6 +178,7 @@ object TestRunState {
 
 	/** The per-item checks and stat re-reads run off the main thread. */
 	fun submit(host: Host) {
+		closeQuestion()
 		val current = test ?: return
 		// the run is over for the engine.
 		// so a second submit or a late timer tick finds nothing to grade
@@ -180,6 +224,8 @@ object TestRunState {
 	 * - until then it still holds a callback of a dead screen.
 	 */
 	fun reset() {
+		closeQuestion()
+		host = null
 		test?.stopTest()
 		test = null
 		// a walk still in flight lands into nothing, an exited screen left it behind

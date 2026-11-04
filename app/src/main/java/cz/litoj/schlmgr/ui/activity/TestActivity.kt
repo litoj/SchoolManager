@@ -58,7 +58,6 @@ import cz.litoj.schlmgr.ui.component.WideTextField
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestItemModel
-import cz.litoj.schlmgr.ui.popup.ContinuePopup
 import cz.litoj.schlmgr.ui.popup.DialogHost
 import cz.litoj.schlmgr.ui.popup.TestResultsPopup
 import cz.litoj.schlmgr.ui.screen.test.TestRunState
@@ -68,7 +67,7 @@ import cz.litoj.schlmgr.ui.shell.messageSnackbarHost
 /**
  * - a countdown header, the words to answer and the Done button.
  * - a plain Compose [ComponentActivity] rendering [TestRunState].
- * - the run state is process-wide, so a rotation re-attaches and the double-back exit resets.
+ * - the run state is process-wide, so a rotation re-attaches and a confirmed exit resets.
  */
 class TestActivity : ComponentActivity(), TestRunState.Host {
 
@@ -90,6 +89,8 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 		finish()
 	}
 
+	override fun onAborted() = finish()
+
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		// the navigation bar stays black under edge-to-edge
@@ -104,6 +105,7 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 				TestRunState.resume()
 			}
 		})
+		TestRunState.attach(this)
 		if (!TestRunState.hasRun()) TestRunState.start(this)
 		setContent {
 			val snackbar = messageSnackbarHost()
@@ -128,12 +130,8 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 	private fun TestScreen() {
 		// the dialog takes the back key in its own focused window.
 		// so the confirm never sees a second press
-		BackHandler {
-			ContinuePopup(R.string.test_exit_confirm) {
-				TestRunState.reset()
-				finish()
-			}
-		}
+		val abortQuestion = stringResource(R.string.test_abort_question)
+		BackHandler { TestRunState.abort(abortQuestion) }
 		// edge-to-edge never resizes the window for the keyboard.
 		// imePadding keeps the lower words and the Done button clear of it.
 		Column(Modifier.fillMaxSize().systemBarsPadding().imePadding()) {
@@ -177,40 +175,65 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 		}
 	}
 
-	/** The countdown banner with the answered count below. It blinks dark red and light gray for the last 30 seconds. */
+	/**
+	 * The countdown banner with the answered count below.
+	 * It blinks dark red and light gray for the last 30 seconds.
+	 * - the abort button overlays it, so the countdown stays centered.
+	 */
 	@Composable
 	private fun TimerHeader() {
 		val sl = TestRunState.secondsLeft
-		Column(
+		Box(
 			Modifier
 				.fillMaxWidth()
-				.background(colorResource(R.color.colorPrimaryHeader))
-				.padding(bottom = 3.dp),
+				.background(colorResource(R.color.colorPrimaryHeader)),
 		) {
-			Text(
-				stringResource(R.string.time_left, sl),
+			Column(
 				Modifier
 					.fillMaxWidth()
-					.height(50.dp),
-				style = TextStyle(
-					fontSize = 40.sp,
-					color = when {
-						// white on the green header until the timer flash takes over at 30s or less
-						sl > 30 -> colorResource(R.color.colorOnHeader)
-						sl % 2 == 0 -> TimerRed
-						else -> Color(0xFFDDDDDD)
-					},
+					.padding(bottom = 3.dp),
+			) {
+				Text(
+					stringResource(R.string.time_left, sl),
+					Modifier
+						.fillMaxWidth()
+						.height(50.dp),
+					style = TextStyle(
+						fontSize = 40.sp,
+						color = when {
+							// white on the green header until the timer flash takes over at 30s or less
+							sl > 30 -> colorResource(R.color.colorOnHeader)
+							sl % 2 == 0 -> TimerRed
+							else -> Color(0xFFDDDDDD)
+						},
+					),
+					textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+				)
+				// the header states the progress, since the countdown alone hides it
+				val answered = TestRunState.answers.count { it.value.isNotBlank() }
+				Text(
+					pluralStringResource(R.plurals.test_answered, answered, answered, TestRunState.items.size),
+					Modifier.fillMaxWidth(),
+					style = TextStyle(fontSize = 15.sp, color = colorResource(R.color.colorOnHeader)),
+					textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+				)
+			}
+			val question = stringResource(R.string.test_abort_question)
+			// red on the green header so the exit is noticed
+			Button(
+				onClick = { TestRunState.abort(question) },
+				colors = ButtonDefaults.buttonColors(
+					backgroundColor = TimerRed,
+					contentColor = Color.White,
 				),
-				textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-			)
-			// the header states the progress, since the countdown alone hides it
-			val answered = TestRunState.answers.count { it.value.isNotBlank() }
-			Text(
-				pluralStringResource(R.plurals.test_answered, answered, answered, TestRunState.items.size),
-				Modifier.fillMaxWidth(),
-				style = TextStyle(fontSize = 15.sp, color = colorResource(R.color.colorOnHeader)),
-				textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-			)
+				shape = RoundedCornerShape(5.dp),
+				modifier = Modifier
+					.align(Alignment.CenterStart)
+					.padding(start = 5.dp)
+					.height(40.dp),
+			) {
+				Text(stringResource(R.string.test_abort))
+			}
 		}
 	}
 

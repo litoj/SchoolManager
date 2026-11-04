@@ -181,8 +181,8 @@
     <string name="help_test_run_how">\'Start\' needs at least one source.
         \nEach word is asked at most once, in a shuffled order.
         \nThe countdown blinks red for the last 30 seconds.
-        \n\'Done\' submits, a run-out time submits too.
-        \nA double back press ends the run without grading.</string>
+        \n\'Done\' submits and asks first when answers are missing, a run-out time submits too.
+        \n\'QUIT\' or the back button ends the run without grading after a confirmation.</string>
     <string name="help_test_select">Selecting items for the test</string>
     <string name="help_test_select_how">The \'Add source\' tile opens the picker, which browses like the explorer.
         \n\'Select\' on the strip adds the picked rows.
@@ -270,6 +270,8 @@
     <string name="sort_priority">priority</string>
     <string name="start">Start</string>
     <string name="success_rate">"Success rate: %1$d%% — %2$d/%3$d"</string>
+    <string name="test_abort">QUIT</string>
+    <string name="test_abort_question">Abort this test? Your answers are dropped and the statistics stay unchanged.</string>
     <string name="test_add">Add source</string>
     <string name="test_direction">Tested side</string>
     <string name="test_dir_normal">The word</string>
@@ -294,7 +296,6 @@
         <item quantity="one">%1$d of %2$d answered</item>
         <item quantity="other">%1$d of %2$d answered</item>
     </plurals>
-    <string name="test_exit_confirm">End the test?</string>
     <string name="test_you">you: %1$s</string>
     <string name="test_expected">expected: %1$s</string>
     <string name="time_left">%1$ds</string>
