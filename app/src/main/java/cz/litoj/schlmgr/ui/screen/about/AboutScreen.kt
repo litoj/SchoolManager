@@ -56,7 +56,13 @@ fun AboutScreen(viewModel: AboutViewModel, openDrawer: () -> Unit) {
 	BackHandler(viewModel.searchOpen) { viewModel.closeSearchField() }
 	Column(Modifier.fillMaxSize()) {
 		TopBar {
-			TopBarNav(up = viewModel.searchOpen, onNavigate = if (viewModel.searchOpen) viewModel::closeSearchField else openDrawer)
+			TopBarNav(
+				up = viewModel.searchOpen,
+				onNavigate = if (viewModel.searchOpen) viewModel::closeSearchField else openDrawer,
+				contentDescription = stringResource(
+					if (viewModel.searchOpen) R.string.back else R.string.menu_label,
+				),
+			)
 			if (viewModel.searchOpen) {
 				TopBarSearchField(
 					viewModel.query,
@@ -72,6 +78,7 @@ fun AboutScreen(viewModel: AboutViewModel, openDrawer: () -> Unit) {
 			}
 			TopBarIconButton(
 				icon = R.drawable.ic_search,
+				contentDescription = stringResource(R.string.help_search_hint),
 				visible = !viewModel.searchOpen,
 				onClick = viewModel::openSearchField,
 			)

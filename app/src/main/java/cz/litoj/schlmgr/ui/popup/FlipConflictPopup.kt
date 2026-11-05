@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -25,7 +26,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.FlipConflict
@@ -124,6 +127,12 @@ class FlipConflictPopup(conflicts: List<FlipConflict>) : DialogSpec {
 						.clickable { showHelp() }
 				)
 			}
+			HairlineDivider()
+			Text(
+				stringResource(R.string.flip_conflicts_hint),
+				Modifier.padding(horizontal = 20.dp, vertical = 5.dp),
+				style = TextStyle(fontSize = 13.sp, color = textColor),
+			)
 			HairlineDivider()
 			// not a LazyColumn, since same-direction scrollables would steal drags.
 			Column(

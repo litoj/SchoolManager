@@ -136,10 +136,10 @@ fun SettingChoiceRow(
 
 /** The small explanation under a setting row. */
 @Composable
-fun SettingCaption(text: String) {
+fun SettingCaption(text: String, modifier: Modifier = Modifier) {
 	Text(
 		text,
-		Modifier.padding(top = 2.dp),
+		modifier.padding(top = 2.dp),
 		style = TextStyle(fontSize = 13.sp, color = DefaultTextColor),
 	)
 }

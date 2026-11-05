@@ -82,15 +82,6 @@ internal val sections = listOf(
 			HelpSection(
 				R.string.help_extra_words_import, R.string.help_extra_words_import_how,
 				paths = listOf(R.array.help_path_import),
-				children = listOf(
-					HelpSection(
-						R.string.help_import_format,
-						customIntro = {
-							CodeBlock(stringResource(R.string.help_import_format_how))
-							CodeBlock(stringResource(R.string.help_import_example_text))
-						},
-					),
-				),
 			),
 			HelpSection(
 				R.string.help_extra_words_export, R.string.help_extra_words_export_how,

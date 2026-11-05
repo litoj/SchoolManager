@@ -21,7 +21,8 @@ class SubjectsMenuTest {
 		selecting: Boolean,
 		singleSelected: Boolean = true,
 		config: ActionConfig = this.config,
-	) = subjectsMenu(kind, selecting, singleSelected, config)
+		filterActive: Boolean = false,
+	) = subjectsMenu(kind, selecting, singleSelected, config, filterActive = filterActive)
 
 	@Test
 	fun `every top-level entry carries an icon`() {
@@ -145,10 +146,32 @@ class SubjectsMenuTest {
 	}
 
 	@Test
-	fun `the search menu without a selection keeps only the sort row`() {
+	fun `the search menu without a selection offers selection and sort`() {
 		val plain = menu(MainExplorerViewModel.MenuKind.SEARCH, selecting = false)
-		assertEquals(1, plain.size)
-		assertTrue(plain.single().children.isNotEmpty())
+		assertEquals(2, plain.size)
+		assertTrue(plain.any { it.id == MenuId.SELECT })
+		assertTrue(plain.any { it.children.isNotEmpty() })
+	}
+
+	@Test
+	fun `the more menu starts a selection only when none runs`() {
+		val plain = menu(MainExplorerViewModel.MenuKind.CONTAINER, selecting = false)
+		assertTrue("the entry starts a selection", plain.any { it.id == MenuId.SELECT })
+
+		val selecting = menu(MainExplorerViewModel.MenuKind.CONTAINER, selecting = true)
+		assertFalse("a running selection keeps its own actions",
+			selecting.any { it.id == MenuId.SELECT })
+	}
+
+	@Test
+	fun `an active search filter adds its clear row`() {
+		val filtered = menu(MainExplorerViewModel.MenuKind.SEARCH, selecting = false, filterActive = true)
+
+		assertTrue("the clear row follows the sort row",
+			filtered.any { it.id == MenuId.CLEAR_FILTER })
+		assertFalse("a plain search has nothing to clear",
+			menu(MainExplorerViewModel.MenuKind.SEARCH, selecting = false)
+				.any { it.id == MenuId.CLEAR_FILTER })
 	}
 
 	@Test

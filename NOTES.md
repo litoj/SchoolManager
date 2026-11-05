@@ -98,7 +98,8 @@ Its DB part is the model for this project.
 
 ### Selection
 
-- The row type icon selects during a selection or in the picker.
+- The More menu starts a selection with the first row.
+- The row type icon toggles a row while a selection runs or in the picker.
 - The row tap keeps its own meaning.
 - A picker row tap toggles while selecting.
 - It never opens the row.
@@ -195,6 +196,8 @@ Its DB part is the model for this project.
 - The dialog previews the written query, and Apply writes it into the field.
 - A written filter reads back into the dialog, while plain text stays plain.
 - The info strip names the active filter and the result count, never the walked chapters.
+- The search menu clears an active filter.
+- An unfinished run reads as searching, a finished empty one names the next step.
 - The field stays while it holds text, with or without the keyboard.
 - A keyboard drop with an empty query closes the field.
 - The nav back arrow cancels the search: the results leave and the query resets.
@@ -221,8 +224,9 @@ Its DB part is the model for this project.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
 - 2026-11-05: help moved from hidden mechanics into the UI. The search field
   opens a labeled filter dialog and the strip names the active filter. Go-to
-  is a search-only action in the normal order. Settings, test setup, picker
-  and search states explain themselves. The help page keeps short sections. 784 tests.
+  is a search-only action in the normal order. The More menu starts a selection
+  and clears a filter. Settings, test setup, picker and search states explain
+  themselves. The help page keeps short sections. 787 tests.
 - 2026-11-05: main adopts the test run, test report, search and picker fixes.
   The report reads Score x/y (z%) with the prompt, correct and typed answer.
   The info strip names counts per kind, a removed source offers undo.

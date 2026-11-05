@@ -8,6 +8,7 @@
     <string name="action_undo">Zpět</string>
     <string name="about_text">Tento program byl vyvinut, aby pomohl lidem se školními předměty, zvláště s cizími jazyky a biologií.\n\nPro další pomoc mě kontaktujte na litos@tuta.io</string>
     <string name="add_word">Přidat překlad</string>
+    <string name="creator_variants_hint">Použijte A/B pro dvě varianty názvu. Závorky seskupí celou variantu.</string>
     <string name="ok">OK</string>
     <string name="cancel">Zrušit</string>
     <string name="continue_delete">Opravdu chcete odstranit vybrané položky?</string>
@@ -19,7 +20,7 @@
     <string name="data_search_running">Hledám…</string>
     <string name="data_search_filtered_running">"%1$s · Hledám…"</string>
     <string name="data_search_none">Žádné výsledky. Zkuste filtr nebo jiné slovo.</string>
-    <string name="data_search_filtered_none">"%1$s · Žádné výsledky."</string>
+    <string name="data_search_filtered_none">"%1$s · Žádné výsledky. Upravte filtr."</string>
     <string name="data_search_bad_pattern">Neplatný regulární výraz.</string>
     <string name="data_search_invalid">Neplatné hledání. Použijte filtr nebo zápis \\WR=0.</string>
     <string name="data_selected">"Vybráno: %1$d"</string>
@@ -54,6 +55,7 @@
     <string name="filter_regex_error">Neplatný regulární výraz.</string>
     <string name="filter_preview">Dotaz: %1$s</string>
     <string name="filter_clear">Vymazat</string>
+    <string name="clear_filter">Vymazat filtr</string>
     <string name="filter_apply">Použít</string>
     <string name="data_desc">Popisek</string>
     <string name="data_name">Název</string>
@@ -127,24 +129,33 @@
         \nTvůrce má název, popis a u slovíčka také překlady.</string>
     <string name="help_create_mch">Předměty</string>
     <string name="help_create_note">Poznámky</string>
-    <string name="help_create_note_how">Poznámka nese název a popis a slouží pro text, který není slovíčkem, například pravidlo gramatiky.</string>
+    <string name="help_create_note_how">Poznámka nese název a popis a slouží pro text, který není slovíčkem, například pravidlo gramatiky.
+        \nKlepnutí na poznámku zkopíruje její text.</string>
     <string name="help_create_word">Slovíčka</string>
     <string name="help_create_word_how">Pod poli sedí ikona přidání, která přidá další překlad.
         \nPřeklad má svůj název a volitelné poznámky.
         \nIkona zrušení vpravo od překladu ho odstraní.</string>
     <string name="help_extra">Další užitečné funkce</string>
     <string name="help_extra_how">Pár funkcí je snadné přehlédnout. Zde jsou.</string>
-    <string name="help_extra_naming">Způsoby pojmenovávání</string>
+    <string name="help_extra_naming">Varianty názvů</string>
     <string name="help_extra_naming_how">Lomítko nabízí dvě varianty názvu, závorky seskupí celou variantu.
         \nSlovíčko i jeho překlady je mohou použít.</string>
     <string name="help_extra_naming_examples">oni/ony jdou = \'oni jdou\', nebo \'ony jdou\'
         \n(Já jdu)/(Ty jdeš). = \'Já jdu.\', nebo \'Ty jdeš.\'</string>
-    <string name="help_extra_words_export">Export slovíček</string>
+    <string name="help_extra_words_export">Export položek</string>
     <string name="help_extra_words_export_how">Menu zobrazí Export jen při vybraných řádcích.\nExport zahrne každý vybraný řádek kromě překladů.\nSoubor se slovíčky: kompaktní, bez úspěšnosti a referencí.\nSoubor JSON: úplný, včetně úspěšnosti, poznámek a referencí.</string>
-    <string name="help_extra_words_import">Import slovíček</string>
+    <string name="help_extra_words_import">Import položek</string>
     <string name="help_extra_words_import_how">Uvnitř předmětu se slovíčka importují do něj, na obrazovce předmětů se vytvoří nový předmět.\nChyba uvádí soubor a řádek. Opravte řádek a zvolte soubor znovu.</string>
     <string name="help_import_format">Formát souboru</string>
-    <string name="help_import_format_how">Kapitola: název { a } na samostatných řádcích.\nSlovíčko: slovíčko = překlad.\nPoznámka: = text.\nPopis: [text] za názvem.\nVarianty: první\\druhý.</string>
+    <string name="help_import_format_body">Kapitola: název { a } na samostatných řádcích.
+        \nSlovíčko: slovíčko = překlad.
+        \nPoznámka: = text.
+        \nPopis: [text] za názvem.
+        \nVarianty: první\\druhý.
+        \n\nKapitel 1 {
+        \n\tder Hund = pes
+        \n\tdie Katze = kočka
+        \n}</string>
     <string name="help_no_match">Odpovídající nápověda neexistuje.</string>
     <string name="help_search">Vyhledávání</string>
     <string name="help_search_hint">Hledat v nápovědě</string>
@@ -165,8 +176,8 @@
     <string name="help_select">Upravování</string>
     <string name="help_select_delete">Smaže vybrané položky po potvrzení.</string>
     <string name="help_select_edit">Upravit otevře jedinou vybranou položku. OK uloží změny.</string>
-    <string name="help_select_how">Dlouhý stisk zapne výběr, klepnutí na ikonu typu řádek přepne. Tažením přes řádky vyberete rozsah.
-        \nZaškrtnutí vpravo nahoře vybere vše nebo výběr ukončí. Ukončí ho i zpět.</string>
+    <string name="help_select_how">Menu Více zapne výběr. Klepnutí na ikonu typu řádek přepne, dokud výběr trvá.
+        \nTažením přes řádky vyberete rozsah. Zaškrtnutí vpravo nahoře vybere vše nebo výběr ukončí. Ukončí ho i zpět.</string>
     <string name="help_select_move">Vyjmout vezme vybrané řádky a zobrazí vkládací lištu. Otevřete cíl a stiskněte Vložit.
         \nPřesun přežije přepnutí kapitoly.</string>
     <string name="help_test">Testy</string>
@@ -174,7 +185,7 @@
     <string name="help_test_results">Výsledky testu</string>
     <string name="help_test_results_how">Výsledky se otevřou po stisknutí Hotovo nebo po vypršení času.
         \nNadpis je skóre. Každý řádek je jedno testované slovíčko.
-        \nVelký text je zadání, pod ním správná odpověď a ta vaše.
+        \nVelký text je zadání, pod ním správná odpověď a vaše odpověď.
         \nČíslo s × udává, kolikrát bylo slovíčko testováno.
         \nNa konci řádku je počet úspěšných z celkového počtu a všechny počty zahrnují tento test.
         \nZnovu spustí nový test se stejnými zdroji.</string>
@@ -186,13 +197,15 @@
     <string name="help_test_select_how">Přidat zdroj otevře prohlížeč. Klepněte na řádky, vyberte zdroje a stiskněte Zvolit.
         \nVšechny zdroje musí patřit jednomu předmětu.</string>
     <string name="menu_label">Menu</string>
-    <string name="menu_about">O programu</string>
+    <string name="menu_about">Nápověda a o aplikaci</string>
     <string name="menu_objects">Předměty</string>
     <string name="menu_settings">Nastavení</string>
     <string name="more">Více</string>
     <string name="more_export">Export</string>
     <string name="reference_fork">Zástupci, kteří budou odkazovat na nové slovo</string>
+    <string name="reference_fork_hint">Ponechané řádky následují upravené slovo. Křížek ponechá původní.</string>
     <string name="ref_source_pick">Zvolte zdroj zástupce:</string>
+    <string name="ref_source_pick_hint">Řádek leží ve více kontejnerech. Zvolte ten, který se má otevřít.</string>
     <string name="more_export_word">Soubor se slovíčky (bez úspěšnosti)</string>
     <string name="more_import">Import</string>
     <string name="import_here">Importovat sem</string>
@@ -200,6 +213,7 @@
     <string name="more_export_json">Soubor JSON (včetně úspěšnosti)</string>
     <string name="more_go_to">Přejít na umístění</string>
     <string name="flip_conflicts_title">Kolidující slova</string>
+    <string name="flip_conflicts_hint">Neupravené řádky zachovají vazby ven. Úprava dá obrácení kopii.</string>
     <string name="flip_conflicts_ok">Obrátit</string>
     <string name="flip_conflicts_blank">Každé kolidující slovo potřebuje název</string>
     <string name="flip_conflicts_help">Každý řádek je slovíčko nebo překlad, který přesahuje výběr.
@@ -223,7 +237,7 @@
     <string name="note_copied">Zkopírováno</string>
     <string name="objects_cancel">Storno</string>
     <string name="paste">Vložit</string>
-    <string name="picker_hint">Klepněte na řádky, vyberte zdroje a stiskněte Zvolit.</string>
+    <string name="picker_hint">Dlouhým stiskem řádku nebo klepnutím na ikonu typu vyberte zdroj, pak stiskněte Zvolit.</string>
     <string name="paste_status_references">Zástupci: %1$d</string>
     <string name="paste_status_move">Přesun: %1$d</string>
     <string name="pattern_err">"Špatná syntax regexu:\n%1$s"</string>
@@ -234,10 +248,13 @@
     <string name="permission_pending">Akce už čeká na oprávnění</string>
     <string name="search">Hledat</string>
     <string name="select">Zvolit</string>
+    <string name="select_rows">Vybrat řádky</string>
+    <string name="select_all">Vybrat vše</string>
+    <string name="back">Zpět</string>
     <string name="select_test">Test</string>
-    <string name="setts_him_flipped">Překlápět slovíčka při otevření</string>
+    <string name="setts_him_flipped">Zobrazovat překlady při otevření</string>
     <string name="setts_him_flipped_hint">Řádek slovíčka se otevře na překladech.</string>
-    <string name="setts_him_flipped_search">Překlápět nálezy při otevření</string>
+    <string name="setts_him_flipped_search">Zobrazovat překlady u nálezů</string>
     <string name="setts_him_flipped_search_hint">Nález slovíčka se otevře na překladech.</string>
     <string name="setts_him_parse">Zpracovat varianty názvů</string>
     <string name="setts_him_parse_hint">Čte A/B a (A)/(B) jako několik variant názvu.</string>
@@ -267,7 +284,7 @@
     <string name="setts_act_edit">Otevře jediný vybraný řádek k úpravám</string>
     <string name="setts_act_delete">Smaže vybrané řádky</string>
     <string name="setts_act_reference">Vytvoří z řádků zástupce v kontejneru</string>
-    <string name="setts_act_flip">Překlopí vybraná slovíčka na druhou stranu</string>
+    <string name="setts_act_flip">Prohodí uložené slovíčko a jeho překlady</string>
     <string name="setts_act_export">Exportuje vybrané řádky do souboru</string>
     <string name="setts_act_goto">Otevře kontejner jediného nálezu</string>
     <string name="sort">Seřadit podle</string>
@@ -339,4 +356,5 @@
     <string name="unavailable_search_move">Nejprve dokončete nebo zrušte přesun.</string>
     <string name="unavailable_search_root">Hledání vyžaduje otevřený předmět.</string>
     <string name="unavailable_single_row">Vyberte právě jeden řádek.</string>
+    <string name="unavailable_no_rows">Žádné řádky k výběru.</string>
 </resources>

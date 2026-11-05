@@ -35,6 +35,7 @@ import cz.litoj.schlmgr.ui.shell.TopBarTitle
 import cz.litoj.schlmgr.ui.shell.headerShadow
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
+import cz.litoj.schlmgr.ui.viewmodel.InfoBar
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 import cz.litoj.schlmgr.ui.viewmodel.SearchUi
 import cz.litoj.schlmgr.ui.viewmodel.ActionConfig
@@ -187,6 +188,10 @@ fun SubjectsScreen(
 					viewModel.pasteArmed -> viewModel::cancelPaste
 					else -> openDrawer
 				},
+				contentDescription = stringResource(
+					if (fieldOpen || selecting || viewModel.pasteArmed) R.string.back
+					else R.string.menu_label,
+				),
 			)
 			if (fieldOpen) TopBarSearchField(
 				query, viewModel::onQueryChange, viewModel::onQuerySubmit, viewModel::dismissSearch,
@@ -200,6 +205,7 @@ fun SubjectsScreen(
 			else TopBarTitle(title)
 			TopBarIconButton(
 				icon = if (selecting) R.drawable.ic_check_all else R.drawable.ic_search,
+				contentDescription = stringResource(if (selecting) R.string.select_all else R.string.search),
 				visible = !fieldOpen,
 				enabled = selecting || searchBlockedReason == 0,
 				blockedReason = if (selecting) 0 else searchBlockedReason,
@@ -208,9 +214,11 @@ fun SubjectsScreen(
 			}
 			TopBarMoreButton(
 				// the menu reads the config per build, so a settings change reaches the next open
-				subjectsMenu(
+				contentDescription = stringResource(R.string.more),
+				entries = subjectsMenu(
 					menuKind, selecting, listState.singleSelected, ActionConfig.load(),
 					exportBlockedReason,
+					filterActive = (state.info as? InfoBar.Search)?.filter != null,
 				),
 			) { itemId ->
 				viewModel.onMenuItemClick(itemId)

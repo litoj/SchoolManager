@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -39,8 +40,10 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -315,6 +318,11 @@ class CreatorPopup(
 					},
 					imeAction = if (content is CreatorContent.Word || isNote) ImeAction.Next else ImeAction.Done,
 					focusRequester = nameFocus,
+				)
+				if (content is CreatorContent.Word) Text(
+					stringResource(R.string.creator_variants_hint),
+					Modifier.padding(horizontal = 20.dp, vertical = 2.dp),
+					style = TextStyle(fontSize = 13.sp, color = TextColor),
 				)
 				BorderedTextField(
 					description,

@@ -76,6 +76,7 @@ fun RowScope.TopBarNav(
 	onNavigate: () -> Unit,
 	enabled: Boolean = true,
 	blockedReason: Int = 0,
+	contentDescription: String,
 ) {
 	val tint = colorResource(R.color.colorOnHeader).let { if (enabled) it else it.copy(alpha = 0.5f) }
 	Box(
@@ -88,7 +89,7 @@ fun RowScope.TopBarNav(
 	) {
 		Icon(
 			if (up) Icons.AutoMirrored.Filled.ArrowBack else Icons.Default.Menu,
-			contentDescription = null,
+			contentDescription = contentDescription,
 			tint = tint,
 		)
 	}
@@ -112,6 +113,7 @@ fun RowScope.TopBarTitle(title: String) {
 @Composable
 fun RowScope.TopBarIconButton(
 	@DrawableRes icon: Int,
+	contentDescription: String,
 	visible: Boolean = true,
 	enabled: Boolean = true,
 	blockedReason: Int = 0,
@@ -128,7 +130,7 @@ fun RowScope.TopBarIconButton(
 	) {
 		Image(
 			painter = painterResource(icon),
-			contentDescription = null,
+			contentDescription = contentDescription,
 			modifier = Modifier.size(IconSize),
 			colorFilter = ColorFilter.tint(tint),
 		)
@@ -140,7 +142,11 @@ fun RowScope.TopBarIconButton(
  * The button owns its dropdown, so no screen carries the open state.
  */
 @Composable
-fun RowScope.TopBarMoreButton(entries: List<MenuEntry>, onPick: (Int) -> Unit) {
+fun RowScope.TopBarMoreButton(
+	entries: List<MenuEntry>,
+	contentDescription: String,
+	onPick: (Int) -> Unit,
+) {
 	var open by remember { mutableStateOf(false) }
 	Box(
 		Modifier
@@ -151,7 +157,7 @@ fun RowScope.TopBarMoreButton(entries: List<MenuEntry>, onPick: (Int) -> Unit) {
 	) {
 		Image(
 			painter = painterResource(R.drawable.ic_more),
-			contentDescription = null,
+			contentDescription = contentDescription,
 			modifier = Modifier.size(IconSize),
 			colorFilter = ColorFilter.tint(colorResource(R.color.colorOnHeader)),
 		)

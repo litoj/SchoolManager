@@ -223,7 +223,7 @@ private fun ActionSettingRow(
 		}
 		Text(
 			placement,
-			Modifier.padding(end = 5.dp),
+			Modifier.padding(start = 5.dp, end = 5.dp),
 			style = TextStyle(fontSize = 11.sp, color = DefaultTextColor),
 		)
 	}

@@ -46,7 +46,11 @@ import cz.litoj.schlmgr.ui.shell.headerShadow
 fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
 	Column(Modifier.fillMaxSize()) {
 		TopBar {
-			TopBarNav(up = true, onNavigate = onBack)
+			TopBarNav(
+				up = true,
+				onNavigate = onBack,
+				contentDescription = stringResource(R.string.back),
+			)
 			TopBarTitle(stringResource(R.string.menu_settings))
 		}
 		SettingsList(viewModel.state, Modifier.weight(1f).headerShadow())

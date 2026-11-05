@@ -27,7 +27,7 @@ The in-app Help covers the standard workflow. These features are easy to miss.
 - Swipe left or right to move between sibling containers.
 - Tap a breadcrumb part to jump back to that container.
 - Pull down at the top of a list to open the search field.
-- Tap the type icon of a row to select it during a selection or in the picker.
+- The More menu starts a selection with the first row. Tap a type icon to toggle another.
 - Long-press and drag a row in a browse list to reorder it.
 
 ### Searching
@@ -54,9 +54,9 @@ The in-app Help covers the standard workflow. These features are easy to miss.
 - The link icon opens the original container. With several containers, the app asks for one.
 - Editing a shared word asks which references follow the change.
 
-### Stored flip
+### Stored swap
 
-- The more menu can flip the stored direction of the selected rows.
+- The Flip action swaps the stored word and its translations.
 - The conflict dialog lists rows that reach outside the selection. Keep, copy or drop each one.
 
 ### Sorting

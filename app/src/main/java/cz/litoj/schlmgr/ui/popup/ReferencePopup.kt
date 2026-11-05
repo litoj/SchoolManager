@@ -62,6 +62,12 @@ class ReferencePopup(
 		PopupCard {
 			PopupTitle(stringResource(R.string.reference_fork))
 			HairlineDivider()
+			Text(
+				stringResource(R.string.reference_fork_hint),
+				Modifier.padding(horizontal = 20.dp, vertical = 5.dp),
+				style = TextStyle(fontSize = 13.sp, color = textColor),
+			)
+			HairlineDivider()
 			// the list scrolls when it outgrows the card. The button row stays visible
 			Column(
 				Modifier

@@ -24,6 +24,7 @@ fun menuKindFor(searching: Boolean, pathSize: Int): MainExplorerViewModel.MenuKi
  * - an export of translations only stays in place with its reason.
  *
  * @param exportBlockedReason the reason of an empty writable selection, 0 when it can export
+ * @param filterActive whether the search runs a structured filter, which adds its clear row
  */
 fun subjectsMenu(
 	kind: MainExplorerViewModel.MenuKind,
@@ -31,10 +32,14 @@ fun subjectsMenu(
 	singleSelected: Boolean,
 	config: ActionConfig,
 	exportBlockedReason: Int = 0,
+	filterActive: Boolean = false,
 ): List<MenuEntry> {
 	val search = kind == MainExplorerViewModel.MenuKind.SEARCH
 	val actions = config.overflow(search).map { it.menuEntry(singleSelected, exportBlockedReason) }
-	val menu = if (search) searchStatic + actions else browseStatic + actions
+	val clear = if (search && filterActive)
+		listOf(MenuEntry(MenuId.CLEAR_FILTER, R.string.clear_filter, icon = R.drawable.ic_cancel))
+	else emptyList()
+	val menu = if (search) searchStatic + clear + actions else browseStatic + actions
 	return menu.filter { it.always || it.selectionAction == selecting }
 }
 
@@ -56,11 +61,13 @@ internal val exportMenu = listOf(
 )
 
 private val browseStatic = listOf(
+	MenuEntry(MenuId.SELECT, R.string.select_rows, icon = R.drawable.ic_select_black),
 	MenuEntry(0, R.string.sort, icon = R.drawable.ic_sort_black, children = sortMenu),
 	MenuEntry(MenuId.IMPORT_FILE, R.string.more_import, icon = R.drawable.ic_import_black),
 )
 
 private val searchStatic = listOf(
+	MenuEntry(MenuId.SELECT, R.string.select_rows, icon = R.drawable.ic_select_black),
 	// no sort-default, since search has no browse order.
 	MenuEntry(0, R.string.sort, icon = R.drawable.ic_sort_black,
 		children = sortMenu.filter { it.id != MenuId.SORT_DEFAULT }),

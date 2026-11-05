@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -15,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
@@ -200,7 +202,9 @@ private fun <T> ChoiceRow(
 					.padding(end = 4.dp, bottom = 2.dp)
 					.background(if (on) colorResource(R.color.colorSelectedRow) else Color.Transparent)
 					.clickable { onPick(option) }
+					.defaultMinSize(minHeight = 36.dp)
 					.padding(horizontal = 8.dp, vertical = 3.dp),
+				contentAlignment = Alignment.Center,
 			) {
 				Text(labelOf(option), style = TextStyle(fontSize = 15.sp, color = TextColor))
 			}

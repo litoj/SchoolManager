@@ -31,10 +31,12 @@ import cz.litoj.schlmgr.ui.component.ExplorerScaffold
 import cz.litoj.schlmgr.ui.component.ImportActionBar
 import cz.litoj.schlmgr.ui.component.ItemListCallbacks
 import cz.litoj.schlmgr.ui.component.ListEndReveal
+import cz.litoj.schlmgr.ui.popup.InfoPopup
 import cz.litoj.schlmgr.ui.popup.MessagePopup
 import cz.litoj.schlmgr.ui.shell.ExplorerBackHandler
 import cz.litoj.schlmgr.ui.shell.TopBar
 import cz.litoj.schlmgr.ui.shell.explorerBack
+import cz.litoj.schlmgr.ui.shell.TopBarIconButton
 import cz.litoj.schlmgr.ui.shell.TopBarNav
 import cz.litoj.schlmgr.ui.shell.TopBarTitle
 import cz.litoj.schlmgr.ui.shell.headerShadow
@@ -90,8 +92,16 @@ fun ImportTargetScreen(
 					onNavigate = leave,
 					enabled = !target.busy,
 					blockedReason = R.string.unavailable_import_busy,
+					contentDescription = stringResource(R.string.back),
 				)
 				TopBarTitle(stringResource(R.string.import_file_title, target.fileName))
+				TopBarIconButton(
+					icon = R.drawable.ic_help,
+					contentDescription = stringResource(R.string.help),
+					onClick = {
+						InfoPopup(R.string.help_import_format, R.string.help_import_format_body)
+					},
+				)
 			}
 			ExplorerScaffold(
 				state = state,

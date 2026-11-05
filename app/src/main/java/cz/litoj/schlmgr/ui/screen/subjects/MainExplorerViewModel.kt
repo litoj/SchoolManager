@@ -217,6 +217,8 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		MenuId.CUT -> { move(false); true }
 		MenuId.EDIT -> { onEditAction(); true }
 		MenuId.GOTO -> { onGoToAction(); true }
+		MenuId.CLEAR_FILTER -> { onQuerySubmit(""); true }
+		MenuId.SELECT -> { startSelection(); true }
 		else -> false
 	}
 
@@ -271,6 +273,20 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 			ItemKind.NOTE -> copyNote(row)
 			else -> {}
 		}
+	}
+
+	/** Starts a selection from the visible menu entry, so the gesture is not required. */
+	fun startSelection() {
+		if (pasteArmed) {
+			UserMessages.showNotice(UiNotice.ActionUnavailable(R.string.unavailable_search_move))
+			return
+		}
+		val first = items().firstOrNull()
+		if (first == null) {
+			UserMessages.showNotice(UiNotice.ActionUnavailable(R.string.unavailable_no_rows))
+			return
+		}
+		toggleSelect(first)
 	}
 
 	private fun copyNote(item: ItemRow) {

@@ -55,7 +55,11 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 	Column(Modifier.fillMaxSize()) {
 		TopBar {
 			// the arrow walks the back chain, so a search or a selection ends before the picker
-			TopBarNav(up = true, onNavigate = { explorerBack(viewModel, onExit, context) })
+			TopBarNav(
+				up = true,
+				onNavigate = { explorerBack(viewModel, onExit, context) },
+				contentDescription = stringResource(R.string.back),
+			)
 			if (fieldOpen) TopBarSearchField(
 				query, viewModel::onQueryChange, viewModel::onQuerySubmit, viewModel::dismissSearch,
 				Modifier.weight(1f),
@@ -68,6 +72,7 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 			else TopBarTitle(stringResource(R.string.test_add))
 			TopBarIconButton(
 				icon = R.drawable.ic_search,
+				contentDescription = stringResource(R.string.search),
 				visible = !fieldOpen,
 				enabled = searchVisible,
 				blockedReason = if (searchVisible) 0 else R.string.unavailable_search_root,
@@ -75,6 +80,7 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 			)
 			TopBarIconButton(
 				icon = R.drawable.ic_check_all,
+				contentDescription = stringResource(R.string.select_all),
 				onClick = viewModel::onSelectAllToggle,
 			)
 		}

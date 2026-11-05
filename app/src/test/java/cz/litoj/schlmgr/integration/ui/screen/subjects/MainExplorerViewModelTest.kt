@@ -150,6 +150,17 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
+	fun `the more menu starts a selection`() {
+		seed()
+		val model = vmIn("A")
+
+		model.onMenuItemClick(MenuId.SELECT)
+
+		assertTrue(model.items().single().selected)
+		assertTrue(model.listState.value.selectionActive)
+	}
+
+	@Test
 	fun `new actions refuse while searching`() {
 		seed()
 		val model = vmIn("A")

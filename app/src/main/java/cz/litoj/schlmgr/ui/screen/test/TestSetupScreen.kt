@@ -96,7 +96,10 @@ fun TestSetupScreen(
 
 	Column(Modifier.fillMaxSize()) {
 		TopBar {
-			TopBarNav(onNavigate = openDrawer)
+			TopBarNav(
+				onNavigate = openDrawer,
+				contentDescription = stringResource(R.string.menu_label),
+			)
 			TopBarTitle(stringResource(R.string.select_test))
 		}
 		TestSetupContent(viewModel, Modifier.weight(1f).headerShadow())
@@ -134,7 +137,7 @@ private fun TestSetupContent(viewModel: TestSetupViewModel, modifier: Modifier =
 				Modifier.padding(start = 8.dp, top = 2.dp),
 				style = TextStyle(fontSize = 15.sp, color = DefaultTextColor),
 			)
-			SettingCaption(stringResource(R.string.test_sources_hint))
+			SettingCaption(stringResource(R.string.test_sources_hint), Modifier.padding(start = 8.dp))
 			// the shared list is a SnapshotStateList.
 			// so a background-thread change from the picker dedup recomposes this directly
 			LazyColumn(Modifier.weight(1f)) {

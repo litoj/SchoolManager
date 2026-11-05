@@ -47,6 +47,12 @@ class SourcePickPopup(
 				style = TextStyle(fontSize = 20.sp, color = TextColor),
 			)
 			HairlineDivider()
+			Text(
+				stringResource(R.string.ref_source_pick_hint),
+				Modifier.padding(horizontal = 5.dp, vertical = 3.dp),
+				style = TextStyle(fontSize = 13.sp, color = TextColor),
+			)
+			HairlineDivider()
 			Column(
 				Modifier
 					.weight(1f, fill = false)
