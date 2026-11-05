@@ -166,12 +166,14 @@ object ItemRepository {
 
 	@JvmStatic
 	fun createSubject(name: String, description: String?): DbItem {
+		val itemName = name.trim()
+		val itemDescription = description?.trim() ?: ""
 		// a blank name cannot be stored, since no export format round-trips it
-		require(name.isNotBlank()) { "A subject needs a name" }
+		require(itemName.isNotEmpty()) { "A subject needs a name" }
 		return query {
 			it.withTransaction {
 				val dao = it.itemDao()
-				val id = dao.insert(DbItem(name = name, description = description ?: "", type = ItemKind.CHAPTER)).toInt()
+				val id = dao.insert(DbItem(name = itemName, description = itemDescription, type = ItemKind.CHAPTER)).toInt()
 				LinkOrder.linkAt(dao, ROOT_ID, id, null)
 				dao.get(id)!!
 			}
@@ -181,12 +183,14 @@ object ItemRepository {
 	@JvmStatic
 	@JvmOverloads
 	fun createChapter(parentId: Int, name: String, description: String?, position: Int? = null): DbItem {
+		val itemName = name.trim()
+		val itemDescription = description?.trim() ?: ""
 		// a blank name cannot be stored, since no export format round-trips it
-		require(name.isNotBlank()) { "A chapter needs a name" }
+		require(itemName.isNotEmpty()) { "A chapter needs a name" }
 		return query {
 			it.withTransaction {
 				val dao = it.itemDao()
-				val id = dao.insert(DbItem(name = name, description = description ?: "", type = ItemKind.CHAPTER)).toInt()
+				val id = dao.insert(DbItem(name = itemName, description = itemDescription, type = ItemKind.CHAPTER)).toInt()
 				LinkOrder.linkAt(dao, parentId, id, position)
 				dao.get(id)!!
 			}
@@ -196,12 +200,14 @@ object ItemRepository {
 	@JvmStatic
 	@JvmOverloads
 	fun createNote(parentId: Int, name: String, description: String?, position: Int? = null): DbItem {
+		val itemName = name.trim()
+		val itemDescription = description?.trim() ?: ""
 		// a blank name cannot be stored, since no export format round-trips it
-		require(name.isNotBlank()) { "A note needs a name" }
+		require(itemName.isNotEmpty()) { "A note needs a name" }
 		return query {
 			it.withTransaction {
 				val dao = it.itemDao()
-				val id = dao.insert(DbItem(name = name, description = description ?: "", type = ItemKind.NOTE)).toInt()
+				val id = dao.insert(DbItem(name = itemName, description = itemDescription, type = ItemKind.NOTE)).toInt()
 				LinkOrder.linkAt(dao, parentId, id, position)
 				dao.get(id)!!
 			}
@@ -220,7 +226,7 @@ object ItemRepository {
 		translations: List<Pair<String, String?>>,
 	): DbItem {
 		// a blank name cannot be stored, since no export format round-trips it
-		require(name.isNotBlank()) { "A word needs a name" }
+		require(name.trim().isNotEmpty()) { "A word needs a name" }
 		// a blank name carries no translation once trimmed
 		require(translations.any { it.first.trim().isNotEmpty() }) {
 			"A word needs at least one translation — make a note instead"
@@ -228,8 +234,8 @@ object ItemRepository {
 		return query {
 			it.withTransaction {
 				val dao = it.itemDao()
-				val word = WordMerge.insertWord(DaoItemStore(dao), InsertWordParams(parentId, name, description,
-					translations.map { NewTranslation(it.first, it.second) }))
+				val word = WordMerge.insertWord(DaoItemStore(dao), InsertWordParams(parentId, name.trim(), description?.trim(),
+					translations.map { NewTranslation(it.first.trim(), it.second?.trim()) }))
 				// a merge onto an existing word brings its counters into the
 				// derivation of the parent, and no other create path changes them
 				recomputeCounterChain(dao, parentId, dao::subgraphWordCounters, dao::parentsPlainFirst)
@@ -357,7 +363,7 @@ object ItemRepository {
 	fun setDescription(id: Int, description: String?): Unit = query {
 		val item = it.itemDao().get(id) ?: return@query
 		// null clears, since the column is non-null and an absent value is the empty text
-		it.itemDao().updateById(id, item.name, description ?: "")
+		it.itemDao().updateById(id, item.name, description?.trim() ?: "")
 	}
 
 	/**

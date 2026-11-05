@@ -191,6 +191,7 @@
         \nZnovu spustí nový test se stejnými zdroji.</string>
     <string name="help_test_run">Průběh testu</string>
     <string name="help_test_run_how">Začít potřebuje aspoň jeden zdroj. Každé slovíčko je zadáno jednou v zamíchaném pořadí.
+        \nSlovíčka se stejným překladem jsou za sebou. Opakovaná odpověď uspěje jen jednou.
         \nOdpočet posledních 30 sekund bliká červeně.
         \nHotovo odešle odpovědi a při chybějících se nejprve zeptá. UKONČIT nebo zpět ukončí běh bez hodnocení.</string>
     <string name="help_test_select">Výběr položek do testu</string>

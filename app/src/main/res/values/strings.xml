@@ -204,6 +204,7 @@
         \nRetake runs a new test on the same sources.</string>
     <string name="help_test_run">Test progress</string>
     <string name="help_test_run_how">Start needs at least one source. Each word is asked once in a shuffled order.
+        \nWords that share a translation sit next to each other. A repeated answer passes only once.
         \nThe countdown blinks red for the last 30 seconds.
         \nDone submits and asks first when answers are missing. QUIT or Back ends without grading.</string>
     <string name="help_test_select">Selecting items for the test</string>

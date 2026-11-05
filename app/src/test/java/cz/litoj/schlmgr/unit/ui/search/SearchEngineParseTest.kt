@@ -28,6 +28,18 @@ class SearchEngineParseTest {
 	}
 
 	@Test
+	fun `plain search trims the query and the shown name`() {
+		assertEquals(listOf(" das Haus "), hits("  HAUS  ", " das Haus ", "die Schule"))
+	}
+
+	@Test
+	fun `description search trims the shown description`() {
+		val engine = SearchEngine("\\WDnote")
+		val item = DbItem(name = "w", description = " note ", type = ItemKind.WORD)
+		assertEquals(true, engine.correct(item, emptyList()) { _, _ -> })
+	}
+
+	@Test
 	fun `a plain query is a case-insensitive contains`() {
 		assertEquals(listOf("das Haus"), hits("HAUS", "das Haus", "die Schule"))
 	}
@@ -179,8 +191,8 @@ class SearchEngineParseTest {
 	}
 
 	@Test
-	fun `only a backslash query is trimmed`() {
+	fun `every query is trimmed before matching`() {
 		assertEquals(listOf("Dog"), hits("  \\sDog  ", "Dog", "x"))
-		assertEquals(listOf("a b c"), hits(" b ", "a b c", "b"))
+		assertEquals(listOf("a b c", "b"), hits(" b ", "a b c", "b"))
 	}
 }

@@ -89,7 +89,7 @@ class SearchEngine(query: String, private val foldDiacritics: Boolean = false) {
 	/** Plain text keeps its spaces, since they are part of the searched name. */
 	private fun parse(query: String): Correct {
 		val trimmed = query.trim()
-		if (!trimmed.startsWith('\\')) return resolve(query)
+		if (!trimmed.startsWith('\\')) return resolve(trimmed)
 		val strict = strictForm(trimmed)
 		if (strict != null) return resolve(strict)
 		valid = false
@@ -177,11 +177,12 @@ class SearchEngine(query: String, private val foldDiacritics: Boolean = false) {
 		} else compareText = folded(query.lowercase())
 
 		val finalNumeric = numeric
+		compareText = compareText.trim()
 		return if (finalNumeric != null)
 			Correct { item -> kind.verify(item) && finalNumeric.verify(item) }
 		else if (searchDescription) Correct { item ->
 			if (!kind.verify(item)) return@Correct false
-			val d = item.description
+			val d = item.description.trim()
 			d.isNotEmpty() && strCor.verify(d)
 		}
 		else nameMatcher(kind, strCor)
@@ -196,8 +197,8 @@ class SearchEngine(query: String, private val foldDiacritics: Boolean = false) {
 
 	private fun nameMatcher(kind: Correct, sc: StringFinder): Correct = Correct { item ->
 		if (!kind.verify(item)) return@Correct false
-		if (sc.verify(item.name)) return@Correct true
-		for (name in WordNames.parseVariants(item.name)) if (sc.verify(name)) return@Correct true
+		if (sc.verify(item.name.trim())) return@Correct true
+		for (name in WordNames.parseVariants(item.name.trim())) if (sc.verify(name.trim())) return@Correct true
 		false
 	}
 

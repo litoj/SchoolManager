@@ -53,16 +53,17 @@ data class SearchFilter(
 			NUMERIC.matchEntire(text)?.let { match ->
 				val (type, field, condition, value) = match.destructured
 				return SearchFilter(
-					FilterType.of(type), FilterField.of(field), FilterCondition.of(condition), value,
+					FilterType.of(type), FilterField.of(field), FilterCondition.of(condition), value.trim(),
 				)
 			}
 			TEXT.matchEntire(text)?.let { match ->
 				val (type, field, condition, value) = match.destructured
+				val trimmedValue = value.trim()
 				// a leading operator without a condition marker is a number query
-				if (value.isEmpty() || (condition.isEmpty() && value.first() in "><=")) return null
+				if (trimmedValue.isEmpty() || (condition.isEmpty() && trimmedValue.first() in "><=")) return null
 				return SearchFilter(
 					FilterType.of(type), FilterField.of(field),
-					FilterCondition.of(condition), value,
+					FilterCondition.of(condition), trimmedValue,
 				)
 			}
 			return null

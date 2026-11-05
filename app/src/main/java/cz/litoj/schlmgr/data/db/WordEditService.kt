@@ -66,7 +66,7 @@ internal object WordEditService {
 		val merged = rename(dao, edit.wordId, edit.name)
 		// a rename-join carries the deleted description over, and the editor value joins
 		val desc = if (merged.id != edit.wordId) Descriptions.merge(merged.description, edit.description)
-		else edit.description ?: ""
+		else edit.description?.trim() ?: ""
 		dao.updateById(merged.id, merged.name, desc)
 		WordMerge.insertWord(DaoItemStore(dao), InsertWordParams(edit.parentId, edit.name, desc,
 			edit.additions.map { NewTranslation(it.first, it.second) }))
@@ -90,7 +90,7 @@ internal object WordEditService {
 			if (merged != existing.description) dao.updateById(existing.id, existing.name, merged)
 			existing
 		} else dao.insert(
-			DbItem(name = edit.name, description = edit.description ?: "", type = ItemKind.WORD)
+			DbItem(name = edit.name, description = edit.description?.trim() ?: "", type = ItemKind.WORD)
 		).let { dao.get(it.toInt())!! }
 		dao.deleteLink(edit.parentId, edit.wordId)
 		if (dao.linkPosition(edit.parentId, fork.id) == null)

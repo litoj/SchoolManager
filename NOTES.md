@@ -39,6 +39,7 @@ Its DB part is the model for this project.
 
 ### Editing and data
 
+- Names and descriptions are trimmed at the write boundary.
 - Save immediately on every change.
 - No save button.
 - Keep `passed_tests` and `failed_tests`.
@@ -184,6 +185,8 @@ Its DB part is the model for this project.
 - The tested side row flips between its two sides on a tap.
 - The default tested side is a setting, the word side by default, and a fresh setup takes it.
 - Start waits for a source and says why.
+- Shared-translation entries group together, and a repeated answer fails after its first pass.
+- Every shown translation must name the answer for a synonym to pass.
 - The countdown pauses while the app is away.
 - Back confirms before ending a run without grading.
 - A run-out time reports itself before the grading.
@@ -192,6 +195,7 @@ Its DB part is the model for this project.
 
 ### Search
 
+- Queries and candidate text are trimmed before matching.
 - The filter icon opens labeled type, field, condition and value choices.
 - The dialog previews the written query, and Apply writes it into the field.
 - A written filter reads back into the dialog, while plain text stays plain.
@@ -226,7 +230,7 @@ Its DB part is the model for this project.
   opens a labeled filter dialog and the strip names the active filter. Go-to
   is a search-only action in the normal order. The More menu starts a selection
   and clears a filter. Settings, test setup, picker and search states explain
-  themselves. The help page keeps short sections. 788 tests.
+  themselves. The help page keeps short sections. 799 tests.
 - 2026-11-05: main adopts the test run, test report, search and picker fixes.
   The report reads Score x/y (z%) with the prompt, correct and typed answer.
   The info strip names counts per kind, a removed source offers undo.

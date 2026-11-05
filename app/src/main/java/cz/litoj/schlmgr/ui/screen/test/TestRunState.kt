@@ -198,7 +198,7 @@ object TestRunState {
 		host.scope.launch(Dispatchers.IO) {
 			var success = 0
 			items.forEachIndexed { index, tim ->
-				val text = typed[index] ?: ""
+				val text = typed[index]?.trim() ?: ""
 				val correct = current.isAnswer(index, text, tim.translations)
 				if (correct) success++
 				tim.correct = correct

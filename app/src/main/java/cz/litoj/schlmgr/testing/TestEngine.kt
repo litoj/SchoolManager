@@ -15,6 +15,8 @@ class TestEngine {
 
 	private var source: List<TestEntry> = emptyList()
 	private var answered: BooleanArray = BooleanArray(0)
+	private var duplicateGroups: List<Set<Int>> = emptyList()
+	private val usedAnswers = HashMap<Set<Int>, HashSet<String>>()
 	private var time = 0
 	private var doOnSec: Timer? = null
 	private var timerThread: Thread? = null
@@ -36,11 +38,44 @@ class TestEngine {
 		// an amount that covers the whole source uses all of it,
 		// a single-entry source included
 		val useAmount = if (amount == -1 || amount >= source.size) source.size else amount
-		this.source = if (isClever) cleverTest(source, useAmount) else rndTest(source.toMutableList(), useAmount)
+		val selected = if (isClever) cleverTest(source, useAmount) else rndTest(source.toMutableList(), useAmount)
+		this.source = groupAmbiguous(selected)
 		// a huge per-item time must not overflow the run into a negative
 		time = (timeSec.toLong() * useAmount).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
 		this.doOnSec = doOnSec
 		answered = BooleanArray(this.source.size)
+		usedAnswers.clear()
+	}
+
+	/**
+	 * Places entries sharing a shown translation next to each other.
+	 * - the grouping is transitive, so a chain of shared translations forms one block.
+	 * - the first member keeps its picked position, later members move up beside it.
+	 */
+	private fun groupAmbiguous(source: List<TestEntry>): List<TestEntry> {
+		if (source.size < 2 || !ItemRepository.initialized) {
+			duplicateGroups = emptyList()
+			return source
+		}
+		val parent = IntArray(source.size) { it }
+		fun root(index: Int): Int {
+			var at = index
+			while (parent[at] != at) at = parent[at]
+			return at
+		}
+		val translationOwners = HashMap<Int, Int>()
+		for (index in source.indices) {
+			for (translation in source[index].translations()) {
+				val owner = translationOwners.putIfAbsent(translation.id, index) ?: continue
+				val left = root(owner)
+				val right = root(index)
+				if (left != right) parent[right] = left
+			}
+		}
+		val groups = LinkedHashMap<Int, MutableList<Int>>()
+		for (index in source.indices) groups.computeIfAbsent(root(index)) { mutableListOf() }.add(index)
+		duplicateGroups = groups.filter { it.value.size > 1 }.values.map { it.toSet() }
+		return groups.values.flatMap { indices -> indices.map(source::get) }
 	}
 
 	/**
@@ -84,6 +119,7 @@ class TestEngine {
 
 	/**
 	 * Tests if the user answered correctly, and a null or empty answer always fails.
+	 * - a repeated answer inside an ambiguous prompt block fails after its first pass.
 	 * - the caller hands the translations of the item, which the run model already holds.
 	 * - no per-answer database round trip.
 	 *
@@ -95,21 +131,22 @@ class TestEngine {
 		require(!answered[index]) { "Can't answer more than once, only one attempt allowed!" }
 		answered[index] = true
 		val entry = source[index]
-		var correct = matchesAnswer(entry.word, translations, answer)
-		if (!correct && !isReversed && !answer.isNullOrEmpty()) {
-			// the answer may name any word linked to every translation of
-			// the tested word, the reverse direction of the translation links
-			for (translation in translations) {
-				correct = false
-				for (parentId in ItemRepository.parentIds(translation.id)) {
-					val parent = ItemRepository.get(parentId) ?: continue
-					if (parent.type != ItemKind.WORD) continue
-					if (WordNames.parseVariants(parent.name).any { it == answer }) {
-						correct = true
-						break
-					}
+		val text = answer?.trim()
+		var correct = matchesAnswer(entry.word, translations, text)
+		if (!correct && !isReversed && !text.isNullOrEmpty()) {
+			// a synonym must be linked to every shown translation, not just one
+			correct = translations.isNotEmpty() && translations.all { translation ->
+				ItemRepository.parentIds(translation.id).any { parentId ->
+					val parent = ItemRepository.get(parentId)
+					parent != null && parent.type == ItemKind.WORD && matchesName(parent.name, text)
 				}
-				if (!correct) break
+			}
+		}
+		if (!text.isNullOrEmpty()) {
+			val group = duplicateGroups.firstOrNull { index in it }
+			if (group != null && !usedAnswers.getOrPut(group) { HashSet() }.add(text)) {
+				// one prompt can only pass once in an ambiguous block
+				correct = false
 			}
 		}
 		// the test updates the word and every container holding it.
@@ -299,7 +336,10 @@ class TestEngine {
 		fun creditedTranslations(translations: List<DbItem>, answer: String?): List<DbItem> =
 			if (isReversed) translations.filter { matchesName(it.name, answer ?: "") } else translations
 
-		private fun matchesName(name: String, answer: String): Boolean =
-			answer == name || WordNames.parseVariants(name).any { it == answer }
+		private fun matchesName(name: String, answer: String): Boolean {
+			val expected = name.trim()
+			val candidate = answer.trim()
+			return candidate == expected || WordNames.parseVariants(expected).any { it.trim() == candidate }
+		}
 	}
 }

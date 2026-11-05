@@ -13,13 +13,14 @@ internal object WordMerge {
 	 */
 	internal suspend fun insertWord(store: ItemStore, params: InsertWordParams): DbItem {
 		val name = params.name.trim()
+		val description = params.description?.trim()
 		val scope = store.subjectRootOf(params.parentId) ?: params.parentId
 		val existing = store.findInSubject(scope, name, ItemKind.WORD)
 		val word = if (existing != null) {
 			store.mergeCounters(existing, params.passedTests, params.failedTests)
-			store.mergeDescription(existing, params.description)
+			store.mergeDescription(existing, description)
 		} else store.insert(DbItem(
-			name = name, description = params.description ?: "", type = ItemKind.WORD,
+			name = name, description = description ?: "", type = ItemKind.WORD,
 			passedTests = params.passedTests, failedTests = params.failedTests))
 		if (!store.linked(params.parentId, word.id)) store.linkAtEnd(params.parentId, word.id)
 		addTranslations(store, AddTranslationsParams(scope, word.id, params.translations))
@@ -38,16 +39,17 @@ internal object WordMerge {
 		val rows = ArrayList<DbItem>(params.translations.size)
 		for (translation in params.translations) {
 			val name = translation.name.trim()
+			val description = translation.description?.trim()
 			if (name.isEmpty()) continue
 			val existing = store.findInSubject(params.scope, name, ItemKind.TRANSLATION)
 			val trl = if (existing != null) {
 				// merge adopts the more-tested counters.
 				store.mergeCounters(existing, translation.passedTests ?: word.passedTests,
 					translation.failedTests ?: word.failedTests)
-				store.mergeDescription(existing, translation.description)
+				store.mergeDescription(existing, description)
 			}
 			else store.insert(DbItem(
-				name = name, description = translation.description ?: "",
+				name = name, description = description ?: "",
 				type = ItemKind.TRANSLATION,
 				passedTests = translation.passedTests ?: word.passedTests,
 				failedTests = translation.failedTests ?: word.failedTests))

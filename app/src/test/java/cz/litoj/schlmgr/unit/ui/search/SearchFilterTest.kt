@@ -74,6 +74,14 @@ class SearchFilterTest {
 	}
 
 	@Test
+	fun `a parsed filter value trims its edges`() {
+		assertEquals(
+			SearchFilter(type = FilterType.WORD, field = FilterField.DESCRIPTION, value = "dog"),
+			SearchFilter.parse("\\WD dog "),
+		)
+	}
+
+	@Test
 	fun `a prefix without a value has no filter`() {
 		assertNull(SearchFilter.parse("\\W"))
 		assertNull(SearchFilter.parse("\\"))

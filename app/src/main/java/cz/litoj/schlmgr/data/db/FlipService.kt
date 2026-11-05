@@ -119,7 +119,7 @@ internal object FlipService {
 	private suspend fun forkWord(dao: ItemDao, plan: FlipPlan, word: DbItem, override: FlipOverride) {
 		// a later round may have dropped the word, its fork would flip for nothing
 		if (word.id !in plan.flipSet) return
-		val fork = dao.insert(DbItem(name = override.name.trim(), description = override.description,
+		val fork = dao.insert(DbItem(name = override.name.trim(), description = override.description.trim(),
 			type = ItemKind.WORD, passedTests = word.passedTests, failedTests = word.failedTests)).toInt()
 		for (trl in dao.getChildren(word.id).filter { it.type == ItemKind.TRANSLATION })
 			dao.insertLink(DbLink(fork, trl.id, dao.nextPosition(fork)))
@@ -142,7 +142,7 @@ internal object FlipService {
 	private suspend fun copyTranslation(dao: ItemDao, plan: FlipPlan, trl: DbItem, override: FlipOverride) {
 		val holders = dao.parentsOf(trl.id).filter { it in plan.flipSet }
 		if (holders.isEmpty()) return
-		val copy = dao.insert(DbItem(name = override.name.trim(), description = override.description,
+		val copy = dao.insert(DbItem(name = override.name.trim(), description = override.description.trim(),
 			type = ItemKind.TRANSLATION, passedTests = trl.passedTests, failedTests = trl.failedTests)).toInt()
 		for (holder in holders) {
 			val slot = dao.linkPosition(holder, trl.id)

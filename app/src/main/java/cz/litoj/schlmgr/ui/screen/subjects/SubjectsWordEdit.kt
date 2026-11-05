@@ -241,8 +241,8 @@ internal fun splitRows(
 			if (editing && row.source != null) replaced.add(row.source.id)
 			for (i in trls.indices)
 				additions.add(
-					trls[i] to (if (i < trlDescs.size) trlDescs[i].replace("\\t", "\t") else null))
-		} else kept.add(KeptTranslation(row.source.id, trls[0], trlDescs[0].replace("\\t", "\t")))
+					trls[i].trim() to (if (i < trlDescs.size) trlDescs[i].replace("\\t", "\t").trim() else null))
+		} else kept.add(KeptTranslation(row.source.id, trls[0].trim(), trlDescs[0].replace("\\t", "\t").trim()))
 	}
 	return Triple(kept, replaced, additions)
 }
