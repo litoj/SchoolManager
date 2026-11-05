@@ -42,7 +42,7 @@ import cz.litoj.schlmgr.R
  * - an empty query closes the field, a written one keeps it with its results.
  * - a pause-driven hide reports nothing, since the user only left the app for a moment.
  *
- * @param onHelp shows the help icon at the end of the field, null leaves it out
+ * @param onFilter shows the filter icon at the end of the field, null leaves it out
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -53,7 +53,7 @@ fun TopBarSearchField(
 	onDismiss: () -> Unit,
 	modifier: Modifier = Modifier,
 	hint: String = stringResource(R.string.search),
-	onHelp: (() -> Unit)? = null,
+	onFilter: (() -> Unit)? = null,
 ) {
 	val keyboard = LocalSoftwareKeyboardController.current
 	val focus = remember { FocusRequester() }
@@ -134,20 +134,20 @@ fun TopBarSearchField(
 				},
 			)
 		}
-		if (onHelp != null) Box(
+		if (onFilter != null) Box(
 			Modifier
 				.width(50.dp)
 				.fillMaxHeight()
 				.clickable {
 					// the popup window hides the keyboard anyway, so the hide goes first as our own
 					hideKeyboard()
-					onHelp()
+					onFilter()
 				},
 			contentAlignment = Alignment.Center,
 		) {
 			Icon(
-				painterResource(R.drawable.ic_help),
-				contentDescription = stringResource(R.string.help),
+				painterResource(R.drawable.ic_filter),
+				contentDescription = stringResource(R.string.search_filter),
 				tint = onBar,
 				modifier = Modifier.size(IconSize),
 			)

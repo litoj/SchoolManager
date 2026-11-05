@@ -52,8 +52,6 @@ class SearchEngine(query: String, private val foldDiacritics: Boolean = false) {
 	 */
 	private val visited = HashSet<Int>()
 
-	val visitedChapters: Int get() = visited.size
-
 	/**
 	 * The walk abandons itself when the user navigates away or starts a new search.
 	 * - the view model lowers it when the search stops displaying.

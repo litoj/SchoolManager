@@ -28,7 +28,6 @@ class SettingsState(
 	defaultReverse: Boolean = false,
 	searchDiacritics: Boolean = false,
 	selectionOrder: List<SelectionAction> = ActionConfig.DEFAULT_ORDER,
-	connections: Map<SelectionAction, SelectionAction> = ActionConfig.DEFAULT_CONNECTIONS,
 ) {
 	var parse by mutableStateOf(parse)
 		private set
@@ -54,12 +53,8 @@ class SettingsState(
 	var searchDiacritics by mutableStateOf(searchDiacritics)
 		private set
 
-	/** The ordered selection actions, where the first four hold the strip slots. */
+	/** The ordered selection actions, where the first four applicable hold the strip slots. */
 	var selectionOrder by mutableStateOf(selectionOrder)
-		private set
-
-	/** The search connections of the connectable actions, Go-to among them. */
-	var connections by mutableStateOf(connections)
 		private set
 
 	fun toggleParse() {
@@ -174,25 +169,10 @@ class SettingsState(
 		AppSettings.set("searchNoDiacritics", searchDiacritics)
 	}
 
-	/** Moves one action in the order, where a connection of a lost slot clears. */
+	/** Moves one action in the order. */
 	fun moveSelectionAction(from: Int, to: Int) {
-		val moved = ActionConfig(selectionOrder, connections).moved(from, to)
-		selectionOrder = moved.order
-		connections = moved.connections
-		persistSelectionBar()
-	}
-
-	/** Connects Go-to to a strip action, null leaves it in the search overflow. */
-	fun connectGoto(target: SelectionAction?) {
-		// a target off the strip would show nothing, so the door refuses it
-		if (target != null && target !in selectionOrder.take(ActionConfig.BAR_SLOTS)) return
-		connections = connections.filterKeys { it != SelectionAction.GOTO } +
-			(if (target == null) emptyMap() else mapOf(SelectionAction.GOTO to target))
-		persistSelectionBar()
-	}
-
-	private fun persistSelectionBar() {
-		ActionConfig.save(selectionOrder, connections)
+		selectionOrder = ActionConfig(selectionOrder).moved(from, to).order
+		ActionConfig.save(selectionOrder)
 	}
 
 	/** The row options move through the one door of ItemRow. */
@@ -229,6 +209,5 @@ class SettingsViewModel : ViewModel() {
 		defaultReverse = TestEngine.isReversed,
 		searchDiacritics = AppSettings.getBool("searchNoDiacritics", false),
 		selectionOrder = config.order,
-		connections = config.connections,
 	)
 }

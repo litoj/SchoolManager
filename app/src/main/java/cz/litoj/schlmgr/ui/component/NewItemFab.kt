@@ -12,12 +12,15 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -43,6 +46,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 import kotlin.math.abs
@@ -97,32 +101,47 @@ fun NewItemFab(
 			}
 			kinds.forEachIndexed { i, kind ->
 				val at = center - root + paletteOffset(i, kinds.size, radius)
-				Image(
-					painterResource(kind.iconRes),
-					contentDescription = null,
-					modifier = Modifier
+				Column(
+					Modifier
 						.offset {
 							IntOffset(
-								(at.x - PaletteIconSize.toPx() / 2).roundToInt(),
+								(at.x - PaletteLabelWidth.toPx() / 2).roundToInt(),
 								(at.y - PaletteIconSize.toPx() / 2).roundToInt(),
 							)
 						}
-						.size(PaletteIconSize)
-						// the hovered icon carries the header colour, and the rest
-						// the grey wash of the strip
-						.background(
-							if (i == hovered) ExplorerColors.header else ExplorerColors.actionBar,
-							CircleShape,
-						)
-						.padding(IconPadding)
-						// the icons of the standing palette take plain taps
+						.width(PaletteLabelWidth)
+						// the labels of the standing palette take plain taps too
 						.then(if (standing && !pressed) {
 							Modifier.clickable(
 								interactionSource = remember { MutableInteractionSource() },
 								indication = null,
 							) { commit(i) }
 						} else Modifier),
-				)
+					horizontalAlignment = Alignment.CenterHorizontally,
+				) {
+					Image(
+						painterResource(kind.iconRes),
+						contentDescription = null,
+						modifier = Modifier
+							.size(PaletteIconSize)
+							// the hovered icon carries the header colour, and the rest
+							// the grey wash of the strip
+							.background(
+								if (i == hovered) ExplorerColors.header else ExplorerColors.actionBar,
+								CircleShape,
+							)
+							.padding(IconPadding),
+					)
+					Text(
+						stringResource(paletteLabel(kind)),
+						Modifier
+							.padding(top = 2.dp)
+							.background(ExplorerColors.actionBar, RoundedCornerShape(3.dp))
+							.padding(horizontal = 3.dp),
+						fontSize = 11.sp,
+						color = ExplorerColors.body,
+					)
+				}
 			}
 		}
 		AnimatedVisibility(
@@ -214,6 +233,17 @@ private val PaletteIconSize = FabSize
 private val IconPadding = 10.dp
 /** The palette icons sit one button size off the edge of the button. */
 internal val PaletteRadius = FabSize * 2
+/** The label under a palette icon, wide enough for the longest kind name. */
+private val PaletteLabelWidth = 72.dp
+
+/** The short name under a palette icon. */
+private fun paletteLabel(kind: RowKind): Int = when (kind) {
+	RowKind.SUBJECT -> R.string.palette_subject
+	RowKind.CHAPTER -> R.string.palette_chapter
+	RowKind.WORD -> R.string.palette_word
+	RowKind.NOTE -> R.string.palette_note
+}
+
 private val FabCorner = 10.dp
 internal val FabMargin = 15.dp
 private val FabElevation = 6.dp

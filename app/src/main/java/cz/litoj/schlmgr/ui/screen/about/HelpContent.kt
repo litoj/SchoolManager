@@ -3,10 +3,8 @@ package cz.litoj.schlmgr.ui.screen.about
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -15,7 +13,6 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
@@ -62,10 +59,10 @@ internal val sections = listOf(
 		R.string.help_search, intro = R.string.help_search_how, icon = R.drawable.ic_search,
 		children = listOf(
 			HelpSection(R.string.more_go_to, R.string.setts_act_goto, icon = R.drawable.ic_goto),
-			HelpSection(R.string.help_search_types, R.string.help_search_types_how, customIntro = {
-				CodeBlock(stringResource(R.string.help_search_types_examples))
+			HelpSection(R.string.help_search_filter, R.string.help_search_filter_how),
+			HelpSection(R.string.help_search_advanced, R.string.help_search_advanced_how, customIntro = {
+				CodeBlock(stringResource(R.string.help_search_advanced_examples))
 			}),
-			HelpSection(R.string.help_search_regex, customIntro = { RegexIntro() }),
 		),
 	),
 	HelpSection(
@@ -120,34 +117,4 @@ internal fun CodeBlock(text: String) {
 			color = DefaultTextColor,
 		),
 	)
-}
-
-@Composable
-internal fun RegexIntro() {
-	BodyText(stringResource(R.string.help_search_regex_how_1))
-	RegexTable(R.string.help_search_regex_char_class, R.string.help_search_regex_char_class_desc, 100.dp)
-	BodyText(stringResource(R.string.help_search_regex_how_2))
-	RegexTable(R.string.help_search_regex_quant, R.string.help_search_regex_quant_desc, 70.dp)
-	BodyText(stringResource(R.string.help_search_regex_how_3))
-	RegexTable(R.string.help_search_regex_meta, R.string.help_search_regex_meta_desc, 70.dp, 8.dp)
-}
-
-@Composable
-private fun RegexTable(@StringRes column: Int, @StringRes description: Int, width: Dp, bottom: Dp = 0.dp) {
-	Row(
-		Modifier
-			.padding(start = 8.dp, end = 8.dp, bottom = bottom),
-	) {
-		Text(
-			stringResource(column),
-			Modifier.width(width),
-			// the syntax tokens align only in a monospace column
-			style = TextStyle(fontSize = 13.sp, fontFamily = FontFamily.Monospace, color = DefaultTextColor),
-		)
-		Text(
-			stringResource(description),
-			Modifier.weight(1f),
-			style = TextStyle(fontSize = 13.sp, color = DefaultTextColor),
-		)
-	}
 }

@@ -70,15 +70,17 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 		)
 		// one width for every count cell, so the rows render at the browse number size.
 		// the widest count can lie below the largest one, since digit widths differ.
+		val suffix = stringResource(R.string.test_tested_suffix)
 		val positionWidth = positionColumnWidth(
 			rows.maxOfOrNull { it.model.position } ?: 1,
 			ExplorerRowVariant.Browse,
+			suffix,
 		)
 		PopupCard {
 			PopupTitle(successText)
 			HairlineDivider()
 			LazyColumn(Modifier.weight(1f, fill = false)) {
-				items(rows) { row -> WordResultRow(row, positionWidth) }
+				items(rows) { row -> WordResultRow(row, positionWidth, suffix) }
 			}
 			HairlineDivider()
 			PopupButtonRow {
@@ -95,7 +97,7 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 	}
 
 	@Composable
-	private fun WordResultRow(row: ResultRow, positionWidth: Dp) {
+	private fun WordResultRow(row: ResultRow, positionWidth: Dp, positionSuffix: String) {
 		Item(
 			row.model,
 			onClick = {},
@@ -103,6 +105,7 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 			descVisible = false,
 			iconVisible = false,
 			positionWidth = positionWidth,
+			positionSuffix = positionSuffix,
 			// the labels need string resources, and the model is built outside composition.
 			// this slot also ignores the description limit, so no translation collapses.
 			answer = {

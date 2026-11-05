@@ -30,6 +30,14 @@ The in-app Help covers the standard workflow. These features are easy to miss.
 - Tap the type icon of a row to select it during a selection or in the picker.
 - Long-press and drag a row in a browse list to reorder it.
 
+### Searching
+
+- The filter icon builds a search by type, compared field and condition.
+- A plain filter stays plain text, so no markers appear for the common case.
+- The info strip names the active filter and the result count.
+- The written query stays editable, and the help page lists short examples.
+- In search results, Go to location sits on the selection strip.
+
 ### Display
 
 - Tap a word to switch between the word and its translations.

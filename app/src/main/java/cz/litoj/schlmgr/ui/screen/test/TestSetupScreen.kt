@@ -114,18 +114,17 @@ private fun TestSetupContent(viewModel: TestSetupViewModel, modifier: Modifier =
 			SettingNumberRow(
 				stringResource(R.string.test_size), TestSetupState.amountText,
 				viewModel::setAmount,
-			) { viewModel.restoreAmount(); keyboard?.hide() }
-			// the pool clamps the amount, so the caption names what is really asked
-			if (TestSetupState.poolCount > 0) {
-				RowCaption(pluralStringResource(R.plurals.test_available, TestSetupState.poolCount, TestSetupState.poolCount))
-			}
+				{ viewModel.restoreAmount(); keyboard?.hide() },
+				caption = amountCaption(),
+			)
 			HairlineDivider()
 			SettingNumberRow(
 				stringResource(R.string.test_time), TestSetupState.timeText,
 				viewModel::setTime,
-			) { viewModel.restoreTime(); keyboard?.hide() }
-			// the caption derives the run length, since the row itself holds only one word's share
-			RowCaption(stringResource(R.string.test_total_time, TestSetupState.timeTotal().total))
+				{ viewModel.restoreTime(); keyboard?.hide() },
+				// the caption derives the run length, since the row itself holds only one word's share
+				caption = stringResource(R.string.test_total_time, TestSetupState.timeTotal().total),
+			)
 			HairlineDivider()
 			DirectionRow(TestSetupState.reverseTest, viewModel::toggleReverse)
 			HairlineDivider()
@@ -174,14 +173,15 @@ private fun TestSetupContent(viewModel: TestSetupViewModel, modifier: Modifier =
 	}
 }
 
-/** The small caption line under a setting row. */
+/** The pool caption, where a larger default amount still tests only what exists. */
 @Composable
-private fun RowCaption(text: String) {
-	Text(
-		text,
-		Modifier.padding(start = 8.dp),
-		style = TextStyle(fontSize = 13.sp, color = DefaultTextColor),
-	)
+private fun amountCaption(): String? {
+	val pool = TestSetupState.poolCount
+	if (pool <= 0) return null
+	val wanted = TestSetupState.amountText.toIntOrNull() ?: 0
+	return if (wanted > pool)
+		pluralStringResource(R.plurals.test_available_limited, pool, pool)
+	else pluralStringResource(R.plurals.test_available, pool, pool)
 }
 
 /** The run direction as one setting row: the typed side reads on the right, a tap flips it. */

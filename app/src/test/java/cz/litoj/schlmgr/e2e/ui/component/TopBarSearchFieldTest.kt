@@ -20,7 +20,7 @@ import org.robolectric.annotation.Config
 /**
  * The search field against the keyboard, driven through the window insets.
  * - a dismissed keyboard closes the field.
- * - the help keeps the field and its query, though its popup window hides the keyboard.
+ * - the filter keeps the field and its query, though its popup window hides the keyboard.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -31,12 +31,12 @@ class TopBarSearchFieldTest {
 
 	private lateinit var view: View
 	private var closes = 0
-	private var helps = 0
+	private var filters = 0
 
 	private fun show() {
 		rule.setContent {
 			view = LocalView.current
-			TopBarSearchField("hled", {}, {}, { closes++ }, onHelp = { helps++ })
+			TopBarSearchField("hled", {}, {}, { closes++ }, onFilter = { filters++ })
 		}
 		rule.waitForIdle()
 		keyboard(visible = true)
@@ -63,14 +63,14 @@ class TopBarSearchFieldTest {
 	}
 
 	@Test
-	fun `the help keeps the field and the query when the keyboard hides`() {
+	fun `the filter keeps the field and the query when the keyboard hides`() {
 		show()
 
-		rule.onNodeWithContentDescription("Help").performClick()
+		rule.onNodeWithContentDescription("Search filter").performClick()
 		keyboard(visible = false)
 
 		rule.runOnIdle {
-			assertEquals(1, helps)
+			assertEquals(1, filters)
 			assertEquals(0, closes)
 		}
 		rule.onNodeWithText("hled").assertExists()

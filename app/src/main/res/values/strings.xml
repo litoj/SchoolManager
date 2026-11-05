@@ -1,4 +1,4 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
     <string name="action_full_text">Full Text</string>
     <string name="action_reference">References</string>
     <string name="action_flip">Flip</string>
@@ -6,7 +6,7 @@
     <string name="action_share">Share</string>
     <string name="action_undo">Undo</string>
     <string name="about_text">This program was developed to help people with school subjects, especially with foreign languages and biology.\n\nFor any further help contact me at litos@tuta.io</string>
-    <string name="add_word">Add translate</string>
+    <string name="add_word">Add translation</string>
     <string name="app_name" translatable="false">School Manager</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
@@ -14,9 +14,43 @@
     <string name="cut">Cut</string>
     <string name="data_rate">"Success rate: %1$d%%"</string>
     <string name="data_untested">Success rate: Untested</string>
-    <string name="data_search_chapters">"Results: %1$d;\tChapters: %2$d"</string>
+    <string name="data_search_results">"Results: %1$d"</string>
+    <string name="data_search_filtered">"%1$s · Results: %2$d"</string>
     <string name="data_search_bad_pattern">Invalid regular expression.</string>
-    <string name="data_search_invalid">Invalid search. A valid form: \\WR=0</string>
+    <string name="data_search_invalid">Invalid search. Use the filter or write \\WR=0.</string>
+    <string name="data_selected">"Selected: %1$d"</string>
+    <string name="filter_summary">"Filter: %1$s · %2$s %3$s %4$s"</string>
+    <string name="search_filter">Search filter</string>
+    <string name="search_filter_intro">Pick what to search and how. The field shows the written query.</string>
+    <string name="filter_type">Type</string>
+    <string name="filter_type_any">Any type</string>
+    <string name="filter_type_word">Words</string>
+    <string name="filter_type_translation">Translations</string>
+    <string name="filter_type_chapter">Chapters</string>
+    <string name="filter_field">Compare</string>
+    <string name="filter_field_name">Name</string>
+    <string name="filter_field_description">Description</string>
+    <string name="filter_field_successes">Successes</string>
+    <string name="filter_field_fails">Fails</string>
+    <string name="filter_field_tested">Times tested</string>
+    <string name="filter_field_rate">Success rate</string>
+    <string name="filter_condition">Condition</string>
+    <string name="filter_cond_contains">contains</string>
+    <string name="filter_cond_contains_case">contains, exact case</string>
+    <string name="filter_cond_starts">starts with</string>
+    <string name="filter_cond_ends">ends with</string>
+    <string name="filter_cond_regex">matches regex</string>
+    <string name="filter_cond_greater">is more than</string>
+    <string name="filter_cond_less">is less than</string>
+    <string name="filter_cond_equals">equals</string>
+    <string name="filter_value">Value</string>
+    <string name="filter_value_text">Text</string>
+    <string name="filter_value_number">Whole number</string>
+    <string name="filter_number_error">Enter a whole number.</string>
+    <string name="filter_regex_error">Invalid regular expression.</string>
+    <string name="filter_preview">Query: %1$s</string>
+    <string name="filter_clear">Clear</string>
+    <string name="filter_apply">Apply</string>
     <string name="data_desc">Description</string>
     <string name="data_name">Name</string>
     <string name="data_translate">Translation</string>
@@ -94,7 +128,7 @@
     <string name="help_extra_naming_examples">I/They come = \'I come\' or \'They come\'
         \n(I go)/(He goes). = \'I go.\' or \'He goes\'.</string>
     <string name="help_extra_words_export">Export words</string>
-    <string name="help_extra_words_export_how">The menu shows Export only while rows are selected.\nNothing selected exports the open container, or all subjects at the root.\nWord file: compact, no success rates, no references.\nJSON file: complete, success rates, notes and references included.</string>
+    <string name="help_extra_words_export_how">The menu shows Export only while rows are selected.\nThe export reaches every selected row except translations.\nWord file: compact, no success rates, no references.\nJSON file: complete, success rates, notes and references included.</string>
     <string name="help_extra_words_import">Import words</string>
     <string name="help_extra_words_import_how">Inside a subject the words land in it, at the subjects screen a new subject is created.\nAn error names the file and line. Fix that line and pick the file again.</string>
     <string name="help_import_format">File format</string>
@@ -127,65 +161,26 @@
     </string-array>
     <string name="help_search">Searching</string>
     <string name="help_search_hint">Search help</string>
-    <string name="help_search_how">Searching is enabled in all chapters and subjects.
-        \nIn a search list, a click on a found chapter opens its container.
+    <string name="help_search_how">Search finds names and translations in the open subject.
+        \nThe filter icon builds a query from labeled choices, so the prefix syntax stays optional.
         \nA word hit shows its translations directly, a settings toggle turns that off.
-        \nThere are various methods for searching, the search engine accepts naming syntax.
         \nA settings switch turns on diacritic-insensitive search.</string>
-    <string name="help_search_regex">Regex syntax</string>
-    <string name="help_search_regex_char_class">"Char Class\n[abc]\n[^abc]\n[a-zA-Z]\n[a-d[m-p]]\n[a-z&amp;&amp;[def]]\n[a-z&amp;&amp;[^bc]]\n[a-z&amp;&amp;[^m-p]]"</string>
-    <string name="help_search_regex_char_class_desc">"Description\na, b, or c\nAny character except a, b, or c\na through z or A through Z, inclusive\na through d, or m through p: [a-dm-p]\nd, e, or f \na through z, except for b and c: [ad-z]\na through z, and not m through p: [a-lq-z]"</string>
-    <string name="help_search_regex_how_1">Regex Source: https://www.javatpoint.com/java-regex
-        \nRegex Character Classes</string>
-    <string name="help_search_regex_how_2">Regex Quantifiers
-        \nThe quantifiers specify the number of occurrences of a character.</string>
-    <string name="help_search_regex_how_3">Regex Metacharacters
-        \nThe regular expression metacharacters work as shortcuts.</string>
-    <string name="help_search_regex_meta">"Regex\n.\n\\d\n\\D\n\\s\n\\S\n\\w\n\\W\n\\b\n\\B"</string>
-    <!-- [0-9] is a regex character range; the hyphen is required, not typography -->
-    <string name="help_search_regex_meta_desc" tools:ignore="TypographyDashes">"Description\nAny character\nAny digits ([0-9])\nAny non-digit ([^0-9])\nAny whitespace character ([\\t\\n\\x0B\\f\\r])\nAny non-whitespace character ([^\\s])\nAny word character ([a-zA-Z_0-9])\nAny non-word character ([^\\w])\nA word boundary\nA non word boundary"</string>
-    <string name="help_search_regex_quant">"Regex\nX?\nX+\nX*\nX{n}\nX{n,}\nX{y,z}"</string>
-    <string name="help_search_regex_quant_desc">"Description\nX occurs once or not at all\nX occurs once or more times\nX occurs zero or more times\nX occurs n times only\nX occurs n or more times\nX occurs at least y times but less than z times"</string>
-    <string name="help_search_types">Search variants</string>
-    <!-- the text shows literal % signs, which are not format specifiers -->
-    <string name="help_search_types_how" formatted="false">This application has more search methods aside from simple text.
-        \nThe prefix syntax has 3 levels and is initiated by \'\\\' char followed by 0-3 modifiers and comparing value, the levels are:
-        \n1. Level: desired type
-        \n\tW - must be a word
-        \n\tT - must be a translate
-        \n\tC - must be a chapter
-        \n2. Level: what is compared
-        \n\tS - amount of successes
-        \n\tF - amount of fails
-        \n\tN - times tested
-        \n\tR - success rate in %
-        \n\tD - the description (if any)
-        \n\tdefault - name of the item
-        \n3. Level: desired condition
-        \n -for text:
-        \n\t\\ - contains the expression ignoring case
-        \n\tc - contains the expression
-        \n\ts - starts with the expression
-        \n\te - ends with the expression
-        \n\tr - matches the regular expression
-        \n -for number value:
-        \n\t&gt; - must be higher than the given value
-        \n\t&lt; - must be lower
-        \n\t= - must be equal to the value
-        \n\nA number condition ignores case and spaces, so \\w r = 0 equals \\WR=0.
-        \nIt needs S, F, N or R and a whole number, otherwise a red message shows.
-        \n&gt;, &lt; or = after the markers always starts a number condition, so \\\\=5 finds the text \'=5\'.</string>
-    <string name="help_search_types_examples" formatted="false">\WD\t- all words with some description
-        \n\R>50\t- items with success rate above 50%
-        \n\WR=0\t- tested words never answered correctly
-        \n\sD\t- items starting with \'D\'
-        \n\C\K72\t- all chapters with name containing \'k72\'</string>
+    <string name="help_search_filter">Filter</string>
+    <string name="help_search_filter_how">Pick the type, what to compare and the condition, then enter a value.
+        \nThe preview shows the written query before it runs.
+        \nApply writes it into the field and starts the search.</string>
+    <string name="help_search_advanced">Written query</string>
+    <string name="help_search_advanced_how">The field accepts the written form the filter builds.
+        \nA regular expression follows Java syntax.</string>
+    <string name="help_search_advanced_examples" formatted="false">\WR>50\t- words with success rate above 50%
+        \n\sD\t- names starting with \'D\'
+        \n\WD\hund\t- words whose description contains \'hund\'</string>
     <string name="help_select">Editing</string>
     <string name="help_select_delete">Permanently deletes the selected items after accepting the delete-check dialog.</string>
     <string name="help_select_edit">Only one item can be edited at a time. A window with parameters of the selected item pops up. The style of the editing window is same as when creating that type of item.
         \nClick the \'OK\' button to save the changes when done editing.</string>
     <string name="help_select_how">All created objects can be modified in some way.
-        \nA long-press on an item starts the select mode: the item becomes selected and the bottom sheet with possible actions shows. A tap on the checkbox of a row toggles its selection too.
+        \nA long-press on an item starts the select mode: the item becomes selected and the bottom strip with possible actions shows. A tap on the type icon of a row toggles its selection too.
         \nKeep the finger pressed and move it over the list to select the range of items it crosses.
         \nWhile items are selected, the search button in the top right corner becomes the select-all toggle: it selects all items of the list, or (if all items are selected) exits the selection mode. The back key also exits the selection mode.
         \nThe list of possible actions follows below.</string>
@@ -199,7 +194,7 @@
         \nEvery row is one tested word.
         \nThe large text is what the test asked: the translations, or the word in the reversed test.
         \nBelow it are the correct answer and yours, green when right, red when wrong.
-        \nThe number on the left counts how often the word was tested.
+        \nThe number with × counts how often the word was tested.
         \nThe colour band runs from red to green with its overall success.
         \nThe right end shows passed over tested.
         \nAll counts already include this test.
@@ -246,6 +241,10 @@
     <string name="new_word">New word</string>
     <string name="new_note">New note</string>
     <string name="fab_new">New</string>
+    <string name="palette_subject">Subject</string>
+    <string name="palette_chapter">Chapter</string>
+    <string name="palette_word">Word</string>
+    <string name="palette_note">Note</string>
     <string name="note_copied">Copied</string>
     <string name="objects_cancel">Cancel</string>
     <string name="paste">Paste</string>
@@ -257,23 +256,36 @@
     <string name="popup_copy_truncated">[the copy was truncated — the text is too long for the clipboard]</string>
     <string name="press_exit">Press again to exit</string>
     <string name="permission_pending">An action already waits for the permission</string>
-    <string name="search">Input Keyword</string>
+    <string name="search">Search</string>
     <string name="select">Select</string>
     <string name="select_test">Test</string>
-    <string name="setts_him_flipped">Translate words automatically</string>
-    <string name="setts_him_flipped_search">Translate search results automatically</string>
-    <string name="setts_him_parse">Display item names parsed</string>
+    <string name="setts_him_flipped">Flip words on open</string>
+    <string name="setts_him_flipped_hint">A word row opens on its translations.</string>
+    <string name="setts_him_flipped_search">Flip search hits on open</string>
+    <string name="setts_him_flipped_search_hint">A word hit opens on its translations.</string>
+    <string name="setts_him_parse">Parse name variants</string>
+    <string name="setts_him_parse_hint">Reads A/B and (A)/(B) as several name variants.</string>
     <string name="setts_explorer">Explorer</string>
-    <string name="setts_desc_lines">Directly displayed description lines</string>
-    <string name="setts_double_tap_ms">Flip-all doubleclick timeout</string>
-    <string name="setts_test_amount">Default words to test</string>
-    <string name="setts_test_clever">Make tests by success rate</string>
-    <string name="setts_test_time">Default seconds per word</string>
-    <string name="setts_test_direction">Default tested side</string>
-    <string name="setts_word_splitter">Sequence splitting words from translates when exporting</string>
+    <string name="setts_desc_lines">Description preview lines</string>
+    <string name="setts_desc_lines_hint">Longer descriptions fold behind the info icon.</string>
+    <string name="setts_double_tap_ms">Double-tap window (ms)</string>
+    <string name="setts_double_tap_ms_hint">Two taps within this time flip the whole list. 0 turns it off.</string>
+    <string name="setts_test_amount">Words per test</string>
+    <string name="setts_test_clever">Pick weak words first</string>
+    <string name="setts_test_clever_hint">Orders the test by priority: weak and rarely tested words first.</string>
+    <string name="setts_test_time">Seconds per word</string>
+    <string name="setts_test_direction">Default answer side</string>
+    <string name="setts_test_direction_hint">Which side you answer with.</string>
+    <string name="setts_word_splitter">Word/translation splitter</string>
+    <string name="setts_word_splitter_hint">The character between a word and its translations in exported files.</string>
     <string name="setts_search_diacritics">Search without diacritics</string>
-    <string name="setts_selection_bar">Selection bar</string>
-    <string name="setts_bar_hint">The first four sit on the selection strip, the rest in the more menu. Drag to reorder.</string>
+    <string name="setts_search_diacritics_hint">Matches text with and without accents.</string>
+    <string name="setts_selection_bar">Selection actions</string>
+    <string name="setts_bar_hint">The first four actions of each list sit on the strip, the rest in the more menu. Drag to reorder.</string>
+    <string name="setts_place_both">both bars</string>
+    <string name="setts_place_browse">browse bar</string>
+    <string name="setts_place_search">search bar</string>
+    <string name="setts_place_more">more menu</string>
     <string name="setts_act_test">Starts a test from the selected rows</string>
     <string name="setts_act_cut">Takes the rows into another container</string>
     <string name="setts_act_edit">Opens the one selected row for editing</string>
@@ -282,26 +294,22 @@
     <string name="setts_act_flip">Flips the selected words to the other side</string>
     <string name="setts_act_export">Exports the selected rows into a file</string>
     <string name="setts_act_goto">Opens the container of the single hit</string>
-    <string name="setts_goto_connect">Drag it onto a strip action to take its place in search</string>
-    <string name="setts_goto_bound">Replaces %1$s in search</string>
-    <string name="setts_goto_loose">Sits in the more menu of a search</string>
-    <string name="setts_bound_marker">search</string>
-    <string name="sort">Sort</string>
-    <string name="sort_alpha_AZ">alphabet ▼</string>
-    <string name="sort_alpha_ZA">alphabet ▲</string>
-    <string name="sort_default">default position</string>
-    <string name="sort_length_01">name length ▼</string>
-    <string name="sort_length_10">name length ▲</string>
-    <string name="sort_sf_01">success ▼</string>
-    <string name="sort_sf_10">success ▲</string>
-    <string name="sort_priority">priority</string>
+    <string name="sort">Sort by</string>
+    <string name="sort_alpha_AZ">A → Z</string>
+    <string name="sort_alpha_ZA">Z → A</string>
+    <string name="sort_default">Original order</string>
+    <string name="sort_length_01">Shortest name first</string>
+    <string name="sort_length_10">Longest name first</string>
+    <string name="sort_sf_01">Weakest first</string>
+    <string name="sort_sf_10">Strongest first</string>
+    <string name="sort_priority">Test priority</string>
     <string name="start">Start</string>
     <string name="test_abort">QUIT</string>
     <string name="test_abort_question">Abort this test? Your answers are dropped and the statistics stay unchanged.</string>
     <string name="test_add">Add source</string>
-    <string name="test_direction">Tested side</string>
-    <string name="test_dir_normal">The word</string>
-    <string name="test_dir_reverse">A translation</string>
+    <string name="test_direction">Answer with</string>
+    <string name="test_dir_normal">Word</string>
+    <string name="test_dir_reverse">Translation</string>
     <plurals name="test_blank_answers">
         <item quantity="one">Missing %1$d answer. Finish anyway?</item>
         <item quantity="other">Missing %1$d answers. Finish anyway?</item>
@@ -313,6 +321,11 @@
         <item quantity="one">of %d available</item>
         <item quantity="other">of %d available</item>
     </plurals>
+    <plurals name="test_available_limited">
+        <item quantity="one">Only %d word is available, all will be tested.</item>
+        <item quantity="other">Only %d words are available, all will be tested.</item>
+    </plurals>
+    <string name="test_tested_suffix">"×"</string>
     <string name="test_time">Seconds per word</string>
     <string name="test_total_time">Total time: %1$d s</string>
     <string name="test_sources_header">Sources · one subject</string>

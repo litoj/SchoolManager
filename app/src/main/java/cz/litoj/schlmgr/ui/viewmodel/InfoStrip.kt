@@ -49,7 +49,7 @@ internal class InfoStrip(
 			val info = when (val last = host.lastSearchInfo) {
 				is InfoBar.Search -> last.copy(count = count)
 				InfoBar.InvalidSearch, InfoBar.InvalidPattern -> last
-				else -> InfoBar.Search(count, 0)
+				else -> InfoBar.Search(count)
 			}
 			host.lastSearchInfo = info
 			host.publishInfo(info)

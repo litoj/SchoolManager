@@ -14,15 +14,13 @@ import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.app.AppSettings
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.ui.screen.settings.SettingsScreen
-import cz.litoj.schlmgr.ui.viewmodel.SelectionAction.CUT
+import cz.litoj.schlmgr.ui.viewmodel.ActionConfig
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction.DELETE
-import cz.litoj.schlmgr.ui.viewmodel.SelectionAction.EDIT
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction.GOTO
 import cz.litoj.schlmgr.ui.viewmodel.SettingsViewModel
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -32,7 +30,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The selection bar editor: the drag reorder and the Go-to drag-connect.
+ * The selection action editor: the drag reorder and the placement markers.
  * - the rows answer with their labels, the state carries the outcome.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -91,42 +89,16 @@ class SettingsScreenTest {
 	}
 
 	@Test
-	fun `dragging Go-to onto a strip row connects it`() {
-		// Delete sits right above the Go-to row, so both stay on screen
-		drag("action_GOTO", "action_DELETE")
+	fun `dragging Go-to to the front puts it on the search bar`() {
+		drag("action_GOTO", "action_TEST")
 
-		assertEquals(DELETE, model.state.connections[GOTO])
+		assertEquals(GOTO, model.state.selectionOrder.first())
+		assertEquals(GOTO, ActionConfig(model.state.selectionOrder).bar(true).first())
 	}
 
 	@Test
-	fun `dropping Go-to off the strip releases it`() {
-		drag("action_GOTO", "action_EXPORT")
-
-		assertNull(model.state.connections[GOTO])
-	}
-
-	@Test
-	fun `dragging Go-to keeps a marker under the finger`() {
-		val tag = "action_GOTO"
-		rule.onNodeWithTag(tag).performScrollTo()
-		rule.waitForIdle()
-		val bounds = rule.onNodeWithTag(tag).getBoundsInRoot()
-		val x = with(rule.density) { (bounds.left + (bounds.right - bounds.left) / 2).toPx() }
-		val y = with(rule.density) { (bounds.top + (bounds.bottom - bounds.top) / 2).toPx() }
-		rule.mainClock.autoAdvance = false
-		rule.onRoot().performTouchInput {
-			down(Offset(x, y))
-			advanceEventTime(viewConfiguration.longPressTimeoutMillis + 100)
-		}
-		rule.mainClock.advanceTimeBy(1000)
-		rule.onRoot().performTouchInput { moveTo(Offset(x, y - 40f)) }
-		rule.mainClock.advanceTimeBy(100)
-		rule.waitForIdle()
-		rule.onNodeWithTag("goto_marker").assertExists()
-		rule.onRoot().performTouchInput { up() }
-		rule.mainClock.autoAdvance = true
-		rule.waitForIdle()
-		rule.onNodeWithTag("goto_marker").assertDoesNotExist()
+	fun `Go-to names its search-only placement`() {
+		rule.onNodeWithText("search bar").assertExists()
 	}
 
 	@Test
@@ -145,11 +117,10 @@ class SettingsScreenTest {
 	}
 
 	@Test
-	fun `a long-press drag reorders the strip`() {
+	fun `a long-press drag reorders the actions`() {
 		drag("action_DELETE", "action_TEST")
 
 		assertEquals(DELETE, model.state.selectionOrder.first())
-		assertEquals(CUT, model.state.connections[GOTO])
 	}
 
 	@Test
@@ -181,9 +152,10 @@ class SettingsScreenTest {
 	}
 
 	@Test
-	fun `a reorder that pushes the target off the strip clears the connection`() {
-		drag("action_CUT", "action_REFERENCE")
+	fun `a reorder moves cut out of the browse bar`() {
+		drag("action_CUT", "action_EXPORT")
 
-		assertNull(model.state.connections[GOTO])
+		assertFalse(ActionConfig(model.state.selectionOrder).bar(false).contains(
+			cz.litoj.schlmgr.ui.viewmodel.SelectionAction.CUT))
 	}
 }

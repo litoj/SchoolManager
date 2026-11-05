@@ -32,6 +32,7 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -133,17 +134,25 @@ internal fun VerticalButtonSeparator() {
 }
 
 @Composable
-internal fun PopupButton(label: String, modifier: Modifier, onClick: () -> Unit) {
+internal fun PopupButton(
+	label: String,
+	modifier: Modifier,
+	enabled: Boolean = true,
+	onClick: () -> Unit,
+) {
 	Box(
 		modifier
 			.fillMaxHeight()
-			.clickable(onClick = onClick),
+			.clickable(enabled = enabled, onClick = onClick),
 		contentAlignment = Alignment.Center,
 	) {
 		Text(
 			label,
 			Modifier.padding(horizontal = 5.dp),
-			style = TextStyle(fontSize = 18.sp, color = TextColor),
+			style = TextStyle(
+				fontSize = 18.sp,
+				color = if (enabled) TextColor else TextColor.copy(alpha = 0.4f),
+			),
 		)
 	}
 }
@@ -165,6 +174,7 @@ internal fun BorderedTextField(
 	imeAction: ImeAction? = null,
 	focusRequester: FocusRequester? = null,
 	horizontalPadding: androidx.compose.ui.unit.Dp = 20.dp,
+	keyboardType: KeyboardType = KeyboardType.Text,
 ) {
 	Box(
 		modifier
@@ -184,6 +194,7 @@ internal fun BorderedTextField(
 			hint = stringResource(label),
 			singleLine = singleLine,
 			onImeAction = onImeAction,
+			keyboardType = keyboardType,
 		)
 	}
 }

@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.db.ItemKind
+import cz.litoj.schlmgr.ui.search.summary
 import cz.litoj.schlmgr.ui.viewmodel.InfoBar
 
 private val HeaderGreen @Composable get() = ExplorerColors.header
@@ -157,7 +158,11 @@ private fun InfoStrip(
 			else stringResource(R.string.data_rate, info.ratio)
 			(kindCounts(info.kinds) + rate).joinToString(", ") + suffix
 		}
-		is InfoBar.Search -> stringResource(R.string.data_search_chapters, info.count, info.chapters)
+		is InfoBar.Search -> if (info.filter == null)
+			stringResource(R.string.data_search_results, info.count)
+		else stringResource(
+			R.string.data_search_filtered, info.filter.summary(), info.count,
+		)
 		InfoBar.InvalidSearch -> stringResource(R.string.data_search_invalid)
 		InfoBar.InvalidPattern -> stringResource(R.string.data_search_bad_pattern)
 	}

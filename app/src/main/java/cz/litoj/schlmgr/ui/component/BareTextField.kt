@@ -78,11 +78,13 @@ fun WideTextField(
 	onImeAction: (() -> Unit)? = null,
 	focusRequester: FocusRequester? = null,
 	singleLine: Boolean = true,
+	keyboardType: KeyboardType = KeyboardType.Text,
 ) = BareTextFieldCore(
 	value = value,
 	onValueChange = onValueChange,
 	fontSize = fontSize,
 	modifier = modifier,
+	keyboardType = keyboardType,
 	hint = hint,
 	style = style,
 	fillWidth = true,

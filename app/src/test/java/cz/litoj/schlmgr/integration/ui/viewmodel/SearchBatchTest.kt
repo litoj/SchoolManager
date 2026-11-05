@@ -55,8 +55,7 @@ class SearchBatchTest {
 		assertEquals(expected, vm.listState.value.items.map { it.payload })
 		assertEquals(expected.size, vm.listState.value.maxPosition)
 		assertEquals("the running count reached the strip",
-			InfoBar.Search(expected.size, (vm.state.value.info as InfoBar.Search).chapters),
-			vm.state.value.info)
+			InfoBar.Search(expected.size), vm.state.value.info)
 	}
 
 	@Test

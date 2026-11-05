@@ -44,6 +44,9 @@
 
 - The index preloads the subgraph of the open container, so a search runs in memory.
 - A query matches names and translations. A typed translation finds its words.
+- The filter icon builds a structured query from labeled choices, and a written query reopens on it.
+- A plain text filter stays plain text, so the common case carries no markers.
+- The info strip names the active filter and the result count.
 - A new query cancels the pending run. Results reach the UI in batches.
 - Free text stays valid. A malformed number query or a bad regex shows red in the info strip and never runs.
 - An operator after the markers always means a number query, text uses the `\\` form.

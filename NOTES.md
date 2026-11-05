@@ -104,8 +104,9 @@ Its DB part is the model for this project.
 - It never opens the row.
 - Every performed action finishes the selection, a refused one keeps it.
 - The strip holds four configurable actions, the settings order drives it and the more menu.
-- Go-to connects to a strip action and takes its slot in search, unbound it sits in the search menu.
-- A connection whose target leaves the strip clears.
+- Go-to is a normal action that applies to search only, Cut to browse only.
+- The first four applicable actions of an order fill a strip, the rest its more menu.
+- The settings editor names the strips that show each action.
 - The top arrow cancels the selection and an armed move, like the search field.
 - An armed move reads on the top line, its strip holds cancel and paste.
 
@@ -171,6 +172,8 @@ Its DB part is the model for this project.
 - An interaction path renders with chevrons, its segments reuse the menu labels.
 - A path starts at the first tap target, no screen or container anchor.
 - A screen explains itself in one short text, the help page holds only the necessary extras.
+- A hidden mechanic gets an inline control or caption before it earns help text.
+- The search filter owns query building, so the help page keeps no syntax tables.
 - Literal examples render as monospace code blocks, apart from the explanation text.
 
 ### Test
@@ -188,6 +191,10 @@ Its DB part is the model for this project.
 
 ### Search
 
+- The filter icon opens labeled type, field, condition and value choices.
+- The dialog previews the written query, and Apply writes it into the field.
+- A written filter reads back into the dialog, while plain text stays plain.
+- The info strip names the active filter and the result count, never the walked chapters.
 - The field stays while it holds text, with or without the keyboard.
 - A keyboard drop with an empty query closes the field.
 - The nav back arrow cancels the search: the results leave and the query resets.
@@ -212,6 +219,10 @@ Its DB part is the model for this project.
 - No active task.
 - Open items live in `DEVELOPMENT.md`.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
+- 2026-11-05: help moved from hidden mechanics into the UI. The search field
+  opens a labeled filter dialog and the strip names the active filter. Go-to
+  is a search-only action in the normal order. Settings and test setup carry
+  one-line captions, sort and test labels say what they do. 782 tests.
 - 2026-11-05: main adopts the test run, test report, search and picker fixes.
   The report reads Score x/y (z%) with the prompt, correct and typed answer.
   The info strip names counts per kind, a removed source offers undo.

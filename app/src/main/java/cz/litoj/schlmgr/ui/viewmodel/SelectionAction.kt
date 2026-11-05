@@ -5,8 +5,8 @@ import cz.litoj.schlmgr.app.AppSettings
 
 /**
  * One action of the selection strip and the more menu.
- * - the settings order places the first four on the strip, the rest in the menu.
- * - a connectable action holds no slot of its own, it takes the slot of its target in search.
+ * - the settings order places the first four applicable to the list on the strip.
+ * - Cut applies to a browse list, Go-to to a search list.
  */
 enum class SelectionAction {
 	TEST, CUT, EDIT, DELETE, REFERENCE, FLIP, EXPORT, GOTO;
@@ -17,9 +17,6 @@ enum class SelectionAction {
 		GOTO -> search
 		else -> true
 	}
-
-	/** A connectable action rides a slot of another action, never one of its own. */
-	val connectable: Boolean get() = this == GOTO
 
 	companion object {
 		fun of(id: String): SelectionAction? = entries.firstOrNull { it.name == id }
@@ -64,38 +61,26 @@ val SelectionAction.description: Int
 	}
 
 /**
- * The ordered selection actions with the search connections of the connectable ones.
- * - the first four of [order] hold the strip slots, the rest fill the more menu.
- * - a connection takes the target's slot in a search list, the target falls to the menu.
- * @param order the seven placeable actions, a connectable never among them
- * @param connections a connectable to its target, which must hold a strip slot
+ * The ordered selection actions.
+ * - each list kind takes the first four applicable actions for its strip, the rest fill the menu.
+ * - Go-to applies only in search, so it never takes a browse slot and vice versa for Cut.
  */
-class ActionConfig(val order: List<SelectionAction>, val connections: Map<SelectionAction, SelectionAction>) {
+class ActionConfig(val order: List<SelectionAction>) {
 
-	/** The strip slots of one list kind, where search substitutes the connected action. */
-	fun bar(search: Boolean): List<SelectionAction> =
-		order.take(BAR_SLOTS)
-			.map { slot -> connections.entries
-				.firstOrNull { it.value == slot }?.key
-				?.takeIf { it.applies(search) } ?: slot }
-			.filter { it.applies(search) }
+	/** The strip slots of one list kind, in the picked order. */
+	fun bar(search: Boolean): List<SelectionAction> = applicable(search).take(BAR_SLOTS)
 
 	/** The more-menu actions of one list kind, in the picked order. */
-	fun overflow(search: Boolean): List<SelectionAction> {
-		val onBar = bar(search).toSet()
-		val placed = order.filter { it !in onBar && it.applies(search) }
-		val loose = SelectionAction.entries.filter { it.connectable && it.applies(search) && it !in connections }
-		return placed + loose
-	}
+	fun overflow(search: Boolean): List<SelectionAction> = applicable(search).drop(BAR_SLOTS)
 
-	/**
-	 * The order with one action moved, where a connection of a target that lost its slot clears.
-	 */
+	private fun applicable(search: Boolean): List<SelectionAction> =
+		order.filter { it.applies(search) }
+
+	/** The order with one action moved. */
 	fun moved(from: Int, to: Int): ActionConfig {
 		val moved = order.toMutableList()
 		moved.add(to, moved.removeAt(from))
-		val bar = moved.take(BAR_SLOTS)
-		return ActionConfig(moved, connections.filter { it.value in bar })
+		return ActionConfig(moved)
 	}
 
 	companion object {
@@ -103,44 +88,40 @@ class ActionConfig(val order: List<SelectionAction>, val connections: Map<Select
 		const val BAR_SLOTS = 4
 
 		val DEFAULT_ORDER = listOf(
+			SelectionAction.TEST, SelectionAction.CUT, SelectionAction.GOTO,
+			SelectionAction.EDIT, SelectionAction.DELETE, SelectionAction.REFERENCE,
+			SelectionAction.FLIP, SelectionAction.EXPORT,
+		)
+
+		/** The order before Go-to became a normal search-only action. */
+		private val LEGACY_ORDER = listOf(
 			SelectionAction.TEST, SelectionAction.CUT, SelectionAction.EDIT,
 			SelectionAction.DELETE, SelectionAction.REFERENCE, SelectionAction.FLIP,
 			SelectionAction.EXPORT,
 		)
 
-		val DEFAULT_CONNECTIONS = mapOf(SelectionAction.GOTO to SelectionAction.CUT)
-
 		/**
 		 * Reads the stored order, where a damaged record falls back to the default.
-		 * - a connection with an unknown action or an off-bar target drops.
+		 * - a stored legacy order gains Go-to after Cut, so search keeps its place.
 		 */
 		fun load(): ActionConfig {
 			val stored = AppSettings.getString(ORDER_KEY, "").split(',').mapNotNull(SelectionAction::of)
-			val order = if (stored.size == DEFAULT_ORDER.size && stored.toSet() == DEFAULT_ORDER.toSet())
-				stored else DEFAULT_ORDER
-			val bar = order.take(BAR_SLOTS)
-			val connections = AppSettings.getString(CONNECTIONS_KEY, writeConnections(DEFAULT_CONNECTIONS))
-				.split(';').filter { it.isNotEmpty() }
-				.mapNotNull { pair ->
-					val parts = pair.split('=')
-					val from = parts.getOrNull(0)?.let(SelectionAction::of)
-					val to = parts.getOrNull(1)?.let(SelectionAction::of)
-					if (from?.connectable == true && to != null && to in bar) from to to else null
-				}
-				.toMap()
-			return ActionConfig(order, connections)
+			val order = when {
+				stored.size == DEFAULT_ORDER.size && stored.toSet() == DEFAULT_ORDER.toSet() -> stored
+				stored.size == LEGACY_ORDER.size && stored.toSet() == LEGACY_ORDER.toSet() ->
+					stored.toMutableList().apply {
+						add(indexOf(SelectionAction.CUT) + 1, SelectionAction.GOTO)
+					}
+				else -> DEFAULT_ORDER
+			}
+			return ActionConfig(order)
 		}
 
-		/** Writes the order and the connections, which the loader validates anyway. */
-		fun save(order: List<SelectionAction>, connections: Map<SelectionAction, SelectionAction>) {
+		/** Writes the order, which the loader validates anyway. */
+		fun save(order: List<SelectionAction>) {
 			AppSettings.set(ORDER_KEY, order.joinToString(",") { it.name })
-			AppSettings.set(CONNECTIONS_KEY, writeConnections(connections))
 		}
-
-		private fun writeConnections(connections: Map<SelectionAction, SelectionAction>) =
-			connections.entries.joinToString(";") { "${it.key.name}=${it.value.name}" }
 
 		private const val ORDER_KEY = "selection_actions"
-		private const val CONNECTIONS_KEY = "selection_connections"
 	}
 }

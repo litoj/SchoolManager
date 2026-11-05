@@ -76,6 +76,8 @@ internal fun SubjectsContent(
 			if (viewModel.armedReferences) R.string.paste_status_references else R.string.paste_status_move,
 			viewModel.armedCount,
 		) else null
+		val selectionStatus = if (listState.selectionActive)
+			stringResource(R.string.data_selected, listState.selectionCount) else null
 		ExplorerScaffold(
 			state = state,
 			listState = listState,
@@ -85,7 +87,7 @@ internal fun SubjectsContent(
 			scrollState = scrollState,
 			listArea = { SiblingSlideList(state, listState, callbacks, scrollState, Modifier.weight(1f)) },
 			// the armed status takes the top line, so the bottom strip holds only its actions
-			statusLine = armedStatus,
+			statusLine = armedStatus ?: selectionStatus,
 			modifier = Modifier.fillMaxSize()
 				.fabDragVisibility(fabVisibility) { scrollState.canScrollForward || scrollState.canScrollBackward }
 				.pointerInput(swipeThreshold) {

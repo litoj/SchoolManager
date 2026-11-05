@@ -14,7 +14,7 @@ import org.junit.Test
 
 class SubjectsMenuTest {
 
-	private val config = ActionConfig(ActionConfig.DEFAULT_ORDER, ActionConfig.DEFAULT_CONNECTIONS)
+	private val config = ActionConfig(ActionConfig.DEFAULT_ORDER)
 
 	private fun menu(
 		kind: MainExplorerViewModel.MenuKind,
@@ -88,9 +88,8 @@ class SubjectsMenuTest {
 			listOf(
 				SelectionAction.TEST, SelectionAction.REFERENCE, SelectionAction.EDIT,
 				SelectionAction.DELETE, SelectionAction.CUT, SelectionAction.FLIP,
-				SelectionAction.EXPORT,
+				SelectionAction.EXPORT, SelectionAction.GOTO,
 			),
-			emptyMap(),
 		)
 
 		val selecting = menu(MainExplorerViewModel.MenuKind.CONTAINER, selecting = true, config = custom)
@@ -102,12 +101,10 @@ class SubjectsMenuTest {
 	}
 
 	@Test
-	fun `an unbound goto joins the search menu`() {
-		val unbound = ActionConfig(ActionConfig.DEFAULT_ORDER, emptyMap())
+	fun `goto sits on the search bar and out of the search menu`() {
+		val selecting = menu(MainExplorerViewModel.MenuKind.SEARCH, selecting = true)
 
-		val selecting = menu(MainExplorerViewModel.MenuKind.SEARCH, selecting = true, config = unbound)
-
-		assertTrue(selecting.any { it.id == MenuId.GOTO })
+		assertFalse(selecting.any { it.id == MenuId.GOTO })
 	}
 
 	@Test
@@ -116,9 +113,8 @@ class SubjectsMenuTest {
 		val custom = ActionConfig(
 			listOf(
 				SelectionAction.TEST, SelectionAction.CUT, SelectionAction.DELETE, SelectionAction.REFERENCE,
-				SelectionAction.EDIT, SelectionAction.FLIP, SelectionAction.EXPORT,
+				SelectionAction.FLIP, SelectionAction.EDIT, SelectionAction.GOTO, SelectionAction.EXPORT,
 			),
-			emptyMap(),
 		)
 		for (single in listOf(false, true)) {
 			val selecting = menu(MainExplorerViewModel.MenuKind.CONTAINER, selecting = true, singleSelected = single, config = custom)

@@ -6,6 +6,7 @@ import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.ui.search.SearchEngine
+import cz.litoj.schlmgr.ui.search.SearchFilter
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
@@ -68,6 +69,8 @@ internal class SearchFlow(
 
 	private var lastSearchRows: List<ItemRow> = emptyList()
 
+	private var activeFilter: SearchFilter? = null
+
 	var lastSearchInfo: InfoBar? = null
 
 	fun openField() = searchInput.open()
@@ -94,6 +97,7 @@ internal class SearchFlow(
 		run.abort()
 		// the search reads the toggle per run, so a settings change applies to the next one
 		val eng = SearchEngine(q, AppSettings.getBool("searchNoDiacritics", false))
+		activeFilter = if (eng.valid) SearchFilter.parse(q) else null
 		val detail = eng.regexError
 		// the strip only marks the pattern, since the error text is too long for it
 		if (detail != null) UserMessages.showNotice(UiNotice.BadPattern(detail))
@@ -103,7 +107,7 @@ internal class SearchFlow(
 		host.load(ArrayList(), isSearch = true, isPicker = false)
 		// a new strip starts at zero, and an invalid query never runs.
 		lastSearchInfo = when {
-			eng.valid -> InfoBar.Search(0, 0)
+			eng.valid -> InfoBar.Search(0, activeFilter)
 			detail != null -> InfoBar.InvalidPattern
 			else -> InfoBar.InvalidSearch
 		}
@@ -114,7 +118,7 @@ internal class SearchFlow(
 	private fun appendSearchRows(batch: List<ItemRow>) {
 		host.appendRows(batch)
 		lastSearchRows = ArrayList(host.models)
-		lastSearchInfo = InfoBar.Search(host.models.size, run.visitedChapters())
+		lastSearchInfo = InfoBar.Search(host.models.size, activeFilter)
 		host.publishSearchInfo(lastSearchInfo)
 	}
 
@@ -122,7 +126,7 @@ internal class SearchFlow(
 		override fun appendBatch(batch: List<ItemRow>) = appendSearchRows(batch)
 
 		override fun runFinished() {
-			lastSearchInfo = InfoBar.Search(host.models.size, run.visitedChapters())
+			lastSearchInfo = InfoBar.Search(host.models.size, activeFilter)
 			host.publishSearchInfo(lastSearchInfo)
 		}
 	}
@@ -134,6 +138,7 @@ internal class SearchFlow(
 		searchInput.cancelPending()
 		run.abort()
 		lastSearchRows = emptyList()
+		activeFilter = null
 		history.removeSearchHops()
 		if (reload) host.setContent(history.path.lastOrNull())
 	}

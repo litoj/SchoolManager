@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
     <string name="action_full_text">Celý Text</string>
     <string name="action_reference">Zástupci</string>
     <string name="action_flip">Překlopit</string>
@@ -14,9 +14,43 @@
     <string name="cut">Vyjmout</string>
     <string name="data_rate">"Úspěšnost: %1$d%%"</string>
     <string name="data_untested">Úspěšnost: Netestováno</string>
-    <string name="data_search_chapters">"Výsledků: %1$d;\tKapitol: %2$d"</string>
+    <string name="data_search_results">"Výsledků: %1$d"</string>
+    <string name="data_search_filtered">"%1$s · Výsledků: %2$d"</string>
     <string name="data_search_bad_pattern">Neplatný regulární výraz.</string>
-    <string name="data_search_invalid">Neplatné hledání. Správný zápis: \\WR=0</string>
+    <string name="data_search_invalid">Neplatné hledání. Použijte filtr nebo zápis \\WR=0.</string>
+    <string name="data_selected">"Vybráno: %1$d"</string>
+    <string name="filter_summary">"Filtr: %1$s · %2$s %3$s %4$s"</string>
+    <string name="search_filter">Filtr hledání</string>
+    <string name="search_filter_intro">Zvolte, co hledat a jak. Pole ukáže zapsaný dotaz.</string>
+    <string name="filter_type">Typ</string>
+    <string name="filter_type_any">Vše</string>
+    <string name="filter_type_word">Slovíčka</string>
+    <string name="filter_type_translation">Překlady</string>
+    <string name="filter_type_chapter">Kapitoly</string>
+    <string name="filter_field">Porovnat</string>
+    <string name="filter_field_name">Název</string>
+    <string name="filter_field_description">Popis</string>
+    <string name="filter_field_successes">Úspěchy</string>
+    <string name="filter_field_fails">Neúspěchy</string>
+    <string name="filter_field_tested">Počet testů</string>
+    <string name="filter_field_rate">Úspěšnost</string>
+    <string name="filter_condition">Podmínka</string>
+    <string name="filter_cond_contains">obsahuje</string>
+    <string name="filter_cond_contains_case">obsahuje přesně</string>
+    <string name="filter_cond_starts">začíná na</string>
+    <string name="filter_cond_ends">končí na</string>
+    <string name="filter_cond_regex">odpovídá regexu</string>
+    <string name="filter_cond_greater">je větší než</string>
+    <string name="filter_cond_less">je menší než</string>
+    <string name="filter_cond_equals">rovná se</string>
+    <string name="filter_value">Hodnota</string>
+    <string name="filter_value_text">Text</string>
+    <string name="filter_value_number">Celé číslo</string>
+    <string name="filter_number_error">Zadejte celé číslo.</string>
+    <string name="filter_regex_error">Neplatný regulární výraz.</string>
+    <string name="filter_preview">Dotaz: %1$s</string>
+    <string name="filter_clear">Vymazat</string>
+    <string name="filter_apply">Použít</string>
     <string name="data_desc">Popisek</string>
     <string name="data_name">Název</string>
     <string name="data_translate">Překlad</string>
@@ -106,7 +140,7 @@
     <string name="help_extra_naming_examples">oni/ony jdou = \'oni jdou\', nebo \'ony jdou\'
         \n(Já jdu)/(Ty jdeš). = \'Já jdu.\', nebo \'Ty jdeš.\'</string>
     <string name="help_extra_words_export">Export slovíček</string>
-    <string name="help_extra_words_export_how">Menu zobrazí Export jen při vybraných řádcích.\nBez výběru se exportuje otevřený kontejner, na obrazovce předmětů všechny předměty.\nSoubor se slovíčky: kompaktní, bez úspěšnosti a referencí.\nSoubor JSON: úplný, včetně úspěšnosti, poznámek a referencí.</string>
+    <string name="help_extra_words_export_how">Menu zobrazí Export jen při vybraných řádcích.\nExport zahrne každý vybraný řádek kromě překladů.\nSoubor se slovíčky: kompaktní, bez úspěšnosti a referencí.\nSoubor JSON: úplný, včetně úspěšnosti, poznámek a referencí.</string>
     <string name="help_extra_words_import">Import slovíček</string>
     <string name="help_extra_words_import_how">Uvnitř předmětu se slovíčka importují do něj, na obrazovce předmětů se vytvoří nový předmět.\nChyba uvádí soubor a řádek. Opravte řádek a zvolte soubor znovu.</string>
     <string name="help_import_format">Formát souboru</string>
@@ -114,66 +148,27 @@
     <string name="help_no_match">Odpovídající nápověda neexistuje.</string>
     <string name="help_search">Vyhledávání</string>
     <string name="help_search_hint">Hledat v nápovědě</string>
-    <string name="help_search_how">Vyhledávání je umožňěno ve všech kapitolách a předmětech.
-        \nVe výsledcích vyhledávání otevře kliknutí na nalezenou kapitolu její kontejner.
+    <string name="help_search_how">Hledání najde názvy a překlady v otevřeném předmětu.
+        \nIkona filtru sestaví dotaz z popsaných voleb, takže prefixová syntaxe zůstává volitelná.
         \nNalezené slovíčko zobrazuje své překlady přímo, přepínač v nastavení to vypne.
-        \nVyhledávat lze pomocí různých metod, vyhledávání také podporuje pojmenovávací syntaxi.
         \nPřepínač v nastavení zapne vyhledávání bez diakritiky.</string>
-    <string name="help_search_regex">Syntax regulérních výrazů</string>
-    <string name="help_search_regex_char_class">"Char Class\n[abc]\n[^abc]\n[a-zA-Z]\n[a-d[m-p]]\n[a-z&amp;&amp;[def]]\n[a-z&amp;&amp;[^bc]]\n[a-z&amp;&amp;[^m-p]]"</string>
-    <string name="help_search_regex_char_class_desc">"Description\na, b, or c\nAny character except a, b, or c\na through z or A through Z, inclusive\na through d, or m through p: [a-dm-p]\nd, e, or f \na through z, except for b and c: [ad-z]\na through z, and not m through p: [a-lq-z]"</string>
-    <string name="help_search_regex_how_1">Zdroj: https://www.javatpoint.com/java-regex
-        \nDruhy Znaků Regexu</string>
-    <string name="help_search_regex_meta">"Regex\n.\n\\d\n\\D\n\\s\n\\S\n\\w\n\\W\n\\b\n\\B"</string>
-    <!-- [0-9] is a regex character range; the hyphen is required, not typography -->
-    <string name="help_search_regex_meta_desc" tools:ignore="TypographyDashes">"Description\nAny character\nAny digits ([0-9])\nAny non-digit ([^0-9])\nAny whitespace character ([\\t\\n\\x0B\\f\\r])\nAny non-whitespace character ([^\\s])\nAny word character ([a-zA-Z_0-9])\nAny non-word character ([^\\w])\nA word boundary\nA non word boundary"</string>
-    <string name="help_search_regex_quant">"Regex\nX?\nX+\nX*\nX{n}\nX{n,}\nX{y,z}"</string>
-    <string name="help_search_regex_quant_desc">"Description\nX occurs once or not at all\nX occurs once or more times\nX occurs zero or more times\nX occurs n times only\nX occurs n or more times\nX occurs at least y times but less than z times"</string>
-    <string name="help_search_regex_how_2">Čitače Regexu
-        \nČitače specifikují počet výskytů daného znaku.</string>
-    <string name="help_search_regex_how_3">Meta-znaky Regexu
-        \nMeta-Charaktery regulérních výrazů fungují jako zkratky.</string>
-    <string name="help_search_types">Varianty vyhledávání</string>
-    <!-- the text shows literal % signs, which are not format specifiers -->
-    <string name="help_search_types_how" formatted="false">V této aplikaci lze kromě běžného vyhledávání hledat pomocí prefixu.
-        \nPrefixová syntaxe má 3 úrovně, začíná znakem \'\\\' a pak následují určující znaky, seznam urovní zde:
-        \n1. Úroveň: hledaný typ
-        \n\tW - musí být hlavní slovo
-        \n\tT - musí být překlad slova
-        \n\tC - musí být kapitola
-        \n2. Úroveň: co se porovnává
-        \n\tS - počet úspěchů
-        \n\tF - počet neúspěchů
-        \n\tN - počet testování
-        \n\tR - úspěšnost v %
-        \n\tD - popisek
-        \n\tvýchozí - název položky
-        \n3. Úroveň: hledaná podmínka
-        \n -pro text:
-        \n\t\\ - obsahuje výraz nehledě na velká/malá písmena, výchozí
-        \n\tc - obsahuje zadaný výraz
-        \n\ts - začíná výrazem
-        \n\te - končí výrazem
-        \n\tr - splňuje zadaný regulérní výraz
-        \n -pro číselnou hodnotu:
-        \n\t&gt; - musí být větší než dané číslo
-        \n\t&lt; - musí být menší
-        \n\t= - musí být rovno dané hodnotě
-        \n\nČíselná podmínka nerozlišuje velká a malá písmena a ignoruje mezery, takže \\w r = 0 znamená totéž co \\WR=0.
-        \nVyžaduje S, F, N nebo R a celé číslo, jinak se zobrazí červená zpráva.
-        \n&gt;, &lt; nebo = za značkami vždy začíná číselnou podmínku, takže \\\\=5 najde text \'=5\'.</string>
-    <string name="help_search_types_examples" formatted="false">\WD\t- všechna slova s poznámkou
-        \n\R>50\t- položky s úspěšností nad 50%
-        \n\WR=0\t- testovaná slova bez jediné správné odpovědi
-        \n\sD\t- položky začínající na \'D\'
-        \n\C\K72\t- všechny kapitoly se jménem obsahujícím \'k72\'</string>
+    <string name="help_search_filter">Filtr</string>
+    <string name="help_search_filter_how">Zvolte typ, co porovnávat a podmínku, pak zadejte hodnotu.
+        \nNáhled ukáže zapsaný dotaz ještě před spuštěním.
+        \nPoužít ho zapíše do pole a spustí hledání.</string>
+    <string name="help_search_advanced">Zapsaný dotaz</string>
+    <string name="help_search_advanced_how">Pole přijímá zapsanou podobu, kterou filtr sestaví.
+        \nRegulérní výraz následuje syntaxi Javy.</string>
+    <string name="help_search_advanced_examples" formatted="false">\WR>50\t- slovíčka s úspěšností nad 50%
+        \n\sD\t- názvy začínající na \'D\'
+        \n\WD\hund\t- slovíčka s popisem obsahujícím \'hund\'</string>
     <string name="help_select">Upravování</string>
     <string name="help_select_delete">Po potvrzení odstraňovacího dialogu nenávratně smaže všechny vybrané položky.</string>
     <string name="help_select_edit">Upravovat lze vždy pouze jednu položku, zobrazí se okno s parametry zvolené položky.
         \nZobrazené okno je stejné, jako při vytváření nové položky.
         \nPo dokončení úprav položky klikněte na tlačítko \'OK\' pro uložení změn.</string>
     <string name="help_select_how">Všechny vytvořené objekty je možné nějak změnit.
-        \nDlouhým stiskem položky se zapne výběrové zobrazení: položka se vybere a zobrazí se dolní lišta s možnými akcemi. Kliknutí na checkbox řádku také mění stav výběru dané položky.
+        \nDlouhým stiskem položky se zapne výběrové zobrazení: položka se vybere a zobrazí se dolní lišta s možnými akcemi. Kliknutí na ikonu typu řádku také mění stav výběru dané položky.
         \nDržením prstu a jeho pohybem po seznamu vyberete rozsah položek, které prst protne.
         \nPokud jsou některé položky vybrány, tlačítko vyhledávání v pravém horním rohu se změní na přepínač výběru všeho: vybere všechny položky v seznamu, nebo, pokud již jsou všechny vybrány, výběrové zobrazení vypne. Výběrové zobrazení vypne i tlačítko \'zpět\'.
         \nNíže je uveden seznam možných akcí.</string>
@@ -187,7 +182,7 @@
         \nKaždý řádek je jedno testované slovíčko.
         \nVelký text je to, na co se test ptal: překlady, v opačném směru testu slovíčko.
         \nPod ním je správná odpověď a ta vaše, zelená je správně, červená špatně.
-        \nČíslo vlevo udává, kolikrát bylo slovíčko testováno.
+        \nČíslo s × udává, kolikrát bylo slovíčko testováno.
         \nBarevný pruh přechází od červené k zelené podle celkové úspěšnosti.
         \nNa konci řádku je počet úspěšných testů z celkového počtu.
         \nVšechny počty už zahrnují tento test.
@@ -234,6 +229,10 @@
     <string name="new_word">Nové slovíčko</string>
     <string name="new_note">Nová poznámka</string>
     <string name="fab_new">Nový</string>
+    <string name="palette_subject">Předmět</string>
+    <string name="palette_chapter">Kapitola</string>
+    <string name="palette_word">Slovíčko</string>
+    <string name="palette_note">Poznámka</string>
     <string name="note_copied">Zkopírováno</string>
     <string name="objects_cancel">Storno</string>
     <string name="paste">Vložit</string>
@@ -245,23 +244,36 @@
     <string name="popup_copy_truncated">[kopie byla zkrácena — text je pro schránku příliš dlouhý]</string>
     <string name="press_exit">Stiskněte ještě jednou pro ukončení</string>
     <string name="permission_pending">Akce už čeká na oprávnění</string>
-    <string name="search">Zadat klíčové slovo</string>
+    <string name="search">Hledat</string>
     <string name="select">Zvolit</string>
     <string name="select_test">Test</string>
-    <string name="setts_him_flipped">Automaticky překládat slovíčka</string>
-    <string name="setts_him_flipped_search">Automaticky překládat výsledky hledání</string>
-    <string name="setts_him_parse">Zobrazovat názvy položek ve zpracované formě</string>
+    <string name="setts_him_flipped">Překlápět slovíčka při otevření</string>
+    <string name="setts_him_flipped_hint">Řádek slovíčka se otevře na překladech.</string>
+    <string name="setts_him_flipped_search">Překlápět nálezy při otevření</string>
+    <string name="setts_him_flipped_search_hint">Nález slovíčka se otevře na překladech.</string>
+    <string name="setts_him_parse">Zpracovat varianty názvů</string>
+    <string name="setts_him_parse_hint">Čte A/B a (A)/(B) jako několik variant názvu.</string>
     <string name="setts_explorer">Průzkumník</string>
-    <string name="setts_desc_lines">Počet přímo zobrazených řádků poznámky</string>
-    <string name="setts_double_tap_ms">Čas na dvojklik pro přeložení všeho</string>
-    <string name="setts_test_amount">Výchozí slovíčka k otestování</string>
-    <string name="setts_test_clever">Vytváření testů podle úspěšnosti</string>
-    <string name="setts_test_time">Výchozí sekundy na slovíčko</string>
-    <string name="setts_test_direction">Výchozí testovaná strana</string>
-    <string name="setts_word_splitter">Sekvence dělící slova od překladů při exportu</string>
-    <string name="setts_search_diacritics">Vyhledávání bez diakritiky</string>
-    <string name="setts_selection_bar">Výběrová lišta</string>
-    <string name="setts_bar_hint">První čtyři sedí na výběrové liště, zbytek v menu více. Přetahováním změníte pořadí.</string>
+    <string name="setts_desc_lines">Řádky náhledu popisu</string>
+    <string name="setts_desc_lines_hint">Delší popisy se schovají za ikonu info.</string>
+    <string name="setts_double_tap_ms">Okno dvojkliku (ms)</string>
+    <string name="setts_double_tap_ms_hint">Dva kliky v tomto čase překlopí celý seznam. 0 ho vypne.</string>
+    <string name="setts_test_amount">Slovíčka na test</string>
+    <string name="setts_test_clever">Nejprve slabá slovíčka</string>
+    <string name="setts_test_clever_hint">Seřadí test podle priority: slabá a málo testovaná slovíčka první.</string>
+    <string name="setts_test_time">Sekundy na slovíčko</string>
+    <string name="setts_test_direction">Výchozí strana odpovědi</string>
+    <string name="setts_test_direction_hint">Kterou stranou odpovídáte.</string>
+    <string name="setts_word_splitter">Oddělovač slov a překladů</string>
+    <string name="setts_word_splitter_hint">Znak mezi slovíčkem a jeho překlady v exportovaných souborech.</string>
+    <string name="setts_search_diacritics">Hledat bez diakritiky</string>
+    <string name="setts_search_diacritics_hint">Porovná text s diakritikou i bez ní.</string>
+    <string name="setts_selection_bar">Výběrové akce</string>
+    <string name="setts_bar_hint">První čtyři akce každého seznamu sedí na liště, zbytek v menu více. Přetahováním změníte pořadí.</string>
+    <string name="setts_place_both">obě lišty</string>
+    <string name="setts_place_browse">lišta procházení</string>
+    <string name="setts_place_search">lišta hledání</string>
+    <string name="setts_place_more">menu více</string>
     <string name="setts_act_test">Spustí test z vybraných řádků</string>
     <string name="setts_act_cut">Přenese řádky do jiného kontejneru</string>
     <string name="setts_act_edit">Otevře jediný vybraný řádek k úpravám</string>
@@ -270,24 +282,20 @@
     <string name="setts_act_flip">Překlopí vybraná slovíčka na druhou stranu</string>
     <string name="setts_act_export">Exportuje vybrané řádky do souboru</string>
     <string name="setts_act_goto">Otevře kontejner jediného nálezu</string>
-    <string name="setts_goto_connect">Přetáhněte ho na akci lišty, kterou má ve vyhledávání nahradit</string>
-    <string name="setts_goto_bound">Ve vyhledávání nahradí: %1$s</string>
-    <string name="setts_goto_loose">Leží v menu více při vyhledávání</string>
-    <string name="setts_bound_marker">vyhledávání</string>
-    <string name="sort">Seřadit</string>
-    <string name="sort_alpha_AZ">abecedně ▼</string>
-    <string name="sort_alpha_ZA">abecedně ▲</string>
-    <string name="sort_default">výchozí seřazení</string>
-    <string name="sort_length_01">délkou názvu ▼</string>
-    <string name="sort_length_10">délkou názvu ▲</string>
-    <string name="sort_sf_01">úspěšností ▼</string>
-    <string name="sort_sf_10">úspěšností ▲</string>
-    <string name="sort_priority">priorita</string>
+    <string name="sort">Seřadit podle</string>
+    <string name="sort_alpha_AZ">A → Z</string>
+    <string name="sort_alpha_ZA">Z → A</string>
+    <string name="sort_default">Původní pořadí</string>
+    <string name="sort_length_01">Nejkratší název první</string>
+    <string name="sort_length_10">Nejdelší název první</string>
+    <string name="sort_sf_01">Nejslabší první</string>
+    <string name="sort_sf_10">Nejsilnější první</string>
+    <string name="sort_priority">Priorita testu</string>
     <string name="start">Začít</string>
     <string name="test_abort">UKONČIT</string>
     <string name="test_abort_question">Zrušit tento test? Odpovědi se zahodí a statistiky zůstanou beze změny.</string>
     <string name="test_add">Přidat zdroj</string>
-    <string name="test_direction">Testovaná strana</string>
+    <string name="test_direction">Odpověď</string>
     <string name="test_dir_normal">Slovíčko</string>
     <string name="test_dir_reverse">Překlad</string>
     <plurals name="test_blank_answers">
@@ -305,6 +313,13 @@
         <item quantity="many">z %d dostupných</item>
         <item quantity="other">z %d dostupných</item>
     </plurals>
+    <plurals name="test_available_limited">
+        <item quantity="one">K dispozici je jen %d slovo, otestuje se.</item>
+        <item quantity="few">K dispozici jsou jen %d slova, otestují se.</item>
+        <item quantity="many">K dispozici je jen %d slov, otestují se.</item>
+        <item quantity="other">K dispozici je jen %d slov, otestují se.</item>
+    </plurals>
+    <string name="test_tested_suffix">"×"</string>
     <string name="test_time">Sekundy na slovíčko</string>
     <string name="test_total_time">Celkový čas: %1$d s</string>
     <string name="test_sources_header">Zdroje · jeden předmět</string>

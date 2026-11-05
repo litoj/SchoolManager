@@ -22,8 +22,8 @@ import cz.litoj.schlmgr.ui.popup.ContinuePopup
 import cz.litoj.schlmgr.ui.popup.CreatorContent
 import cz.litoj.schlmgr.ui.popup.CreatorPopup
 import cz.litoj.schlmgr.ui.popup.FlipConflictPopup
-import cz.litoj.schlmgr.ui.popup.InfoPopup
 import cz.litoj.schlmgr.ui.popup.ReferencePopup
+import cz.litoj.schlmgr.ui.popup.SearchFilterPopup
 import cz.litoj.schlmgr.ui.popup.SourcePickPopup
 import cz.litoj.schlmgr.ui.shell.ExplorerBackHandler
 import cz.litoj.schlmgr.ui.shell.MainLaunchTarget
@@ -191,7 +191,11 @@ fun SubjectsScreen(
 			if (fieldOpen) TopBarSearchField(
 				query, viewModel::onQueryChange, viewModel::onQuerySubmit, viewModel::dismissSearch,
 				Modifier.weight(1f),
-				onHelp = { InfoPopup(R.string.help_search_types, R.string.help_search_types_how) },
+				onFilter = {
+					SearchFilterPopup(query) { filter ->
+						viewModel.onQuerySubmit(filter?.toQuery() ?: "")
+					}
+				},
 			)
 			else TopBarTitle(title)
 			TopBarIconButton(

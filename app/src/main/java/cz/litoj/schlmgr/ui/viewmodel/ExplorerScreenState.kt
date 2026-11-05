@@ -1,6 +1,7 @@
 package cz.litoj.schlmgr.ui.viewmodel
 
 import cz.litoj.schlmgr.data.db.ItemKind
+import cz.litoj.schlmgr.ui.search.SearchFilter
 
 /** Immutable screen state, where the query lives in [SearchInput]. */
 data class ExplorerScreenState(
@@ -38,7 +39,8 @@ sealed interface InfoBar {
 
 	data class Root(val count: Int) : InfoBar
 
-	data class Search(val count: Int, val chapters: Int) : InfoBar
+	/** @param filter the active structured filter, null for plain text */
+	data class Search(val count: Int, val filter: SearchFilter? = null) : InfoBar
 
 	/** A malformed query, so the empty list does not read as no results. */
 	data object InvalidSearch : InfoBar

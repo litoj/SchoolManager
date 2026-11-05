@@ -36,9 +36,6 @@ internal class SearchRun(
 	private var engine: SearchEngine? = null
 	private var job: Job? = null
 
-	/** The chapters the engine walked, read while the run lives. */
-	fun visitedChapters(): Int = engine?.visitedChapters ?: 0
-
 	fun start(engine: SearchEngine, path: List<DbItem>) {
 		this.engine = engine
 		job = scope.launch {

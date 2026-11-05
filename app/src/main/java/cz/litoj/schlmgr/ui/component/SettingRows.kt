@@ -1,6 +1,7 @@
 package cz.litoj.schlmgr.ui.component
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -25,25 +26,32 @@ import cz.litoj.schlmgr.R
 // one place keeps the two from drifting apart in padding, font size or switch colours.
 
 
-/** A label with a trailing switch. */
+/** A label with a trailing switch and an optional caption below. */
 @Composable
-fun SettingSwitchRow(label: String, checked: Boolean, onToggle: () -> Unit) {
-	Row(
+fun SettingSwitchRow(
+	label: String,
+	checked: Boolean,
+	onToggle: () -> Unit,
+	caption: String? = null,
+) {
+	Column(
 		Modifier
 			.fillMaxWidth()
 			.clickable(onClick = onToggle)
 			.padding(5.dp),
-		verticalAlignment = Alignment.CenterVertically,
 	) {
-		Text(label, Modifier.weight(1f), style = TextStyle(fontSize = 18.sp, color = DefaultTextColor))
-		Switch(
-			checked = checked,
-			onCheckedChange = null,
-			colors = SwitchDefaults.colors(
-				checkedThumbColor = colorResource(R.color.colorOnHeader),
-				checkedTrackColor = colorResource(R.color.colorPrimaryHeader),
-			),
-		)
+		Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+			Text(label, Modifier.weight(1f), style = TextStyle(fontSize = 18.sp, color = DefaultTextColor))
+			Switch(
+				checked = checked,
+				onCheckedChange = null,
+				colors = SwitchDefaults.colors(
+					checkedThumbColor = colorResource(R.color.colorOnHeader),
+					checkedTrackColor = colorResource(R.color.colorPrimaryHeader),
+				),
+			)
+		}
+		caption?.let { SettingCaption(it) }
 	}
 }
 
@@ -54,8 +62,9 @@ fun SettingNumberRow(
 	value: String,
 	onValueChange: (String) -> Unit,
 	onFocusLost: () -> Unit,
+	caption: String? = null,
 ) {
-	SettingFieldRow(label) { focus ->
+	SettingFieldRow(label, caption) { focus ->
 		// the field takes the font size of the row label.
 		// the component enforces its own square minimum width, so no fixed width is needed.
 		BareTextField(
@@ -70,44 +79,67 @@ fun SettingNumberRow(
 }
 
 /**
- * A label with its field on the right.
+ * A label with its field on the right and an optional caption below.
  * - a tap on the label focuses the field, the same as a tap on the field.
  */
 @Composable
-fun SettingFieldRow(label: String, field: @Composable (FocusRequester) -> Unit) {
+fun SettingFieldRow(
+	label: String,
+	caption: String? = null,
+	field: @Composable (FocusRequester) -> Unit,
+) {
 	val focus = remember { FocusRequester() }
 	val keyboard = LocalSoftwareKeyboardController.current
-	Row(
+	Column(
 		Modifier
 			.fillMaxWidth()
 			.padding(5.dp),
-		verticalAlignment = Alignment.CenterVertically,
 	) {
-		Text(
-			label,
-			Modifier
-				.weight(1f)
-				.clickable {
-					focus.requestFocus()
-					keyboard?.show()
-				},
-			style = TextStyle(fontSize = 18.sp, color = DefaultTextColor),
-		)
-		field(focus)
+		Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+			Text(
+				label,
+				Modifier
+					.weight(1f)
+					.clickable {
+						focus.requestFocus()
+						keyboard?.show()
+					},
+				style = TextStyle(fontSize = 18.sp, color = DefaultTextColor),
+			)
+			field(focus)
+		}
+		caption?.let { SettingCaption(it) }
 	}
 }
 
-/** A label with its current choice on the right, where a tap on the row flips it. */
+/** A label with its current choice on the right and an optional caption below. */
 @Composable
-fun SettingChoiceRow(label: String, value: String, onToggle: () -> Unit) {
-	Row(
+fun SettingChoiceRow(
+	label: String,
+	value: String,
+	onToggle: () -> Unit,
+	caption: String? = null,
+) {
+	Column(
 		Modifier
 			.fillMaxWidth()
 			.clickable(onClick = onToggle)
 			.padding(5.dp),
-		verticalAlignment = Alignment.CenterVertically,
 	) {
-		Text(label, Modifier.weight(1f), style = TextStyle(fontSize = 18.sp, color = DefaultTextColor))
-		Text(value, style = TextStyle(fontSize = 18.sp, color = DefaultTextColor))
+		Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+			Text(label, Modifier.weight(1f), style = TextStyle(fontSize = 18.sp, color = DefaultTextColor))
+			Text(value, style = TextStyle(fontSize = 18.sp, color = DefaultTextColor))
+		}
+		caption?.let { SettingCaption(it) }
 	}
+}
+
+/** The small explanation under a setting row. */
+@Composable
+fun SettingCaption(text: String) {
+	Text(
+		text,
+		Modifier.padding(top = 2.dp),
+		style = TextStyle(fontSize = 13.sp, color = DefaultTextColor),
+	)
 }

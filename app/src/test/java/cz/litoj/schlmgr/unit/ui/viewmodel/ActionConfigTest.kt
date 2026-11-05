@@ -10,59 +10,42 @@ import cz.litoj.schlmgr.ui.viewmodel.SelectionAction.CUT
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction.REFERENCE
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction.TEST
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
 
 class ActionConfigTest {
 
-	private val default = ActionConfig(ActionConfig.DEFAULT_ORDER, ActionConfig.DEFAULT_CONNECTIONS)
+	private val default = ActionConfig(ActionConfig.DEFAULT_ORDER)
 
 	@Test
-	fun `the default bar holds four slots`() {
+	fun `the default browse bar holds four slots`() {
 		assertEquals(listOf(TEST, CUT, EDIT, DELETE), default.bar(false))
 	}
 
 	@Test
-	fun `a search bar substitutes the bound goto and drops cut`() {
+	fun `the default search bar holds goto instead of cut`() {
 		assertEquals(listOf(TEST, GOTO, EDIT, DELETE), default.bar(true))
 	}
 
 	@Test
-	fun `the default overflow holds the unslotted actions`() {
+	fun `the overflow holds the same actions in both lists`() {
 		assertEquals(listOf(REFERENCE, FLIP, EXPORT), default.overflow(false))
+		assertEquals(listOf(REFERENCE, FLIP, EXPORT), default.overflow(true))
 	}
 
 	@Test
-	fun `an unbound goto joins only the search overflow`() {
-		val unbound = ActionConfig(ActionConfig.DEFAULT_ORDER, emptyMap())
+	fun `a moved action changes the bars of its list kind`() {
+		val moved = default.moved(from = 2, to = 0)
 
-		assertEquals(listOf(TEST, EDIT, DELETE), unbound.bar(true))
-		assertEquals(listOf(REFERENCE, FLIP, EXPORT, GOTO), unbound.overflow(true))
-		assertEquals(listOf(REFERENCE, FLIP, EXPORT), unbound.overflow(false))
+		assertEquals(listOf(GOTO, TEST, EDIT, DELETE), moved.bar(true))
+		assertEquals(listOf(TEST, CUT, EDIT, DELETE), moved.bar(false))
 	}
 
 	@Test
-	fun `a goto bound to a strip action displaces it into the search menu`() {
-		val bound = ActionConfig(ActionConfig.DEFAULT_ORDER, mapOf(GOTO to EDIT))
+	fun `a moved goto leaves the search bar`() {
+		val moved = default.moved(from = 2, to = 6)
 
-		assertEquals(listOf(TEST, GOTO, DELETE), bound.bar(true))
-		// the displaced action keeps its picked position in the menu order
-		assertEquals(listOf(EDIT, REFERENCE, FLIP, EXPORT), bound.overflow(true))
-	}
-
-	@Test
-	fun `a moved action carries its order and drops a lost connection`() {
-		val moved = default.moved(from = 1, to = 4)
-
-		assertEquals(listOf(TEST, EDIT, DELETE, REFERENCE, CUT, FLIP, EXPORT), moved.order)
-		assertNull(moved.connections[GOTO])
-	}
-
-	@Test
-	fun `a move that keeps the target on the strip keeps the connection`() {
-		val moved = default.moved(from = 3, to = 0)
-
-		assertEquals(listOf(DELETE, TEST, CUT, EDIT), moved.order.take(4))
-		assertEquals(CUT, moved.connections[GOTO])
+		// the search bar takes the first four applicable, so Goto leaves it here
+		assertEquals(listOf(TEST, EDIT, DELETE, REFERENCE), moved.bar(true))
+		assertEquals(listOf(FLIP, GOTO, EXPORT), moved.overflow(true))
 	}
 }

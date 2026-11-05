@@ -4,6 +4,9 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.component.ExplorerTopBar
+import cz.litoj.schlmgr.ui.search.FilterCondition
+import cz.litoj.schlmgr.ui.search.FilterField
+import cz.litoj.schlmgr.ui.search.SearchFilter
 import cz.litoj.schlmgr.ui.viewmodel.InfoBar
 import org.junit.Rule
 import org.junit.Test
@@ -49,8 +52,16 @@ class ExplorerTopBarInfoTest {
 
 	@Test
 	fun `the search strip counts results`() {
-		show(InfoBar.Search(2, 5))
+		show(InfoBar.Search(2))
 
+		rule.onNodeWithText("Results: 2", substring = true).assertExists()
+	}
+
+	@Test
+	fun `an active filter reads in front of the count`() {
+		show(InfoBar.Search(2, SearchFilter(field = FilterField.RATE, condition = FilterCondition.GREATER, value = "50")))
+
+		rule.onNodeWithText("Filter:", substring = true).assertExists()
 		rule.onNodeWithText("Results: 2", substring = true).assertExists()
 	}
 

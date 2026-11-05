@@ -49,7 +49,7 @@ private class Action(
 
 /**
  * The bottom-strip selection actions of one list kind.
- * - the slots come from the settings order, a search list substitutes its connected Go-to.
+ * - the slots are the first four actions that apply to the list kind.
  * - edit and go-to act on one row, so a wider selection mutes them with a reason.
  * - export opens its word and JSON chooser right on the strip.
  *

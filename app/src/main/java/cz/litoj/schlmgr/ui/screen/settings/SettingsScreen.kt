@@ -62,23 +62,40 @@ private fun SettingsList(state: SettingsState, modifier: Modifier = Modifier) {
 			.verticalScroll(rememberScrollState()),
 	) {
 		BigHeader(stringResource(R.string.setts_explorer), R.drawable.ic_subject, colorResource(R.color.colorOnHeader))
-		SettingSwitchRow(stringResource(R.string.setts_him_parse), state.parse, state::toggleParse)
+		SettingSwitchRow(
+			stringResource(R.string.setts_him_parse), state.parse, state::toggleParse,
+			caption = stringResource(R.string.setts_him_parse_hint),
+		)
 		HairlineDivider()
-		SettingSwitchRow(stringResource(R.string.setts_him_flipped), state.defFlip, state::toggleDefFlip)
+		SettingSwitchRow(
+			stringResource(R.string.setts_him_flipped), state.defFlip, state::toggleDefFlip,
+			caption = stringResource(R.string.setts_him_flipped_hint),
+		)
 		HairlineDivider()
-		SettingSwitchRow(stringResource(R.string.setts_him_flipped_search), state.searchDefFlip, state::toggleSearchDefFlip)
+		SettingSwitchRow(
+			stringResource(R.string.setts_him_flipped_search), state.searchDefFlip, state::toggleSearchDefFlip,
+			caption = stringResource(R.string.setts_him_flipped_search_hint),
+		)
 		HairlineDivider()
 		SettingNumberRow(
 			stringResource(R.string.setts_desc_lines), state.descLinesText, state::setDescLines,
-		) { state.descLinesFocusLost(); keyboard?.hide() }
+			{ state.descLinesFocusLost(); keyboard?.hide() },
+			caption = stringResource(R.string.setts_desc_lines_hint),
+		)
 		HairlineDivider()
 		SettingNumberRow(
 			stringResource(R.string.setts_double_tap_ms), state.doubleTapMsText, state::setDoubleTapMs,
-		) { state.doubleTapMsFocusLost(); keyboard?.hide() }
+			{ state.doubleTapMsFocusLost(); keyboard?.hide() },
+			caption = stringResource(R.string.setts_double_tap_ms_hint),
+		)
 		HairlineDivider()
 		WordSplitRow(state)
 		HairlineDivider()
-		SettingSwitchRow(stringResource(R.string.setts_search_diacritics), state.searchDiacritics, state::toggleSearchDiacritics)
+		SettingSwitchRow(
+			stringResource(R.string.setts_search_diacritics), state.searchDiacritics,
+			state::toggleSearchDiacritics,
+			caption = stringResource(R.string.setts_search_diacritics_hint),
+		)
 		// the selection actions are a subsection of the explorer, since they act on its list
 		SectionHeader(stringResource(R.string.setts_selection_bar), level = 0)
 		Text(
@@ -90,25 +107,34 @@ private fun SettingsList(state: SettingsState, modifier: Modifier = Modifier) {
 		BigHeader(stringResource(R.string.help_test), R.drawable.ic_test, colorResource(R.color.colorOnHeader))
 		SettingNumberRow(
 			stringResource(R.string.setts_test_amount), state.amountText, state::setAmount,
-		) { state.amountFocusLost(); keyboard?.hide() }
+			onFocusLost = { state.amountFocusLost(); keyboard?.hide() },
+		)
 		HairlineDivider()
 		SettingNumberRow(
 			stringResource(R.string.setts_test_time), state.timeText, state::setTime,
-		) { state.timeFocusLost(); keyboard?.hide() }
+			onFocusLost = { state.timeFocusLost(); keyboard?.hide() },
+		)
 		HairlineDivider()
 		SettingChoiceRow(
 			stringResource(R.string.setts_test_direction),
 			stringResource(if (state.defaultReverse) R.string.test_dir_reverse else R.string.test_dir_normal),
 			state::toggleDefaultReverse,
+			caption = stringResource(R.string.setts_test_direction_hint),
 		)
 		HairlineDivider()
-		SettingSwitchRow(stringResource(R.string.setts_test_clever), state.clever, state::toggleClever)
+		SettingSwitchRow(
+			stringResource(R.string.setts_test_clever), state.clever, state::toggleClever,
+			caption = stringResource(R.string.setts_test_clever_hint),
+		)
 	}
 }
 
 @Composable
 private fun WordSplitRow(state: SettingsState) {
-	SettingFieldRow(stringResource(R.string.setts_word_splitter)) { focus ->
+	SettingFieldRow(
+		stringResource(R.string.setts_word_splitter),
+		stringResource(R.string.setts_word_splitter_hint),
+	) { focus ->
 		BareTextField(
 			value = state.wordSplitText,
 			onValueChange = state::setWordSplit,
