@@ -39,8 +39,15 @@ sealed interface InfoBar {
 
 	data class Root(val count: Int) : InfoBar
 
-	/** @param filter the active structured filter, null for plain text */
-	data class Search(val count: Int, val filter: SearchFilter? = null) : InfoBar
+	/**
+	 * @param filter the active structured filter, null for plain text
+	 * @param done false while the run still streams, so an empty count reads as running
+	 */
+	data class Search(
+		val count: Int,
+		val filter: SearchFilter? = null,
+		val done: Boolean = true,
+	) : InfoBar
 
 	/** A malformed query, so the empty list does not read as no results. */
 	data object InvalidSearch : InfoBar

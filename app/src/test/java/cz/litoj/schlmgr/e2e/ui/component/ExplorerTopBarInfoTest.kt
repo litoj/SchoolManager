@@ -66,6 +66,20 @@ class ExplorerTopBarInfoTest {
 	}
 
 	@Test
+	fun `an unfinished run reads as searching`() {
+		show(InfoBar.Search(0, done = false))
+
+		rule.onNodeWithText("Searching", substring = true).assertExists()
+	}
+
+	@Test
+	fun `a finished empty run says how to continue`() {
+		show(InfoBar.Search(0))
+
+		rule.onNodeWithText("No results", substring = true).assertExists()
+	}
+
+	@Test
 	@Config(qualifiers = "cs")
 	fun `Czech counts stay in the nominative`() {
 		show(InfoBar.Children(mixed, 50, ""))

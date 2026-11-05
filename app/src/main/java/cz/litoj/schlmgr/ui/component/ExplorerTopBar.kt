@@ -158,11 +158,17 @@ private fun InfoStrip(
 			else stringResource(R.string.data_rate, info.ratio)
 			(kindCounts(info.kinds) + rate).joinToString(", ") + suffix
 		}
-		is InfoBar.Search -> if (info.filter == null)
-			stringResource(R.string.data_search_results, info.count)
-		else stringResource(
-			R.string.data_search_filtered, info.filter.summary(), info.count,
-		)
+		is InfoBar.Search -> {
+			val summary = info.filter?.summary()
+			when {
+				!info.done -> if (summary == null) stringResource(R.string.data_search_running)
+				else stringResource(R.string.data_search_filtered_running, summary)
+				info.count == 0 -> if (summary == null) stringResource(R.string.data_search_none)
+				else stringResource(R.string.data_search_filtered_none, summary)
+				summary == null -> stringResource(R.string.data_search_results, info.count)
+				else -> stringResource(R.string.data_search_filtered, summary, info.count)
+			}
+		}
 		InfoBar.InvalidSearch -> stringResource(R.string.data_search_invalid)
 		InfoBar.InvalidPattern -> stringResource(R.string.data_search_bad_pattern)
 	}

@@ -107,7 +107,7 @@ internal class SearchFlow(
 		host.load(ArrayList(), isSearch = true, isPicker = false)
 		// a new strip starts at zero, and an invalid query never runs.
 		lastSearchInfo = when {
-			eng.valid -> InfoBar.Search(0, activeFilter)
+			eng.valid -> InfoBar.Search(0, activeFilter, done = false)
 			detail != null -> InfoBar.InvalidPattern
 			else -> InfoBar.InvalidSearch
 		}
@@ -118,7 +118,7 @@ internal class SearchFlow(
 	private fun appendSearchRows(batch: List<ItemRow>) {
 		host.appendRows(batch)
 		lastSearchRows = ArrayList(host.models)
-		lastSearchInfo = InfoBar.Search(host.models.size, activeFilter)
+		lastSearchInfo = InfoBar.Search(host.models.size, activeFilter, done = false)
 		host.publishSearchInfo(lastSearchInfo)
 	}
 
@@ -126,7 +126,7 @@ internal class SearchFlow(
 		override fun appendBatch(batch: List<ItemRow>) = appendSearchRows(batch)
 
 		override fun runFinished() {
-			lastSearchInfo = InfoBar.Search(host.models.size, activeFilter)
+			lastSearchInfo = InfoBar.Search(host.models.size, activeFilter, done = true)
 			host.publishSearchInfo(lastSearchInfo)
 		}
 	}

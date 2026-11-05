@@ -16,6 +16,10 @@
     <string name="data_untested">Úspěšnost: Netestováno</string>
     <string name="data_search_results">"Výsledků: %1$d"</string>
     <string name="data_search_filtered">"%1$s · Výsledků: %2$d"</string>
+    <string name="data_search_running">Hledám…</string>
+    <string name="data_search_filtered_running">"%1$s · Hledám…"</string>
+    <string name="data_search_none">Žádné výsledky. Zkuste filtr nebo jiné slovo.</string>
+    <string name="data_search_filtered_none">"%1$s · Žádné výsledky."</string>
     <string name="data_search_bad_pattern">Neplatný regulární výraz.</string>
     <string name="data_search_invalid">Neplatné hledání. Použijte filtr nebo zápis \\WR=0.</string>
     <string name="data_selected">"Vybráno: %1$d"</string>
@@ -118,12 +122,9 @@
     <string name="help">Nápověda</string>
     <string name="help_create">Vytváření položek</string>
     <string name="help_create_ch">Kapitoly</string>
-    <string name="help_create_how">Každá položka se vytváří plovoucím tlačítkem \'+\' vpravo dole. Na obrazovce předmětů rovnou otevře tvůrce předmětu; uvnitř kontejneru rozvine kruhovou paletu nabízených typů — prstem přetáhněte na ikonu, nebo na ikonu klepněte po obyčejném tapnutí, které paletu nechá otevřenou. Klepnutím mimo ikony paletu zavřete.
-        \nTlačítko se při posouvání seznamu dolů schová a při posouvání nahoru se vrátí.
-        \nVšechny dialogy mají dva základní parametry k vyplnění.
-        \nPrvním je název vytvářené položky (povinný).\nDruhým jsou poznámky k dané položce (volitelné, mohou mít více řádků).
-        \nDále mohou dialogy obsahovat další doplňující parametry specifické pro různé typy vytvářených položek.
-        \nPo vyplnění všech potřebných informací klikněte na tlačítko \'OK\' pro vytvoření položky, nebo můžete vytváření kdykoli ukončit kliknutím na tlačítko \'Zrušit\'. Kliknutím mimo okno dialog také zavřete, ale pouze dokud nebyla provedena žádná změna.</string>
+    <string name="help_create_how">Tlačítko Nový nabízí typy otevřené obrazovky. Klepnutí nechá paletu stát, přetažení vybere hned.
+        \nTlačítko se při posouvání seznamu dolů schová.
+        \nTvůrce má název, popis a u slovíčka také překlady.</string>
     <string name="help_create_mch">Předměty</string>
     <string name="help_create_note">Poznámky</string>
     <string name="help_create_note_how">Poznámka nese název a popis a slouží pro text, který není slovíčkem, například pravidlo gramatiky.</string>
@@ -132,11 +133,10 @@
         \nPřeklad má svůj název a volitelné poznámky.
         \nIkona zrušení vpravo od překladu ho odstraní.</string>
     <string name="help_extra">Další užitečné funkce</string>
-    <string name="help_extra_how">Tento program obsahuje pár dalších zajímavých funkcí, zde je jejich přehled.</string>
+    <string name="help_extra_how">Pár funkcí je snadné přehlédnout. Zde jsou.</string>
     <string name="help_extra_naming">Způsoby pojmenovávání</string>
-    <string name="help_extra_naming_how">Tato aplikace umožňuje pojmenovávat slovíčka a další položky specifickým způsobem, díky kterému máte při testu více možností, jak odpovědět.
-        \nK dosažení se používá těchto znaků: /()
-        \nLomítko značí dvě možnosti, jejichž délka je ohraničena mezerou, interpunkčním znaménkem, nebo závorkami.</string>
+    <string name="help_extra_naming_how">Lomítko nabízí dvě varianty názvu, závorky seskupí celou variantu.
+        \nSlovíčko i jeho překlady je mohou použít.</string>
     <string name="help_extra_naming_examples">oni/ony jdou = \'oni jdou\', nebo \'ony jdou\'
         \n(Já jdu)/(Ty jdeš). = \'Já jdu.\', nebo \'Ty jdeš.\'</string>
     <string name="help_extra_words_export">Export slovíček</string>
@@ -163,40 +163,27 @@
         \n\sD\t- názvy začínající na \'D\'
         \n\WD\hund\t- slovíčka s popisem obsahujícím \'hund\'</string>
     <string name="help_select">Upravování</string>
-    <string name="help_select_delete">Po potvrzení odstraňovacího dialogu nenávratně smaže všechny vybrané položky.</string>
-    <string name="help_select_edit">Upravovat lze vždy pouze jednu položku, zobrazí se okno s parametry zvolené položky.
-        \nZobrazené okno je stejné, jako při vytváření nové položky.
-        \nPo dokončení úprav položky klikněte na tlačítko \'OK\' pro uložení změn.</string>
-    <string name="help_select_how">Všechny vytvořené objekty je možné nějak změnit.
-        \nDlouhým stiskem položky se zapne výběrové zobrazení: položka se vybere a zobrazí se dolní lišta s možnými akcemi. Kliknutí na ikonu typu řádku také mění stav výběru dané položky.
-        \nDržením prstu a jeho pohybem po seznamu vyberete rozsah položek, které prst protne.
-        \nPokud jsou některé položky vybrány, tlačítko vyhledávání v pravém horním rohu se změní na přepínač výběru všeho: vybere všechny položky v seznamu, nebo, pokud již jsou všechny vybrány, výběrové zobrazení vypne. Výběrové zobrazení vypne i tlačítko \'zpět\'.
-        \nNíže je uveden seznam možných akcí.</string>
-    <string name="help_select_move">Vyjme všechny vybrané položky ze seznamu a zobrazí vkládací lištu (možnosti zrušit a vložit). Po otevření cílové kapitoly stiskněte tlačítko \'Vložit\'.
-        \nOzbrojené přesouvání přežije přepnutí kapitoly, boční smyk včetně — smyk pouze zruší výběr položek.</string>
+    <string name="help_select_delete">Smaže vybrané položky po potvrzení.</string>
+    <string name="help_select_edit">Upravit otevře jedinou vybranou položku. OK uloží změny.</string>
+    <string name="help_select_how">Dlouhý stisk zapne výběr, klepnutí na ikonu typu řádek přepne. Tažením přes řádky vyberete rozsah.
+        \nZaškrtnutí vpravo nahoře vybere vše nebo výběr ukončí. Ukončí ho i zpět.</string>
+    <string name="help_select_move">Vyjmout vezme vybrané řádky a zobrazí vkládací lištu. Otevřete cíl a stiskněte Vložit.
+        \nPřesun přežije přepnutí kapitoly.</string>
     <string name="help_test">Testy</string>
     <string name="help_test_how">Test se ptá na slovíčka ze zvolených zdrojů.</string>
     <string name="help_test_results">Výsledky testu</string>
-    <string name="help_test_results_how">Výsledky se otevřou po stisknutí \'Hotovo\' nebo po vypršení času.
-        \nNadpis ukazuje skóre tohoto testu.
-        \nKaždý řádek je jedno testované slovíčko.
-        \nVelký text je to, na co se test ptal: překlady, v opačném směru testu slovíčko.
-        \nPod ním je správná odpověď a ta vaše, zelená je správně, červená špatně.
+    <string name="help_test_results_how">Výsledky se otevřou po stisknutí Hotovo nebo po vypršení času.
+        \nNadpis je skóre. Každý řádek je jedno testované slovíčko.
+        \nVelký text je zadání, pod ním správná odpověď a ta vaše.
         \nČíslo s × udává, kolikrát bylo slovíčko testováno.
-        \nBarevný pruh přechází od červené k zelené podle celkové úspěšnosti.
-        \nNa konci řádku je počet úspěšných testů z celkového počtu.
-        \nVšechny počty už zahrnují tento test.
-        \n\'Znovu\' spustí nový test se stejnými zdroji.</string>
+        \nNa konci řádku je počet úspěšných z celkového počtu a všechny počty zahrnují tento test.
+        \nZnovu spustí nový test se stejnými zdroji.</string>
     <string name="help_test_run">Průběh testu</string>
-    <string name="help_test_run_how">\'Začít\' potřebuje aspoň jeden zdroj.
-        \nKaždé slovíčko se ptá nejvýše jednou, v zamíchaném pořadí.
+    <string name="help_test_run_how">Začít potřebuje aspoň jeden zdroj. Každé slovíčko je zadáno jednou v zamíchaném pořadí.
         \nOdpočet posledních 30 sekund bliká červeně.
-        \n\'Hotovo\' odešle odpovědi a při chybějících se nejprve zeptá, vypršený čas je odešle také.
-        \n\'UKONČIT\' nebo tlačítko zpět po potvrzení ukončí běh bez hodnocení.</string>
+        \nHotovo odešle odpovědi a při chybějících se nejprve zeptá. UKONČIT nebo zpět ukončí běh bez hodnocení.</string>
     <string name="help_test_select">Výběr položek do testu</string>
-    <string name="help_test_select_how">Dlaždice \'Přidat zdroj\' otevře prohlížeč, který funguje jako průzkumník.
-        \n\'Zvolit\' na liště přidá vybrané řádky.
-        \nVybraná kapitola zastupuje slovíčka uvnitř.
+    <string name="help_test_select_how">Přidat zdroj otevře prohlížeč. Klepněte na řádky, vyberte zdroje a stiskněte Zvolit.
         \nVšechny zdroje musí patřit jednomu předmětu.</string>
     <string name="menu_label">Menu</string>
     <string name="menu_about">O programu</string>
@@ -236,6 +223,7 @@
     <string name="note_copied">Zkopírováno</string>
     <string name="objects_cancel">Storno</string>
     <string name="paste">Vložit</string>
+    <string name="picker_hint">Klepněte na řádky, vyberte zdroje a stiskněte Zvolit.</string>
     <string name="paste_status_references">Zástupci: %1$d</string>
     <string name="paste_status_move">Přesun: %1$d</string>
     <string name="pattern_err">"Špatná syntax regexu:\n%1$s"</string>
@@ -323,6 +311,7 @@
     <string name="test_time">Sekundy na slovíčko</string>
     <string name="test_total_time">Celkový čas: %1$d s</string>
     <string name="test_sources_header">Zdroje · jeden předmět</string>
+    <string name="test_sources_hint">Vybraná kapitola zastupuje svá slovíčka.</string>
     <string name="test_start_blocked">Přidejte aspoň jeden zdroj</string>
     <plurals name="test_source_words">
         <item quantity="one">%d slovíčko</item>

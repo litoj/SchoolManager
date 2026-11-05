@@ -99,7 +99,8 @@ private fun PickerContent(viewModel: PickerViewModel, modifier: Modifier = Modif
 		callbacks = pickerCallbacks(viewModel, listState.selectionActive),
 		modifier = modifier,
 		statusLine = if (listState.selectionActive)
-			stringResource(R.string.data_selected, listState.selectionCount) else null,
+			stringResource(R.string.data_selected, listState.selectionCount)
+		else stringResource(R.string.picker_hint),
 	) {
 		if (listState.selectionActive) PickerActionBar(
 			onCancel = viewModel::cancel,

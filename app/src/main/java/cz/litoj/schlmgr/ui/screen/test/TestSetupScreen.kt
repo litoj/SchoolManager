@@ -48,6 +48,7 @@ import cz.litoj.schlmgr.ui.activity.TestActivity
 import cz.litoj.schlmgr.ui.component.HairlineDivider
 import cz.litoj.schlmgr.ui.component.IconSize
 import cz.litoj.schlmgr.ui.component.iconRes
+import cz.litoj.schlmgr.ui.component.SettingCaption
 import cz.litoj.schlmgr.ui.component.SettingChoiceRow
 import cz.litoj.schlmgr.ui.component.SettingNumberRow
 import cz.litoj.schlmgr.ui.component.DefaultTextColor
@@ -133,6 +134,7 @@ private fun TestSetupContent(viewModel: TestSetupViewModel, modifier: Modifier =
 				Modifier.padding(start = 8.dp, top = 2.dp),
 				style = TextStyle(fontSize = 15.sp, color = DefaultTextColor),
 			)
+			SettingCaption(stringResource(R.string.test_sources_hint))
 			// the shared list is a SnapshotStateList.
 			// so a background-thread change from the picker dedup recomposes this directly
 			LazyColumn(Modifier.weight(1f)) {
