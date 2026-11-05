@@ -161,6 +161,19 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
+	fun `the clear filter entry returns the browse list`() {
+		seed()
+		val model = vmIn("A")
+		model.openSearchField()
+		model.onQuerySubmit("c1")
+		assertEquals(ExplorerRowVariant.Search, model.listState.value.variant)
+
+		model.onMenuItemClick(MenuId.CLEAR_FILTER)
+
+		assertEquals(ExplorerRowVariant.Browse, model.listState.value.variant)
+	}
+
+	@Test
 	fun `new actions refuse while searching`() {
 		seed()
 		val model = vmIn("A")

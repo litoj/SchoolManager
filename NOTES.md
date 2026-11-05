@@ -226,7 +226,7 @@ Its DB part is the model for this project.
   opens a labeled filter dialog and the strip names the active filter. Go-to
   is a search-only action in the normal order. The More menu starts a selection
   and clears a filter. Settings, test setup, picker and search states explain
-  themselves. The help page keeps short sections. 787 tests.
+  themselves. The help page keeps short sections. 788 tests.
 - 2026-11-05: main adopts the test run, test report, search and picker fixes.
   The report reads Score x/y (z%) with the prompt, correct and typed answer.
   The info strip names counts per kind, a removed source offers undo.

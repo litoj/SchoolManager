@@ -194,7 +194,7 @@
         \nOdpočet posledních 30 sekund bliká červeně.
         \nHotovo odešle odpovědi a při chybějících se nejprve zeptá. UKONČIT nebo zpět ukončí běh bez hodnocení.</string>
     <string name="help_test_select">Výběr položek do testu</string>
-    <string name="help_test_select_how">Přidat zdroj otevře prohlížeč. Klepněte na řádky, vyberte zdroje a stiskněte Zvolit.
+    <string name="help_test_select_how">Přidat zdroj otevře prohlížeč. Dlouhým stiskem řádku nebo klepnutím na ikonu typu vyberte zdroj, pak stiskněte Zvolit.
         \nVšechny zdroje musí patřit jednomu předmětu.</string>
     <string name="menu_label">Menu</string>
     <string name="menu_about">Nápověda a o aplikaci</string>

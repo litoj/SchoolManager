@@ -207,7 +207,7 @@
         \nThe countdown blinks red for the last 30 seconds.
         \nDone submits and asks first when answers are missing. QUIT or Back ends without grading.</string>
     <string name="help_test_select">Selecting items for the test</string>
-    <string name="help_test_select_how">Add source opens the picker. Tap rows to pick them, then Select.
+    <string name="help_test_select_how">Add source opens the picker. Long-press a row or tap its type icon to pick it, then Select.
         \nAll sources must belong to one subject.</string>
     <string name="menu_label">Menu</string>
     <string name="menu_about">Help &amp; About</string>
