@@ -9,6 +9,7 @@ import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestEntry
 import kotlin.math.abs
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -79,6 +80,24 @@ class TestEngineAmbiguityTest {
 
 		assertTrue("spaces are not part of the answer",
 			engine.isAnswer(0, "  first  ", entries[0].translations()))
+	}
+
+	@Test
+	fun `exact duplicate prompts merge but a shared subset stays separate`() {
+		val (_, chapter) = subjectWith("c", listOf(
+			"first" to listOf("same"),
+			"second" to listOf("same"),
+			"third" to listOf("same", "other"),
+		))
+		val engine = TestEngine()
+		engine.setTested(-1, null, 1, entries(chapter))
+		val tasks = engine.getTestGroups()
+
+		assertEquals("only the exact duplicate pair becomes one task", 2, tasks.size)
+		assertTrue("the shared subset stays a separate prompt",
+			tasks.any { it.entries.size == 1 && it.entries[0].word.name == "third" })
+		assertTrue("the exact duplicate pair shares one block",
+			tasks.any { it.entries.size == 2 })
 	}
 
 	@Test

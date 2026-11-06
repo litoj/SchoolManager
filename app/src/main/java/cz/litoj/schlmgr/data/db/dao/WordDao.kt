@@ -23,6 +23,14 @@ abstract class WordDao {
 	)
 	abstract suspend fun getTranslations(wordId: Int): List<DbItem>
 
+	/** All translation links of the given words in one read. */
+	@Query(
+		"SELECT l.parent_id AS word_id, i.* FROM item i " +
+			"INNER JOIN item_link l ON l.child_id = i.id " +
+			"WHERE l.parent_id IN (:wordIds) AND i.type = 'translation' ORDER BY l.position, l.child_id"
+	)
+	abstract suspend fun translationsForWords(wordIds: List<Int>): List<WordTranslation>
+
 	/**
 	 * The translation rows of every word child of [parentId], each with its word.
 	 * One batch read for a browse load, in link order within a word.

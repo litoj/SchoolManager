@@ -75,7 +75,7 @@ The in-app Help covers the standard workflow. These features are easy to miss.
 ### Tests
 
 - Duration is per item. The timer runs for the number of tested items times the duration.
-- Words sharing a translation are adjacent, and a repeated answer passes only once.
+- Identical translation sets merge into one prompt with a labeled answer count. A repeated answer passes only once.
 - The Make tests by success rate setting picks the rows that the priority sort puts first.
 - The source picker has a select-all button in the top corner.
 

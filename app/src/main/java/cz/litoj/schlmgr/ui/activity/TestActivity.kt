@@ -13,6 +13,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -53,11 +54,13 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.ui.component.AnswerField
 import cz.litoj.schlmgr.ui.component.HairlineDivider
-import cz.litoj.schlmgr.ui.component.WideTextField
+import cz.litoj.schlmgr.ui.component.SharedPromptRow
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestItemModel
+import cz.litoj.schlmgr.testing.TestTaskModel
 import cz.litoj.schlmgr.ui.popup.DialogHost
 import cz.litoj.schlmgr.ui.popup.TestResultsPopup
 import cz.litoj.schlmgr.ui.screen.test.TestRunState
@@ -143,15 +146,21 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 			val listState = rememberLazyListState()
 			var pendingAnswer by remember { mutableIntStateOf(-1) }
 			LazyColumn(Modifier.weight(1f).fillMaxSize(), state = listState) {
-				itemsIndexed(TestRunState.items, key = { i, _ -> i }) { index, item ->
-					LaunchedEffect(index, pendingAnswer) {
-						if (pendingAnswer == index) {
-							pendingAnswer = -1
-							runCatching { answerFocus[index]?.requestFocus() }
+				itemsIndexed(TestRunState.taskGroups, key = { i, _ -> i }) { index, task ->
+					if (task.members.size > 1) {
+						SharedPromptRow(task, pendingAnswer, answerFocus, task.startIndex + task.members.lastIndex == TestRunState.items.lastIndex,
+							listState, { pendingAnswer = it })
+					} else {
+						val item = task.members.single()
+						LaunchedEffect(task.startIndex, pendingAnswer) {
+							if (pendingAnswer == task.startIndex) {
+								pendingAnswer = -1
+								runCatching { answerFocus[task.startIndex]?.requestFocus() }
+							}
 						}
+						WordTestRow(item, task.startIndex, answerFocus, task.startIndex == TestRunState.items.lastIndex,
+							listState, { pendingAnswer = it })
 					}
-					WordTestRow(item, index, answerFocus, index == TestRunState.items.lastIndex,
-						listState, { pendingAnswer = it })
 				}
 				item {
 					// the app header colours mark the one commit action of the screen.
@@ -279,47 +288,6 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 			// - the last row has none, so no line sits above the Done button.
 			if (!isLast) HairlineDivider(Modifier.padding(top = 2.dp))
 		}
-	}
-
-	/** One answer field. [isLast] hides the keyboard on submit instead of advancing focus. */
-	@Composable
-	private fun AnswerField(
-		index: Int, hintRes: Int,
-		answerFocus: HashMap<Int, FocusRequester>, isLast: Boolean,
-		listState: LazyListState, setPendingAnswer: (Int) -> Unit,
-	) {
-		// same size as the hint text above it
-		val focusRequester = remember(index) { answerFocus.getOrPut(index) { FocusRequester() } }
-		val keyboard = LocalSoftwareKeyboardController.current
-		val scope = rememberCoroutineScope()
-		WideTextField(
-			value = TestRunState.answers[index] ?: "",
-			onValueChange = { TestRunState.setAnswer(index, it) },
-			fontSize = 15.sp,
-			hint = stringResource(hintRes),
-			// the whole field area takes taps and focus.
-			// - the keyboard action walks to the next answer.
-			// - the last answer only hides the keyboard, since grading stays on Done.
-			focusRequester = focusRequester,
-			imeAction = if (isLast) ImeAction.Done else ImeAction.Next,
-			onImeAction = {
-				if (isLast) keyboard?.hide()
-				else {
-					// a requester whose row left the viewport throws, so the scroll fallback runs
-					val next = answerFocus[index + 1]
-					val landed = next != null && runCatching { next.requestFocus() }.isSuccess
-					if (!landed) {
-						// the next row sits beyond the viewport or lost its requester.
-						// scroll to it, then the pending index focuses it once composed.
-						setPendingAnswer(index + 1)
-						scope.launch { listState.animateScrollToItem(index + 1) }
-					}
-				}
-			},
-			modifier = Modifier
-				.fillMaxWidth()
-				.padding(horizontal = 5.dp),
-		)
 	}
 }
 

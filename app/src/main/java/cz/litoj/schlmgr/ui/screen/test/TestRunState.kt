@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.Dp
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestItemModel
+import cz.litoj.schlmgr.testing.TestTaskModel
 import cz.litoj.schlmgr.ui.popup.ContinuePopup
 import cz.litoj.schlmgr.ui.popup.Dialogs
 import cz.litoj.schlmgr.ui.popup.PopupMargin
@@ -54,6 +55,10 @@ object TestRunState {
 
 	/** The items of the run, a snapshot list, so a landing recomposes. */
 	val items: List<TestItemModel> = _items
+
+	/** Shared prompts of the run, where only the exact same prompt set merges. */
+	var taskGroups = emptyList<TestTaskModel>()
+		private set
 
 	private val _answers = mutableStateMapOf<Int, String>()
 
@@ -147,6 +152,7 @@ object TestRunState {
 				mainHandler.post {
 					if (walking !== host) return@post
 					walking = null
+					taskGroups = emptyList()
 					host.onNoObjects()
 				}
 				return@launch
@@ -169,6 +175,7 @@ object TestRunState {
 				src,
 			)
 			val models = newTest.getTestSrc().map { TestItemModel(it) }
+			val tasks = TestTaskModel.flatten(models, newTest.getTestGroups())
 			mainHandler.post {
 				if (walking !== host) return@post
 				walking = null
@@ -177,6 +184,7 @@ object TestRunState {
 				_items.clear()
 				_answers.clear()
 				_items.addAll(models)
+				taskGroups = tasks
 				test = newTest
 				newTest.startTest()
 			}
@@ -240,5 +248,6 @@ object TestRunState {
 		secondsLeft = 0
 		_answers.clear()
 		_items.clear()
+		taskGroups = emptyList()
 	}
 }

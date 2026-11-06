@@ -112,6 +112,12 @@ object ItemRepository {
 	@JvmStatic
 	fun translations(wordId: Int): List<DbItem> = query { it.wordDao().getTranslations(wordId) }
 
+	/** One batch read of the prompt sets for all tested words. */
+	@JvmStatic
+	fun translationsForWords(wordIds: Collection<Int>): Map<Int, List<DbItem>> = query {
+		it.wordDao().translationsForWords(wordIds.toList()).groupBy(WordTranslation::wordId) { it.item }
+	}
+
 	@JvmStatic
 	fun parentIds(childId: Int): List<Int> = query { it.itemDao().parentsOf(childId) }
 

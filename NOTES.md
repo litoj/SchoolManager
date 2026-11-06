@@ -185,7 +185,8 @@ Its DB part is the model for this project.
 - The tested side row flips between its two sides on a tap.
 - The default tested side is a setting, the word side by default, and a fresh setup takes it.
 - Start waits for a source and says why.
-- Shared-translation entries group together, and a repeated answer fails after its first pass.
+- Identical translation sets merge into one labeled answer block. Partial overlap stays separate.
+- A repeated answer inside an exact-match block fails after its first pass.
 - Every shown translation must name the answer for a synonym to pass.
 - The countdown pauses while the app is away.
 - Back confirms before ending a run without grading.
@@ -226,6 +227,9 @@ Its DB part is the model for this project.
 - No active task.
 - Open items live in `DEVELOPMENT.md`.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
+- 2026-11-06: exact duplicate test prompts merge into one labeled answer block.
+  Repeated answers fail once, synonyms must match every shown translation.
+  Item text and search or test comparisons trim at the boundary. 802 tests.
 - 2026-11-05: help moved from hidden mechanics into the UI. The search field
   opens a labeled filter dialog and the strip names the active filter. Go-to
   is a search-only action in the normal order. The More menu starts a selection

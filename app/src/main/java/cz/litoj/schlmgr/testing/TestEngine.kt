@@ -15,8 +15,9 @@ class TestEngine {
 
 	private var source: List<TestEntry> = emptyList()
 	private var answered: BooleanArray = BooleanArray(0)
-	private var duplicateGroups: List<Set<Int>> = emptyList()
-	private val usedAnswers = HashMap<Set<Int>, HashSet<String>>()
+	private var groups: List<TestTask> = emptyList()
+	private var groupIds = IntArray(0)
+	private val usedAnswers = HashMap<Int, HashSet<String>>()
 	private var time = 0
 	private var doOnSec: Timer? = null
 	private var timerThread: Thread? = null
@@ -39,7 +40,8 @@ class TestEngine {
 		// a single-entry source included
 		val useAmount = if (amount == -1 || amount >= source.size) source.size else amount
 		val selected = if (isClever) cleverTest(source, useAmount) else rndTest(source.toMutableList(), useAmount)
-		this.source = groupAmbiguous(selected)
+		groups = groupByWholePrompt(selected)
+		this.source = groups.flatMap(TestTask::entries)
 		// a huge per-item time must not overflow the run into a negative
 		time = (timeSec.toLong() * useAmount).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
 		this.doOnSec = doOnSec
@@ -48,34 +50,23 @@ class TestEngine {
 	}
 
 	/**
-	 * Places entries sharing a shown translation next to each other.
-	 * - the grouping is transitive, so a chain of shared translations forms one block.
-	 * - the first member keeps its picked position, later members move up beside it.
+	 * Merges only entries with exactly the same translation set.
+	 * - one batch read supplies every prompt set, so each word needs no separate lookup.
+	 * - partial overlap stays separate, since the shown prompts are not the same.
 	 */
-	private fun groupAmbiguous(source: List<TestEntry>): List<TestEntry> {
-		if (source.size < 2 || !ItemRepository.initialized) {
-			duplicateGroups = emptyList()
-			return source
+	private fun groupByWholePrompt(source: List<TestEntry>): List<TestTask> {
+		if (source.size < 2 || !ItemRepository.initialized) return source.map { TestTask(listOf(it)) }
+		val promptSets = ItemRepository.translationsForWords(source.map { it.word.id })
+		val groups = LinkedHashMap<Set<Int>, MutableList<Int>>()
+		for ((index, entry) in source.withIndex()) {
+			val signature = promptSets[entry.word.id]?.map { it.id }?.toSet() ?: emptySet()
+			groups.getOrPut(signature) { mutableListOf() }.add(index)
 		}
-		val parent = IntArray(source.size) { it }
-		fun root(index: Int): Int {
-			var at = index
-			while (parent[at] != at) at = parent[at]
-			return at
+		groupIds = IntArray(source.size) { -1 }
+		return groups.values.mapIndexed { groupId, indices ->
+			if (indices.size > 1) for (index in indices) groupIds[index] = groupId
+			TestTask(indices.map(source::get))
 		}
-		val translationOwners = HashMap<Int, Int>()
-		for (index in source.indices) {
-			for (translation in source[index].translations()) {
-				val owner = translationOwners.putIfAbsent(translation.id, index) ?: continue
-				val left = root(owner)
-				val right = root(index)
-				if (left != right) parent[right] = left
-			}
-		}
-		val groups = LinkedHashMap<Int, MutableList<Int>>()
-		for (index in source.indices) groups.computeIfAbsent(root(index)) { mutableListOf() }.add(index)
-		duplicateGroups = groups.filter { it.value.size > 1 }.values.map { it.toSet() }
-		return groups.values.flatMap { indices -> indices.map(source::get) }
 	}
 
 	/**
@@ -143,8 +134,8 @@ class TestEngine {
 			}
 		}
 		if (!text.isNullOrEmpty()) {
-			val group = duplicateGroups.firstOrNull { index in it }
-			if (group != null && !usedAnswers.getOrPut(group) { HashSet() }.add(text)) {
+			val group = groupIds.getOrElse(index) { -1 }
+			if (group >= 0 && !usedAnswers.getOrPut(group) { HashSet() }.add(text)) {
 				// one prompt can only pass once in an ambiguous block
 				correct = false
 			}
@@ -170,6 +161,9 @@ class TestEngine {
 
 	/** The tested entries of the run, as a defensive copy. */
 	fun getTestSrc(): List<TestEntry> = ArrayList(source)
+
+	/** The prompt groups of the run, where each group has one shared prompt. */
+	fun getTestGroups(): List<TestTask> = groups.toList()
 
 	companion object {
 		/** One mutation door, the startup load and the settings screen share it. */

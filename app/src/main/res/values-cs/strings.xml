@@ -191,7 +191,7 @@
         \nZnovu spustí nový test se stejnými zdroji.</string>
     <string name="help_test_run">Průběh testu</string>
     <string name="help_test_run_how">Začít potřebuje aspoň jeden zdroj. Každé slovíčko je zadáno jednou v zamíchaném pořadí.
-        \nSlovíčka se stejným překladem jsou za sebou. Opakovaná odpověď uspěje jen jednou.
+        \nSlovíčka se stejnou sadou překladů sdílí jedno zadání. Opakovaná odpověď uspěje jen jednou.
         \nOdpočet posledních 30 sekund bliká červeně.
         \nHotovo odešle odpovědi a při chybějících se nejprve zeptá. UKONČIT nebo zpět ukončí běh bez hodnocení.</string>
     <string name="help_test_select">Výběr položek do testu</string>
@@ -344,6 +344,13 @@
         <item quantity="many">%1$d z %2$d vyplněno</item>
         <item quantity="other">%1$d z %2$d vyplněno</item>
     </plurals>
+    <plurals name="test_synonyms">
+        <item quantity="one">Synonymum: %d</item>
+        <item quantity="few">Synonyma: %d</item>
+        <item quantity="many">Synonyma: %d</item>
+        <item quantity="other">Synonyma: %d</item>
+    </plurals>
+    <string name="test_answers_different">Každá odpověď musí být jiná.</string>
     <string name="test_correct">Správně: %1$s</string>
     <string name="test_no_answer">(bez odpovědi)</string>
     <string name="test_your_answer">Vaše odpověď: %1$s</string>
