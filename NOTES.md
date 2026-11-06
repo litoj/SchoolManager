@@ -46,6 +46,7 @@ Its DB part is the model for this project.
 - An edit that keeps the row identity updates its row in place, no reload.
 - Rows sharing a touched translation re-render.
 - A fork or a rename join rebuilds the list, the view state survives it.
+- A rename join keeps the renamed row's slot in its chapter.
 
 ### Import
 
@@ -240,7 +241,8 @@ Its DB part is the model for this project.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
 - 2026-11-06: Go-to lands the list on the selected hit and pulses its row once.
   The reference jump keeps its plain landing. The New palette uses the light
-  grey wash. View state keeps the parent stack and the current level only. 816 tests.
+  grey wash. View state keeps the parent stack and the current level only.
+  A rename join keeps its row slot. 817 tests.
 - 2026-11-06: exact duplicate test prompts merge into one labeled answer block.
   Repeated answers fail once, synonyms must match every shown translation.
   Container sort persists, and tests can require every name variant. 813 tests.

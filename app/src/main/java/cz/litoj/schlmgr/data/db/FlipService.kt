@@ -261,10 +261,13 @@ internal object FlipService {
 		val touched = (dao.parentsOf(from) + dao.parentsOf(target.id)).distinct()
 		val fromRow = dao.get(from)
 		// a reference link stays one, a referencing chapter must not gain a plain link
-		for (parent in dao.parentsOf(from))
-			if (dao.linkPosition(parent, target.id) == null)
-				dao.insertLink(DbLink(parent, target.id, dao.nextPosition(parent),
-					isReference = dao.linkIsReference(parent, from) == true))
+		for (parent in dao.parentsOf(from)) {
+			if (dao.linkPosition(parent, target.id) != null) continue
+			// the joined word takes the slot of the renamed one, so the row stays in place
+			val slot = dao.linkPosition(parent, from) ?: dao.nextPosition(parent)
+			dao.insertLink(DbLink(parent, target.id, slot,
+				isReference = dao.linkIsReference(parent, from) == true))
+		}
 		// translations union under the name rule, a same-named translation
 		// of the survivor merges, so no second row links
 		val survivorTrls = dao.getChildren(target.id)

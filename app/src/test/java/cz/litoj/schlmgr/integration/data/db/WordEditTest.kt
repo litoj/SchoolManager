@@ -258,6 +258,22 @@ class WordEditTest {
 	}
 
 	@Test
+	fun `a rename-join keeps the word's place in its chapter`() {
+		val subject = ItemRepository.createSubject("english", null)
+		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
+		val c2 = ItemRepository.createChapter(subject.id, "c2", null)
+		word(c1.id, "alpha", "a")
+		val renamed = word(c1.id, "beta", "b")
+		word(c1.id, "gamma", "g")
+		word(c2.id, "target", "t")
+
+		ItemRepository.rename(renamed.id, "target")
+
+		assertEquals(listOf("alpha", "target", "gamma"),
+			ItemRepository.children(c1.id).map { it.name })
+	}
+
+	@Test
 	fun `a rename-join's clashing translation adopts counters and dies unshared`() {
 		val subject = ItemRepository.createSubject("english", null)
 		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
