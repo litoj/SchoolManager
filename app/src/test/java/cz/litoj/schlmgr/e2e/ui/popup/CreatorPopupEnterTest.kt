@@ -171,6 +171,24 @@ class CreatorPopupEnterTest {
 	}
 
 	@Test
+	fun `removing an unfocused translation hands the keyboard to the previous row`() {
+		val popup = wordPopup()
+		popup.name = "Haus"
+		popup.translations[0].name = "dům"
+		popup.translations.add(TranslationRow("stavba", "", null))
+		rule.setContent { popup.Content() }
+		rule.waitForIdle()
+
+		// the item name still holds focus, but the deleted row always hands it over first
+		rule.onAllNodesWithContentDescription("Delete")[1].performClick()
+		rule.waitForIdle()
+
+		rule.onNode(focusedField).performTextInput("!")
+		rule.runOnIdle { assertEquals("dům!", popup.translations[0].name) }
+		assertTrue("the keyboard stayed up", keyboardShown())
+	}
+
+	@Test
 	fun `a deleted row keeps the rows scroll where it is`() {
 		val popup = CreatorPopup(CreatorPopup.Kind.NEW_WORD, null,
 			CreatorContent.Word((1..20).map { TranslationRow("t$it", "", null) }))

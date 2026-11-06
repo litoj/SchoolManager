@@ -48,6 +48,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.data.WordNames
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.component.HairlineDivider
@@ -100,6 +101,7 @@ class CreatorPopup(
 		var focusNameOnOpen by mutableStateOf(true)
 		var name by mutableStateOf(edited?.item?.name ?: "")
 		var description by mutableStateOf(edited?.item?.description ?: "")
+		var showRequired by mutableStateOf(false)
 
 		val translations: SnapshotStateList<TranslationRow> =
 			rows.toMutableStateList()
@@ -213,6 +215,11 @@ class CreatorPopup(
 		okListener = listener
 	}
 
+	private val itemNameMissing: Boolean
+		get() = if (content is CreatorContent.Word)
+			WordNames.splitEscaped(name).any { it.isBlank() }
+		else name.isBlank()
+
 	fun result() = CreatorResult(
 		name = name,
 		description = description,
@@ -318,6 +325,7 @@ class CreatorPopup(
 					},
 					imeAction = if (content is CreatorContent.Word || isNote) ImeAction.Next else ImeAction.Done,
 					focusRequester = nameFocus,
+					isError = editor.showRequired && itemNameMissing,
 				)
 				if (content is CreatorContent.Word) Text(
 					stringResource(R.string.creator_variants_hint),
@@ -408,13 +416,10 @@ class CreatorPopup(
 				runCatching { rowNameFocus.requestFocus() }
 			}
 		}
-		// the row knows whether it holds the keyboard, so its removal can
-		// hand the keyboard over instead of dropping it
-		var holdsFocus by remember { mutableStateOf(false) }
 		// the layout matches the main frame, so the start padding aligns the bordered fields.
 		// - the delete icon keeps the same margin from the right edge of the card.
 		// - so it does not hug the popup
-		Column(Modifier.fillMaxWidth().onFocusChanged { holdsFocus = it.hasFocus }) {
+		Column(Modifier.fillMaxWidth()) {
 			HairlineDivider()
 			Row(
 				Modifier
@@ -439,6 +444,7 @@ class CreatorPopup(
 						imeAction = if (translations.lastOrNull() == row) ImeAction.Done else ImeAction.Next,
 						focusRequester = rowNameFocus,
 						horizontalPadding = 0.dp,
+						isError = editor.showRequired && row.name.isBlank(),
 					)
 					BorderedTextField(
 						row.description,
@@ -458,13 +464,10 @@ class CreatorPopup(
 						.size(IconSize)
 						.clickable {
 							row.source?.let { removedTranslations.add(it) }
-							// the keyboard keeps the flow: the focus hands over
-							// before the row dies, the item name for the first row
-							if (holdsFocus) {
-								val previous = translations.getOrNull(translations.indexOf(row) - 1)
-								if (previous != null) focusTranslation(previous.id)
-								else runCatching { nameFocus.requestFocus() }
-							}
+							// the previous field takes the focus before its neighbour dies
+							val previous = translations.getOrNull(translations.indexOf(row) - 1)
+							if (previous != null) focusTranslation(previous.id)
+							else runCatching { nameFocus.requestFocus() }
 							translations.remove(row)
 							// the focus handle of the row is dead, so drop it with the row
 							editor.nameFieldFocus.remove(row.id)
@@ -481,6 +484,10 @@ class CreatorPopup(
 		// - a refused commit leaves the popup open, so the door stays open.
 		// - the renew of a new word keeps the listener for the next word of the run.
 		val listener = okListener ?: return
+		editor.showRequired = true
+		if (content is CreatorContent.Word && translations.isEmpty())
+			translations.add(TranslationRow("", "", null))
+		if (itemNameMissing || content is CreatorContent.Word && translations.any { it.name.isBlank() }) return
 		if (!listener(result())) return
 		if (renew && kind == Kind.NEW_WORD) resetForNextWord()
 		else {
