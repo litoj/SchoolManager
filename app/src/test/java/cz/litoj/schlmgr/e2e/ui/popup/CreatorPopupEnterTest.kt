@@ -189,6 +189,28 @@ class CreatorPopupEnterTest {
 	}
 
 	@Test
+	fun `a deletion asks for the keyboard after its field dies`() {
+		val popup = wordPopup()
+		popup.name = "Haus"
+		popup.translations[0].name = "dům"
+		popup.translations.add(TranslationRow("stavba", "", null))
+		rule.setContent { popup.Content() }
+		rule.waitForIdle()
+		rule.onNodeWithText("stavba").performClick()
+		rule.waitForIdle()
+		assertTrue(keyboardShown())
+		imm().hideSoftInputFromWindow(null, 0)
+		rule.runOnIdle { assertFalse(keyboardShown()) }
+
+		rule.onAllNodesWithContentDescription("Delete")[1].performClick()
+		rule.waitForIdle()
+
+		assertTrue("the keyboard is asked for after the removal", keyboardShown())
+		rule.onNode(focusedField).performTextInput("!")
+		rule.runOnIdle { assertEquals("dům!", popup.translations[0].name) }
+	}
+
+	@Test
 	fun `a deleted row keeps the rows scroll where it is`() {
 		val popup = CreatorPopup(CreatorPopup.Kind.NEW_WORD, null,
 			CreatorContent.Word((1..20).map { TranslationRow("t$it", "", null) }))

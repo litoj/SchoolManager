@@ -405,6 +405,7 @@ class CreatorPopup(
 		modifier: Modifier,
 	) {
 		val rowNameFocus = remember(row.id) { FocusRequester() }
+		val keyboard = LocalSoftwareKeyboardController.current
 		// registered post-composition, so an abandoned recomposition leaves no stale entry behind
 		SideEffect { editor.nameFieldFocus[row.id] = rowNameFocus }
 		// keyed on pendingFocusId too, so re-targeting an already-composed row re-runs the effect.
@@ -440,8 +441,8 @@ class CreatorPopup(
 						modifier = modifier,
 						singleLine = true,
 						onImeAction = { onTranslationNameEnter(translations.indexOf(row)) },
-						// the Enter of the last row confirms, so the key reads Done, not Next
-						imeAction = if (translations.lastOrNull() == row) ImeAction.Done else ImeAction.Next,
+						// the same action on every row keeps a deletion from restarting the IME
+						imeAction = ImeAction.Done,
 						focusRequester = rowNameFocus,
 						horizontalPadding = 0.dp,
 						isError = editor.showRequired && row.name.isBlank(),
@@ -469,6 +470,8 @@ class CreatorPopup(
 							if (previous != null) focusTranslation(previous.id)
 							else runCatching { nameFocus.requestFocus() }
 							translations.remove(row)
+							// the deleted field owned the input connection, so the keyboard needs a new ask
+							keyboard?.show()
 							// the focus handle of the row is dead, so drop it with the row
 							editor.nameFieldFocus.remove(row.id)
 						}
