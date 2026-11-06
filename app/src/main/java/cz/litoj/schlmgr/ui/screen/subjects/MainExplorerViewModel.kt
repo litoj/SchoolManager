@@ -220,6 +220,7 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		MenuId.TEST -> { prepareTest(); true }
 		MenuId.CUT -> { move(false); true }
 		MenuId.EDIT -> { onEditAction(); true }
+		MenuId.DELETE -> { onDeleteAction(); true }
 		MenuId.GOTO -> { onGoToAction(); true }
 		MenuId.CLEAR_FILTER -> { onQuerySubmit(""); true }
 		MenuId.SELECT -> { startSelection(); true }

@@ -21,6 +21,7 @@ import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 import cz.litoj.schlmgr.ui.viewmodel.SearchUi
+import cz.litoj.schlmgr.ui.viewmodel.SelectionAction
 import cz.litoj.schlmgr.ui.viewmodel.SettingsState
 import cz.litoj.schlmgr.ui.viewmodel.TranslationValue
 import cz.litoj.schlmgr.ui.viewmodel.toUi
@@ -1049,6 +1050,42 @@ class MainExplorerViewModelTest {
 
 		// the rows travel to the dialog, not only their ids
 		assertEquals(listOf(c1, c2), (request as MainExplorerViewModel.Request.ConfirmDelete).doomed)
+	}
+
+	@Test
+	fun `the strip delete asks the view to confirm the selected rows`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		val row = model.items().single()
+		model.setSelected(row, true)
+
+		model.onSelectionAction(SelectionAction.DELETE)
+
+		val request = runBlocking { withTimeout(100) { model.requests.first() } }
+		assertEquals(listOf(row), (request as MainExplorerViewModel.Request.ConfirmDelete).doomed)
+	}
+
+	@Test
+	fun `a word with a shared translation leaves only its own chapter`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		val c2 = ItemRepository.createChapter(aId, "c2", null, 1)
+		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
+		val w2 = ItemRepository.createWord(c2.id, "w2", null, listOf("t1" to null))
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		model.setSelected(model.items().single(), true)
+		model.onSelectionAction(SelectionAction.DELETE)
+		val request = runBlocking { withTimeout(100) { model.requests.first() } }
+
+		model.performDelete((request as MainExplorerViewModel.Request.ConfirmDelete).doomed)
+
+		assertTrue("the word left its chapter", ItemRepository.children(c1.id).isEmpty())
+		assertEquals("the other word keeps the shared translation",
+			listOf("t1"), ItemRepository.translations(w2.id).map { it.name })
 	}
 
 	@Test
