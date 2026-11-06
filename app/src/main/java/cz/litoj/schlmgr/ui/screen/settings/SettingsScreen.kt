@@ -81,6 +81,11 @@ private fun SettingsList(state: SettingsState, modifier: Modifier = Modifier) {
 			caption = stringResource(R.string.setts_him_flipped_search_hint),
 		)
 		HairlineDivider()
+		SettingSwitchRow(
+			stringResource(R.string.setts_search_show_path), state.searchShowPath, state::toggleSearchShowPath,
+			caption = stringResource(R.string.setts_search_show_path_hint),
+		)
+		HairlineDivider()
 		SettingNumberRow(
 			stringResource(R.string.setts_desc_lines), state.descLinesText, state::setDescLines,
 			{ state.descLinesFocusLost(); keyboard?.hide() },

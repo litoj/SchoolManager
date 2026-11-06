@@ -19,6 +19,7 @@ class SettingsState(
 	parse: Boolean = true,
 	defFlip: Boolean = true,
 	searchDefFlip: Boolean = true,
+	searchShowPath: Boolean = true,
 	descLinesText: String = ItemRow.DEFAULT_DESC_LINES.toString(),
 	doubleTapMsText: String = ItemRow.doubleTapMs.toString(),
 	wordSplitText: String = ";",
@@ -35,6 +36,8 @@ class SettingsState(
 	var defFlip by mutableStateOf(defFlip)
 		private set
 	var searchDefFlip by mutableStateOf(searchDefFlip)
+		private set
+	var searchShowPath by mutableStateOf(searchShowPath)
 		private set
 	var descLinesText by mutableStateOf(descLinesText)
 		private set
@@ -76,6 +79,12 @@ class SettingsState(
 		searchDefFlip = !searchDefFlip
 		applyRowOptions()
 		AppSettings.set("flipSearch", searchDefFlip)
+	}
+
+	fun toggleSearchShowPath() {
+		searchShowPath = !searchShowPath
+		applyRowOptions()
+		AppSettings.set("searchShowPath", searchShowPath)
 	}
 
 	/** Zero stands for the icon-only display. */
@@ -188,7 +197,8 @@ class SettingsState(
 	private fun applyRowOptions() {
 		ItemRow.applyOptions(parse, defFlip, searchDefFlip,
 			descLinesText.toIntOrNull() ?: ItemRow.descLines,
-			doubleTapMsText.toIntOrNull() ?: ItemRow.doubleTapMs)
+			doubleTapMsText.toIntOrNull() ?: ItemRow.doubleTapMs,
+			searchShowPath)
 	}
 
 	companion object {
@@ -209,6 +219,7 @@ class SettingsViewModel : ViewModel() {
 		parse = ItemRow.parse,
 		defFlip = ItemRow.defFlip,
 		searchDefFlip = ItemRow.searchDefFlip,
+		searchShowPath = ItemRow.searchShowPath,
 		descLinesText = ItemRow.descLines.toString(),
 		doubleTapMsText = ItemRow.doubleTapMs.toString(),
 		wordSplitText = WordListWriter.wordTranslationSplitter,

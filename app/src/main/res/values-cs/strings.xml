@@ -265,6 +265,8 @@
     <string name="setts_him_flipped_hint">Řádek slovíčka se otevře na překladech.</string>
     <string name="setts_him_flipped_search">Zobrazovat překlady u nálezů</string>
     <string name="setts_him_flipped_search_hint">Nález slovíčka se otevře na překladech.</string>
+    <string name="setts_search_show_path">Zobrazovat cestu u výsledků hledání</string>
+    <string name="setts_search_show_path_hint">Pod nalezeným slovem nebo překladem zobrazí složku a předmět.</string>
     <string name="setts_him_parse">Zpracovat varianty názvů</string>
     <string name="setts_him_parse_hint">Čte A/B a (A)/(B) jako několik variant názvu.</string>
     <string name="setts_explorer">Průzkumník</string>

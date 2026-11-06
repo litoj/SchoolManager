@@ -138,7 +138,7 @@ fun Item(
 							Text(item.description, fontSize = 15.sp, color = ExplorerColors.description)
 						}
 					}
-					if (item.trackPath?.isNotEmpty() == true) {
+					if (ItemRow.searchShowPath && item.trackPath?.isNotEmpty() == true) {
 						ItemTrackPath(item.trackPath)
 					}
 					if (answer != null) answer()

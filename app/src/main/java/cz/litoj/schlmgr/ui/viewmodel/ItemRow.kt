@@ -237,6 +237,10 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		var searchDefFlip = true
 			private set
 
+		/** Whether search results display their container path. */
+		var searchShowPath = true
+			private set
+
 		/** The double-tap window, a settings change rebuilds the list detector. */
 		var doubleTapMs by mutableIntStateOf(DEFAULT_DOUBLE_TAP_MS)
 			private set
@@ -263,6 +267,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 				AppSettings.getBool("flipSearch", true),
 				AppSettings.getInt("descLines", DEFAULT_DESC_LINES),
 				AppSettings.getInt("doubleTapMs", DEFAULT_DOUBLE_TAP_MS),
+				AppSettings.getBool("searchShowPath", true),
 			)
 		}
 
@@ -274,12 +279,14 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 			searchDefFlip: Boolean,
 			descLines: Int,
 			doubleTapMs: Int,
+			searchShowPath: Boolean = true,
 		) {
 			this.parse = parse
 			this.defFlip = defFlip
 			this.searchDefFlip = searchDefFlip
 			this.descLines = descLines
 			this.doubleTapMs = doubleTapMs
+			this.searchShowPath = searchShowPath
 		}
 
 		@JvmStatic

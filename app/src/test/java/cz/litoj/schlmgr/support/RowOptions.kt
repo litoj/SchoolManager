@@ -13,6 +13,7 @@ fun setRowOptions(
 	searchDefFlip: Boolean? = null,
 	descLines: Int? = null,
 	doubleTapMs: Int? = null,
+	searchShowPath: Boolean? = null,
 ) {
 	ItemRow.applyOptions(
 		parse ?: ItemRow.parse,
@@ -20,5 +21,6 @@ fun setRowOptions(
 		searchDefFlip ?: ItemRow.searchDefFlip,
 		descLines ?: ItemRow.descLines,
 		doubleTapMs ?: ItemRow.doubleTapMs,
+		searchShowPath ?: ItemRow.searchShowPath,
 	)
 }
