@@ -15,6 +15,7 @@ import cz.litoj.schlmgr.ui.viewmodel.CreatorResult
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import kotlinx.coroutines.Dispatchers
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -75,6 +76,56 @@ class SubjectsSiblingScrollTest {
 		rule.onNode(hasScrollToIndexAction()).performScrollToIndex(30)
 		rule.waitForIdle()
 		return model
+	}
+
+	/** Three siblings with a custom descending alpha sort unlike repository order. */
+	private fun customSortedModel(): MainExplorerViewModel {
+		val a = ItemRepository.createSubject("A", null)
+		ItemRepository.createChapter(a.id, "alpha", null)
+		ItemRepository.createChapter(a.id, "zulu", null)
+		ItemRepository.createChapter(a.id, "mid", null)
+		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		rule.setContent { SubjectsScreen(model, {}, {}, {}) }
+		rule.waitForIdle()
+		model.onItemClick(model.items().single { it.item.name == "A" })
+		rule.waitForIdle()
+		model.onMenuItemClick(cz.litoj.schlmgr.ui.screen.subjects.MenuId.SORT_ALPHA_ZA)
+		rule.waitForIdle()
+		assertEquals(listOf("zulu", "mid", "alpha"), model.items().map { it.item.name })
+		return model
+	}
+
+	@Test
+	fun `a custom parent sort survives opening a child and returning`() {
+		val model = customSortedModel()
+		model.onItemClick(model.items().single { it.item.name == "zulu" })
+		rule.waitForIdle()
+
+		assertTrue(model.onBackRequested() == cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel.BackOutcome.HANDLED)
+		assertEquals(listOf("zulu", "mid", "alpha"), model.items().map { it.item.name })
+	}
+
+	@Test
+	fun `siblings advance and retreat in the custom parent order`() {
+		val model = customSortedModel()
+		model.onItemClick(model.items().single { it.item.name == "zulu" })
+		rule.waitForIdle()
+
+		model.openSibling(1)
+		rule.waitForIdle()
+		assertEquals("mid", model.history.path.last().name)
+		model.openSibling(-1)
+		rule.waitForIdle()
+		assertEquals("zulu", model.history.path.last().name)
+	}
+
+	@Test
+	fun `original order clears the remembered parent sort`() {
+		val model = customSortedModel()
+
+		model.onMenuItemClick(cz.litoj.schlmgr.ui.screen.subjects.MenuId.SORT_DEFAULT)
+
+		assertEquals(listOf("alpha", "zulu", "mid"), model.items().map { it.item.name })
 	}
 
 	@Test

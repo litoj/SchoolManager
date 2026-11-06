@@ -57,6 +57,7 @@ object Startup {
 			AppSettings.getInt("testAmount", 10))
 		TestEngine.setDefaultTime(AppSettings.getInt("defaultTestTime", TestEngine.DEFAULT_TIME_SECONDS))
 		TestEngine.applyReversed(AppSettings.getBool("reverseTest", false))
+		TestEngine.applyRequireAllVariants(AppSettings.getBool("testRequireAllVariants", false))
 		WordListWriter.setWordTranslationSplitter(AppSettings.getString("exportWordSplit", "="))
 	}
 

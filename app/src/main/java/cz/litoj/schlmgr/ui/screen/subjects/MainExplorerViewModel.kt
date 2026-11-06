@@ -258,7 +258,8 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 	private fun reloadDefaultOrder() {
 		val container = history.path.lastOrNull()
-		setContent(container)
+		clearSortOrder()
+		loadContent(container, rememberSort = false)
 	}
 
 	fun onItemClick(item: ItemRow?) {
@@ -337,6 +338,8 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		override fun switchedSibling(step: Int, delta: Int) {
 			updateState { it.copy(sibling = SiblingSwitch(step, delta)) }
 		}
+
+		override fun orderedChildren(parentId: Int) = this@MainExplorerViewModel.orderedChildren(parentId)
 	}
 
 	fun onReferenceClick(ui: ItemUiModel) = navigation.onReferenceClick(ui)

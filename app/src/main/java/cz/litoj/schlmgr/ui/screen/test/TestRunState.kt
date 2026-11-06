@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.Dp
 import cz.litoj.schlmgr.testing.TestEngine
@@ -57,7 +58,7 @@ object TestRunState {
 	val items: List<TestItemModel> = _items
 
 	/** Shared prompts of the run, where only the exact same prompt set merges. */
-	var taskGroups = emptyList<TestTaskModel>()
+	var taskGroups by mutableStateOf(emptyList<TestTaskModel>())
 		private set
 
 	private val _answers = mutableStateMapOf<Int, String>()

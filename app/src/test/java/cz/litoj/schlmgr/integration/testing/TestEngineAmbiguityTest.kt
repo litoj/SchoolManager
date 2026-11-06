@@ -38,6 +38,7 @@ class TestEngineAmbiguityTest {
 		ItemRepository.ensureRoot()
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
 		TestEngine.applyReversed(false)
+		TestEngine.applyRequireAllVariants(false)
 	}
 
 	@After
@@ -152,6 +153,46 @@ class TestEngineAmbiguityTest {
 			engine.isAnswer(0, picked[0].word.name, picked[0].translations()))
 		assertTrue("the second different answer passes",
 			engine.isAnswer(1, picked[1].word.name, picked[1].translations()))
+	}
+
+	@Test
+	fun `requiring every name variant asks for the full alternative list`() {
+		val (_, chapter) = subjectWith("c", listOf("/I/You smile." to listOf("laugh")))
+		TestEngine.applyRequireAllVariants(true)
+		try {
+			val entries = entries(chapter)
+			val engine = TestEngine()
+			engine.setTested(1, null, 1, entries)
+			assertFalse("one variant alone does not suffice",
+				engine.isAnswer(0, "I smile.", entries[0].translations()))
+			val complete = TestEngine()
+			complete.setTested(1, null, 1, entries)
+			assertTrue("every parsed variant satisfies the requirement",
+				complete.isAnswer(0, "I smile./You smile./smile.", entries[0].translations()))
+		} finally {
+			TestEngine.applyRequireAllVariants(false)
+		}
+	}
+
+	@Test
+	fun `requiring all reversed variants uses the full translation list`() {
+		val (_, chapter) = subjectWith("c", listOf("house" to listOf("dům/domov")))
+		TestEngine.applyReversed(true)
+		TestEngine.applyRequireAllVariants(true)
+		try {
+			val entries = entries(chapter)
+			val complete = TestEngine()
+			complete.setTested(1, null, 1, entries)
+			assertTrue("both reversed alternatives are accepted",
+				complete.isAnswer(0, "dům/domov", entries[0].translations()))
+			val partial = TestEngine()
+			partial.setTested(1, null, 1, entries)
+			assertFalse("a single reversed alternative fails",
+				partial.isAnswer(0, "dům", entries[0].translations()))
+		} finally {
+			TestEngine.applyRequireAllVariants(false)
+			TestEngine.applyReversed(false)
+		}
 	}
 
 	@Test

@@ -51,6 +51,11 @@ internal fun SharedPromptRow(
 					style = TextStyle(fontSize = 13.sp, color = colorResource(R.color.colorPrimaryFg)),
 				)
 			}
+			val description = task.members[0].word.description.substringBefore('\n').trim()
+			if (description.isNotEmpty()) Text(
+				description,
+				style = TextStyle(fontSize = 13.sp, color = colorResource(R.color.colorPrimaryFg)),
+			)
 			Text(
 				stringResource(R.string.test_answers_different),
 				style = TextStyle(fontSize = 13.sp, color = colorResource(R.color.colorPrimaryFg)),
@@ -66,7 +71,12 @@ internal fun SharedPromptRow(
 			}
 			AnswerField(
 				index,
-				if (TestEngine.isReversed) R.string.data_translate else R.string.data_word,
+				when {
+					TestEngine.isReversed && TestEngine.requireAllVariants -> R.string.test_variants_translation
+					TestEngine.isReversed -> R.string.data_translate
+					TestEngine.requireAllVariants -> R.string.test_variants_word
+					else -> R.string.data_word
+				},
 				answerFocus, index == TestRunState.items.lastIndex,
 				listState, setPendingAnswer,
 			)

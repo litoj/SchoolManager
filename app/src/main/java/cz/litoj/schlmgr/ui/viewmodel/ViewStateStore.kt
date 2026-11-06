@@ -9,7 +9,12 @@ import cz.litoj.schlmgr.data.db.ItemKind
  */
 internal class ViewStateStore {
 
-	class ViewState(val scrollIndex: Int, val scrollOffset: Int, val flips: Map<Int, Boolean>)
+	class ViewState(
+		val scrollIndex: Int,
+		val scrollOffset: Int,
+		val flips: Map<Int, Boolean>,
+		val order: List<Int>? = null,
+	)
 
 	private val states = HashMap<Int, ViewState>()
 
@@ -23,7 +28,16 @@ internal class ViewStateStore {
 			val type = row.item.type
 			if (type == ItemKind.WORD || type == ItemKind.TRANSLATION) flips[row.item.id] = row.flipped
 		}
-		states[containerId] = ViewState(scrollIndex, scrollOffset, flips)
+		states[containerId] = ViewState(scrollIndex, scrollOffset, flips, rows.map { it.item.id })
+	}
+
+	/** The remembered sibling order of a container, null when no order was captured yet. */
+	fun orderOf(containerId: Int): List<Int>? = states[containerId]?.order
+
+	/** Clears only the sort memory of a container, so scroll and flip sides survive. */
+	fun clearOrder(containerId: Int) {
+		val state = states[containerId] ?: return
+		states[containerId] = ViewState(state.scrollIndex, state.scrollOffset, state.flips)
 	}
 
 	/** The remembered state of a container, or null on a first visit. */
@@ -36,5 +50,19 @@ internal class ViewStateStore {
 	fun applyFlips(containerId: Int, rows: List<ItemRow>) {
 		val flips = states[containerId]?.flips ?: return
 		for (row in rows) flips[row.item.id]?.let { row.flipOnto(it) }
+	}
+
+	/**
+	 * Restores the displayed sibling order of a container.
+	 * - new rows append after the remembered ones, instead of replacing that order.
+	 */
+	fun applyOrder(containerId: Int, rows: List<ItemRow>): List<ItemRow> {
+		val order = orderOf(containerId) ?: return rows
+		val byId = rows.associateBy { it.item.id }
+		val ordered = order.mapNotNullTo(mutableListOf()) { byId[it] }
+		val known = order.toSet()
+		ordered += rows.filter { it.item.id !in known }
+		for ((index, row) in ordered.withIndex()) row.renumber(index + 1)
+		return ordered
 	}
 }

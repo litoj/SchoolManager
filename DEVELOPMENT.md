@@ -39,6 +39,8 @@
 - Clever mode ranks by `TestEngine.urgency`. Otherwise the pick is random.
 - Identical translation sets merge into one task, with one batched prompt lookup.
 - A synonym must link to every shown translation, and a repeated answer fails inside an ambiguous block.
+- Requiring every name variant compares the full slash-separated variant list.
+- Prompt rows show only the first line of the tested word's description.
 - Grading matches name variants and linked translations.
 - Pass and fail counters go up the plain-parent chain.
 

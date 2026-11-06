@@ -23,6 +23,7 @@ class SettingsState(
 	doubleTapMsText: String = ItemRow.doubleTapMs.toString(),
 	wordSplitText: String = ";",
 	clever: Boolean = false,
+	requireVariants: Boolean = false,
 	amountText: String = "10",
 	timeText: String = TestEngine.DEFAULT_TIME_SECONDS.toString(),
 	defaultReverse: Boolean = false,
@@ -42,6 +43,8 @@ class SettingsState(
 	var wordSplitText by mutableStateOf(wordSplitText)
 		private set
 	var clever by mutableStateOf(clever)
+		private set
+	var requireVariants by mutableStateOf(requireVariants)
 		private set
 	var amountText by mutableStateOf(amountText)
 		private set
@@ -107,6 +110,12 @@ class SettingsState(
 		clever = !clever
 		TestEngine.applyOptions(clever, TestEngine.amount)
 		AppSettings.set("isClever", clever)
+	}
+
+	fun toggleRequireVariants() {
+		requireVariants = !requireVariants
+		TestEngine.applyRequireAllVariants(requireVariants)
+		AppSettings.set("testRequireAllVariants", requireVariants)
 	}
 
 	/** A fresh setup reads the engine, so the next test takes the new default. */
@@ -204,6 +213,7 @@ class SettingsViewModel : ViewModel() {
 		doubleTapMsText = ItemRow.doubleTapMs.toString(),
 		wordSplitText = WordListWriter.wordTranslationSplitter,
 		clever = TestEngine.isClever,
+		requireVariants = AppSettings.getBool("testRequireAllVariants", false),
 		amountText = TestEngine.amount.toString(),
 		timeText = TestEngine.getDefaultTime().toString(),
 		defaultReverse = TestEngine.isReversed,

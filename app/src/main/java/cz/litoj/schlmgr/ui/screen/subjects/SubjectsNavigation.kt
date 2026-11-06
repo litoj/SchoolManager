@@ -32,6 +32,8 @@ internal class SubjectsNavigation(
 		fun openChain(path: MutableList<DbItem>)
 
 		fun switchedSibling(step: Int, delta: Int)
+
+		fun orderedChildren(parentId: Int): List<DbItem>
 	}
 
 	/** Opens the reference original: a single source opens, several show the picker. */
@@ -91,7 +93,7 @@ internal class SubjectsNavigation(
 		// a stale swipe must not land over a newer one.
 		val generation = ++siblingGeneration
 		siblingJob = scope.launch(io) {
-			val siblings = if (parent != null) ItemRepository.children(parent.id) else ItemRepository.subjects()
+			val siblings = if (parent != null) host.orderedChildren(parent.id) else ItemRepository.subjects()
 			val index = siblings.indexOfFirst { it.id == current.id }
 			if (index < 0) return@launch
 			val target = siblings.getOrNull(index + delta) ?: return@launch

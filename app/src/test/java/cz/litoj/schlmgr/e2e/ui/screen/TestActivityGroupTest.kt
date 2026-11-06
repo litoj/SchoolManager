@@ -45,6 +45,7 @@ class TestActivityGroupTest {
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 		TestEngine.applyReversed(false)
+		TestEngine.applyRequireAllVariants(false)
 		val subject = ItemRepository.createSubject("s", null)
 		val chapter = ItemRepository.createChapter(subject.id, "c", null)
 		val first = ItemRepository.createWord(chapter.id, "hund", null, listOf("pes" to null))

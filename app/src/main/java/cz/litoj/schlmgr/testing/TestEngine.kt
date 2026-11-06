@@ -123,8 +123,9 @@ class TestEngine {
 		answered[index] = true
 		val entry = source[index]
 		val text = answer?.trim()
-		var correct = matchesAnswer(entry.word, translations, text)
-		if (!correct && !isReversed && !text.isNullOrEmpty()) {
+		var correct = if (requireAllVariants) matchesAllVariants(entry.word, translations, text)
+		else matchesAnswer(entry.word, translations, text)
+		if (!requireAllVariants && !correct && !isReversed && !text.isNullOrEmpty()) {
 			// a synonym must be linked to every shown translation, not just one
 			correct = translations.isNotEmpty() && translations.all { translation ->
 				ItemRepository.parentIds(translation.id).any { parentId ->
@@ -177,6 +178,12 @@ class TestEngine {
 		@JvmStatic
 		fun applyReversed(reversed: Boolean) {
 			isReversed = reversed
+		}
+
+		/** Requires every parsed variant of the answer, rather than any one. */
+		@JvmStatic
+		fun applyRequireAllVariants(on: Boolean) {
+			requireAllVariants = on
 		}
 
 
@@ -295,6 +302,10 @@ class TestEngine {
 		var isClever = true
 			private set
 
+		@JvmStatic
+		var requireAllVariants = false
+			private set
+
 		/**
 		 * Whether a test shows the tested word and expects one of its translations,
 		 * instead of the default of showing the translations and expecting the word.
@@ -329,6 +340,18 @@ class TestEngine {
 		@JvmStatic
 		fun creditedTranslations(translations: List<DbItem>, answer: String?): List<DbItem> =
 			if (isReversed) translations.filter { matchesName(it.name, answer ?: "") } else translations
+
+		/**
+		 * Whether all parsed variants are answered, separated by a slash.
+		 * - each distinct variant must be present, while extra answers are allowed.
+		 */
+		private fun matchesAllVariants(word: DbItem, translations: List<DbItem>, answer: String?): Boolean {
+			if (answer.isNullOrBlank()) return false
+			val supplied = answer.split('/').map { it.trim() }.toSet()
+			val expected = if (isReversed) translations.flatMap { WordNames.parseVariants(it.name) }
+			else WordNames.parseVariants(word.name)
+			return expected.map { it.trim() }.toSet().all { it in supplied }
+		}
 
 		private fun matchesName(name: String, answer: String): Boolean {
 			val expected = name.trim()

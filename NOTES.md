@@ -158,7 +158,9 @@ Its DB part is the model for this project.
 - A container load re-anchors the list at the top of the new view.
 - A bottom request of an import wins over the re-anchor.
 - The frozen pane of the sibling slide starts at the live position, so the swap shows no jump.
-- The view state of a container is its scroll and the flip sides of its rows.
+- The view state of a container is its scroll, sort order and flip sides of its rows.
+- An explicit `Original order` clears the sort memory only.
+- Sibling swipes follow the parent view's sort order, not raw database order.
 - A load leaving a view captures its state, a returning view restores it.
 - The store lives with the view model: a rotation keeps it, a restart drops it.
 - A search round trip restores the view through the same store.
@@ -192,6 +194,8 @@ Its DB part is the model for this project.
 - Back confirms before ending a run without grading.
 - A run-out time reports itself before the grading.
 - The answer hint names the asked side.
+- The `Require every name variant` setting expects all parsed variants, separated by `/`.
+- Only the first line of the tested word's description shows in a prompt.
 - Results round the rate, pair wrong answers with the expected one and offer a retake.
 
 ### Search
@@ -229,7 +233,7 @@ Its DB part is the model for this project.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
 - 2026-11-06: exact duplicate test prompts merge into one labeled answer block.
   Repeated answers fail once, synonyms must match every shown translation.
-  Item text and search or test comparisons trim at the boundary. 802 tests.
+  Container sort persists, and tests can require every name variant. 808 tests.
 - 2026-11-05: help moved from hidden mechanics into the UI. The search field
   opens a labeled filter dialog and the strip names the active filter. Go-to
   is a search-only action in the normal order. The More menu starts a selection

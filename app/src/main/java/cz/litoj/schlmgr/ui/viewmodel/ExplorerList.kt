@@ -85,6 +85,18 @@ internal class ExplorerList(
 		listMutationGen++
 	}
 
+	/** An explicit default sort drops only the remembered sibling order of this view. */
+	fun clearSortOrder() = viewStates.clearOrder(currentContainerId)
+
+	/** Sibling order of the current view, falling back to repository order on a first visit. */
+	fun sortedChildren(parentId: Int): List<DbItem> {
+		val children = ItemRepository.children(parentId)
+		val order = viewStates.orderOf(parentId) ?: return children
+		val position = HashMap<Int, Int>()
+		for ((index, id) in order.withIndex()) position[id] = index
+		return children.sortedBy { position[it.id] ?: Int.MAX_VALUE }
+	}
+
 	/**
 	 * Replaces the items and publishes state.
 	 * - search starts empty, since batches stream via append.
@@ -144,7 +156,7 @@ internal class ExplorerList(
 	 * - a mid-read mutation retries once.
 	 * - the leaving view keeps its state for the way back.
 	 */
-	fun loadContent(container: DbItem?) {
+	fun loadContent(container: DbItem?, rememberSort: Boolean = true) {
 		loadJob?.cancel()
 		val containerId = container?.id ?: ROOT_ID
 		// search rows are not the view of the container, so they capture nothing
@@ -157,8 +169,9 @@ internal class ExplorerList(
 				val rows = withContext(io) { readRows(container) } ?: return@launch
 				if (gen == listMutationGen) {
 					viewStates.applyFlips(containerId, rows)
+					val ordered = if (rememberSort) viewStates.applyOrder(containerId, rows) else rows
 					// the remembered place of the view, a first visit starts at the top
-					publish(rows, isSearch = false, isPicker = false, landedContainer = containerId,
+					publish(ordered, isSearch = false, isPicker = false, landedContainer = containerId,
 						anchor = ScrollAnchor(++loadStep, saved?.scrollIndex ?: 0, saved?.scrollOffset ?: 0))
 					break
 				}

@@ -99,11 +99,17 @@ abstract class ExplorerViewModel<R>(
 
 	fun applyOrder(items: List<ItemRow>) = list.applyOrder(items)
 
+	protected fun clearSortOrder() = list.clearSortOrder()
+
+	/** The sibling order that the parent view displayed, rather than raw database order. */
+	protected fun orderedChildren(parentId: Int): List<DbItem> = list.sortedChildren(parentId)
+
 	internal val loadJob get() = list.loadJob
 
 	internal fun orderPersisted() = list.orderPersisted()
 
-	fun loadContent(container: DbItem?) = list.loadContent(container)
+	fun loadContent(container: DbItem?, rememberSort: Boolean = true) =
+		list.loadContent(container, rememberSort)
 
 	fun addItem(item: ItemRow) = list.addItem(item)
 

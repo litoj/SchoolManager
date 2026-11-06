@@ -275,10 +275,20 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 						color = colorResource(R.color.colorPrimaryFg),
 					),
 				)
+				val description = item.word.description.substringBefore('\n').trim()
+				if (description.isNotEmpty()) Text(
+					description,
+					style = TextStyle(fontSize = 13.sp, color = colorResource(R.color.colorPrimaryFg)),
+				)
 				// the asked side names itself: the word in the default direction, a translation reversed
 				AnswerField(
 					index,
-					if (TestEngine.isReversed) R.string.data_translate else R.string.data_word,
+					when {
+						TestEngine.isReversed && TestEngine.requireAllVariants -> R.string.test_variants_translation
+						TestEngine.isReversed -> R.string.data_translate
+						TestEngine.requireAllVariants -> R.string.test_variants_word
+						else -> R.string.data_word
+					},
 					answerFocus, isLast,
 					listState, setPendingAnswer,
 				)
