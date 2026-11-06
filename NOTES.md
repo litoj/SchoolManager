@@ -150,13 +150,19 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 ### Test
 
 - A source is a container chain, so a picked chapter covers its words and chains dedup.
+- Source word coverage is cached per source, so removal updates counts without walking remaining sources.
+- Source doors serialize across the explorer, picker and setup, and a run converts an immutable source snapshot.
 - The picker starts at the explorer position without moving it.
 - Clever mode ranks by urgency, otherwise the pick is random.
 - The setup rows name their units, and captions derive the pool and total time.
 - The tested side row flips on tap, starting from the setting in a fresh setup, with the word side as default.
 - Start waits for a source and says why.
-- Identical translation sets merge into one labeled answer block, with one batched prompt lookup and partial overlap staying separate.
-- A repeated answer fails after its first pass in an exact-match block.
+- Unavailable Start fades the whole button once.
+- A shared prompt groups by the shown prompt: translation rows normally, the word name when reversed.
+- Partial overlap stays separate, and a shared block uses one batched prompt lookup.
+- Shared-block answers land on the member that accepts them, whatever the field order.
+- A repeated answer fails once in an ordinary shared block.
+- Required variant lists may repeat one variant across different words.
 - A synonym passes only when every shown translation names its answer.
 - The answer hint names the asked side.
 - The countdown pauses while the app is away.
@@ -183,6 +189,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - New creators focus the name field and show the keyboard, edits focus too.
 - The add button scrolls to the bottom and focuses the new row.
 - A text field reseeds its parent value in a deferred effect, so recomposition cannot clobber it.
+- OK discards blank translation rows, then outlines missing required names red and restores one translation row when none has actual text.
 
 ### Theme
 
@@ -206,5 +213,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 
 ## Current
 
-- No active task.
+- The Delete action dispatches through `MenuId.DELETE` again, with regression tests through the strip action.
+- Both lint variants pass on rerun.
+- No emulator is connected for a visual check.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
