@@ -462,8 +462,7 @@ class CreatorPopup(
 							// before the row dies, the item name for the first row
 							if (holdsFocus) {
 								val previous = translations.getOrNull(translations.indexOf(row) - 1)
-								if (previous != null)
-									runCatching { editor.nameFieldFocus[previous.id]?.requestFocus() }
+								if (previous != null) focusTranslation(previous.id)
 								else runCatching { nameFocus.requestFocus() }
 							}
 							translations.remove(row)
