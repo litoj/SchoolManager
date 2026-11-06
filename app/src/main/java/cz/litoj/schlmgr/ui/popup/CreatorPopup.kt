@@ -125,6 +125,15 @@ class CreatorPopup(
 		val nameFieldFocus = mutableStateMapOf<Long, FocusRequester>()
 		var pendingFocusId by mutableStateOf<Long?>(null)
 		var pendingKeyboardShow by mutableStateOf(false)
+
+		fun discardBlankTranslations() {
+			val blanks = translations.filter { it.name.isBlank() }
+			blanks.forEach {
+				it.source?.let(removedTranslations::add)
+				nameFieldFocus.remove(it.id)
+			}
+			translations.removeAll(blanks.toSet())
+		}
 	}
 
 	/**
@@ -289,6 +298,7 @@ class CreatorPopup(
 			}
 			// a row focused through the add button or the Enter chain opens
 			// the keyboard, the field focus alone does not guarantee it
+			// a removal also asks here, after the old input connection died
 			LaunchedEffect(editor.pendingFocusId, editor.pendingKeyboardShow) {
 				if (editor.pendingFocusId != null || editor.pendingKeyboardShow) {
 					editor.pendingKeyboardShow = false
@@ -491,9 +501,11 @@ class CreatorPopup(
 		// - the renew of a new word keeps the listener for the next word of the run.
 		val listener = okListener ?: return
 		editor.showRequired = true
-		if (content is CreatorContent.Word && translations.isEmpty())
-			translations.add(TranslationRow("", "", null))
-		if (itemNameMissing || content is CreatorContent.Word && translations.any { it.name.isBlank() }) return
+		if (content is CreatorContent.Word) {
+			editor.discardBlankTranslations()
+			if (translations.isEmpty()) translations.add(TranslationRow("", "", null))
+		}
+		if (itemNameMissing || content is CreatorContent.Word && translations.none { it.name.isNotBlank() }) return
 		if (!listener(result())) return
 		if (renew && kind == Kind.NEW_WORD) resetForNextWord()
 		else {

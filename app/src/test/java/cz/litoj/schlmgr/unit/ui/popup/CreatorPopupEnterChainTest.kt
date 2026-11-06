@@ -1,5 +1,7 @@
 package cz.litoj.schlmgr.unit.ui.popup
 
+import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.popup.CreatorContent
 import cz.litoj.schlmgr.ui.popup.CreatorPopup
 import cz.litoj.schlmgr.ui.popup.Dialogs
@@ -48,6 +50,8 @@ class CreatorPopupEnterChainTest {
 	@Test
 	fun `enter in the last translation's name adds no row`() {
 		val popup = wordPopup()
+		popup.name = "Haus"
+		popup.translations[0].name = "dům"
 		popup.setOkListener { true }
 
 		popup.onTranslationNameEnter(0)
@@ -72,6 +76,7 @@ class CreatorPopupEnterChainTest {
 	fun `a refused enter commit leaves the fields intact`() {
 		val popup = wordPopup()
 		popup.name = "Haus"
+		popup.translations[0].name = "dům"
 		var commits = 0
 		popup.setOkListener { commits++; false }
 
@@ -79,6 +84,38 @@ class CreatorPopupEnterChainTest {
 
 		assertEquals(1, commits)
 		assertEquals("Haus", popup.name)
+	}
+
+	@Test
+	fun `ok discards blank translation rows when actual text remains`() {
+		val popup = wordPopup()
+		popup.name = "Haus"
+		popup.translations.add(TranslationRow("dům", "", null))
+		popup.translations.add(TranslationRow(" \t ", "", null))
+		var committed: CreatorResult? = null
+		popup.setOkListener { committed = it; true }
+
+		popup.notifyOk()
+
+		assertEquals(listOf("dům"), committed?.translations?.map { it.name })
+		assertEquals(listOf("dům"), popup.translations.map { it.name })
+	}
+
+	@Test
+	fun `a discarded existing translation joins the edit removals`() {
+		val original = DbItem(id = 7, name = "empty", description = "", type = ItemKind.TRANSLATION)
+		val popup = CreatorPopup(CreatorPopup.Kind.EDIT, null, CreatorContent.Word(listOf(
+			TranslationRow(" \t ", "", original),
+			TranslationRow("dům", "", null),
+		)))
+		popup.name = "Haus"
+		var committed: CreatorResult? = null
+		popup.setOkListener { committed = it; true }
+
+		popup.notifyOk()
+
+		assertEquals(listOf(original), committed?.removedTranslations)
+		assertEquals(listOf("dům"), committed?.translations?.map { it.name })
 	}
 
 	@Test
@@ -121,6 +158,7 @@ class CreatorPopupEnterChainTest {
 	fun `an ok-button commit of a new word closes it`() {
 		val popup = wordPopup()
 		popup.name = "Haus"
+		popup.translations[0].name = "dům"
 		popup.setOkListener { true }
 
 		popup.notifyOk()
@@ -131,6 +169,8 @@ class CreatorPopupEnterChainTest {
 	@Test
 	fun `an enter commit of an edit popup closes it`() {
 		val popup = wordPopup(CreatorPopup.Kind.EDIT)
+		popup.name = "Haus"
+		popup.translations[0].name = "dům"
 		popup.setOkListener { true }
 
 		popup.onTranslationNameEnter(0)
@@ -141,6 +181,7 @@ class CreatorPopupEnterChainTest {
 	@Test
 	fun `an ok-button commit closes the popup`() {
 		val popup = CreatorPopup(CreatorPopup.Kind.NEW_CHAPTER, null, CreatorContent.Simple)
+		popup.name = "Chapter"
 		popup.setOkListener { true }
 
 		popup.notifyOk()
@@ -151,6 +192,7 @@ class CreatorPopupEnterChainTest {
 	@Test
 	fun `an ok-button commit is one shot`() {
 		val popup = CreatorPopup(CreatorPopup.Kind.NEW_CHAPTER, null, CreatorContent.Simple)
+		popup.name = "Chapter"
 		var commits = 0
 		popup.setOkListener { commits++; true }
 
