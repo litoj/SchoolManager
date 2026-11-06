@@ -220,16 +220,16 @@ private fun ActionSlot(content: @Composable () -> Unit) {
 /**
  * Success-ratio tint with a low alpha so it stays readable over both themes.
  * - a red-to-yellow ramp below 50 % and a yellow-to-green ramp above it.
- * - yellow over a light ground only dims the blue channel, the eye sees it least.
- * - the alpha lifts toward the middle, so the middle matches the end colours.
+ * - the red side keeps the peak alpha, so worse items carry more visual weight.
+ * - the alpha falls toward green, whose higher luminance keeps the band light.
  * - blue for an unrated row, nothing for an empty container.
  */
 internal fun successRatioArgb(ratio: Int): Int = when (ratio) {
 	-2 -> 0
 	-1 -> 0x401A6AB8
 	else -> {
-		// 0x40 at the ends, 0x80 at the equal middle
-		val alpha = 0x40 + min(ratio, 100 - ratio) * 0x40 / 50
+		// red holds 0x80 through the equal score, green fades to 0x40
+		val alpha = if (ratio < 50) 0x80 else 0x40 + (100 - ratio) * 0x40 / 50
 		// below 50 the green channel ramps up with the ratio, so the tint turns yellow
 		// above 50 the red channel fades with the ratio, so the tint runs to green
 		if (ratio < 50)

@@ -199,7 +199,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Custom visuals derive from their surroundings.
 - Disabled icons only tint, with no separate disabled variants.
 - The New palette uses the light grey wash.
-- The success band uses alpha 40 at the ends and 80 at an equal score.
+- The success band keeps the red-to-yellow hue ramp at alpha 80 and fades the yellow-to-green side to alpha 40.
 
 ### Help
 

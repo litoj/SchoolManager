@@ -13,8 +13,8 @@ import org.junit.Test
 
 /**
  * The success-ratio background tint, a low alpha over the plain colours.
- * - the middle of the ramp lifts the alpha, yellow reads fainter than red
- * or green at one alpha.
+ * - the red side keeps peak alpha so worse rows carry more visual weight.
+ * - the alpha fades toward green, whose higher luminance lightens the band.
  */
 class SuccessRatioArgbTest {
 
@@ -26,25 +26,25 @@ class SuccessRatioArgbTest {
 
 	@Test
 	fun `ratios 0, 50 and 100 use the same gradient`() {
-		assertEquals(0x40FF0022, successRatioArgb(0)) // full red keeps the base alpha
-		// 1 success + 1 fail: yellow dims only the blue channel over a light
-		// ground, so it needs the double alpha to read as strong as the ends
+		assertEquals(0x80FF0022.toInt(), successRatioArgb(0)) // full red keeps peak alpha
+		// 1 success + 1 fail: the hue ramp meets at full yellow and peak alpha
 		assertEquals(0x80FFFF22.toInt(), successRatioArgb(50))
 		assertEquals(0x4000FF22, successRatioArgb(100))
 	}
 
 	@Test
-	fun `the alpha lifts linearly toward the middle`() {
-		assertEquals(0x60, successRatioArgb(25) ushr 24 and 0xFF)
+	fun `red holds peak alpha and green fades it linearly`() {
+		assertEquals(0x80, successRatioArgb(0) ushr 24 and 0xFF)
+		assertEquals(0x80, successRatioArgb(49) ushr 24 and 0xFF)
+		assertEquals(0x80, successRatioArgb(50) ushr 24 and 0xFF)
 		assertEquals(0x60, successRatioArgb(75) ushr 24 and 0xFF)
-		// one step from the middle stays under the peak
-		assertEquals(0x7E, successRatioArgb(49) ushr 24 and 0xFF)
+		assertEquals(0x40, successRatioArgb(100) ushr 24 and 0xFF)
 	}
 
 	@Test
 	fun `below 50 grades the green channel`() {
-		// the high byte from the success ratio, the low byte 22, alpha 0x60
-		assertEquals(0x60FF0000 or (25 * 256 / 50 shl 8) or 0x22, successRatioArgb(25))
+		// red stays full, the green ramp rises, the low byte 22, alpha 0x80
+		assertEquals(0x80FF0000.toInt() or (25 * 256 / 50 shl 8) or 0x22, successRatioArgb(25))
 	}
 
 	@Test
