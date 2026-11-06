@@ -124,6 +124,7 @@ class CreatorPopup(
 		// so a renewal drops the dead handles with the rows they belonged to
 		val nameFieldFocus = mutableStateMapOf<Long, FocusRequester>()
 		var pendingFocusId by mutableStateOf<Long?>(null)
+		var pendingKeyboardShow by mutableStateOf(false)
 	}
 
 	/**
@@ -288,8 +289,11 @@ class CreatorPopup(
 			}
 			// a row focused through the add button or the Enter chain opens
 			// the keyboard, the field focus alone does not guarantee it
-			LaunchedEffect(editor.pendingFocusId) {
-				if (editor.pendingFocusId != null) keyboard?.show()
+			LaunchedEffect(editor.pendingFocusId, editor.pendingKeyboardShow) {
+				if (editor.pendingFocusId != null || editor.pendingKeyboardShow) {
+					editor.pendingKeyboardShow = false
+					keyboard?.show()
+				}
 			}
 			// the row count the last scroll saw, only a growth is an append.
 			// the renewal rebuilds this subtree, so the count starts anew
@@ -405,7 +409,6 @@ class CreatorPopup(
 		modifier: Modifier,
 	) {
 		val rowNameFocus = remember(row.id) { FocusRequester() }
-		val keyboard = LocalSoftwareKeyboardController.current
 		// registered post-composition, so an abandoned recomposition leaves no stale entry behind
 		SideEffect { editor.nameFieldFocus[row.id] = rowNameFocus }
 		// keyed on pendingFocusId too, so re-targeting an already-composed row re-runs the effect.
@@ -470,8 +473,8 @@ class CreatorPopup(
 							if (previous != null) focusTranslation(previous.id)
 							else runCatching { nameFocus.requestFocus() }
 							translations.remove(row)
-							// the deleted field owned the input connection, so the keyboard needs a new ask
-							keyboard?.show()
+							// the input connection dies with the row, so ask once it has gone
+							editor.pendingKeyboardShow = true
 							// the focus handle of the row is dead, so drop it with the row
 							editor.nameFieldFocus.remove(row.id)
 						}
