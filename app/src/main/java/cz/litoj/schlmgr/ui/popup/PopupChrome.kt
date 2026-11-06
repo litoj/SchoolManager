@@ -1,6 +1,5 @@
 package cz.litoj.schlmgr.ui.popup
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,7 +28,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -166,7 +164,7 @@ internal val TextColor @Composable get() = colorResource(R.color.colorPrimaryFg)
 internal fun BorderedTextField(
 	value: String,
 	onValueChange: (String) -> Unit,
-	@StringRes label: Int,
+	label: String,
 	textColor: Color,
 	modifier: Modifier = Modifier,
 	singleLine: Boolean = false,
@@ -192,7 +190,7 @@ internal fun BorderedTextField(
 			focusRequester = focusRequester,
 			imeAction = imeAction
 				?: if (onImeAction != null) ImeAction.Next else ImeAction.Default,
-			hint = stringResource(label),
+			hint = label,
 			singleLine = singleLine,
 			onImeAction = onImeAction,
 			keyboardType = keyboardType,

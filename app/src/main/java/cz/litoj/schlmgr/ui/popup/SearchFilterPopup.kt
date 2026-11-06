@@ -131,7 +131,9 @@ class SearchFilterPopup(
 				BorderedTextField(
 					value = value,
 					onValueChange = { value = it },
-					label = if (field.numeric) R.string.filter_value_number else R.string.filter_value_text,
+					label = stringResource(
+						if (field.numeric) R.string.filter_value_number else R.string.filter_value_text
+					),
 					textColor = TextColor,
 					singleLine = true,
 					keyboardType = if (field.numeric) KeyboardType.Number else KeyboardType.Text,

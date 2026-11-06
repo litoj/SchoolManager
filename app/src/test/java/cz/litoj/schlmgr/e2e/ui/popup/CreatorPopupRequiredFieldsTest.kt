@@ -55,7 +55,7 @@ class CreatorPopupRequiredFieldsTest {
 
 		val pixels = rule.onRoot().captureToImage().toPixelMap()
 		assertTrue("the item name needs a red outline",
-			hasRedOutline(pixels, rule.onNodeWithText("Name", useUnmergedTree = true)))
+			hasRedOutline(pixels, rule.onNodeWithText("Name of word", useUnmergedTree = true)))
 		val translation = rule.onNodeWithText("Translation", useUnmergedTree = true)
 		assertTrue("the remaining translation needs a red outline", hasRedOutline(pixels, translation))
 		val descriptions = rule.onAllNodesWithText("Description", useUnmergedTree = true)

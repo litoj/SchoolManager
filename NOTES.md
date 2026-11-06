@@ -190,6 +190,8 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The add button scrolls to the bottom and focuses the new row.
 - A text field reseeds its parent value in a deferred effect, so recomposition cannot clobber it.
 - OK discards blank translation rows, then outlines missing required names red and restores one translation row when none has actual text.
+- A new word swaps with its translations through the button beside its name, exchanging escaped-backslash lists both ways.
+- The creator name hint names the created or edited type.
 
 ### Theme
 
@@ -214,6 +216,6 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 ## Current
 
 - The Delete action dispatches through `MenuId.DELETE` again, with regression tests through the strip action.
-- Both lint variants pass on rerun.
+- The word swap button and type-specific creator name hints pass 838 tests and both lints, and are committed.
 - No emulator is connected for a visual check.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.

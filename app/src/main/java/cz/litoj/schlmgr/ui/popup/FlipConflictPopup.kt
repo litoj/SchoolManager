@@ -179,8 +179,10 @@ class FlipConflictPopup(conflicts: List<FlipConflict>) : DialogSpec {
 						row.name,
 						{ row.name = it },
 						// a word row edits a name, a translation row a translation
-						if (row.source.type == ItemKind.WORD) R.string.data_name
-						else R.string.data_translate,
+						stringResource(
+							if (row.source.type == ItemKind.WORD) R.string.data_name
+							else R.string.data_translate
+						),
 						textColor,
 						singleLine = true,
 						horizontalPadding = 0.dp,
@@ -188,7 +190,7 @@ class FlipConflictPopup(conflicts: List<FlipConflict>) : DialogSpec {
 					BorderedTextField(
 						row.description,
 						{ row.description = it },
-						R.string.data_desc,
+						stringResource(R.string.data_desc),
 						textColor,
 						horizontalPadding = 0.dp
 					)

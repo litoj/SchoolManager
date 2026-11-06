@@ -7,6 +7,7 @@
     <string name="action_undo">Undo</string>
     <string name="about_text">This program was developed to help people with school subjects, especially with foreign languages and biology.\n\nFor any further help contact me at litos@tuta.io</string>
     <string name="add_word">Add translation</string>
+    <string name="swap_word">Swap word and translations</string>
     <string name="creator_variants_hint">Use A/B for two name variants. Parentheses group a whole variant.</string>
     <string name="app_name" translatable="false">School Manager</string>
     <string name="ok">OK</string>
@@ -59,6 +60,10 @@
     <string name="filter_apply">Apply</string>
     <string name="data_desc">Description</string>
     <string name="data_name">Name</string>
+    <string name="data_name_subject">Name of subject</string>
+    <string name="data_name_chapter">Name of chapter</string>
+    <string name="data_name_note">Name of note</string>
+    <string name="data_name_word">Name of word</string>
     <string name="data_translate">Translation</string>
     <string name="data_word">Word</string>
     <string name="delete">Delete</string>

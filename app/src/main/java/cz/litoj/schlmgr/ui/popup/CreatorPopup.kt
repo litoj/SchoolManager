@@ -134,6 +134,21 @@ class CreatorPopup(
 			}
 			translations.removeAll(blanks.toSet())
 		}
+
+		fun swapWithTranslations() {
+			discardBlankTranslations()
+			val nextName = translations.joinToString("\\") { it.name }
+			val nextDescription = translations.joinToString("\\") { it.description }
+			val rowDescriptions = WordNames.splitEscaped(description)
+			translations.clear()
+			WordNames.splitEscaped(name).forEachIndexed { index, word ->
+				translations.add(TranslationRow(word, rowDescriptions.getOrNull(index) ?: "", null))
+			}
+			name = nextName
+			description = nextDescription
+			nameFieldFocus.clear()
+			pendingFocusId = null
+		}
 	}
 
 	/**
@@ -224,6 +239,15 @@ class CreatorPopup(
 	fun setOkListener(listener: (CreatorResult) -> Boolean) {
 		okListener = listener
 	}
+
+	private val itemNameRes: Int
+		get() = when {
+			kind == Kind.NEW_SUBJECT || edited?.isSubject == true -> R.string.data_name_subject
+			kind == Kind.NEW_CHAPTER || edited?.item?.type == ItemKind.CHAPTER ->
+				R.string.data_name_chapter
+			kind == Kind.NEW_NOTE || edited?.item?.type == ItemKind.NOTE -> R.string.data_name_note
+			else -> R.string.data_name_word
+		}
 
 	private val itemNameMissing: Boolean
 		get() = if (content is CreatorContent.Word)
@@ -325,22 +349,37 @@ class CreatorPopup(
 				// the Enter key commits on the last name field, for the simple kinds this one.
 				// a note is the exception, since its body is the description.
 				// so its name Enter jumps there and the commit stays on the OK button.
-				BorderedTextField(
-					name,
-					{ name = it },
-					R.string.data_name,
-					textColor,
-					modifier = trackFocus,
-					singleLine = true,
-					onImeAction = when {
-						content is CreatorContent.Word -> ({ onWordNameEnter() })
-						isNote -> ({ onNoteNameEnter() })
-						else -> ({ notifyOk() })
-					},
-					imeAction = if (content is CreatorContent.Word || isNote) ImeAction.Next else ImeAction.Done,
-					focusRequester = nameFocus,
-					isError = editor.showRequired && itemNameMissing,
-				)
+				Row(
+					Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+					verticalAlignment = Alignment.CenterVertically,
+				) {
+					BorderedTextField(
+						name,
+						{ name = it },
+						stringResource(itemNameRes),
+						textColor,
+						modifier = trackFocus.weight(1f),
+						horizontalPadding = 0.dp,
+						singleLine = true,
+						onImeAction = when {
+							content is CreatorContent.Word -> ({ onWordNameEnter() })
+							isNote -> ({ onNoteNameEnter() })
+							else -> ({ notifyOk() })
+						},
+						imeAction = if (content is CreatorContent.Word || isNote) ImeAction.Next else ImeAction.Done,
+						focusRequester = nameFocus,
+						isError = editor.showRequired && itemNameMissing,
+					)
+					if (kind == Kind.NEW_WORD) Icon(
+						painterResource(R.drawable.ic_flip_black),
+						contentDescription = stringResource(R.string.swap_word),
+						tint = Color.Unspecified,
+						modifier = Modifier
+							.padding(start = 12.5.dp)
+							.size(IconSize)
+							.clickable { editor.swapWithTranslations() },
+					)
+				}
 				if (content is CreatorContent.Word) Text(
 					stringResource(R.string.creator_variants_hint),
 					Modifier.padding(horizontal = 20.dp, vertical = 2.dp),
@@ -349,7 +388,7 @@ class CreatorPopup(
 				BorderedTextField(
 					description,
 					{ description = it },
-					R.string.data_desc,
+					stringResource(R.string.data_desc),
 					textColor,
 					modifier = trackFocus,
 					focusRequester = descriptionFocus,
@@ -449,7 +488,7 @@ class CreatorPopup(
 					BorderedTextField(
 						row.name,
 						{ row.name = it },
-						R.string.data_translate,
+						stringResource(R.string.data_translate),
 						textColor,
 						modifier = modifier,
 						singleLine = true,
@@ -463,7 +502,7 @@ class CreatorPopup(
 					BorderedTextField(
 						row.description,
 						{ row.description = it },
-						R.string.data_desc,
+						stringResource(R.string.data_desc),
 						textColor,
 						modifier = modifier,
 						horizontalPadding = 0.dp
