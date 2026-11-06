@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -35,6 +36,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
@@ -136,6 +138,9 @@ fun Item(
 							Text(item.description, fontSize = 15.sp, color = ExplorerColors.description)
 						}
 					}
+					if (item.trackPath?.isNotEmpty() == true) {
+						ItemTrackPath(item.trackPath)
+					}
 					if (answer != null) answer()
 				}
 				if (infoAction != null) ActionSlot { infoAction() }
@@ -143,6 +148,42 @@ fun Item(
 				if (referenceAction != null) ActionSlot { referenceAction() }
 			}
 			HairlineDivider()
+		}
+	}
+}
+
+@Composable
+private fun ItemTrackPath(path: List<DbItem>) {
+	val color = ExplorerColors.body.copy(alpha = 0.38f)
+	Row(
+		Modifier.padding(top = 4.dp, bottom = 2.dp),
+		verticalAlignment = Alignment.CenterVertically,
+	) {
+		Image(
+			painterResource(R.drawable.ic_chapter),
+			contentDescription = null,
+			modifier = Modifier
+				.padding(end = 3.dp)
+				.size(10.dp),
+			colorFilter = ColorFilter.tint(color),
+		)
+		path.forEachIndexed { index, item ->
+			Text(
+				item.name,
+				fontSize = 10.sp,
+				color = color,
+				maxLines = 1,
+			)
+			if (index < path.size - 1) {
+				Image(
+					painterResource(R.drawable.ic_bread_crumbs),
+					contentDescription = null,
+					modifier = Modifier
+						.padding(horizontal = 2.5.dp)
+						.size(width = 3.5.dp, height = 6.dp),
+					colorFilter = ColorFilter.tint(color),
+				)
+			}
 		}
 	}
 }
