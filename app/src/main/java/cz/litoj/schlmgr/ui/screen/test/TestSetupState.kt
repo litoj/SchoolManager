@@ -17,6 +17,7 @@ import cz.litoj.schlmgr.ui.viewmodel.RowKind
  * Process-wide state of a test being set up.
  * - it holds the picked source chains and the amount, duration and reverse answers.
  * - written only through the doors of this object, so the dedup pass cannot be forgotten.
+ * - source doors serialize because the explorer, picker and setup use independent IO coroutines.
  * - reset happens only on a genuine fresh entry.
  */
 object TestSetupState {
@@ -72,6 +73,10 @@ object TestSetupState {
 	private val _sourceCounts = mutableStateMapOf<List<DbItem>, Int>()
 	val sourceCounts: Map<List<DbItem>, Int> = _sourceCounts
 
+	/** Source multiplicity per word, so removal never walks another source. */
+	private val sourceWordIds = mutableMapOf<List<DbItem>, Set<Int>>()
+	private val wordSourceCounts = mutableMapOf<Int, Int>()
+
 	var amountText by mutableStateOf(TestEngine.amount.toString())
 		private set
 
@@ -98,10 +103,13 @@ object TestSetupState {
 	}
 
 	/** A settings change between visits reaches the next test. */
+	@Synchronized
 	fun reset() {
 		_list.clear()
 		poolCount = 0
 		_sourceCounts.clear()
+		sourceWordIds.clear()
+		wordSourceCounts.clear()
 		amountText = TestEngine.amount.toString()
 		timeText = TestEngine.getDefaultTime().toString()
 		reverseTest = TestEngine.isReversed
@@ -112,11 +120,23 @@ object TestSetupState {
 	 * - the pool dedups, the single source counts may overlap.
 	 * - the caller keeps it off main, like the mutation doors.
 	 */
+	@Synchronized
 	fun refreshCounts() {
-		poolCount = TestEngine.convertAll(_list, childrenLookup).size
 		_sourceCounts.clear()
-		_list.forEach { chain -> _sourceCounts[chain] = TestEngine.convertAll(listOf(chain), childrenLookup).size }
+		sourceWordIds.clear()
+		wordSourceCounts.clear()
+		_list.forEach { chain ->
+			val ids = TestEngine.convertAll(listOf(chain), childrenLookup).mapTo(HashSet()) { it.word.id }
+			sourceWordIds[chain] = ids
+			_sourceCounts[chain] = ids.size
+			ids.forEach { id -> wordSourceCounts[id] = (wordSourceCounts[id] ?: 0) + 1 }
+		}
+		poolCount = wordSourceCounts.size
 	}
+
+	/** A stable copy for test conversion while source mutations run on IO. */
+	@Synchronized
+	fun sourceSnapshot(): List<List<DbItem>> = _list.toList()
 
 	// the unit tests replace it with a fake tree, since the doors own the count refresh
 	internal var childrenLookup: (Int) -> List<DbItem> = ItemRepository::children
@@ -134,7 +154,7 @@ object TestSetupState {
 		val amount = (amountText.toIntOrNull() ?: 0).takeIf { it >= 1 } ?: TestEngine.amount
 		val count = if (poolCount > 0) minOf(amount, poolCount) else amount
 		val variantTotal = if (TestEngine.requireAllVariants)
-			TestEngine.timeForVariants(perWord, TestEngine.convertAll(_list, childrenLookup).take(count))
+			TestEngine.timeForVariants(perWord, TestEngine.convertAll(sourceSnapshot(), childrenLookup).take(count))
 		else null
 		return TimeTotal(perWord, count, variantTotal)
 	}
@@ -160,6 +180,7 @@ object TestSetupState {
 	 * - a picked chapter covers the words in it, so the chains dedup.
 	 * - [chainOfSeed] reads the database, so callers stay off main with snapshotted seeds.
 	 */
+	@Synchronized
 	fun fillFromSelection(seeds: List<ChainSeed>): List<ItemRow> {
 		if (seeds.isEmpty()) return emptyList()
 		val chains = seeds.map { it.row to chainOfSeed(it) }
@@ -179,6 +200,7 @@ object TestSetupState {
 	 * - the picker then reports and stays open.
 	 * - [chainOfSeed] reads the database, so callers stay off main with snapshotted seeds.
 	 */
+	@Synchronized
 	fun addPicked(seeds: List<ChainSeed>): List<ItemRow> {
 		if (seeds.isEmpty()) return emptyList()
 		val chains = seeds.map { it.row to chainOfSeed(it) }
@@ -192,11 +214,18 @@ object TestSetupState {
 	}
 
 	/** Returns the index for [restoreSource], null when a repeated tap finds the chain gone. */
+	@Synchronized
 	fun removeSource(chain: List<DbItem>): Int? {
 		val index = _list.indexOf(chain)
 		if (index < 0) return null
 		_list.removeAt(index)
-		refreshCounts()
+		_sourceCounts.remove(chain)
+		sourceWordIds.remove(chain).orEmpty().forEach { id ->
+			val remaining = wordSourceCounts.getValue(id) - 1
+			if (remaining == 0) wordSourceCounts.remove(id)
+			else wordSourceCounts[id] = remaining
+		}
+		poolCount = wordSourceCounts.size
 		return index
 	}
 
@@ -205,6 +234,7 @@ object TestSetupState {
 	 * - the list can change in between, so the one subject rule and the dedup still apply.
 	 * - the list can also shrink, so the index caps at its end.
 	 */
+	@Synchronized
 	fun restoreSource(chain: List<DbItem>, index: Int): Boolean {
 		val subject = pickedSubject()
 		if (subject != null && subject.id != chain[0].id) return false

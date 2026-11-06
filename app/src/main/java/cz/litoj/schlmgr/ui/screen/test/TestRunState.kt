@@ -148,7 +148,7 @@ object TestRunState {
 			// - the selected item comes last.
 			// - the engine turns a selected word into a direct entry.
 			// - it turns a selected chapter into its words
-			val src = TestEngine.convertAll(TestSetupState.list)
+			val src = TestEngine.convertAll(TestSetupState.sourceSnapshot())
 			if (src.isEmpty()) {
 				mainHandler.post {
 					if (walking !== host) return@post

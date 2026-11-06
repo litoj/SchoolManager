@@ -28,6 +28,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.ColorFilter
@@ -163,13 +164,13 @@ private fun TestSetupContent(viewModel: TestSetupViewModel, modifier: Modifier =
 				else reportUnavailable(R.string.test_start_blocked)
 			},
 			colors = ButtonDefaults.buttonColors(
-				backgroundColor = colorResource(R.color.colorPrimaryHeader)
-					.let { if (hasSources) it else it.copy(alpha = 0.4f) },
-				contentColor = colorResource(R.color.colorOnHeader)
-					.let { if (hasSources) it else it.copy(alpha = 0.6f) },
+				backgroundColor = colorResource(R.color.colorPrimaryHeader),
+				contentColor = colorResource(R.color.colorOnHeader),
 			),
+			// the whole button fades once, so its background and label never disagree
 			modifier = Modifier
 				.align(Alignment.BottomCenter)
+				.alpha(if (hasSources) 1f else 0.5f)
 				.padding(bottom = 5.dp)
 				.height(40.dp),
 		) {

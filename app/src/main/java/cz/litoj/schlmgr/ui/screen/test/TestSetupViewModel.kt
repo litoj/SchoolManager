@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
  * The logic of the test setup screen.
  * - it holds the amount and duration answers, the reverse switch and the fresh-entry decision.
  * - it also holds the two navigation steps, start test and open the source picker.
- * - answers and sources live in [TestSetupState], where this view model is the only writer.
+ * - answers and sources live in [TestSetupState], whose source doors serialize every writer.
  */
 class TestSetupViewModel(
 	private val io: CoroutineDispatcher = Dispatchers.IO,

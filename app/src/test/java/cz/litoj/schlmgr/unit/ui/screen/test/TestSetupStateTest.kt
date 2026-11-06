@@ -12,6 +12,9 @@ import cz.litoj.schlmgr.ui.screen.test.TestSetupViewModel
 import cz.litoj.schlmgr.ui.screen.test.toSourceRowUi
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -384,6 +387,92 @@ class TestSetupStateTest {
 			assertEquals(41, TestSetupState.timeTotal().total)
 		} finally {
 			TestEngine.applyRequireAllVariants(false)
+		}
+	}
+
+	@Test
+	fun `source removal subtracts only words uncovered by remaining sources`() {
+		val subject = DbItem(id = 1, name = "subject", description = "", type = ItemKind.CHAPTER)
+		val first = DbItem(id = 2, name = "first", description = "", type = ItemKind.CHAPTER)
+		val second = DbItem(id = 3, name = "second", description = "", type = ItemKind.CHAPTER)
+		val one = DbItem(id = 4, name = "one", description = "", type = ItemKind.WORD)
+		val shared = DbItem(id = 5, name = "shared", description = "", type = ItemKind.WORD)
+		TestSetupState.childrenLookup = { id ->
+			when (id) {
+				1 -> listOf(first, second)
+				2 -> listOf(one, shared)
+				3 -> listOf(shared)
+				else -> emptyList()
+			}
+		}
+		val chains = listOf(first, second)
+			.map { ItemRow.ofSearchHit(it, listOf(subject), 1, emptyList()) }
+			.map(TestSetupState::seedOf)
+		TestSetupState.fillFromSelection(chains)
+
+		assertEquals(2, TestSetupState.poolCount)
+		TestSetupState.childrenLookup = { id -> throw AssertionError("removal looked up $id") }
+		TestSetupState.removeSource(listOf(subject, first))
+		assertEquals("a shared word remains while the unique word leaves",
+			1, TestSetupState.poolCount)
+		assertEquals(1, TestSetupState.sourceCounts[listOf(subject, second)])
+		TestSetupState.removeSource(listOf(subject, second))
+		assertEquals(0, TestSetupState.poolCount)
+	}
+
+	@Test
+	fun `a direct word removal keeps its copy in a remaining chapter`() {
+		val subject = DbItem(id = 1, name = "subject", description = "", type = ItemKind.CHAPTER)
+		val chapter = DbItem(id = 2, name = "chapter", description = "", type = ItemKind.CHAPTER)
+		val word = DbItem(id = 3, name = "word", description = "", type = ItemKind.WORD)
+		TestSetupState.childrenLookup = { id ->
+			when (id) {
+				1 -> listOf(chapter)
+				2 -> listOf(word)
+				else -> emptyList()
+			}
+		}
+		val directSource = ItemRow.ofSearchHit(word, listOf(subject), 1, emptyList())
+		val chapterSource = ItemRow.ofSearchHit(chapter, listOf(subject), 1, emptyList())
+		TestSetupState.fillFromSelection(listOf(directSource, chapterSource).map(TestSetupState::seedOf))
+
+		assertEquals(1, TestSetupState.poolCount)
+		TestSetupState.removeSource(listOf(subject, word))
+		assertEquals("chapter", TestSetupState.list.single().last().name)
+		assertEquals(1, TestSetupState.poolCount)
+	}
+
+	@Test
+	fun `source mutations serialize their database walks`() {
+		val subject = item(1, "subject")
+		val firstLookup = CountDownLatch(1)
+		val secondLookup = CountDownLatch(1)
+		val releaseFirst = CountDownLatch(1)
+		TestSetupState.childrenLookup = {
+			when (Thread.currentThread().name) {
+				"setup-first" -> {
+					firstLookup.countDown()
+					releaseFirst.await(5, TimeUnit.SECONDS)
+				}
+				"setup-second" -> secondLookup.countDown()
+			}
+			emptyList()
+		}
+		val seed = TestSetupState.seedOf(ItemRow.ofSearchHit(subject, emptyList(), 1, emptyList()))
+		val first = thread(name = "setup-first", isDaemon = true) {
+			TestSetupState.addPicked(listOf(seed))
+		}
+		assertTrue(firstLookup.await(5, TimeUnit.SECONDS))
+		val second = thread(name = "setup-second", isDaemon = true) {
+			TestSetupState.addPicked(listOf(seed))
+		}
+
+		assertFalse("a second source mutation entered its lookup concurrently",
+			secondLookup.await(100, TimeUnit.MILLISECONDS))
+		releaseFirst.countDown()
+		listOf(first, second).forEach {
+			it.join(5_000)
+			assertFalse("the source mutation did not finish", it.isAlive)
 		}
 	}
 }
