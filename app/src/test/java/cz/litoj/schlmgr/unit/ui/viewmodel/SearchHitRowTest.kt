@@ -87,6 +87,13 @@ class SearchHitRowTest {
 	}
 
 	@Test
+	fun `a translation match keeps the word unflipped so the original word shows`() {
+		val row = ItemRow.ofSearchHit(word, listOf(parent), 1, emptyList(), translations, matchedTranslation = true)
+		assertFalse(row.flipped)
+		assertEquals("w", row.toShow)
+	}
+
+	@Test
 	fun `a word hit stays on its name when the search default flip is off`() {
 		setRowOptions(searchDefFlip = false)
 		val row = ItemRow.ofSearchHit(word, listOf(parent), 1, emptyList(), translations)

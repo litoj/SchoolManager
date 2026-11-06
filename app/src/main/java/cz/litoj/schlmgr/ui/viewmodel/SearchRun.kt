@@ -54,9 +54,9 @@ internal class SearchRun(
 			val rows = Channel<ItemRow>(Channel.UNLIMITED)
 			launch(io) {
 				var position = 0
-				engine.search(index, path) { item, hitPath ->
+				engine.search(index, path) { item, hitPath, matchedTranslation ->
 					rows.trySend(ItemRow.ofSearchHit(item, hitPath, ++position, index.linksOf(item.id),
-						index.wordTranslations(item)))
+						index.wordTranslations(item), matchedTranslation))
 				}
 				rows.close()
 			}

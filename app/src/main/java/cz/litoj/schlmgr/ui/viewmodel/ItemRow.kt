@@ -370,6 +370,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		 * - its reference facts come from the preloaded [links].
 		 * - so a run with thousands of hits stays database-free after preload.
 		 * @param flipContent the translations of a word hit, null leaves the row unflipped to read on demand
+		 * @param matchedTranslation true when the query matched a translation of the word rather than its name
 		 */
 		@JvmStatic
 		fun ofSearchHit(
@@ -378,6 +379,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 			position: Int,
 			links: List<DbLink>,
 			flipContent: List<DbItem>? = null,
+			matchedTranslation: Boolean = false,
 		): ItemRow {
 			val parent = path.lastOrNull()?.id
 			val row = ItemRow(item, null, position, applyDefFlip = false)
@@ -387,7 +389,9 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 			row.hasSource = row.isReference && links.any { it.parentId != parent }
 			if (flipContent != null) {
 				row.preloadFlip(flipContent)
-				row.applyDefaultFlip(flipContent, searchDefFlip)
+				// the result shows the counterpart of the matched query
+				val flip = if (searchDefFlip) !matchedTranslation else false
+				row.applyDefaultFlip(flipContent, flip)
 			}
 			return row
 		}

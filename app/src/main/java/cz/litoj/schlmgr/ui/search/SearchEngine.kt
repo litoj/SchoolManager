@@ -219,21 +219,31 @@ class SearchEngine(query: String, private val foldDiacritics: Boolean = false) {
 	fun search(
 		index: SearchIndex,
 		basePath: List<DbItem>,
-		onMatch: (DbItem, List<DbItem>) -> Unit,
+		onMatch: (item: DbItem, path: List<DbItem>, matchedTranslation: Boolean) -> Unit,
 	) {
 		val root = basePath.lastOrNull() ?: return
 		walk(index, index.childrenOf(root.id), basePath, onMatch)
+	}
+
+	fun search(
+		index: SearchIndex,
+		basePath: List<DbItem>,
+		onMatch: (DbItem, List<DbItem>) -> Unit,
+	) {
+		search(index, basePath) { item, path, _ -> onMatch(item, path) }
 	}
 
 	private fun walk(
 		index: SearchIndex,
 		src: List<DbItem>,
 		path: List<DbItem>,
-		onMatch: (DbItem, List<DbItem>) -> Unit,
+		onMatch: (DbItem, List<DbItem>, Boolean) -> Unit,
 	) {
 		loop@ for (item in src) {
 			if (!active) return
-			val foundIt = correct(item, path, onMatch)
+			val yes = matcher.verify(item)
+			val foundIt = yes && found.add(item.id)
+			if (foundIt) onMatch(item, ArrayList(path), false)
 			when (item.type) {
 				ItemKind.CHAPTER -> {
 					if (!visited.add(item.id)) continue@loop
@@ -242,11 +252,11 @@ class SearchEngine(query: String, private val foldDiacritics: Boolean = false) {
 					list.add(item)
 					walk(index, index.childrenOf(item.id), list, onMatch)
 				}
-				ItemKind.WORD -> if (!foundIt) {
+				ItemKind.WORD -> if (!yes) {
 					// a word that missed its own name is retried through its translations.
 					// the WORD is the hit, so its own row and path show
 					if (index.childrenOf(item.id).any { matcher.verify(it) } && found.add(item.id))
-						onMatch(item, ArrayList(path))
+						onMatch(item, ArrayList(path), true)
 				}
 				else -> {}
 			}
