@@ -1,6 +1,6 @@
 # DEVELOPMENT
 
-## 1. Architecture
+## Architecture
 
 `ui → view models → ItemRepository → Room, codecs, SAF, test engine`
 
@@ -15,50 +15,11 @@
 | `testing` | test run, grading, selection | persistence |
 
 - View models emit `Request` and `UiNotice`. The shell resolves the strings.
-- Dialogs are a `DialogSpec` stack, each in its own window, so they survive rotation.
 - Screen state is synchronous. The repository blocks on IO and callers see a blocking facade.
-- `ExplorerViewModel` holds the shared explorer core: history, search, selection, list and info strip.
-- Back order: clear the selection, go up one level, double-press exit. The picker leaves on one press.
 
-## 2. Data model
+Component behavior and design live in `NOTES.md`.
 
-- One `item` table for chapters, words, translations, notes and the root.
-- One `item_link` M:N table for containment, with 0-based position and `is_reference`.
-- The invisible root's children are the subjects.
-- Counters live on words. A container rate sums the words below plain links only, so referenced content never counts.
-- Destructive fallback. No migrations until a release.
-
-## 3. Import and export
-
-- Import runs in one Room transaction with three phases: save and merge by name and type, resolve reference paths, refresh subtree counters.
-- Export walks pre-order. A reference writes as a path. Content outside the export writes in place so no path dangles.
-
-## 4. Test engine
-
-- A source is a container chain. A picked chapter covers its words, so chains dedup.
-- Clever mode ranks by `TestEngine.urgency`. Otherwise the pick is random.
-- Identical translation sets merge into one task, with one batched prompt lookup.
-- A synonym must link to every shown translation, and a repeated answer fails inside an ambiguous block.
-- Requiring every name variant gives each variant an answer slot and scales that word's time by 1.5^(variants - 1).
-- A word's counters change once per tested word, never once per variant. Different synonyms each score once.
-- Prompt rows show only the first line of the tested word's description.
-- Grading matches name variants and linked translations.
-- Pass and fail counters go up the plain-parent chain.
-
-## 5. Search
-
-- The index preloads the subgraph of the open container, so a search runs in memory.
-- A query matches names and translations. A typed translation finds its words.
-- The filter icon builds a structured query from labeled choices, and a written query reopens on it.
-- A plain text filter stays plain text, so the common case carries no markers.
-- The info strip names the active filter and the result count.
-- A new query cancels the pending run. Results reach the UI in batches.
-- Free text stays valid. A malformed number query or a bad regex shows red in the info strip and never runs.
-- An operator after the markers always means a number query, text uses the `\\` form.
-- Every non-empty query runs once typing pauses, whatever its length.
-- Search is a screen state with three values: off, typing, results. Back restores the cached rows.
-
-## 6. Build and release
+## Build and release
 
 - Release always signs from `keystore.properties`, which never enters VCS. A missing file fails the build.
 - Lint treats warnings as errors, so CI fails on a new warning.
@@ -89,7 +50,16 @@ Build the release APK:
 apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
 ```
 
-## 7. Conventions
+## CI
+
+- GitLab runs only the tests and caches `app/build`, with only the junit report as an artifact.
+- The test image ships the JDK and compileSdk platform only.
+- Robolectric resolves its SDK jar outside Gradle, so its Maven repository is cached.
+- A kaniko job rebuilds the image when `ci/Dockerfile` changes.
+- GitHub tags the tested main sha after a green Test run.
+- Tags come only from the Tag workflow, never from a local command.
+
+## Conventions
 
 - Comments give the why, not the what. Two sentences or 1.5-line bullets at most.
 - Comment sentences use no parentheses, dashes or semicolons.
@@ -98,7 +68,17 @@ apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
 - Three instances of work run in parallel. Do not end a turn with fewer.
 - Ask before anything irreversible: reverts, deletions, resets, amends.
 
-## 8. Testing standard
+## Parallel work discipline
+
+- Small agent scopes: one directory or one big file per agent.
+- Never hide, stash or delete the user's changes.
+- Findings arrive while fixing continues, with a queue of next segments.
+- Work continuously between dispatches.
+- No separate work left means dispatch, not stop.
+- The irreversible-action rule outranks every other rule.
+- Dead code from a change is removed without asking.
+
+## Testing standard
 
 Three test packages, one per layer:
 
@@ -121,16 +101,16 @@ What does not:
 - No second test for one prevention. An e2e pin only where no unit or
   integration test can see the behavior, it is the slowest kind.
 
-## 9. Open items
+## Open items
 
 | Item | Status |
 |------|--------|
 | UI chapter and note creator dedup | Open decision, the creator inserts freely today |
 | On-device SAF import re-verification | Not done after the perf round |
 | Scroll stutter on the physical phone | Emulator clean. Recipe: `adb shell dumpsys gfxinfo cz.litoj.schlmgr reset`, fling `\W/` results, `adb shell dumpsys gfxinfo cz.litoj.schlmgr` |
-| Main-path pins missing against §8 | Governed by the meaningfulness rule, no gap list kept |
+| Main-path pins missing against the testing standard | Governed by the meaningfulness rule, no gap list kept |
 
-## 10. Code review mode
+## Code review mode
 
 OpenCode holds a `review` agent mode. It reviews changes and does not fix them.
 
@@ -140,7 +120,7 @@ OpenCode holds a `review` agent mode. It reviews changes and does not fix them.
   - test thoroughness and coverage of edge cases
   - readability
   - documentation where the code is not self-explanatory
-- Comment and doc format follows §7. Findings also flag doc about params, return values or fields that lives far from those values.
+- Comment and doc format follows Conventions. Findings also flag doc about params, return values or fields that lives far from those values.
 - Process:
   - determine the branch under review and the main branch
   - subagents review the diff between them and may split divisible changes
