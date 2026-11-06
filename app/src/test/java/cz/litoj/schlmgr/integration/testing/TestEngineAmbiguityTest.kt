@@ -7,6 +7,8 @@ import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestEntry
+import cz.litoj.schlmgr.testing.TestItemModel
+import cz.litoj.schlmgr.testing.TestTaskModel
 import kotlin.math.abs
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -61,6 +63,57 @@ class TestEngineAmbiguityTest {
 	private fun entries(chapter: DbItem): List<TestEntry> =
 		ItemRepository.children(chapter.id).filter { it.type == cz.litoj.schlmgr.data.db.ItemKind.WORD }
 			.map(::entry)
+
+	/** The second word links the exact translation row of the first. */
+	private fun sharedPair(firstName: String, secondName: String): List<TestEntry> {
+		val subject = ItemRepository.createSubject("s", null)
+		val chapter = ItemRepository.createChapter(subject.id, "c", null)
+		val first = ItemRepository.createWord(chapter.id, firstName, null, listOf("what" to null))
+		val translation = ItemRepository.translations(first.id).single()
+		val secondId = ItemRepository.legacyInsert(
+			secondName, "", cz.litoj.schlmgr.data.db.ItemKind.WORD, 0, 0)
+		val second = ItemRepository.get(secondId)!!
+		ItemRepository.legacyLinkAtEnd(chapter.id, second.id)
+		ItemRepository.legacyLinkAtEnd(second.id, translation.id)
+		return listOf(
+			TestEntry(first, listOf(subject, chapter, first)),
+			TestEntry(second, listOf(subject, chapter, second)),
+		)
+	}
+
+	/** The same translation text, but each word holds its own row. */
+	private fun unsharedPair(): List<TestEntry> {
+		val subject = ItemRepository.createSubject("s", null)
+		val chapter = ItemRepository.createChapter(subject.id, "c", null)
+		val first = ItemRepository.createWord(chapter.id, "なに/なん", null, listOf("what" to null))
+		val secondId = ItemRepository.legacyInsert(
+			"なん", "", cz.litoj.schlmgr.data.db.ItemKind.WORD, 0, 0)
+		val second = ItemRepository.get(secondId)!!
+		val translationId = ItemRepository.legacyInsert(
+			"what", "", cz.litoj.schlmgr.data.db.ItemKind.TRANSLATION, 0, 0)
+		ItemRepository.legacyLinkAtEnd(chapter.id, second.id)
+		ItemRepository.legacyLinkAtEnd(second.id, translationId)
+		return listOf(
+			TestEntry(first, listOf(subject, chapter, first)),
+			TestEntry(second, listOf(subject, chapter, second)),
+		)
+	}
+
+	/** Grades like the screen: assign each task's typed answers, then answer every member. */
+	private fun grades(engine: TestEngine, raw: List<List<String>>): List<Boolean> {
+		val models = engine.getTestSrc().map(::TestItemModel)
+		val tasks = TestTaskModel.flatten(models, engine.getTestGroups())
+		val results = ArrayList<Boolean>()
+		var index = 0
+		for ((taskIndex, task) in tasks.withIndex()) {
+			val assigned = task.assign(raw.getOrElse(taskIndex) { emptyList() })
+			for (member in task.members) {
+				results.add(engine.isAnswer(index, assigned[member].orEmpty(), member.translations))
+				index++
+			}
+		}
+		return results
+	}
 
 	private fun answerFirstAndRepeat(entries: List<TestEntry>): Pair<Boolean, Boolean> {
 		val engine = TestEngine()
@@ -119,6 +172,25 @@ class TestEngineAmbiguityTest {
 	}
 
 	@Test
+	fun `a repeat still fails after grouping moves the shared entries together`() {
+		val (_, chapter) = subjectWith("c", listOf(
+			"first" to listOf("same"),
+			"other" to listOf("other"),
+			"second" to listOf("same"),
+			"last" to listOf("last"),
+		))
+		val engine = TestEngine()
+		engine.setTested(-1, null, 1, entries(chapter))
+		val picked = engine.getTestSrc()
+		val firstIndex = picked.indexOfFirst { it.word.name == "first" }
+		val secondIndex = picked.indexOfFirst { it.word.name == "second" }
+
+		assertTrue(engine.isAnswer(firstIndex, "first", picked[firstIndex].translations()))
+		assertFalse("the moved synonym still shares the answer block",
+			engine.isAnswer(secondIndex, "first", picked[secondIndex].translations()))
+	}
+
+	@Test
 	fun `a second correct answer to the same prompt fails`() {
 		val (_, chapter) = subjectWith("c", listOf(
 			"first" to listOf("same"), "second" to listOf("same"),
@@ -159,6 +231,95 @@ class TestEngineAmbiguityTest {
 			assertEquals("and no failed test", 0,
 				ItemRepository.get(pickedEntry.word.id)!!.failedTests)
 		}
+	}
+
+	@Test
+	fun `shared prompt answers land on the member that accepts them`() {
+		val entries = sharedPair("なに/なん", "なん")
+		val engine = TestEngine()
+		engine.setTested(-1, null, 1, entries)
+		val tasks = engine.getTestGroups()
+
+		assertEquals("the shared translation row makes one prompt", 1, tasks.size)
+		assertEquals(2, tasks.single().entries.size)
+		// the fields are unlabeled, so the typed order must not decide
+		val results = grades(engine, listOf(listOf("なん", "なに")))
+
+		assertEquals(2, results.count { it })
+	}
+
+	@Test
+	fun `a repeated answer still fails one shared prompt member`() {
+		val entries = sharedPair("なに/なん", "なん")
+		val engine = TestEngine()
+		engine.setTested(-1, null, 1, entries)
+
+		val results = grades(engine, listOf(listOf("なん", "なん")))
+
+		assertEquals("one text cannot answer two words", 1, results.count { it })
+	}
+
+	@Test
+	fun `required variants may repeat across shared prompt members`() {
+		TestEngine.applyRequireAllVariants(true)
+		try {
+			val entries = sharedPair("なに/なん", "なん")
+			val engine = TestEngine()
+			engine.setTested(-1, null, 1, entries)
+			val task = TestTaskModel.flatten(
+				engine.getTestSrc().map(::TestItemModel), engine.getTestGroups()).single()
+
+			assertEquals("two variants plus the shared one", 3, task.answerFields.size)
+			val results = grades(engine, listOf(listOf("なん", "なに", "なん")))
+
+			assertEquals(2, results.count { it })
+		} finally {
+			TestEngine.applyRequireAllVariants(false)
+		}
+	}
+
+	@Test
+	fun `identical variant sets may share every required answer`() {
+		TestEngine.applyRequireAllVariants(true)
+		try {
+			val entries = sharedPair("なに/なん", "なに/なん")
+			val engine = TestEngine()
+			engine.setTested(-1, null, 1, entries)
+
+			val results = grades(engine, listOf(listOf("なん", "なに", "なん", "なに")))
+
+			assertEquals(2, results.count { it })
+		} finally {
+			TestEngine.applyRequireAllVariants(false)
+		}
+	}
+
+	@Test
+	fun `reversed prompts do not group by a shared translation`() {
+		TestEngine.applyReversed(true)
+		try {
+			val entries = sharedPair("なに/なん", "なん")
+			val engine = TestEngine()
+			engine.setTested(-1, null, 1, entries)
+			val tasks = engine.getTestGroups()
+
+			assertEquals("different word prompts stay separate", 2, tasks.size)
+			val results = grades(engine, listOf(listOf("what"), listOf("what")))
+			assertEquals(2, results.count { it })
+		} finally {
+			TestEngine.applyReversed(false)
+		}
+	}
+
+	@Test
+	fun `the same variant answers unshared prompts independently`() {
+		val entries = unsharedPair()
+		val engine = TestEngine()
+		engine.setTested(-1, null, 1, entries)
+
+		assertEquals("separate translation rows stay separate", 2, engine.getTestGroups().size)
+		val results = grades(engine, listOf(listOf("なん"), listOf("なん")))
+		assertEquals(2, results.count { it })
 	}
 
 	@Test

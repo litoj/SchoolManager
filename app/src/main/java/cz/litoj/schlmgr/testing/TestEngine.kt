@@ -59,17 +59,23 @@ class TestEngine {
 	 */
 	private fun groupByWholePrompt(source: List<TestEntry>): List<TestTask> {
 		if (source.size < 2 || !ItemRepository.initialized) return source.map { TestTask(listOf(it)) }
-		val promptSets = ItemRepository.translationsForWords(source.map { it.word.id })
-		val groups = LinkedHashMap<Set<Int>, MutableList<Int>>()
+		val promptSets = if (isReversed) emptyMap()
+		else ItemRepository.translationsForWords(source.map { it.word.id })
+		val groups = LinkedHashMap<Any, MutableList<Int>>()
 		for ((index, entry) in source.withIndex()) {
-			val signature = promptSets[entry.word.id]?.map { it.id }?.toSet() ?: emptySet()
+			// the prompt is a translation set normally and the word name when reversed
+			val signature: Any = if (isReversed) entry.word.name.trim()
+			else promptSets[entry.word.id]?.map { it.id }?.toSet() ?: emptySet<Int>()
 			groups.getOrPut(signature) { mutableListOf() }.add(index)
 		}
-		groupIds = IntArray(source.size) { -1 }
-		return groups.values.mapIndexed { groupId, indices ->
-			if (indices.size > 1) for (index in indices) groupIds[index] = groupId
-			TestTask(indices.map(source::get))
+		val ids = IntArray(source.size) { -1 }
+		var next = 0
+		for ((groupId, indices) in groups.values.withIndex()) {
+			if (indices.size > 1) for (slot in indices.indices) ids[next + slot] = groupId
+			next += indices.size
 		}
+		groupIds = ids
+		return groups.values.map { indices -> TestTask(indices.map(source::get)) }
 	}
 
 	/**
@@ -130,17 +136,9 @@ class TestEngine {
 		val entry = source[index]
 		val texts = answers.map { it.trim() }
 		var correct = if (requireAllVariants) matchesAllVariants(entry.word, translations, texts)
-		else matchesAnswer(entry.word, translations, texts.firstOrNull())
-		if (!requireAllVariants && !correct && !isReversed && !texts.firstOrNull().isNullOrEmpty()) {
-			// a synonym must be linked to every shown translation, not just one
-			correct = translations.isNotEmpty() && translations.all { translation ->
-				ItemRepository.parentIds(translation.id).any { parentId ->
-					val parent = ItemRepository.get(parentId)
-					parent != null && parent.type == ItemKind.WORD && matchesName(parent.name, texts.first())
-				}
-			}
-		}
-		for (text in texts) {
+		else matchesEntry(entry.word, translations, texts.firstOrNull())
+		// required variant lists may repeat one text across different words
+		if (!requireAllVariants) for (text in texts) {
 			if (text.isEmpty()) continue
 			val group = groupIds.getOrElse(index) { -1 }
 			if (group >= 0 && !usedAnswers.getOrPut(group) { HashSet() }.add(text)) {
@@ -356,6 +354,23 @@ class TestEngine {
 			if (answer.isNullOrEmpty()) return false
 			return if (isReversed) translations.any { matchesName(it.name, answer) }
 			else matchesName(word.name, answer)
+		}
+
+		/**
+		 * Whether [answer] proves [word] in the current direction.
+		 * - the word name, its variants and a synonym linked to every shown translation count.
+		 */
+		@JvmStatic
+		fun matchesEntry(word: DbItem, translations: List<DbItem>, answer: String?): Boolean {
+			if (matchesAnswer(word, translations, answer)) return true
+			if (isReversed || answer.isNullOrEmpty() || translations.isEmpty()) return false
+			// a synonym must be linked to every shown translation, not just one
+			return translations.all { translation ->
+				ItemRepository.parentIds(translation.id).any { parentId ->
+					val parent = ItemRepository.get(parentId)
+					parent != null && parent.type == ItemKind.WORD && matchesName(parent.name, answer)
+				}
+			}
 		}
 
 		/**

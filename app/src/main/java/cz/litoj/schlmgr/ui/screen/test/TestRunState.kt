@@ -204,22 +204,31 @@ object TestRunState {
 		// snapshot on main, since the io grading must not iterate the live list.
 		// a back-press exit during grading clears it here
 		val items = _items.toList()
-		val answersByOwner = mutableMapOf<TestItemModel, MutableList<String>>()
-		for (task in taskGroups) {
-			for ((slot, field) in task.answerFields.withIndex()) {
-				val entry = field.owner
-				val text = typed[task.startIndex + slot] ?: ""
-				answersByOwner.getOrPut(entry) { mutableListOf() } += text
-			}
-		}
+		val tasks = taskGroups.toList()
 		host.scope.launch(Dispatchers.IO) {
+			// assignment and grading read the prompt links, so both stay off main
+			val answersByOwner = mutableMapOf<TestItemModel, MutableList<String>>()
+			val typedByOwner = mutableMapOf<TestItemModel, MutableList<String>>()
+			for (task in tasks) {
+				val raw = task.answerFields.mapIndexed { slot, _ ->
+					typed[task.startIndex + slot].orEmpty()
+				}
+				val assigned = task.assign(raw)
+				for ((slot, field) in task.answerFields.withIndex()) {
+					typedByOwner.getOrPut(field.owner) { mutableListOf() } += raw[slot]
+				}
+				for ((entry, texts) in assigned) {
+					answersByOwner.getOrPut(entry) { mutableListOf() }.addAll(texts)
+				}
+			}
 			var success = 0
 			items.forEachIndexed { index, tim ->
 				val answers = answersByOwner[tim].orEmpty()
 				val correct = current.isAnswer(index, answers, tim.translations)
 				if (correct) success++
 				tim.correct = correct
-				tim.answer = answers.joinToString("/")
+				// the results show what was typed, not the grading assignment
+				tim.answer = typedByOwner[tim].orEmpty().joinToString("/")
 				// the engine wrote the counter updates of the answer itself.
 				// so re-read for the results
 				tim.refreshStats()

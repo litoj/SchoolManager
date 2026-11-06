@@ -56,7 +56,8 @@ internal fun SharedPromptRow(
 				description,
 				style = TextStyle(fontSize = 13.sp, color = colorResource(R.color.colorPrimaryFg)),
 			)
-			Text(
+			// a required variant can repeat across two words, so only the ordinary block asks for different texts
+			if (!TestEngine.requireAllVariants) Text(
 				stringResource(R.string.test_answers_different),
 				style = TextStyle(fontSize = 13.sp, color = colorResource(R.color.colorPrimaryFg)),
 			)
