@@ -1,7 +1,10 @@
 package cz.litoj.schlmgr.unit.ui.screen.test
 
+import androidx.room.Room
+import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.ui.screen.test.TestSetupState
@@ -15,19 +18,35 @@ import org.junit.Assert.assertTrue
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class TestSetupStateTest {
+
+	private lateinit var db: ItemDatabase
 
 	/** Process-wide state: every test leaves it empty, failure included. */
 	@After
 	fun resetState() {
 		TestSetupState.reset()
 		TestSetupState.childrenLookup = ItemRepository::children
+		db.close()
+		ItemRepository.resetForTest()
 	}
 
 	/** The doors refresh the counts, which read the database. */
 	@Before
 	fun fakeTree() {
+		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
+		db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
+			.allowMainThreadQueries()
+			.build()
+		ItemRepository.initForTest(db)
+		ItemRepository.ensureRoot()
 		TestSetupState.childrenLookup = { emptyList() }
 	}
 
@@ -346,5 +365,25 @@ class TestSetupStateTest {
 		assertEquals(3, TestSetupState.poolCount)
 		assertEquals(2, TestSetupState.sourceCounts[listOf(subject, chapter)])
 		assertEquals(1, TestSetupState.sourceCounts[listOf(subject, word9)])
+	}
+
+	@Test
+	fun `requiring variants multiplies total time by one point five per added variant`() {
+		TestSetupState.childrenLookup = { emptyList() }
+		TestSetupState.setTime("18")
+		TestSetupState.setAmount("1")
+		TestEngine.applyRequireAllVariants(true)
+		try {
+			val plain = DbItem(id = 1, name = "plain", description = "", type = ItemKind.WORD)
+			TestSetupState.addPicked(listOf(TestSetupState.seedOf(ItemRow(plain, null, 1))))
+			assertEquals(18, TestSetupState.timeTotal().total)
+
+			TestSetupState.reset()
+			val variant = DbItem(id = 2, name = "/I/You smile.", description = "", type = ItemKind.WORD)
+			TestSetupState.addPicked(listOf(TestSetupState.seedOf(ItemRow(variant, null, 1))))
+			assertEquals(41, TestSetupState.timeTotal().total)
+		} finally {
+			TestEngine.applyRequireAllVariants(false)
+		}
 	}
 }

@@ -204,14 +204,22 @@ object TestRunState {
 		// snapshot on main, since the io grading must not iterate the live list.
 		// a back-press exit during grading clears it here
 		val items = _items.toList()
+		val answersByOwner = mutableMapOf<TestItemModel, MutableList<String>>()
+		for (task in taskGroups) {
+			for ((slot, field) in task.answerFields.withIndex()) {
+				val entry = field.owner
+				val text = typed[task.startIndex + slot] ?: ""
+				answersByOwner.getOrPut(entry) { mutableListOf() } += text
+			}
+		}
 		host.scope.launch(Dispatchers.IO) {
 			var success = 0
 			items.forEachIndexed { index, tim ->
-				val text = typed[index]?.trim() ?: ""
-				val correct = current.isAnswer(index, text, tim.translations)
+				val answers = answersByOwner[tim].orEmpty()
+				val correct = current.isAnswer(index, answers, tim.translations)
 				if (correct) success++
 				tim.correct = correct
-				tim.answer = text
+				tim.answer = answers.joinToString("/")
 				// the engine wrote the counter updates of the answer itself.
 				// so re-read for the results
 				tim.refreshStats()

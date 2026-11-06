@@ -47,7 +47,7 @@ internal fun SharedPromptRow(
 					style = TextStyle(fontSize = 17.sp, color = colorResource(R.color.colorPrimaryFg)),
 				)
 				Text(
-					pluralStringResource(R.plurals.test_synonyms, task.members.size, task.members.size),
+					pluralStringResource(R.plurals.test_synonyms, task.answerFields.size, task.answerFields.size),
 					style = TextStyle(fontSize = 13.sp, color = colorResource(R.color.colorPrimaryFg)),
 				)
 			}
@@ -61,7 +61,7 @@ internal fun SharedPromptRow(
 				style = TextStyle(fontSize = 13.sp, color = colorResource(R.color.colorPrimaryFg)),
 			)
 		}
-		task.members.forEachIndexed { offset, _ ->
+		task.answerFields.forEachIndexed { offset, _ ->
 			val index = task.startIndex + offset
 			LaunchedEffect(index, pendingAnswer) {
 				if (pendingAnswer == index) {

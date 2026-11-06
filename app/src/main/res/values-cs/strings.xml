@@ -184,7 +184,8 @@
     <string name="help_test_how">Test se ptá na slovíčka ze zvolených zdrojů.</string>
     <string name="help_test_results">Výsledky testu</string>
     <string name="help_test_results_how">Výsledky se otevřou po stisknutí Hotovo nebo po vypršení času.
-        \nNadpis je skóre. Každý řádek je jedno testované slovíčko.
+        \nNadpis je skóre. Každé testované slovíčko, i s variantami, se hodnotí jednou.
+        \nSynonymum má vlastní bod.
         \nVelký text je zadání, pod ním správná odpověď a vaše odpověď.
         \nČíslo s × udává, kolikrát bylo slovíčko testováno.
         \nNa konci řádku je počet úspěšných z celkového počtu a všechny počty zahrnují tento test.
@@ -193,7 +194,7 @@
     <string name="help_test_run_how">Začít potřebuje aspoň jeden zdroj. Každé slovíčko je zadáno jednou v zamíchaném pořadí.
         \nSlovíčka se stejnou sadou překladů sdílí jedno zadání. Opakovaná odpověď uspěje jen jednou.
         \nOdpočet posledních 30 sekund bliká červeně.
-        \nPožadované varianty znamenají všechny alternativy, oddělené lomítkem /.
+        \nPožadované varianty přidávají jedno odpověďové pole za každou alternativu a čas násobí 1,5krát za každou další variantu.
         \nZadání ukazuje první řádek popisu slovíčka.
         \nHotovo odešle odpovědi a při chybějících se nejprve zeptá. UKONČIT nebo zpět ukončí běh bez hodnocení.</string>
     <string name="help_test_select">Výběr položek do testu</string>
@@ -270,7 +271,7 @@
     <string name="setts_test_clever">Nejprve slabá slovíčka</string>
     <string name="setts_test_clever_hint">Seřadí test podle priority: slabá a málo testovaná slovíčka první.</string>
     <string name="setts_test_variants">Požadovat všechny varianty názvu</string>
-    <string name="setts_test_variants_hint">Slovíčko A/B vyžaduje A i B. Oddělte odpovědi lomítkem /.</string>
+    <string name="setts_test_variants_hint">Slovíčko A/B vyžaduje A i B, každé na vlastním řádku. Čas roste 1,5krát na každou další variantu.</string>
     <string name="setts_test_time">Sekundy na slovíčko</string>
     <string name="setts_test_direction">Výchozí strana odpovědi</string>
     <string name="setts_test_direction_hint">Kterou stranou odpovídáte.</string>
@@ -308,8 +309,8 @@
     <string name="test_direction">Odpověď</string>
     <string name="test_dir_normal">Slovíčko</string>
     <string name="test_dir_reverse">Překlad</string>
-    <string name="test_variants_word">Varianty slovíčka (a/b)</string>
-    <string name="test_variants_translation">Varianty překladu (a/b)</string>
+    <string name="test_variants_word">Varianta slovíčka</string>
+    <string name="test_variants_translation">Varianta překladu</string>
     <plurals name="test_blank_answers">
         <item quantity="one">Chybí %1$d odpověď. Přesto dokončit?</item>
         <item quantity="few">Chybí %1$d odpovědi. Přesto dokončit?</item>

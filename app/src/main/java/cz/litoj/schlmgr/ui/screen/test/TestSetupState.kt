@@ -125,15 +125,18 @@ object TestSetupState {
 	 * The inputs of the total-time caption, where empty fields take the defaults.
 	 * - the count clamps to the pool, since the run asks no more than that.
 	 */
-	class TimeTotal(val perWord: Int, val count: Int) {
-		val total: Int get() = perWord * count
+	class TimeTotal(val perWord: Int, val count: Int, private val variantTotal: Int?) {
+		val total: Int get() = variantTotal ?: perWord * count
 	}
 
 	fun timeTotal(): TimeTotal {
 		val perWord = (timeText.toIntOrNull() ?: 0).takeIf { it >= 1 } ?: TestEngine.getDefaultTime()
 		val amount = (amountText.toIntOrNull() ?: 0).takeIf { it >= 1 } ?: TestEngine.amount
 		val count = if (poolCount > 0) minOf(amount, poolCount) else amount
-		return TimeTotal(perWord, count)
+		val variantTotal = if (TestEngine.requireAllVariants)
+			TestEngine.timeForVariants(perWord, TestEngine.convertAll(_list, childrenLookup).take(count))
+		else null
+		return TimeTotal(perWord, count, variantTotal)
 	}
 
 	/**

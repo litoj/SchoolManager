@@ -67,6 +67,25 @@ class TestActivityGroupTest {
 	}
 
 	@Test
+	fun `name variants each get their own answer line`() {
+		val subject = ItemRepository.createSubject("s", null)
+		val chapter = ItemRepository.createChapter(subject.id, "c", null)
+		val word = ItemRepository.createWord(chapter.id, "/I/You smile.", null, listOf("laugh" to null))
+		TestEngine.applyRequireAllVariants(true)
+		try {
+			val task = TestTaskModel(listOf(TestItemModel(TestEntry(word, listOf(subject, chapter, word)))), 0)
+			rule.setContent {
+				SharedPromptRow(task, -1, hashMapOf(), false, rememberLazyListState(), {})
+			}
+
+			assertEquals(3, task.answerFields.size)
+			rule.onAllNodesWithText("Word variant").assertCountEquals(3)
+		} finally {
+			TestEngine.applyRequireAllVariants(false)
+		}
+	}
+
+	@Test
 	fun `identical prompts merge into a labeled shared block`() {
 		rule.setContent {
 			SharedPromptRow(task, -1, hashMapOf(), false, rememberLazyListState(), {})

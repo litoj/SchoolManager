@@ -147,7 +147,7 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 			var pendingAnswer by remember { mutableIntStateOf(-1) }
 			LazyColumn(Modifier.weight(1f).fillMaxSize(), state = listState) {
 				itemsIndexed(TestRunState.taskGroups, key = { i, _ -> i }) { index, task ->
-					if (task.members.size > 1) {
+					if (task.answerFields.size > 1) {
 						SharedPromptRow(task, pendingAnswer, answerFocus, task.startIndex + task.members.lastIndex == TestRunState.items.lastIndex,
 							listState, { pendingAnswer = it })
 					} else {

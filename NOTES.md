@@ -194,7 +194,9 @@ Its DB part is the model for this project.
 - Back confirms before ending a run without grading.
 - A run-out time reports itself before the grading.
 - The answer hint names the asked side.
-- The `Require every name variant` setting expects all parsed variants, separated by `/`.
+- The `Require every name variant` setting gives each parsed variant its own answer field.
+- Time multiplies by 1.5 for every added variant.
+- A tested word scores once regardless of its variants. Different words score separately.
 - Only the first line of the tested word's description shows in a prompt.
 - Results round the rate, pair wrong answers with the expected one and offer a retake.
 
@@ -233,7 +235,7 @@ Its DB part is the model for this project.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
 - 2026-11-06: exact duplicate test prompts merge into one labeled answer block.
   Repeated answers fail once, synonyms must match every shown translation.
-  Container sort persists, and tests can require every name variant. 808 tests.
+  Container sort persists, and tests can require every name variant. 813 tests.
 - 2026-11-05: help moved from hidden mechanics into the UI. The search field
   opens a labeled filter dialog and the strip names the active filter. Go-to
   is a search-only action in the normal order. The More menu starts a selection

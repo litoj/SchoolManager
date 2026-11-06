@@ -7,6 +7,8 @@ import cz.litoj.schlmgr.data.WordNames
 import cz.litoj.schlmgr.data.db.ratio
 import cz.litoj.schlmgr.data.db.testedCount
 import java.util.Collections
+import kotlin.math.pow
+import kotlin.math.roundToInt
 
 /**
  * All run state lives for one run, and [setTested] prepares it.
@@ -43,7 +45,8 @@ class TestEngine {
 		groups = groupByWholePrompt(selected)
 		this.source = groups.flatMap(TestTask::entries)
 		// a huge per-item time must not overflow the run into a negative
-		time = (timeSec.toLong() * useAmount).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+		time = if (requireAllVariants) timeForVariants(timeSec, this.source)
+		else (timeSec.toLong() * useAmount).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
 		this.doOnSec = doOnSec
 		answered = BooleanArray(this.source.size)
 		usedAnswers.clear()
@@ -117,24 +120,28 @@ class TestEngine {
 	 * @return true when the answer matches the tested word in the current direction,
 	 *   either the word name or a translation of it when [isReversed] is on.
 	 */
-	fun isAnswer(index: Int, answer: String?, translations: List<DbItem>): Boolean {
+	fun isAnswer(index: Int, answer: String?, translations: List<DbItem>): Boolean =
+		isAnswer(index, listOf(answer ?: ""), translations)
+
+	fun isAnswer(index: Int, answers: List<String>, translations: List<DbItem>): Boolean {
 		require(index in 0 until source.size) { "Outside of tested size: $index out of ${source.size - 1}" }
 		require(!answered[index]) { "Can't answer more than once, only one attempt allowed!" }
 		answered[index] = true
 		val entry = source[index]
-		val text = answer?.trim()
-		var correct = if (requireAllVariants) matchesAllVariants(entry.word, translations, text)
-		else matchesAnswer(entry.word, translations, text)
-		if (!requireAllVariants && !correct && !isReversed && !text.isNullOrEmpty()) {
+		val texts = answers.map { it.trim() }
+		var correct = if (requireAllVariants) matchesAllVariants(entry.word, translations, texts)
+		else matchesAnswer(entry.word, translations, texts.firstOrNull())
+		if (!requireAllVariants && !correct && !isReversed && !texts.firstOrNull().isNullOrEmpty()) {
 			// a synonym must be linked to every shown translation, not just one
 			correct = translations.isNotEmpty() && translations.all { translation ->
 				ItemRepository.parentIds(translation.id).any { parentId ->
 					val parent = ItemRepository.get(parentId)
-					parent != null && parent.type == ItemKind.WORD && matchesName(parent.name, text)
+					parent != null && parent.type == ItemKind.WORD && matchesName(parent.name, texts.first())
 				}
 			}
 		}
-		if (!text.isNullOrEmpty()) {
+		for (text in texts) {
+			if (text.isEmpty()) continue
 			val group = groupIds.getOrElse(index) { -1 }
 			if (group >= 0 && !usedAnswers.getOrPut(group) { HashSet() }.add(text)) {
 				// one prompt can only pass once in an ambiguous block
@@ -145,7 +152,7 @@ class TestEngine {
 		// - plain ancestors only, since a reference never counts.
 		// - the translations take only the knowledge that the answer demonstrated.
 		ItemRepository.bumpWordCounters(entry.word.id, correct)
-		bumpTranslations(translations, answer, correct)
+		bumpTranslations(translations, texts.firstOrNull(), correct)
 		return correct
 	}
 
@@ -236,6 +243,25 @@ class TestEngine {
 			// the shuffle made every prefix an equally likely subset
 			while (source.size > amount) source.removeAt(source.size - 1)
 			return source
+		}
+
+		/** The variants an entry asks for when the option requires every name variant. */
+		private fun variantCount(entry: TestEntry): Int = if (isReversed)
+			entry.translations().sumOf { WordNames.parseVariants(it.name).size }
+		else WordNames.parseVariants(entry.word.name).size
+
+		/**
+		 * Total seconds for the selected entries, scaled as 1.5 per extra variant.
+		 * - a one-variant entry keeps the base time, since its exponent is zero.
+		 */
+		@JvmStatic
+		fun timeForVariants(perWord: Int, entries: List<TestEntry>): Int {
+			var total = 0.0
+			for (entry in entries) {
+				val exponent = (variantCount(entry) - 1).coerceAtLeast(0)
+				total += perWord * 1.5.pow(exponent)
+			}
+			return total.roundToInt()
 		}
 
 		/**
@@ -342,12 +368,12 @@ class TestEngine {
 			if (isReversed) translations.filter { matchesName(it.name, answer ?: "") } else translations
 
 		/**
-		 * Whether all parsed variants are answered, separated by a slash.
+		 * Whether every parsed variant has its own answer.
 		 * - each distinct variant must be present, while extra answers are allowed.
 		 */
-		private fun matchesAllVariants(word: DbItem, translations: List<DbItem>, answer: String?): Boolean {
-			if (answer.isNullOrBlank()) return false
-			val supplied = answer.split('/').map { it.trim() }.toSet()
+		private fun matchesAllVariants(word: DbItem, translations: List<DbItem>, answers: List<String>): Boolean {
+			if (answers.isEmpty()) return false
+			val supplied = answers.map { it.trim() }.toSet()
 			val expected = if (isReversed) translations.flatMap { WordNames.parseVariants(it.name) }
 			else WordNames.parseVariants(word.name)
 			return expected.map { it.trim() }.toSet().all { it in supplied }

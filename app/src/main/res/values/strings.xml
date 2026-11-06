@@ -197,7 +197,8 @@
     <string name="help_test_how">The test asks for the words of the picked sources.</string>
     <string name="help_test_results">Test results</string>
     <string name="help_test_results_how">The report opens when you press Done or the time runs out.
-        \nThe title is the score. Every row is one tested word.
+        \nThe title is the score. Every row is one tested word, including words with variants.
+        \nA synonym counts separately.
         \nThe large text is the prompt, below it the correct answer and yours.
         \nThe number with × counts how often the word was tested.
         \nThe right end shows passed over tested, and all counts include this test.
@@ -206,7 +207,7 @@
     <string name="help_test_run_how">Start needs at least one source. Each word is asked once in a shuffled order.
         \nWords with the exact same translation set share one prompt. A repeated answer passes only once.
         \nThe countdown blinks red for the last 30 seconds.
-        \nRequiring name variants means all alternatives, separated by /.
+        \nRequiring name variants adds one answer field per alternative and scales time by 1.5 per added variant.
         \nThe prompt shows the first line of the word\'s description.
         \nDone submits and asks first when answers are missing. QUIT or Back ends without grading.</string>
     <string name="help_test_select">Selecting items for the test</string>
@@ -283,7 +284,7 @@
     <string name="setts_test_clever">Pick weak words first</string>
     <string name="setts_test_clever_hint">Orders the test by priority: weak and rarely tested words first.</string>
     <string name="setts_test_variants">Require every name variant</string>
-    <string name="setts_test_variants_hint">A word like A/B asks for A and B. Use / between answers.</string>
+    <string name="setts_test_variants_hint">A word like A/B asks for A and B in separate answer fields. Time multiplies by 1.5 per added variant.</string>
     <string name="setts_test_time">Seconds per word</string>
     <string name="setts_test_direction">Default answer side</string>
     <string name="setts_test_direction_hint">Which side you answer with.</string>
@@ -321,8 +322,8 @@
     <string name="test_direction">Answer with</string>
     <string name="test_dir_normal">Word</string>
     <string name="test_dir_reverse">Translation</string>
-    <string name="test_variants_word">Word variants (a/b)</string>
-    <string name="test_variants_translation">Translation variants (a/b)</string>
+    <string name="test_variants_word">Word variant</string>
+    <string name="test_variants_translation">Translation variant</string>
     <plurals name="test_blank_answers">
         <item quantity="one">Missing %1$d answer. Finish anyway?</item>
         <item quantity="other">Missing %1$d answers. Finish anyway?</item>

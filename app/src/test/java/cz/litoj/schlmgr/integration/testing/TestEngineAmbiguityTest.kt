@@ -153,6 +153,54 @@ class TestEngineAmbiguityTest {
 			engine.isAnswer(0, picked[0].word.name, picked[0].translations()))
 		assertTrue("the second different answer passes",
 			engine.isAnswer(1, picked[1].word.name, picked[1].translations()))
+		for (pickedEntry in picked) {
+			assertEquals("each synonym gets its own credit", 1,
+				ItemRepository.get(pickedEntry.word.id)!!.passedTests)
+			assertEquals("and no failed test", 0,
+				ItemRepository.get(pickedEntry.word.id)!!.failedTests)
+		}
+	}
+
+	@Test
+	fun `variant timings scale by one point five per added variant`() {
+		val (_, chapter) = subjectWith("c", listOf("/I/You smile." to listOf("laugh")))
+		assertEquals(41, TestEngine.timeForVariants(18, entries(chapter)))
+		val (_, plain) = subjectWith("plain", listOf("plain" to listOf("laugh")))
+		assertEquals(18, TestEngine.timeForVariants(18, entries(plain)))
+	}
+
+	@Test
+	fun `all variants score the word exactly once`() {
+		val (_, chapter) = subjectWith("c", listOf("/I/You smile." to listOf("laugh")))
+		TestEngine.applyRequireAllVariants(true)
+		try {
+			val entries = entries(chapter)
+			val engine = TestEngine()
+			engine.setTested(1, null, 1, entries)
+
+			assertTrue(engine.isAnswer(0, listOf("I smile.", "You smile.", "smile."), entries[0].translations()))
+			assertEquals(1, ItemRepository.get(entries[0].word.id)!!.passedTests)
+			assertEquals(0, ItemRepository.get(entries[0].word.id)!!.failedTests)
+		} finally {
+			TestEngine.applyRequireAllVariants(false)
+		}
+	}
+
+	@Test
+	fun `an incomplete variant list counts as one failed test`() {
+		val (_, chapter) = subjectWith("c", listOf("/I/You smile." to listOf("laugh")))
+		TestEngine.applyRequireAllVariants(true)
+		try {
+			val entries = entries(chapter)
+			val engine = TestEngine()
+			engine.setTested(1, null, 1, entries)
+
+			assertFalse(engine.isAnswer(0, "I smile.", entries[0].translations()))
+			assertEquals(1, ItemRepository.get(entries[0].word.id)!!.failedTests)
+			assertEquals(0, ItemRepository.get(entries[0].word.id)!!.passedTests)
+		} finally {
+			TestEngine.applyRequireAllVariants(false)
+		}
 	}
 
 	@Test
@@ -168,7 +216,7 @@ class TestEngineAmbiguityTest {
 			val complete = TestEngine()
 			complete.setTested(1, null, 1, entries)
 			assertTrue("every parsed variant satisfies the requirement",
-				complete.isAnswer(0, "I smile./You smile./smile.", entries[0].translations()))
+				complete.isAnswer(0, listOf("I smile.", "You smile.", "smile."), entries[0].translations()))
 		} finally {
 			TestEngine.applyRequireAllVariants(false)
 		}
@@ -184,7 +232,7 @@ class TestEngineAmbiguityTest {
 			val complete = TestEngine()
 			complete.setTested(1, null, 1, entries)
 			assertTrue("both reversed alternatives are accepted",
-				complete.isAnswer(0, "dům/domov", entries[0].translations()))
+				complete.isAnswer(0, listOf("dům", "domov"), entries[0].translations()))
 			val partial = TestEngine()
 			partial.setTested(1, null, 1, entries)
 			assertFalse("a single reversed alternative fails",

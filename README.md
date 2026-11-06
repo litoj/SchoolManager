@@ -79,7 +79,8 @@ The in-app Help covers the standard workflow. These features are easy to miss.
 - Identical translation sets merge into one prompt with a labeled answer count. A repeated answer passes only once.
 - The Make tests by success rate setting picks the rows that the priority sort puts first.
 - The source picker has a select-all button in the top corner.
-- Requiring every name variant asks for every parsed variant, separated by `/`.
+- Requiring every name variant gives each variant its own answer field and multiplies its time by 1.5 per added variant.
+- A word scores once regardless of its variants, while different synonyms each get their own result.
 - A prompt shows only the first line of the tested word's description.
 
 Development: [DEVELOPMENT.md](DEVELOPMENT.md).
