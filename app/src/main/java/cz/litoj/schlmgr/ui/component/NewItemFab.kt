@@ -125,9 +125,9 @@ fun NewItemFab(
 						modifier = Modifier
 							.size(PaletteIconSize)
 							// the hovered icon carries the header colour, and the rest
-							// the grey wash of the strip
+							// a light grey so the type icon stays readable
 							.background(
-								if (i == hovered) ExplorerColors.header else ExplorerColors.actionBar,
+								if (i == hovered) ExplorerColors.header else ExplorerColors.subBackground,
 								CircleShape,
 							)
 							.padding(IconPadding),
@@ -136,7 +136,7 @@ fun NewItemFab(
 						stringResource(paletteLabel(kind)),
 						Modifier
 							.padding(top = 2.dp)
-							.background(ExplorerColors.actionBar, RoundedCornerShape(3.dp))
+							.background(ExplorerColors.subBackground, RoundedCornerShape(3.dp))
 							.padding(horizontal = 3.dp),
 						fontSize = 11.sp,
 						color = ExplorerColors.body,

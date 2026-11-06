@@ -1,5 +1,7 @@
 package cz.litoj.schlmgr.ui.component
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -15,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,13 +62,24 @@ fun Item(
 	trailing: (@Composable () -> Unit)? = null,
 	referenceAction: (@Composable () -> Unit)? = null,
 	onInnerInfo: ((TranslationLine) -> Unit)? = null,
+	/** A new step flashes the row once, the landing effect of a jump. */
+	pulseStep: Int? = null,
 ) {
+	val pulseAlpha = remember { Animatable(0f) }
+	LaunchedEffect(pulseStep) {
+		if (pulseStep == null) return@LaunchedEffect
+		pulseAlpha.snapTo(1f)
+		pulseAlpha.animateTo(0f, tween(PulseDurationMs))
+	}
+	val pulse = ExplorerColors.pulseRow
+	val background = if (item.selected) ExplorerColors.selectedRow
+	else pulse.copy(alpha = pulse.alpha * pulseAlpha.value)
 	Row(
 		modifier
 			.fillMaxWidth()
 			// the selection rides the background of the row, which paints under the
 			// success-ratio tint of the position cell, so the whole row highlights
-			.background(if (item.selected) ExplorerColors.selectedRow else Color.Transparent)
+			.background(background)
 			.successRatioBand(item, tintBandWidth(positionWidth, iconVisible))
 			// no ripple: the press feedback is the selection tint and the drag itself
 			.combinedClickable(
@@ -261,6 +275,8 @@ private class CellMetrics private constructor(val textSize: androidx.compose.ui.
 }
 
 private val ActionIconSize = 30.dp
+
+private const val PulseDurationMs = 650
 
 val RowKind.iconRes: Int
 	get() = when (this) {

@@ -16,7 +16,7 @@ import kotlinx.coroutines.Dispatchers
  */
 internal open class TestExplorerViewModel(history: NavigationHistory) :
 	ExplorerViewModel<Nothing>(history, io = Dispatchers.Unconfined) {
-	protected override fun setContent(container: DbItem?) {}
+	protected override fun setContent(container: DbItem?, pulseItemId: Int?) {}
 }
 
 /** Word rows for a list-only test: no database behind them, so a load stays pure. */

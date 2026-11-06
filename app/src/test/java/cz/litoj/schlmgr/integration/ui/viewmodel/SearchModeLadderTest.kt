@@ -23,7 +23,7 @@ class SearchModeLadderTest {
 	/** The test screen: counts the content switches the doors drive, the rest stays inert. */
 	private class RecordingVm(history: NavigationHistory) : TestExplorerViewModel(history) {
 		var contentReloads = 0
-		override fun setContent(container: DbItem?) {
+		override fun setContent(container: DbItem?, pulseItemId: Int?) {
 			contentReloads++
 		}
 	}

@@ -40,6 +40,12 @@ object ExplorerColors {
 	 *  hiding the ratio tint. */
 	val selectedRow: Color @Composable get() = colorResource(R.color.colorSelectedRow)
 
+	/** A jump landing flashes the landed row once in the header green. */
+	val pulseRow: Color @Composable get() = header.copy(alpha = 0.40f)
+
+	/** A light grey wash keeps small floating labels readable over both themes. */
+	val subBackground: Color @Composable get() = colorResource(R.color.colorSubBackground)
+
 	/** The red of errors, tuned per theme to stay readable on the background surface. */
 	val failure: Color @Composable get() = colorResource(R.color.colorFailure)
 }

@@ -163,7 +163,9 @@ fun SubjectsScreen(
 								R.plurals.progress_items, request.doomed.size, request.doomed.size))
 					}
 				is MainExplorerViewModel.Request.PickSource ->
-					SourcePickPopup(request.paths, request.origin, viewModel::navigateToSource)
+					SourcePickPopup(request.paths, request.origin) { path ->
+						viewModel.navigateToSource(path, request.pulseItemId)
+					}
 			}
 		}
 	}

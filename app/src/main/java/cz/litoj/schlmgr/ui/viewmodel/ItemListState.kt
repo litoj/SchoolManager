@@ -13,6 +13,7 @@ import cz.litoj.schlmgr.data.db.ROOT_ID
  * - not on a selection remap, drag reorder or streamed append, where indexes stay valid.
  * @property containerId the container whose children show, the root id at the subjects screen
  * @property anchor where a container load re-anchors the list, null keeps the position
+ * @property pulse the row a jump landed on, which flashes once
  */
 data class ItemListState(
 	val items: List<ItemUiModel> = emptyList(),
@@ -24,6 +25,7 @@ data class ItemListState(
 	val scrollToBottom: Int = 0,
 	val containerId: Int = ROOT_ID,
 	val anchor: ScrollAnchor? = null,
+	val pulse: ItemPulse? = null,
 ) {
 	/** Selection mode is on, derived from the selected rows. */
 	val selectionActive: Boolean get() = items.any { it.selected }
@@ -43,3 +45,6 @@ data class ItemListState(
  * - [step] tells the loads apart, so an equal position must re-fire.
  */
 data class ScrollAnchor(val step: Int, val index: Int, val offset: Int)
+
+/** The landed row and the step that tells repeated jumps apart. */
+data class ItemPulse(val itemId: Int, val step: Int)

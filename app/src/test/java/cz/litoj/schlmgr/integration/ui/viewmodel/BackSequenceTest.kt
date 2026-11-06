@@ -32,7 +32,7 @@ class BackSequenceTest {
 	/** The test screen that records the content switches, while the rest stays inert. */
 	private class RecordingVm(history: NavigationHistory) : TestExplorerViewModel(history) {
 		val contents = ArrayList<DbItem?>()
-		override fun setContent(container: DbItem?) {
+		override fun setContent(container: DbItem?, pulseItemId: Int?) {
 			contents.add(container)
 		}
 	}

@@ -7,12 +7,15 @@ import cz.litoj.schlmgr.data.db.ROOT_ID
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+private const val PULSE_CLEAR_MS = 1_200L
 
 /**
  * The list store, the live rows behind [ItemListState].
@@ -64,6 +67,10 @@ internal class ExplorerList(
 	private var scrollToBottomPending = false
 
 	private val viewStates = ViewStateStore()
+
+	private var pulseStep = 0
+
+	private var pulseJob: Job? = null
 
 	/** The scroll the composable last reported for the open container. */
 	private var scrollIndex = 0
@@ -124,6 +131,7 @@ internal class ExplorerList(
 		isPicker: Boolean,
 		landedContainer: Int? = null,
 		anchor: ScrollAnchor? = null,
+		pulse: ItemPulse? = null,
 	) {
 		pickerMode = isPicker || host.picker
 		host.resetDragSelect()
@@ -145,6 +153,7 @@ internal class ExplorerList(
 				scrollToBottom = scroll,
 				containerId = landedContainer ?: it.containerId,
 				anchor = anchored ?: it.anchor,
+				pulse = pulse,
 			)
 		}
 		if (isSearch) host.onSearchRowsChanged()
@@ -156,12 +165,17 @@ internal class ExplorerList(
 	 * - a mid-read mutation retries once.
 	 * - the leaving view keeps its state for the way back.
 	 */
-	fun loadContent(container: DbItem?, rememberSort: Boolean = true) {
+	fun loadContent(
+		container: DbItem?,
+		rememberSort: Boolean = true,
+		pulseItemId: Int? = null,
+		pathIds: List<Int> = emptyList(),
+	) {
 		loadJob?.cancel()
 		val containerId = container?.id ?: ROOT_ID
 		// search rows are not the view of the container, so they capture nothing
 		if (!searching) viewStates.capture(currentContainerId, scrollIndex, scrollOffset, models)
-		val saved = viewStates.stateOf(containerId)
+		val saved = viewStates.moveTo(currentContainerId, containerId, pathIds)
 		currentContainerId = containerId
 		loadJob = scope.launch {
 			var gen = listMutationGen
@@ -170,9 +184,14 @@ internal class ExplorerList(
 				if (gen == listMutationGen) {
 					viewStates.applyFlips(containerId, rows)
 					val ordered = if (rememberSort) viewStates.applyOrder(containerId, rows) else rows
+					val target = pulseItemId?.let { id -> ordered.indexOfFirst { it.item.id == id } } ?: -1
+					val pulse = if (target >= 0) ItemPulse(ordered[target].item.id, ++pulseStep) else null
 					// the remembered place of the view, a first visit starts at the top
+					val anchor = if (target >= 0) ScrollAnchor(++loadStep, target, 0)
+					else ScrollAnchor(++loadStep, saved?.scrollIndex ?: 0, saved?.scrollOffset ?: 0)
 					publish(ordered, isSearch = false, isPicker = false, landedContainer = containerId,
-						anchor = ScrollAnchor(++loadStep, saved?.scrollIndex ?: 0, saved?.scrollOffset ?: 0))
+						anchor = anchor, pulse = pulse)
+					clearPulseAfter(pulse)
 					break
 				}
 				gen = listMutationGen
@@ -181,6 +200,16 @@ internal class ExplorerList(
 			loadJob = null
 			// the info strip reads the loaded list, so it must follow the load
 			host.refreshInfo()
+		}
+	}
+
+	/** The pulse is one-shot, so a later scroll must not replay it. */
+	private fun clearPulseAfter(pulse: ItemPulse?) {
+		pulseJob?.cancel()
+		if (pulse == null) return
+		pulseJob = scope.launch {
+			delay(PULSE_CLEAR_MS)
+			_listState.update { if (it.pulse?.step == pulse.step) it.copy(pulse = null) else it }
 		}
 	}
 

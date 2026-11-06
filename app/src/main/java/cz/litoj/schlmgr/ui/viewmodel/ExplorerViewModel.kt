@@ -27,7 +27,8 @@ abstract class ExplorerViewModel<R>(
 ) : ViewModel() {
 
 	/** The content switch that every navigation funnels through. */
-	protected open fun setContent(container: DbItem?) = loadContent(container)
+	protected open fun setContent(container: DbItem?, pulseItemId: Int? = null) =
+		loadContent(container, pulseItemId = pulseItemId)
 
 	/**
 	 * Restores the screens after popping hops.
@@ -108,8 +109,8 @@ abstract class ExplorerViewModel<R>(
 
 	internal fun orderPersisted() = list.orderPersisted()
 
-	fun loadContent(container: DbItem?, rememberSort: Boolean = true) =
-		list.loadContent(container, rememberSort)
+	fun loadContent(container: DbItem?, rememberSort: Boolean = true, pulseItemId: Int? = null) =
+		list.loadContent(container, rememberSort, pulseItemId, history.path.map { it.id })
 
 	fun addItem(item: ItemRow) = list.addItem(item)
 
@@ -258,10 +259,10 @@ abstract class ExplorerViewModel<R>(
 	}
 
 	/** A stacked search run stays stacked across the new container. */
-	protected fun openChain(path: MutableList<DbItem>) {
+	protected fun openChain(path: MutableList<DbItem>, pulseItemId: Int? = null) {
 		history.push(path)
 		if (searching) searchFlow.suspendSearch()
-		setContent(path.lastOrNull())
+		setContent(path.lastOrNull(), pulseItemId)
 	}
 
 	/**

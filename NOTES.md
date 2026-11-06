@@ -136,6 +136,7 @@ Its DB part is the model for this project.
 - Custom visuals derive from their surroundings.
 - Disabled icons only tint.
 - There are no disabled variants.
+- The New palette labels and idle icons use the light grey wash, never the action-strip wash.
 - The yellow success band uses alpha 40 at the ends and 80 at an equal score.
 
 ### Actions
@@ -161,7 +162,10 @@ Its DB part is the model for this project.
 - The view state of a container is its scroll, sort order and flip sides of its rows.
 - An explicit `Original order` clears the sort memory only.
 - Sibling swipes follow the parent view's sort order, not raw database order.
-- A load leaving a view captures its state, a returning view restores it.
+- The parent stack remembers every container on the open path.
+- The current level map remembers every visited sibling under the current parent.
+- A descent clears the level, an ascent carries the target parent back into it.
+- A level left behind is forgotten, so reopening its child starts at the top.
 - The store lives with the view model: a rotation keeps it, a restart drops it.
 - A search round trip restores the view through the same store.
 
@@ -214,6 +218,7 @@ Its DB part is the model for this project.
 - The nav back arrow cancels the search: the results leave and the query resets.
 - System back follows the same rule as the arrow.
 - A word hit starts on its translations through the search translate setting.
+- Go-to lands the list on the hit and pulses its row once.
 - A settings change needs a new run, live results keep their state.
 - A settings toggle folds diacritics away, the regex pattern stays as written.
 
@@ -233,6 +238,9 @@ Its DB part is the model for this project.
 - No active task.
 - Open items live in `DEVELOPMENT.md`.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
+- 2026-11-06: Go-to lands the list on the selected hit and pulses its row once.
+  The reference jump keeps its plain landing. The New palette uses the light
+  grey wash. View state keeps the parent stack and the current level only. 816 tests.
 - 2026-11-06: exact duplicate test prompts merge into one labeled answer block.
   Repeated answers fail once, synonyms must match every shown translation.
   Container sort persists, and tests can require every name variant. 813 tests.

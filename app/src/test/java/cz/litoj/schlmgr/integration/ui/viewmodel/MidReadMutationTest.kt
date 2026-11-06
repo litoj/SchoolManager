@@ -44,7 +44,7 @@ class MidReadMutationTest {
 
 	private class ManualLoadViewModel(history: NavigationHistory, io: CoroutineDispatcher) :
 		ExplorerViewModel<Nothing>(history, io = io) {
-		protected override fun setContent(container: DbItem?) {}
+		protected override fun setContent(container: DbItem?, pulseItemId: Int?) {}
 	}
 
 	private lateinit var db: ItemDatabase

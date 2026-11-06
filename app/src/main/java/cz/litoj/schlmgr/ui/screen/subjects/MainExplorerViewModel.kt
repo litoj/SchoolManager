@@ -66,7 +66,11 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 		data class ConfirmDelete(val doomed: List<ItemRow>) : Request
 
-		data class PickSource(val paths: List<List<DbItem>>, val origin: List<DbItem>) : Request
+		data class PickSource(
+			val paths: List<List<DbItem>>,
+			val origin: List<DbItem>,
+			val pulseItemId: Int?,
+		) : Request
 	}
 
 	enum class MenuKind { ROOT, CONTAINER, SEARCH }
@@ -334,7 +338,8 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		override fun selectionCount() = this@MainExplorerViewModel.selectionCount()
 		override val pasteArmed get() = this@MainExplorerViewModel.pasteArmed
 		override fun setContent(container: DbItem?) = this@MainExplorerViewModel.setContent(container)
-		override fun openChain(path: MutableList<DbItem>) = this@MainExplorerViewModel.openChain(path)
+		override fun openChain(path: MutableList<DbItem>, pulseItemId: Int?) =
+			this@MainExplorerViewModel.openChain(path, pulseItemId)
 		override fun switchedSibling(step: Int, delta: Int) {
 			updateState { it.copy(sibling = SiblingSwitch(step, delta)) }
 		}
@@ -346,7 +351,8 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 	fun openSibling(delta: Int) = navigation.openSibling(delta)
 
-	fun navigateToSource(path: List<DbItem>) = navigation.navigateToSource(path)
+	fun navigateToSource(path: List<DbItem>, pulseItemId: Int? = null) =
+		navigation.navigateToSource(path, pulseItemId)
 
 	fun persistOrder() {
 		if (searching || listState.value.pickerMode) return

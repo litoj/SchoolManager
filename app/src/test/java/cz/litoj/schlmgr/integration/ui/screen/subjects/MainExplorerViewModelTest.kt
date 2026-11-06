@@ -427,7 +427,7 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
-	fun `a returning container restores its scroll and flip sides`() {
+	fun `going up forgets the child state`() {
 		val (aId, _) = seed()
 		val c1 = ItemRepository.children(aId).single()
 		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
@@ -440,12 +440,46 @@ class MainExplorerViewModelTest {
 		model.onBackRequested()
 		model.onItemClick(model.items().single { it.item.name == "c1" })
 
+		assertEquals("the left child starts at the top", 0, model.listState.value.anchor?.index)
+		assertEquals(0, model.listState.value.anchor?.offset)
+		assertTrue("the left child keeps its default side",
+			model.items().single { it.item.name == "w1" }.flipped)
+	}
+
+	@Test
+	fun `going up restores the parent scroll`() {
+		val (aId, _) = seed()
+		ItemRepository.createChapter(aId, "c2", null, 1)
+		val model = vmIn("A")
+		model.onScrollPosition(1, 40)
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+
+		model.onBackRequested()
+
 		assertEquals(1, model.listState.value.anchor?.index)
 		assertEquals(40, model.listState.value.anchor?.offset)
-		assertTrue("the flip side of the row survived the round trip",
-			!model.items().single { it.item.name == "w1" }.flipped)
-		assertTrue("an untouched row keeps its default side",
-			model.items().single { it.item.name == "w2" }.flipped)
+	}
+
+	@Test
+	fun `every parent keeps its scroll on the way back`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createChapter(aId, "c1b", null, 1)
+		ItemRepository.createChapter(c1.id, "c2a", null, 0)
+		ItemRepository.createChapter(c1.id, "c2b", null, 1)
+		val model = vmIn("A")
+		model.onScrollPosition(1, 10)
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		model.onScrollPosition(1, 20)
+		model.onItemClick(model.items().single { it.item.name == "c2b" })
+
+		model.onBackRequested()
+		assertEquals(1, model.listState.value.anchor?.index)
+		assertEquals(20, model.listState.value.anchor?.offset)
+
+		model.onBackRequested()
+		assertEquals(1, model.listState.value.anchor?.index)
+		assertEquals(10, model.listState.value.anchor?.offset)
 	}
 
 	@Test
@@ -457,11 +491,14 @@ class MainExplorerViewModelTest {
 		ItemRepository.createWord(c2.id, "w2", null, listOf("t2" to null))
 		val model = vmIn("A")
 		model.onItemClick(model.items().single { it.item.name == "c1" })
+		model.onScrollPosition(0, 40)
 		model.flipWord(model.items().single { it.item.name == "w1" })
 
 		model.openSibling(1)
 		model.openSibling(-1)
 
+		assertEquals("the sibling kept its place", 0, model.listState.value.anchor?.index)
+		assertEquals(40, model.listState.value.anchor?.offset)
 		assertTrue("the flip side survived the sibling round trip",
 			!model.items().single { it.item.name == "w1" }.flipped)
 	}
@@ -865,6 +902,24 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
+	fun `go to location anchors the hit and pulses it once`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
+		val hit = ItemRepository.createWord(c1.id, "w2", null, listOf("t2" to null))
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		model.openSearchField()
+		model.onQuerySubmit("w2")
+		model.setSelected(model.items().single(), true)
+
+		model.onGoToAction()
+
+		assertEquals("the landing shows the hit", 1, model.listState.value.anchor?.index)
+		assertEquals("the landed hit pulses", hit.id, model.listState.value.pulse?.itemId)
+	}
+
+	@Test
 	fun `go to location with several homes shows the source picker`() {
 		val (aId, _) = seed()
 		val c1 = ItemRepository.children(aId).single()
@@ -904,6 +959,7 @@ class MainExplorerViewModelTest {
 		assertEquals("the landing is the browse mode", SearchUi.OFF, model.state.value.searchUi)
 		assertTrue("the other container shows the word",
 			model.items().any { it.item.id == word.id })
+		assertNull("a reference jump does not pulse", model.listState.value.pulse)
 	}
 
 	@Test

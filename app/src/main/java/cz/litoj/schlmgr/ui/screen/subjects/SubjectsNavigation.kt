@@ -29,7 +29,7 @@ internal class SubjectsNavigation(
 
 		fun setContent(container: DbItem?)
 
-		fun openChain(path: MutableList<DbItem>)
+		fun openChain(path: MutableList<DbItem>, pulseItemId: Int?)
 
 		fun switchedSibling(step: Int, delta: Int)
 
@@ -53,8 +53,8 @@ internal class SubjectsNavigation(
 			host.postToUi {
 				// own navigation wins.
 				if (history.path.lastOrNull() !== origin) return@postToUi
-				if (paths.size == 1) navigateToSource(paths[0])
-				else host.emitRequest(Request.PickSource(paths, originPath))
+				if (paths.size == 1) navigateToSource(paths[0], row.item.id)
+				else host.emitRequest(Request.PickSource(paths, originPath, row.item.id))
 			}
 		}
 	}
@@ -71,7 +71,7 @@ internal class SubjectsNavigation(
 				if (history.path.lastOrNull() !== origin) return@postToUi
 				if (host.searching || host.selectionCount() > 0 || host.pasteArmed) return@postToUi
 				if (paths.size == 1) navigateToSource(paths[0])
-				else host.emitRequest(Request.PickSource(paths, originPath))
+				else host.emitRequest(Request.PickSource(paths, originPath, null))
 			}
 		}
 	}
@@ -122,9 +122,9 @@ internal class SubjectsNavigation(
 
 	private var siblingGeneration = 0
 
-	fun navigateToSource(path: List<DbItem>) {
+	fun navigateToSource(path: List<DbItem>, pulseItemId: Int? = null) {
 		val current = mutableListOf<DbItem>()
 		current.addAll(path)
-		host.openChain(current)
+		host.openChain(current, pulseItemId)
 	}
 }

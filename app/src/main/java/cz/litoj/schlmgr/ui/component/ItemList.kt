@@ -330,6 +330,7 @@ fun ItemList(
 				onInnerInfo = if (!state.pickerMode) {
 					{ line -> callbacks.onInnerInfo(item, line) }
 				} else null,
+				pulseStep = state.pulse?.takeIf { it.itemId == item.payload?.item?.id }?.step,
 			)
 		}
 	}
