@@ -64,7 +64,10 @@
     <string name="data_name_chapter">Název kapitoly</string>
     <string name="data_name_note">Název poznámky</string>
     <string name="data_name_word">Název slovíčka</string>
+    <string name="word_foreign">Cizí slovo</string>
+    <string name="word_notes_hint">Poznámka (gramatika, výslovnost)</string>
     <string name="data_translate">Překlad</string>
+    <string name="translation_notes_hint">Poznámka (použití, kontext)</string>
     <string name="data_word">Slovíčko</string>
     <string name="delete">Odstranit</string>
     <string name="done">Hotovo</string>

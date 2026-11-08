@@ -64,7 +64,10 @@
     <string name="data_name_chapter">Name of chapter</string>
     <string name="data_name_note">Name of note</string>
     <string name="data_name_word">Name of word</string>
+    <string name="word_foreign">Foreign word</string>
+    <string name="word_notes_hint">Notes (grammar, pronunciation)</string>
     <string name="data_translate">Translation</string>
+    <string name="translation_notes_hint">Notes (usage, context)</string>
     <string name="data_word">Word</string>
     <string name="delete">Delete</string>
     <string name="done">Done</string>

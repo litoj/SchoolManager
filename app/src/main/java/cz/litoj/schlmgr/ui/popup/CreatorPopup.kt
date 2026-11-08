@@ -358,7 +358,9 @@ class CreatorPopup(
 					BorderedTextField(
 						name,
 						{ name = it },
-						stringResource(itemNameRes),
+						stringResource(
+							if (content is CreatorContent.Word) R.string.word_foreign
+							else itemNameRes),
 						textColor,
 						modifier = trackFocus.weight(1f),
 						horizontalPadding = 0.dp,
@@ -387,7 +389,9 @@ class CreatorPopup(
 				BorderedTextField(
 					description,
 					{ description = it },
-					stringResource(R.string.data_desc),
+					stringResource(
+						if (content is CreatorContent.Word) R.string.word_notes_hint
+						else R.string.data_desc),
 					textColor,
 					modifier = trackFocus,
 					focusRequester = descriptionFocus,
@@ -504,7 +508,7 @@ class CreatorPopup(
 					BorderedTextField(
 						row.description,
 						{ row.description = it },
-						stringResource(R.string.data_desc),
+						stringResource(R.string.translation_notes_hint),
 						textColor,
 						modifier = modifier,
 						horizontalPadding = 0.dp,
