@@ -60,7 +60,7 @@
     <string name="filter_apply">Apply</string>
     <string name="data_desc">Description</string>
     <string name="data_name">Name</string>
-    <string name="data_name_subject">Name of subject</string>
+    <string name="data_name_subject">Name of set</string>
     <string name="data_name_chapter">Name of chapter</string>
     <string name="data_name_note">Name of note</string>
     <string name="data_name_word">Name of word</string>
@@ -83,7 +83,7 @@
     <string name="fail_paste_inside">"An item cannot be placed inside itself or into its own content."</string>
     <string name="fail_paste_present">"The pasted items are already in the target."</string>
     <string name="fail_paste_target">"There is no open container to paste into."</string>
-    <string name="fail_paste_other_subject">"Items cannot be moved into another subject."</string>
+    <string name="fail_paste_other_subject">"Items cannot be moved into another set."</string>
     <string name="fail_kind_file">file:</string>
     <string name="fail_type">", of type: "</string>
     <plurals name="stat_words">
@@ -100,8 +100,8 @@
         <item quantity="other">%1$d chapters</item>
     </plurals>
     <plurals name="stat_subjects">
-        <item quantity="one">%1$d subject</item>
-        <item quantity="other">%1$d subjects</item>
+        <item quantity="one">%1$d set</item>
+        <item quantity="other">%1$d sets</item>
     </plurals>
     <plurals name="stat_notes">
         <item quantity="one">%1$d note</item>
@@ -124,7 +124,7 @@
     <string name="help_create_how">The New button offers the types of the open screen. A tap leaves the palette standing, a drag picks at once.
         \nThe button hides while the list scrolls down.
         \nThe creator fields are name, description and, for a word, its translations.</string>
-    <string name="help_create_mch">Subjects</string>
+    <string name="help_create_mch">Sets</string>
     <string name="help_create_note">Notes</string>
     <string name="help_create_note_how">Notes carry a name and a description, and serve for any text that is not a word, like a grammar rule.
         \nA tap on a note copies its text.</string>
@@ -142,7 +142,7 @@
     <string name="help_extra_words_export">Export items</string>
     <string name="help_extra_words_export_how">The menu shows Export only while rows are selected.\nThe export reaches every selected row except translations.\nWord file: compact, no success rates, no references.\nJSON file: complete, success rates, notes and references included.</string>
     <string name="help_extra_words_import">Import items</string>
-    <string name="help_extra_words_import_how">Inside a subject the words land in it, at the subjects screen a new subject is created.\nAn error names the file and line. Fix that line and pick the file again.</string>
+    <string name="help_extra_words_import_how">Inside a set the words land in it, at the sets screen a new set is created.\nAn error names the file and line. Fix that line and pick the file again.</string>
     <string name="help_import_format">File format</string>
     <string name="help_import_format_body">Chapter: name { and } on their own lines.
         \nWord: word = translation.
@@ -180,7 +180,7 @@
     </string-array>
     <string name="help_search">Searching</string>
     <string name="help_search_hint">Search help</string>
-    <string name="help_search_how">Search finds names and translations in the open subject.
+    <string name="help_search_how">Search finds names and translations in the open set.
         \nThe filter icon builds a query from labeled choices, so the prefix syntax stays optional.
         \nA word hit shows its translations directly, a settings toggle turns that off.
         \nA settings switch turns on diacritic-insensitive search.</string>
@@ -220,10 +220,10 @@
         \nDone submits and asks first when answers are missing. QUIT or Back ends without grading.</string>
     <string name="help_test_select">Selecting items for the test</string>
     <string name="help_test_select_how">Add source opens the picker. Long-press a row or tap its type icon to pick it, then Select.
-        \nAll sources must belong to one subject.</string>
+        \nAll sources must belong to one set.</string>
     <string name="menu_label">Menu</string>
     <string name="menu_about">Help &amp; About</string>
-    <string name="menu_objects">Subjects</string>
+    <string name="menu_objects">Sets</string>
     <string name="menu_settings">Settings</string>
     <string name="more">More</string>
     <string name="more_export">Export</string>
@@ -251,11 +251,11 @@
     <string name="json_export_ext">.hjson</string>
     <string name="json_import_types">application/hjson</string>
     <string name="new_chapter">New chapter</string>
-    <string name="new_mch">New subject</string>
+    <string name="new_mch">New set</string>
     <string name="new_word">New word</string>
     <string name="new_note">New note</string>
     <string name="fab_new">New</string>
-    <string name="palette_subject">Subject</string>
+    <string name="palette_subject">Set</string>
     <string name="palette_chapter">Chapter</string>
     <string name="palette_word">Word</string>
     <string name="palette_note">Note</string>
@@ -282,7 +282,7 @@
     <string name="setts_him_flipped_search">Show translations on search hits</string>
     <string name="setts_him_flipped_search_hint">A word hit opens on its translations.</string>
     <string name="setts_search_show_path">Show path in search results</string>
-    <string name="setts_search_show_path_hint">Displays the folder and subject under a matched word or translation.</string>
+    <string name="setts_search_show_path_hint">Displays the folder and set under a matched word or translation.</string>
     <string name="setts_him_parse">Parse name variants</string>
     <string name="setts_him_parse_hint">Reads A/B and (A)/(B) as several name variants.</string>
     <string name="setts_explorer">Explorer</string>
@@ -338,8 +338,8 @@
         <item quantity="one">Missing %1$d answer. Finish anyway?</item>
         <item quantity="other">Missing %1$d answers. Finish anyway?</item>
     </plurals>
-    <string name="test_one_subject">Test sources must come from one subject.</string>
-    <string name="test_one_subject_of">Test sources must come from one subject (%s).</string>
+    <string name="test_one_subject">Test sources must come from one set.</string>
+    <string name="test_one_subject_of">Test sources must come from one set (%s).</string>
     <string name="test_size">Words to test</string>
     <plurals name="test_available">
         <item quantity="one">of %d available</item>
@@ -351,7 +351,7 @@
     </plurals>
     <string name="test_time">Seconds per word</string>
     <string name="test_total_time">Total time: %1$d s</string>
-    <string name="test_sources_header">Sources · one subject</string>
+    <string name="test_sources_header">Sources · one set</string>
     <string name="test_sources_hint">A picked chapter covers its words.</string>
     <string name="test_start_blocked">Add at least one source</string>
     <plurals name="test_source_words">
@@ -375,11 +375,11 @@
     <string name="test_source_removed">Removed: %s</string>
     <string name="time_left">%1$ds</string>
     <string name="time_up">Time\'s up</string>
-    <string name="unavailable_add_source_full">The whole subject is already a source.</string>
+    <string name="unavailable_add_source_full">The whole set is already a source.</string>
     <string name="unavailable_export_empty">Translations cannot be exported.</string>
     <string name="unavailable_import_busy">The import is running.</string>
     <string name="unavailable_search_move">Finish or cancel the move first.</string>
-    <string name="unavailable_search_root">Search needs an open subject.</string>
+    <string name="unavailable_search_root">Search needs an open set.</string>
     <string name="unavailable_single_row">Select exactly one row.</string>
     <string name="unavailable_no_rows">No rows to select.</string>
 </resources>

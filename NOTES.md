@@ -226,6 +226,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 ## Current
 
 - The Delete action dispatches through `MenuId.DELETE` again, with regression tests through the strip action.
+- Root container labels are “Sets” in English and “Sady” in Czech.
 - A refused creator confirm focuses the first missing required field, with 812 behavior tests and debug lint green.
 - Creator descriptions keep their input session during typing, with 814 behavior tests and debug lint green.
 - Passive message snackbars dismiss on a tap, while action snackbars remain clickable only through their action.
