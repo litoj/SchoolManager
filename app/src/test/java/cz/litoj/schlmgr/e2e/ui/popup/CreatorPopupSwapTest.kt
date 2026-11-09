@@ -70,7 +70,7 @@ class CreatorPopupSwapTest {
 
 		kinds.forEach { (kind, hint) ->
 			rule.runOnIdle { shown = kind }
-			rule.onNodeWithText(hint, useUnmergedTree = true).assertIsDisplayed()
+			rule.onNodeWithText(hint, substring = true, useUnmergedTree = true).assertIsDisplayed()
 		}
 	}
 

@@ -15,9 +15,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * - the word name leads to the first translation.
- * - the name of a translation leads to the next one.
- * - the last translation confirms through the commit of the OK button.
+ * - name fields lead to their descriptions.
+ * - an empty description leads to the next translation name.
+ * - the last empty description confirms through the commit of the OK button.
  * - an accepted confirm of a new word renews the editor for the next one.
  * - the OK button closes, like every other accepted commit.
  * - dialogs register on the shared stack on construction.
@@ -34,39 +34,39 @@ class CreatorPopupEnterChainTest {
 		CreatorPopup(kind, null, CreatorContent.Word(emptyList()))
 
 	@Test
-	fun `enter in the last translation's name confirms with the current fields`() {
+	fun `enter in the last translation's empty description confirms with the current fields`() {
 		val popup = wordPopup()
 		popup.name = "Haus"
 		popup.translations[0].name = "dům"
 		var committed: CreatorResult? = null
 		popup.setOkListener { committed = it; true }
 
-		popup.onTranslationNameEnter(0)
+		popup.onDescriptionEnter(0)
 
 		assertEquals("Haus", committed?.name)
 		assertEquals("dům", committed?.translations?.single()?.name)
 	}
 
 	@Test
-	fun `enter in the last translation's name adds no row`() {
+	fun `enter in the last translation's empty description adds no row`() {
 		val popup = wordPopup()
 		popup.name = "Haus"
 		popup.translations[0].name = "dům"
 		popup.setOkListener { true }
 
-		popup.onTranslationNameEnter(0)
+		popup.onDescriptionEnter(0)
 
 		assertEquals(1, popup.translations.size)
 	}
 
 	@Test
-	fun `enter in an earlier translation's name confirms nothing`() {
+	fun `enter in an earlier translation's empty description confirms nothing`() {
 		val popup = wordPopup()
 		popup.translations.add(TranslationRow("stavba", "", null))
 		var committed = false
 		popup.setOkListener { committed = true; true }
 
-		popup.onTranslationNameEnter(0)
+		popup.onDescriptionEnter(0)
 
 		assertFalse(committed)
 		assertEquals(2, popup.translations.size)
@@ -80,7 +80,7 @@ class CreatorPopupEnterChainTest {
 		var commits = 0
 		popup.setOkListener { commits++; false }
 
-		popup.onTranslationNameEnter(0)
+		popup.onDescriptionEnter(0)
 
 		assertEquals(1, commits)
 		assertEquals("Haus", popup.name)
@@ -127,7 +127,7 @@ class CreatorPopupEnterChainTest {
 		val committedRow = popup.translations[0]
 		popup.setOkListener { true }
 
-		popup.onTranslationNameEnter(0)
+		popup.onDescriptionEnter(0)
 
 		assertEquals("", popup.name)
 		assertEquals("", popup.description)
@@ -146,10 +146,10 @@ class CreatorPopupEnterChainTest {
 		val committed = ArrayList<CreatorResult>()
 		popup.setOkListener { committed.add(it); true }
 
-		popup.onTranslationNameEnter(0)
+		popup.onDescriptionEnter(0)
 		popup.name = "second"
 		popup.translations[0].name = "druhá"
-		popup.onTranslationNameEnter(0)
+		popup.onDescriptionEnter(0)
 
 		assertEquals(listOf("first", "second"), committed.map { it.name })
 	}
@@ -173,7 +173,7 @@ class CreatorPopupEnterChainTest {
 		popup.translations[0].name = "dům"
 		popup.setOkListener { true }
 
-		popup.onTranslationNameEnter(0)
+		popup.onDescriptionEnter(0)
 
 		assertFalse(Dialogs.stack.value.contains(popup))
 	}
@@ -185,6 +185,17 @@ class CreatorPopupEnterChainTest {
 		popup.setOkListener { true }
 
 		popup.notifyOk()
+
+		assertFalse(Dialogs.stack.value.contains(popup))
+	}
+
+	@Test
+	fun `an empty simple-item description confirms`() {
+		val popup = CreatorPopup(CreatorPopup.Kind.NEW_CHAPTER, null, CreatorContent.Simple)
+		popup.name = "Chapter"
+		popup.setOkListener { true }
+
+		popup.onDescriptionEnter(null)
 
 		assertFalse(Dialogs.stack.value.contains(popup))
 	}
@@ -203,24 +214,24 @@ class CreatorPopupEnterChainTest {
 	}
 
 	@Test
-	fun `enter in the word name confirms nothing`() {
+	fun `enter in the word description confirms nothing`() {
 		val popup = wordPopup()
 		var committed = false
 		popup.setOkListener { committed = true; true }
 
-		popup.onWordNameEnter()
+		popup.onDescriptionEnter(null)
 
 		assertFalse(committed)
 		assertEquals(1, popup.translations.size)
 	}
 
 	@Test
-	fun `enter in the word name adds the row back when none exists`() {
+	fun `enter in the word description adds the row back when none exists`() {
 		val popup = wordPopup()
 		popup.translations.clear()
 		popup.setOkListener { true }
 
-		popup.onWordNameEnter()
+		popup.onDescriptionEnter(null)
 
 		assertEquals(1, popup.translations.size)
 	}

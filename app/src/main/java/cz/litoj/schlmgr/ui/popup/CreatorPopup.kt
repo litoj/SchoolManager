@@ -190,46 +190,48 @@ class CreatorPopup(
 
 	private val nameFocus = FocusRequester()
 
-	/** The name Enter of a note lands here, since its body is the description. */
+	/** Name Enter lands in the item description for every kind. */
 	private val descriptionFocus = FocusRequester()
 
-	private val isNote = kind == Kind.NEW_NOTE ||
-		(kind == Kind.EDIT && edited?.item?.type == ItemKind.NOTE)
-
 	/**
-	 * A fresh row is added when the editor holds none, since its last one was deleted.
+	 * Empty descriptions advance through the focus chain.
+	 * - the item description reaches the first translation, or confirms a simple item.
+	 * - a translation description reaches the next name, or confirms the last row.
 	 */
 	@VisibleForTesting
-	internal fun onWordNameEnter() {
-		val id = translations.firstOrNull()?.id
-			?: TranslationRow("", "", null).also(translations::add).id
-		focusTranslation(id)
-	}
-
-	/**
-	 * A note commits through the OK button only, since its body is the description.
-	 */
-	@VisibleForTesting
-	internal fun onNoteNameEnter() {
-		// the field is composed whenever Enter can fire.
-		// catching keeps the call safe outside composition, as in the unit tests
-		runCatching { descriptionFocus.requestFocus() }
-	}
-
-	/**
-	 * The last row confirms instead, see [notifyOk].
-	 * - a new word renews the editor for the next one, and everything else closes.
-	 */
-	@VisibleForTesting
-	internal fun onTranslationNameEnter(index: Int) {
-		val next = translations.getOrNull(index + 1)
-		if (next != null) focusTranslation(next.id) else notifyOk(renew = true)
+	internal fun onDescriptionEnter(index: Int?) {
+		if (index == null && content !is CreatorContent.Word) {
+			notifyOk()
+			return
+		}
+		val next = if (index == null) translations.firstOrNull() else translations.getOrNull(index + 1)
+		if (next != null) {
+			focusTranslation(next.id)
+			return
+		}
+		if (index != null) {
+			notifyOk(renew = true)
+			return
+		}
+		val added = TranslationRow("", "", null).also(translations::add)
+		focusTranslation(added.id)
 	}
 
 	/** Moves the keyboard to the name field of a translation, deferred until it composes. */
 	private fun focusTranslation(id: Long) {
-		val focused = runCatching { editor.nameFieldFocus[id]?.requestFocus() }.isSuccess
-		if (!focused) editor.pendingFocusId = id
+		val requester = editor.nameFieldFocus[id]
+		if (requester == null || runCatching { requester.requestFocus() }.isFailure) {
+			editor.pendingFocusId = id
+		}
+	}
+
+	/** A refused confirm sends the keyboard to the first missing required field. */
+	private fun focusFirstMissing() {
+		if (itemNameMissing) {
+			runCatching { nameFocus.requestFocus() }
+			return
+		}
+		translations.firstOrNull { it.name.isBlank() }?.let { focusTranslation(it.id) }
 	}
 
 	/**
@@ -361,13 +363,10 @@ class CreatorPopup(
 						modifier = trackFocus.weight(1f),
 						horizontalPadding = 0.dp,
 						singleLine = true,
-						onImeAction = when {
-							content is CreatorContent.Word -> ({ onWordNameEnter() })
-							isNote -> ({ onNoteNameEnter() })
-							else -> ({ notifyOk() })
-						},
-						imeAction = if (content is CreatorContent.Word || isNote) ImeAction.Next else ImeAction.Done,
+						onImeAction = { runCatching { descriptionFocus.requestFocus() } },
+						imeAction = ImeAction.Next,
 						focusRequester = nameFocus,
+						required = true,
 						isError = editor.showRequired && itemNameMissing,
 					)
 					if (kind == Kind.NEW_WORD) Icon(
@@ -392,6 +391,12 @@ class CreatorPopup(
 					textColor,
 					modifier = trackFocus,
 					focusRequester = descriptionFocus,
+					onImeAction = { if (description.isEmpty()) onDescriptionEnter(null) },
+					imeAction = when {
+						description.isNotEmpty() -> ImeAction.Default
+						content is CreatorContent.Word -> ImeAction.Next
+						else -> ImeAction.Done
+					},
 				)
 				// the variable middle holds the type-specific editor.
 				// - it scrolls when it outgrows the window, which the keyboard resizes.
@@ -458,6 +463,7 @@ class CreatorPopup(
 		modifier: Modifier,
 	) {
 		val rowNameFocus = remember(row.id) { FocusRequester() }
+		val rowDescriptionFocus = remember(row.id) { FocusRequester() }
 		// registered post-composition, so an abandoned recomposition leaves no stale entry behind
 		SideEffect { editor.nameFieldFocus[row.id] = rowNameFocus }
 		// keyed on pendingFocusId too, so re-targeting an already-composed row re-runs the effect.
@@ -492,11 +498,11 @@ class CreatorPopup(
 						textColor,
 						modifier = modifier,
 						singleLine = true,
-						onImeAction = { onTranslationNameEnter(translations.indexOf(row)) },
-						// the same action on every row keeps a deletion from restarting the IME
-						imeAction = ImeAction.Done,
+						onImeAction = { runCatching { rowDescriptionFocus.requestFocus() } },
+						imeAction = ImeAction.Next,
 						focusRequester = rowNameFocus,
 						horizontalPadding = 0.dp,
+						required = true,
 						isError = editor.showRequired && row.name.isBlank(),
 					)
 					BorderedTextField(
@@ -505,7 +511,16 @@ class CreatorPopup(
 						stringResource(R.string.data_desc),
 						textColor,
 						modifier = modifier,
-						horizontalPadding = 0.dp
+						horizontalPadding = 0.dp,
+						focusRequester = rowDescriptionFocus,
+						onImeAction = {
+							if (row.description.isEmpty()) onDescriptionEnter(translations.indexOf(row))
+						},
+						imeAction = when {
+							row.description.isNotEmpty() -> ImeAction.Default
+							row === translations.last() -> ImeAction.Done
+							else -> ImeAction.Next
+						},
 					)
 				}
 				Icon(
@@ -544,7 +559,10 @@ class CreatorPopup(
 			editor.discardBlankTranslations()
 			if (translations.isEmpty()) translations.add(TranslationRow("", "", null))
 		}
-		if (itemNameMissing || content is CreatorContent.Word && translations.none { it.name.isNotBlank() }) return
+		if (itemNameMissing || content is CreatorContent.Word && translations.none { it.name.isNotBlank() }) {
+			focusFirstMissing()
+			return
+		}
 		if (!listener(result())) return
 		if (renew && kind == Kind.NEW_WORD) resetForNextWord()
 		else {

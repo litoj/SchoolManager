@@ -173,13 +173,14 @@ internal fun BorderedTextField(
 	focusRequester: FocusRequester? = null,
 	horizontalPadding: androidx.compose.ui.unit.Dp = 20.dp,
 	keyboardType: KeyboardType = KeyboardType.Text,
+	required: Boolean = false,
 	isError: Boolean = false,
 ) {
 	Box(
 		modifier
 			.fillMaxWidth()
 			.padding(horizontal = horizontalPadding, vertical = 5.dp)
-			.border(0.8.dp, colorResource(if (isError) R.color.colorFailure else R.color.colorControlLine))
+			.border(0.8.dp, colorResource(if (isError) R.color.colorDanger else R.color.colorControlLine))
 			.padding(5.dp)
 	) {
 		WideTextField(
@@ -191,6 +192,7 @@ internal fun BorderedTextField(
 			imeAction = imeAction
 				?: if (onImeAction != null) ImeAction.Next else ImeAction.Default,
 			hint = label,
+			required = required,
 			singleLine = singleLine,
 			onImeAction = onImeAction,
 			keyboardType = keyboardType,

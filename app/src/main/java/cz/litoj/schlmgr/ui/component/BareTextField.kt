@@ -30,9 +30,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.R
@@ -73,6 +76,7 @@ fun WideTextField(
 	fontSize: TextUnit,
 	modifier: Modifier = Modifier,
 	hint: String? = null,
+	required: Boolean = false,
 	style: BareTextFieldStyle = BareTextFieldStyle(),
 	imeAction: ImeAction? = null,
 	onImeAction: (() -> Unit)? = null,
@@ -86,6 +90,7 @@ fun WideTextField(
 	modifier = modifier,
 	keyboardType = keyboardType,
 	hint = hint,
+	required = required,
 	style = style,
 	fillWidth = true,
 	imeAction = imeAction,
@@ -106,6 +111,7 @@ private fun BareTextFieldCore(
 	modifier: Modifier = Modifier,
 	keyboardType: KeyboardType = KeyboardType.Text,
 	hint: String? = null,
+	required: Boolean = false,
 	style: BareTextFieldStyle = BareTextFieldStyle(),
 	fillWidth: Boolean = false,
 	focusRequester: FocusRequester? = null,
@@ -122,6 +128,7 @@ private fun BareTextFieldCore(
 	val textColor = if (style.textColor != Color.Unspecified) style.textColor else DefaultTextColor
 	val cursorColor = if (style.cursorColor != Color.Unspecified) style.cursorColor else accent
 	val hintColor = style.hintColor.takeIf { it != Color.Unspecified } ?: textColor.copy(alpha = 0.5f)
+	val danger = colorResource(R.color.colorDanger)
 	var focused by remember { mutableStateOf(false) }
 	val state = rememberTextFieldState(value)
 	val echoed by rememberUpdatedState(value)
@@ -175,7 +182,13 @@ private fun BareTextFieldCore(
 		contentAlignment = Alignment.CenterStart,
 	) {
 		if (state.text.isEmpty() && hint != null) {
-			Text(hint, style = textStyle.copy(color = hintColor))
+			Text(
+				buildAnnotatedString {
+					append(hint)
+					if (required) withStyle(SpanStyle(color = danger)) { append(" *") }
+				},
+				style = textStyle.copy(color = hintColor),
+			)
 		}
 		// compact callers get a field that hugs its content and grows as the user types.
 		// - the square min-width keeps the empty field visible.

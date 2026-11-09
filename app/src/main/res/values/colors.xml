@@ -39,6 +39,9 @@
     <color name="colorControlLine">#88888888</color>
     <color name="colorGroupBackground">#55888888</color>
     <color name="colorSubBackground">#22888888</color>
+    <!-- The fixed red of destructive actions and required fields.
+         Unlike colorFailure, it stays the same in both themes. -->
+    <color name="colorDanger">#FE473F</color>
     <color name="colorFailure">#FFAA0000</color>
     <color name="colorScrim">#90000000</color>
     <!-- The NavigationView's checked-row highlight was the framework's

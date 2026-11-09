@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotDisplayed
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -42,12 +43,9 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * - the Enter key commits on the last name field in the view.
- * - that is the item name for the simple kinds.
- * - for words it is the name of the last translation.
- * - the word name and the earlier translations move the keyboard along.
- * - a note is the exception, where Enter jumps to the description.
- * - its commit stays on the OK button.
+ * - name fields lead to their own description fields.
+ * - an empty description leads to the next translation name.
+ * - the last empty description confirms.
  * - every item opens with the keyboard in the name field, a new one and an edit alike.
  * - the keyboard wish is one shot, so a rebuilt composition raises no new keyboard.
  * - a return of the window focus with a field focused reopens the keyboard.
@@ -244,22 +242,6 @@ class CreatorPopupEnterTest {
 	}
 
 	@Test
-	fun `enter in a chapter's name confirms`() {
-		val popup = CreatorPopup(CreatorPopup.Kind.NEW_CHAPTER, null, CreatorContent.Simple)
-		popup.name = "Kapitel eins"
-		var committed = false
-		popup.setOkListener { committed = true; true }
-		rule.setContent { popup.Content() }
-
-		rule.onNodeWithText("Kapitel eins").performImeAction()
-
-		rule.runOnIdle {
-			assertTrue(committed)
-			assertFalse(Dialogs.stack.value.contains(popup))
-		}
-	}
-
-	@Test
 	fun `enter in a note's name moves the keyboard to the description`() {
 		val popup = CreatorPopup(CreatorPopup.Kind.NEW_NOTE, null, CreatorContent.Simple)
 		popup.name = "Einkäufe"
@@ -290,9 +272,10 @@ class CreatorPopupEnterTest {
 	}
 
 	@Test
-	fun `enter in the word name moves the keyboard to the first translation`() {
+	fun `enter in the word name moves the keyboard to its description`() {
 		val popup = wordPopup()
 		popup.name = "Haus"
+		popup.description = "a noun"
 		popup.translations[0].name = "dům"
 		var committed = false
 		popup.setOkListener { committed = true; true }
@@ -304,14 +287,30 @@ class CreatorPopupEnterTest {
 			assertFalse(committed)
 			assertEquals(1, popup.translations.size)
 		}
+		rule.onNodeWithText("a noun").assertIsFocused()
+	}
+
+	@Test
+	fun `enter in an empty word description moves to the first translation`() {
+		val popup = wordPopup()
+		popup.name = "Haus"
+		popup.translations[0].name = "dům"
+		var committed = false
+		popup.setOkListener { committed = true; true }
+		rule.setContent { popup.Content() }
+
+		rule.onAllNodes(hasSetTextAction())[1].performImeAction()
+
+		rule.runOnIdle { assertFalse(committed) }
 		rule.onNodeWithText("dům").assertIsFocused()
 	}
 
 	@Test
-	fun `enter in an earlier translation's name moves the keyboard to the next`() {
+	fun `enter in a translation name moves the keyboard to its description`() {
 		val popup = wordPopup()
 		popup.name = "Haus"
 		popup.translations[0].name = "dům"
+		popup.translations[0].description = "first description"
 		popup.translations.add(TranslationRow("stavba", "", null))
 		var committed = false
 		popup.setOkListener { committed = true; true }
@@ -320,25 +319,20 @@ class CreatorPopupEnterTest {
 		rule.onNodeWithText("dům").performImeAction()
 
 		rule.runOnIdle { assertFalse(committed) }
-		rule.onNodeWithText("stavba").assertIsFocused()
+		rule.onNodeWithText("first description").assertIsFocused()
 	}
 
 	@Test
-	fun `enter in the last translation's name confirms and renews the editor`() {
+	fun `enter in an earlier empty translation description moves to the next name`() {
 		val popup = wordPopup()
 		popup.name = "Haus"
 		popup.translations[0].name = "dům"
-		var committed = false
-		popup.setOkListener { committed = true; true }
+		popup.translations.add(TranslationRow("stavba", "", null))
 		rule.setContent { popup.Content() }
 
-		rule.onNodeWithText("dům").performImeAction()
+		rule.onAllNodes(hasSetTextAction())[3].performImeAction()
 
-		rule.runOnIdle {
-			assertTrue(committed)
-			assertEquals(1, popup.translations.size)
-			assertEquals("the editor stands ready for the next word", "", popup.name)
-		}
+		rule.onNodeWithText("stavba").assertIsFocused()
 	}
 
 	/** The field holding the keyboard: typing lands where this matcher points. */
@@ -358,11 +352,13 @@ class CreatorPopupEnterTest {
 		rule.setContent { popup.Content() }
 
 		rule.onNodeWithText("dům").performImeAction()
+		rule.onNode(focusedField).performImeAction()
 
 		// the keyboard landed in the fresh name field, so typing reaches it
 		rule.onNode(focusedField).performTextInput("Baum")
 		rule.runOnIdle { assertEquals("Baum", popup.name) }
 		// and the Enter chain continues into the fresh translation row
+		rule.onNode(focusedField).performImeAction()
 		rule.onNode(focusedField).performImeAction()
 		rule.onNode(focusedField).performTextInput("strom")
 		rule.runOnIdle { assertEquals("strom", popup.translations[0].name) }
