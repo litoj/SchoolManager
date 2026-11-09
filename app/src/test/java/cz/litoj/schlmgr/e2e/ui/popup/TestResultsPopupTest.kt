@@ -121,6 +121,24 @@ class TestResultsPopupTest {
 	}
 
 	@Test
+	fun `result positions follow item order rather than lifetime counts`() {
+		val models = listOf(7 to 3, 0 to 1).mapIndexed { index, counters ->
+			val word = DbItem(
+				id = index + 1, name = "word$index", description = "", type = ItemKind.WORD,
+				passedTests = counters.first, failedTests = counters.second,
+			)
+			TestItemModel(TestEntry(word, listOf(word))).apply { answer = "a" }
+		}
+		show(TestResultsPopup(models, 0f))
+
+		rule.onNodeWithText("1.").assertExists()
+		rule.onNodeWithText("2.").assertExists()
+		rule.onNodeWithText("7/10").assertExists()
+		rule.onNodeWithText("0/1").assertExists()
+		rule.onNodeWithText("10.").assertDoesNotExist()
+	}
+
+	@Test
 	fun `a word without translations shows no empty label`() {
 		TestEngine.applyReversed(true)
 

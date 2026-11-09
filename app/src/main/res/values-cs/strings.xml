@@ -337,7 +337,6 @@
         <item quantity="many">K dispozici je jen %d slov, otestují se.</item>
         <item quantity="other">K dispozici je jen %d slov, otestují se.</item>
     </plurals>
-    <string name="test_tested_suffix">"×"</string>
     <string name="test_time">Sekundy na slovíčko</string>
     <string name="test_total_time">Celkový čas: %1$d s</string>
     <string name="test_sources_header">Zdroje · jeden předmět</string>

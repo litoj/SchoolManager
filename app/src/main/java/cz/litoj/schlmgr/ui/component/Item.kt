@@ -55,8 +55,6 @@ fun Item(
 	iconVisible: Boolean = true,
 	variant: ExplorerRowVariant = ExplorerRowVariant.Browse,
 	positionWidth: Dp,
-	/** What follows the number, where a test report marks a tested count. */
-	positionSuffix: String = ".",
 	infoAction: (@Composable () -> Unit)? = null,
 	answer: (@Composable () -> Unit)? = null,
 	trailing: (@Composable () -> Unit)? = null,
@@ -93,7 +91,6 @@ fun Item(
 			item,
 			variant,
 			positionWidth,
-			positionSuffix,
 			iconVisible,
 			Modifier.align(Alignment.CenterVertically),
 			onIconClick,
@@ -155,7 +152,6 @@ private fun PositionCell(
 	item: ItemUiModel,
 	variant: ExplorerRowVariant,
 	width: Dp,
-	suffix: String,
 	iconVisible: Boolean,
 	modifier: Modifier = Modifier,
 	onIconClick: (() -> Unit)? = null,
@@ -165,7 +161,7 @@ private fun PositionCell(
 		verticalAlignment = Alignment.CenterVertically,
 	) {
 		Text(
-			positionText(item.position, suffix),
+			positionText(item.position),
 			fontSize = CellMetrics.of(variant).textSize,
 			color = ExplorerColors.positionText,
 			maxLines = 1,
@@ -185,7 +181,7 @@ private fun PositionCell(
 	}
 }
 
-internal fun positionText(position: Int, suffix: String = "."): String = "$position$suffix"
+internal fun positionText(position: Int): String = "$position."
 
 /**
  * The one width every position cell of a list takes: the widest displayed
@@ -196,7 +192,6 @@ internal fun positionText(position: Int, suffix: String = "."): String = "$posit
 internal fun positionColumnWidth(
 	maxPosition: Int,
 	variant: ExplorerRowVariant,
-	suffix: String = ".",
 ): Dp {
 	val measurer = rememberTextMeasurer()
 	val density = LocalDensity.current
@@ -206,7 +201,7 @@ internal fun positionColumnWidth(
 		with(density) {
 			val style = TextStyle(fontSize = size)
 			val widths = IntArray(10) { measurer.measure(it.toString(), style).size.width }
-			measurer.measure(positionText(widestPosition(maxPosition) { widths[it] }, suffix), style)
+			measurer.measure(positionText(widestPosition(maxPosition) { widths[it] }), style)
 				.size.width.toDp()
 		}
 	}

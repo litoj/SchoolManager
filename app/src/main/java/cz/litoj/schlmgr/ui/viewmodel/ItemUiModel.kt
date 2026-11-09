@@ -9,7 +9,7 @@ import cz.litoj.schlmgr.data.db.ratio
  * - test results build it directly.
  *
  * @property key a stable LazyColumn key, the [stableKey] string or the item in test results
- * @property position 1-based index, or the tested count in test results
+ * @property position 1-based index in the shown list
  * @property name the parsed display name, the translations of a flipped word
  * @property description the line under the name, empty when none
  * @property trackPath the container chain of a hit, null otherwise

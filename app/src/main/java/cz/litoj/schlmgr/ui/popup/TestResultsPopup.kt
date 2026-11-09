@@ -33,7 +33,7 @@ import cz.litoj.schlmgr.ui.viewmodel.RowKind
 /**
  * Post-test results: the success percentage and one explorer-style row per tested item.
  * - the prompt of the run is the headline.
- * - the tested count replaces the position.
+ * - the result order replaces the explorer position.
  * - the labelled expected answer and the typed answer show below the headline.
  * - passed/total ends the row.
  * - the kind icon drops out, a test only ever holds words.
@@ -48,13 +48,14 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 		val answer: String,
 		val correct: Boolean,
 		val passed: Int,
+		val tested: Int,
 	)
 
 	// the setting can change while the report stays open, so the rows keep the direction of the run
 	private val reversed = TestEngine.isReversed
 
 	// built eagerly, since reset clears the tested list right after this constructor
-	private val rows: List<ResultRow> = items.map(::toRow)
+	private val rows: List<ResultRow> = items.mapIndexed { index, item -> toRow(item, index + 1) }
 
 	init {
 		Dialogs.show(this)
@@ -68,19 +69,17 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 			rows.size,
 			Math.round(success),
 		)
-		// one width for every count cell, so the rows render at the browse number size.
+		// one width for every result index, so the rows render at the browse number size.
 		// the widest count can lie below the largest one, since digit widths differ.
-		val suffix = stringResource(R.string.test_tested_suffix)
 		val positionWidth = positionColumnWidth(
 			rows.maxOfOrNull { it.model.position } ?: 1,
 			ExplorerRowVariant.Browse,
-			suffix,
 		)
 		PopupCard {
 			PopupTitle(successText)
 			HairlineDivider()
 			LazyColumn(Modifier.weight(1f, fill = false)) {
-				items(rows) { row -> WordResultRow(row, positionWidth, suffix) }
+				items(rows) { row -> WordResultRow(row, positionWidth) }
 			}
 			HairlineDivider()
 			PopupButtonRow {
@@ -97,7 +96,7 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 	}
 
 	@Composable
-	private fun WordResultRow(row: ResultRow, positionWidth: Dp, positionSuffix: String) {
+	private fun WordResultRow(row: ResultRow, positionWidth: Dp) {
 		Item(
 			row.model,
 			onClick = {},
@@ -105,7 +104,6 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 			descVisible = false,
 			iconVisible = false,
 			positionWidth = positionWidth,
-			positionSuffix = positionSuffix,
 			// the labels need string resources, and the model is built outside composition.
 			// this slot also ignores the description limit, so no translation collapses.
 			answer = {
@@ -128,31 +126,32 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 			},
 			trailing = {
 				Text(
-					"${row.passed}/${row.model.position}",
+					"${row.passed}/${row.tested}",
 					style = TextStyle(fontSize = 15.sp, color = colorResource(R.color.colorPrimaryFg)),
 				)
 			},
 		)
 	}
 
-	private fun toRow(item: TestItemModel): ResultRow {
+	private fun toRow(item: TestItemModel, position: Int): ResultRow {
 		val parsedWord = ItemRow.nameParser(item.word.name)
 		val translations = item.translations.joinToString("\n") { ItemRow.nameParser(it.name) }
 		val headline = if (reversed) parsedWord else translations
 		val expected = if (reversed) translations else parsedWord
 		return ResultRow(
-			toModel(item.word, headline),
+			toModel(item.word, headline, position),
 			expected,
 			item.answer,
 			item.correct,
 			item.word.passedTests,
+			item.word.testedCount,
 		)
 	}
 
 	/** The explorer-row model of one result, a plain unflipped row with the counters of the word. */
-	private fun toModel(word: DbItem, headline: String) = ItemUiModel(
+	private fun toModel(word: DbItem, headline: String, position: Int) = ItemUiModel(
 		key = word,
-		position = word.testedCount,
+		position = position,
 		name = headline,
 		description = "",
 		kind = RowKind.WORD,

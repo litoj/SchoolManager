@@ -344,7 +344,6 @@
         <item quantity="one">Only %d word is available, all will be tested.</item>
         <item quantity="other">Only %d words are available, all will be tested.</item>
     </plurals>
-    <string name="test_tested_suffix">"×"</string>
     <string name="test_time">Seconds per word</string>
     <string name="test_total_time">Total time: %1$d s</string>
     <string name="test_sources_header">Sources · one subject</string>
