@@ -35,6 +35,8 @@ class BackSequenceTest {
 		override fun setContent(container: DbItem?, pulseItemId: Int?) {
 			contents.add(container)
 		}
+
+		fun navigate(path: MutableList<DbItem>) = openChain(path)
 	}
 
 	private fun row(name: String, position: Int) =
@@ -64,7 +66,7 @@ class BackSequenceTest {
 		val vm = vm()
 		val hits = listOf(row("hit1", 1), row("hit2", 2))
 		// a shown search run, with the streamed rows cached and the hop stacked
-		vm.load(ArrayList())
+		vm.load(ArrayList(), isSearch = true)
 		runBlocking {
 			val rows = Channel<ItemRow>(Channel.UNLIMITED)
 			hits.forEach { rows.trySend(it) }
@@ -75,8 +77,9 @@ class BackSequenceTest {
 		// then the user opened a container from a hit, a new path entry, and the
 		// screen switched to its browse list
 		val container = DbItem(id = 7, name = "c", description = "", type = ItemKind.CHAPTER)
-		vm.history.push(mutableListOf(container))
+		vm.navigate(mutableListOf(container))
 		vm.load(listOf(row("browse", 1)))
+		vm.contents.clear()
 
 		vm.changedPath(1)
 

@@ -92,11 +92,15 @@ abstract class ExplorerViewModel<R>(
 
 	fun requestScrollToBottom() = list.requestScrollToBottom()
 
-	/** The composable reports the live browse scroll, which the view state keeps per container. */
+	/** The composable reports the live scroll, which the list keeps for history snapshots. */
 	fun onScrollPosition(index: Int, offset: Int) = list.onScrollPosition(index, offset)
 
-	fun load(content: List<ItemRow>, isSearch: Boolean = false, isPicker: Boolean = false) =
-		list.load(content, isSearch, isPicker)
+	fun load(
+		content: List<ItemRow>,
+		isSearch: Boolean = false,
+		isPicker: Boolean = false,
+		anchor: ScrollAnchor? = null,
+	) = list.load(content, isSearch, isPicker, anchor)
 
 	fun applyOrder(items: List<ItemRow>) = list.applyOrder(items)
 
@@ -238,8 +242,14 @@ abstract class ExplorerViewModel<R>(
 		override fun removeRows(items: Collection<ItemRow>) = list.removeItems(items)
 		override fun remap() = list.remap()
 		override fun discardSelection(rows: List<ItemRow>) = selection.discard(rows)
-		override fun load(content: List<ItemRow>, isSearch: Boolean, isPicker: Boolean) =
-			this@ExplorerViewModel.load(content, isSearch, isPicker)
+		override fun load(
+			content: List<ItemRow>,
+			isSearch: Boolean,
+			isPicker: Boolean,
+			anchor: ScrollAnchor?,
+		) = this@ExplorerViewModel.load(content, isSearch, isPicker, anchor)
+
+		override fun scrollAnchor(index: Int?, offset: Int?): ScrollAnchor = list.scrollAnchor(index, offset)
 
 		override fun isSearching() = searching
 		override fun pickerMode() = listState.value.pickerMode
@@ -372,8 +382,6 @@ abstract class ExplorerViewModel<R>(
 		override fun pasteArmed() = this@ExplorerViewModel.pasteArmed()
 
 		override fun resetDragSelect() = selection.reset()
-
-		override fun onSearchRowsChanged() = searchFlow.snapshotRestoreRows()
 
 		override fun publishChrome(reorderable: Boolean) {
 			_state.update {

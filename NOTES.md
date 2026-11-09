@@ -102,6 +102,8 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Go-to is search-only, opens the hit's parent and pulses the landed row once.
 - Live results keep their state across settings changes, which take effect on a new run.
 - Edits never rematch an active query, and a rename join rebinds its hit to the surviving word.
+- History restores a search's rows and scroll, while a new query starts at the top.
+- Search rows update through the shared list path, with history state captured only on leaving.
 - The diacritics toggle folds plain names and queries, while regex patterns stay as written.
 
 ### Editing
@@ -229,6 +231,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The snackbar dismissal behavior passes 816 behavior tests and debug lint.
 - Selection strip labels stay centered and the Go-to glyph is centered.
 - Browse and search rows update edits in place, including rename joins.
+- Search history keeps its scroll through the shared anchor path, and a new query starts at the top.
 - No emulator is connected for a physical keyboard check.
 - The selection More slot passes focused tests and lint, and is committed.
 - The top and selection More dropdowns render below and above their buttons, checked on Small_Phone.

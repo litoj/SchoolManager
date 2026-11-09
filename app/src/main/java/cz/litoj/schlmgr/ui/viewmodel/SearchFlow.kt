@@ -40,7 +40,9 @@ internal class SearchFlow(
 
 		fun discardSelection(rows: List<ItemRow>)
 
-		fun load(content: List<ItemRow>, isSearch: Boolean, isPicker: Boolean)
+		fun load(content: List<ItemRow>, isSearch: Boolean, isPicker: Boolean, anchor: ScrollAnchor? = null)
+
+		fun scrollAnchor(index: Int? = null, offset: Int? = null): ScrollAnchor
 
 		fun isSearching(): Boolean
 
@@ -69,6 +71,8 @@ internal class SearchFlow(
 
 	private var lastSearchRows: List<ItemRow> = emptyList()
 
+	private var lastSearchAnchor: ScrollAnchor? = null
+
 	private var activeFilter: SearchFilter? = null
 
 	var lastSearchInfo: InfoBar? = null
@@ -80,10 +84,6 @@ internal class SearchFlow(
 	fun onTextChange(text: String) = searchInput.onTextChange(text)
 
 	fun onSubmit(text: String) = searchInput.onSubmit(text)
-
-	internal fun snapshotRestoreRows() {
-		lastSearchRows = ArrayList(host.models)
-	}
 
 	/**
 	 * The walk streams in batches, and a superseded run never publishes.
@@ -103,8 +103,8 @@ internal class SearchFlow(
 		if (detail != null) UserMessages.showNotice(UiNotice.BadPattern(detail))
 		// a live re-run keeps a single stacked hop.
 		if (!alreadySearching) history.hop(null)
-		// start empty, since batches fill the list.
-		host.load(ArrayList(), isSearch = true, isPicker = false)
+		// a new query starts at the top, unlike a history restore.
+		host.load(ArrayList(), isSearch = true, isPicker = false, anchor = host.scrollAnchor(0, 0))
 		// a new strip starts at zero, and an invalid query never runs.
 		lastSearchInfo = when {
 			eng.valid -> InfoBar.Search(0, activeFilter, done = false)
@@ -117,7 +117,6 @@ internal class SearchFlow(
 
 	private fun appendSearchRows(batch: List<ItemRow>) {
 		host.appendRows(batch)
-		lastSearchRows = ArrayList(host.models)
 		lastSearchInfo = InfoBar.Search(host.models.size, activeFilter, done = false)
 		host.publishSearchInfo(lastSearchInfo)
 	}
@@ -138,6 +137,7 @@ internal class SearchFlow(
 		searchInput.cancelPending()
 		run.abort()
 		lastSearchRows = emptyList()
+		lastSearchAnchor = null
 		activeFilter = null
 		history.removeSearchHops()
 		if (reload) host.setContent(history.path.lastOrNull())
@@ -152,6 +152,8 @@ internal class SearchFlow(
 	fun suspendSearch() {
 		searchInput.cancelPending()
 		run.abort()
+		lastSearchRows = ArrayList(host.models)
+		lastSearchAnchor = host.scrollAnchor()
 		host.setSearchUi(SearchUi.OFF)
 	}
 
@@ -161,11 +163,12 @@ internal class SearchFlow(
 	 */
 	fun restoreSearch(): Boolean {
 		// the mode decides, not the variant.
+		val anchor = lastSearchAnchor ?: return false
 		if (host.searchUi() == SearchUi.RESULTS || lastSearchRows.isEmpty() || !history.onSearchHop()) return false
 		// a pending browse read must not land over the search strip.
 		host.cancelPendingInfoRead()
 		host.discardSelection(lastSearchRows)
-		host.load(lastSearchRows, isSearch = true, isPicker = host.pickerMode())
+		host.load(lastSearchRows, isSearch = true, isPicker = host.pickerMode(), anchor = anchor)
 		host.setSearchUi(SearchUi.RESULTS)
 		host.publishSearchInfoCollapsed(lastSearchInfo)
 		return true

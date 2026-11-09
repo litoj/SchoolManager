@@ -35,8 +35,6 @@ internal class ExplorerList(
 
 		fun resetDragSelect()
 
-		fun onSearchRowsChanged()
-
 		fun publishChrome(reorderable: Boolean)
 
 		fun publishReorderable(reorderable: Boolean)
@@ -72,16 +70,19 @@ internal class ExplorerList(
 
 	private var pulseJob: Job? = null
 
-	/** The scroll the composable last reported for the open container. */
+	/** The live list scroll, shared by browse and search. */
 	private var scrollIndex = 0
 
 	private var scrollOffset = 0
 
-	/** The composable reports the live browse scroll, which the next capture files away. */
 	fun onScrollPosition(index: Int, offset: Int) {
 		scrollIndex = index
 		scrollOffset = offset
 	}
+
+	/** A new re-anchor request at the supplied position, or the live one by default. */
+	fun scrollAnchor(index: Int? = null, offset: Int? = null) =
+		ScrollAnchor(++loadStep, index ?: scrollIndex, offset ?: scrollOffset)
 
 	/** The next publish moves the list to its last row. */
 	fun requestScrollToBottom() {
@@ -109,11 +110,16 @@ internal class ExplorerList(
 	 * - search starts empty, since batches stream via append.
 	 * - it drops the drag-select and cancels the pending read.
 	 */
-	fun load(content: List<ItemRow>, isSearch: Boolean = false, isPicker: Boolean = false) {
+	fun load(
+		content: List<ItemRow>,
+		isSearch: Boolean = false,
+		isPicker: Boolean = false,
+		anchor: ScrollAnchor? = null,
+	) {
 		loadJob?.cancel()
 		// leaving the browse view for a search keeps its state for the return
 		if (isSearch && !searching) viewStates.capture(currentContainerId, scrollIndex, scrollOffset, models)
-		publish(content, isSearch, isPicker)
+		publish(content, isSearch, isPicker, anchor = anchor)
 	}
 
 	/**
@@ -143,6 +149,10 @@ internal class ExplorerList(
 		} else _listState.value.scrollToBottom
 		// a bottom request owns the position, so the re-anchor stands down
 		val anchored = if (bottomRequested) null else anchor
+		if (anchored != null) {
+			scrollIndex = anchored.index
+			scrollOffset = anchored.offset
+		}
 		_listState.update {
 			it.copy(
 				items = models.map { row -> row.toUi() },
@@ -156,7 +166,6 @@ internal class ExplorerList(
 				pulse = pulse,
 			)
 		}
-		if (isSearch) host.onSearchRowsChanged()
 		host.publishChrome(reorderableNow(isSearch))
 	}
 
@@ -278,7 +287,6 @@ internal class ExplorerList(
 		// the removal leaves number gaps, so renumber like a reorder step does
 		models.forEachIndexed { i, row -> row.renumber(i + 1) }
 		host.resetDragSelect()
-		if (searching) host.onSearchRowsChanged()
 		remap(structuralChange = true)
 	}
 
