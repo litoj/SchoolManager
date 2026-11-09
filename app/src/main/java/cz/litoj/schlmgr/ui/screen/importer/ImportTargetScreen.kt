@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.SnackbarHost
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,6 +39,7 @@ import cz.litoj.schlmgr.ui.shell.TopBarIconButton
 import cz.litoj.schlmgr.ui.shell.TopBarNav
 import cz.litoj.schlmgr.ui.shell.TopBarTitle
 import cz.litoj.schlmgr.ui.shell.headerShadow
+import cz.litoj.schlmgr.ui.shell.MessageSnackbarHost
 import cz.litoj.schlmgr.ui.shell.messageSnackbarHost
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
 
@@ -122,7 +122,7 @@ fun ImportTargetScreen(
 			}
 		}
 		// the snackbar sits above the action strip.
-		SnackbarHost(
+		MessageSnackbarHost(
 			hostState = snackbar,
 			modifier = Modifier
 				.align(Alignment.BottomCenter)

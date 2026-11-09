@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.material.SnackbarHost
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -156,7 +155,7 @@ fun SchlMgrApp(
 					}
 					// the snackbar sits above everything except the windows of the dialogs.
 					// it takes the insets of the content, or rests under the navigation buttons
-					SnackbarHost(
+					MessageSnackbarHost(
 						hostState = snackbar,
 						modifier = Modifier.align(Alignment.BottomCenter)
 							.navigationBarsPadding()

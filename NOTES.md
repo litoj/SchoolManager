@@ -223,6 +223,8 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The Delete action dispatches through `MenuId.DELETE` again, with regression tests through the strip action.
 - A refused creator confirm focuses the first missing required field, with 812 behavior tests and debug lint green.
 - Creator descriptions keep their input session during typing, with 814 behavior tests and debug lint green.
+- Passive message snackbars dismiss on a tap, while action snackbars remain clickable only through their action.
+- The snackbar dismissal behavior passes 816 behavior tests and debug lint.
 - No emulator is connected for a physical keyboard check.
 - The selection More slot passes focused tests and lint, and is committed.
 - The top and selection More dropdowns render below and above their buttons, checked on Small_Phone.

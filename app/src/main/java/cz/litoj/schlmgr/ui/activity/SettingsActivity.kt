@@ -7,12 +7,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.material.SnackbarHost
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cz.litoj.schlmgr.ui.screen.settings.SettingsScreen
 import cz.litoj.schlmgr.ui.shell.StatusBarBand
+import cz.litoj.schlmgr.ui.shell.MessageSnackbarHost
 import cz.litoj.schlmgr.ui.shell.messageSnackbarHost
 import cz.litoj.schlmgr.ui.viewmodel.SettingsViewModel
 
@@ -33,7 +33,7 @@ class SettingsActivity : ComponentActivity() {
 				// the content stops above the navigation bar and the keyboard here, once
 				Box(Modifier.fillMaxSize().navigationBarsPadding().imePadding()) {
 					SettingsScreen(vm, ::finish)
-					SnackbarHost(
+					MessageSnackbarHost(
 						hostState = snackbar,
 						modifier = Modifier.align(Alignment.BottomCenter),
 					)

@@ -1,11 +1,11 @@
 package cz.litoj.schlmgr.e2e.ui.shell
 
-import androidx.compose.material.SnackbarHost
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.app.UserMessages
+import cz.litoj.schlmgr.ui.shell.MessageSnackbarHost
 import cz.litoj.schlmgr.ui.shell.messageSnackbarHost
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -30,7 +30,7 @@ class MessageSnackbarTest {
 	@Before
 	fun setUp() {
 		rule.mainClock.autoAdvance = false
-		rule.setContent { SnackbarHost(messageSnackbarHost()) }
+		rule.setContent { MessageSnackbarHost(messageSnackbarHost()) }
 		settle()
 	}
 
@@ -80,6 +80,27 @@ class MessageSnackbarTest {
 		rule.onNodeWithText("Undo").performClick()
 		settle()
 		assertEquals("second", undone)
+	}
+
+	@Test
+	fun `a message without an action dismisses on a tap`() {
+		text("report")
+		rule.onNodeWithText("report").assertExists()
+
+		rule.onNodeWithText("report").performClick()
+		settle()
+
+		rule.onNodeWithText("report").assertDoesNotExist()
+	}
+
+	@Test
+	fun `a message with an action stays on a tap outside the action`() {
+		undoable("first")
+
+		rule.onNodeWithText("Removed: first").performClick()
+		settle()
+
+		rule.onNodeWithText("Removed: first").assertExists()
 	}
 
 	@Test

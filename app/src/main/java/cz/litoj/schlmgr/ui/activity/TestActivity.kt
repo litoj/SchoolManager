@@ -30,7 +30,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.SnackbarHost
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,6 +63,7 @@ import cz.litoj.schlmgr.testing.TestTaskModel
 import cz.litoj.schlmgr.ui.popup.DialogHost
 import cz.litoj.schlmgr.ui.popup.TestResultsPopup
 import cz.litoj.schlmgr.ui.screen.test.TestRunState
+import cz.litoj.schlmgr.ui.shell.MessageSnackbarHost
 import cz.litoj.schlmgr.ui.shell.messageSnackbarHost
 
 
@@ -115,7 +115,7 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 			Box(Modifier.fillMaxSize()) {
 				TestScreen()
 				// the transient user messages, above the tested words
-				SnackbarHost(
+				MessageSnackbarHost(
 					hostState = snackbar,
 					// without the insets the bar rests on the raw window bottom,
 					// under the navigation buttons

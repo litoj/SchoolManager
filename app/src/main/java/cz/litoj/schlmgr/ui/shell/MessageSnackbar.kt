@@ -4,12 +4,16 @@ import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.clickable
+import androidx.compose.material.Snackbar
+import androidx.compose.material.SnackbarHost
 import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import cz.litoj.schlmgr.R
@@ -73,6 +77,14 @@ fun messageSnackbarHost(): SnackbarHostState {
 		}
 	}
 	return snackbar
+}
+
+/** A message without an action dismisses on a tap, while action buttons keep their clicks. */
+@Composable
+fun MessageSnackbarHost(hostState: SnackbarHostState, modifier: Modifier = Modifier) {
+	SnackbarHost(hostState, modifier) { data ->
+		Snackbar(data, Modifier.clickable(enabled = data.actionLabel == null) { data.dismiss() })
+	}
 }
 
 /** Opens the system share sheet for the saved export document. */
