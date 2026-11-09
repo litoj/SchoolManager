@@ -97,6 +97,8 @@ What gets a test:
 
 What does not:
 
+- No visual styling pins for colors, padding, dimensions or rendered pixels.
+- Pure calculations may keep unit tests even when their result drives presentation.
 - No test for a state that cannot exist. One pin per prevention.
 - No second test for one prevention. An e2e pin only where no unit or
   integration test can see the behavior, it is the slowest kind.

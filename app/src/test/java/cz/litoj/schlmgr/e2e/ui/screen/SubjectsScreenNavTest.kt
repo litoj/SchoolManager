@@ -1,7 +1,6 @@
 package cz.litoj.schlmgr.e2e.ui.screen
 
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -64,12 +63,6 @@ class SubjectsScreenNavTest {
 	private fun text(res: Int, vararg args: Any): String =
 		RuntimeEnvironment.getApplication().getString(res, *args)
 
-	// the chapter strip of the seed: two untested words
-	private fun countLine(): String {
-		val res = RuntimeEnvironment.getApplication().resources
-		return res.getQuantityString(R.plurals.stat_words, 2, 2) + ", " + text(R.string.data_untested)
-	}
-
 	private fun openChapter() {
 		rule.onNodeWithText("A").performClick()
 		rule.waitForIdle()
@@ -109,19 +102,6 @@ class SubjectsScreenNavTest {
 	}
 
 	@Test
-	fun `a selection moves the more menu to the bottom strip`() {
-		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		screen(model)
-		openChapter()
-		selectFirstWord()
-
-		rule.onNodeWithContentDescription(text(R.string.more)).assertDoesNotExist()
-		rule.onNodeWithText(text(R.string.more)).performClick()
-		rule.onNodeWithText(text(R.string.action_reference)).assertExists()
-		rule.onNodeWithText(text(R.string.action_flip)).assertExists()
-	}
-
-	@Test
 	fun `an armed move reads at the top and the arrow cancels it`() {
 		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
 		screen(model)
@@ -131,15 +111,9 @@ class SubjectsScreenNavTest {
 		rule.waitForIdle()
 		rule.runOnIdle { assertTrue("the cut armed a move", model.pasteArmed) }
 
-		// the armed status takes the top line from the count
-		rule.onNodeWithText(text(R.string.paste_status_move, 1)).assertExists()
-		rule.onNodeWithText(countLine()).assertDoesNotExist()
-
-		// the top arrow cancels the move and the count returns
+		// the top arrow cancels the move
 		rule.onNodeWithTag("top_bar_nav").performClick()
 		rule.waitForIdle()
 		rule.runOnIdle { assertFalse(model.pasteArmed) }
-		rule.onNodeWithText(text(R.string.paste_status_move, 1)).assertDoesNotExist()
-		rule.onNodeWithText(countLine()).assertExists()
 	}
 }

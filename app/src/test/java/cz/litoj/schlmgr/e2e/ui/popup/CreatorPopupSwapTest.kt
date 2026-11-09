@@ -1,12 +1,8 @@
 package cz.litoj.schlmgr.e2e.ui.popup
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import cz.litoj.schlmgr.ui.popup.CreatorContent
 import cz.litoj.schlmgr.ui.popup.CreatorPopup
@@ -49,28 +45,6 @@ class CreatorPopupSwapTest {
 			assertEquals("first trl\\second trl", popup.description)
 			assertEquals(listOf("one", "two"), popup.translations.map { it.name })
 			assertEquals(listOf("first desc", "second desc"), popup.translations.map { it.description })
-		}
-	}
-
-	@Test
-	fun `the name field names the created type`() {
-		val kinds = listOf(
-			CreatorPopup.Kind.NEW_SUBJECT to "Name of subject",
-			CreatorPopup.Kind.NEW_CHAPTER to "Name of chapter",
-			CreatorPopup.Kind.NEW_NOTE to "Name of note",
-			CreatorPopup.Kind.NEW_WORD to "Name of word",
-		)
-		val popups = kinds.associate { (kind, _) ->
-			val content = if (kind == CreatorPopup.Kind.NEW_WORD) CreatorContent.Word(emptyList())
-			else CreatorContent.Simple
-			kind to CreatorPopup(kind, null, content)
-		}
-		var shown by mutableStateOf(CreatorPopup.Kind.NEW_SUBJECT)
-		rule.setContent { popups.getValue(shown).Content() }
-
-		kinds.forEach { (kind, hint) ->
-			rule.runOnIdle { shown = kind }
-			rule.onNodeWithText(hint, substring = true, useUnmergedTree = true).assertIsDisplayed()
 		}
 	}
 

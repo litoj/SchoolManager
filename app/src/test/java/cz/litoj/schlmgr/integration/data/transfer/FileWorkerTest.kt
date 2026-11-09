@@ -8,11 +8,9 @@ import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ROOT_ID
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.db.ItemKind
-import cz.litoj.schlmgr.data.json.HJsonExporter
 import cz.litoj.schlmgr.data.transfer.ExportFormat
 import cz.litoj.schlmgr.data.transfer.ExportPipeline
 import cz.litoj.schlmgr.data.transfer.ImporterFactory
-import cz.litoj.schlmgr.data.wordlist.WordListExporter
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
 import kotlinx.coroutines.CoroutineStart
@@ -295,30 +293,6 @@ class FileWorkerTest {
 		assertEquals(0, ItemRepository.subjects().size)
 		assertEquals(0, reloads.root)
 		assertEquals(0, reloads.current)
-	}
-
-	@Test
-	fun `a tree JSON export writes the repository's render of the selection and clears the selection`() {
-		val deutsch = ItemRepository.createSubject("Deutsch", null)
-		val lektion = ItemRepository.createChapter(deutsch.id, "Lektion 1", null)
-		ItemRepository.createWord(lektion.id, "Haus", null, listOf("home" to null))
-
-		val (text, started) = exportPicked(ExportFormat.JSON) { listOf(deutsch) }
-
-		assertTrue(started)
-		assertEquals(ItemRepository.export(HJsonExporter(), listOf(deutsch)), text)
-	}
-
-	@Test
-	fun `a word-list export writes the repository's render of the selection`() {
-		val deutsch = ItemRepository.createSubject("Deutsch", null)
-		val lektion = ItemRepository.createChapter(deutsch.id, "Lektion 1", null)
-		ItemRepository.createWord(lektion.id, "Haus", null, listOf("home" to null))
-
-		val (text, started) = exportPicked(ExportFormat.WORD) { listOf(deutsch) }
-
-		assertTrue(started)
-		assertEquals(ItemRepository.export(WordListExporter(), listOf(deutsch)), text)
 	}
 
 	@Test

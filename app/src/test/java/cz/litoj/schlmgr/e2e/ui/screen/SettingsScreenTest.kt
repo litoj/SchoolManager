@@ -97,11 +97,6 @@ class SettingsScreenTest {
 	}
 
 	@Test
-	fun `Go-to names its search-only placement`() {
-		rule.onNodeWithText("search bar").assertExists()
-	}
-
-	@Test
 	fun `the default direction flips and persists`() {
 		val label = RuntimeEnvironment.getApplication().getString(R.string.setts_test_direction)
 		val row = rule.onNodeWithText(label)

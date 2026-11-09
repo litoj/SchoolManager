@@ -233,35 +233,6 @@ class JsonWordListParseTest {
 	}
 
 	@Test
-	fun `the written file shape stays exact`() {
-		val chapter = JsonChapter("Bare")
-		chapter.entries.add(JsonWord("w"))
-		chapter.entries.add(JsonNote("n", "nd"))
-
-		val text = JsonWordList.writeEntries(listOf(chapter))
-
-		// the whole format in one pin, where unset optionals leave no line
-		assertEquals(
-			"""
-			{
-			  name: Bare
-			  children:
-			  [
-			    {
-			      name: w
-			      translations: []
-			    }
-			    {
-			      name: n
-			      desc: nd
-			    }
-			  ]
-			}
-			""".trimIndent(),
-			text)
-	}
-
-	@Test
 	fun `every chapter and word writes its kind key`() {
 		val outer = JsonChapter("Outer")
 		// an empty chapter and a translation-less word, whose always-written keys

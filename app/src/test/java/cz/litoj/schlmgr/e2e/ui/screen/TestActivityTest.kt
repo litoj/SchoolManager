@@ -100,7 +100,7 @@ class TestActivityTest {
 
 		rule.onNodeWithText("Done").performClick()
 
-		rule.onNodeWithText("Missing 1 answer. Finish anyway?").assertExists()
+		assertTrue(Dialogs.isShowing<ContinuePopup>())
 		assertTrue(TestRunState.hasRun())
 
 		rule.onNodeWithText("OK").performClick()

@@ -126,7 +126,6 @@ class ImportTargetScreenTest {
 
 		rule.onNodeWithText(label(R.string.objects_cancel)).assertExists()
 		rule.onNodeWithText(label(R.string.import_here)).assertExists()
-		rule.onNodeWithText(label(R.string.import_file_title, "list.txt")).assertExists()
 
 		rule.onNodeWithText("A").performClick()
 		rule.waitForIdle()

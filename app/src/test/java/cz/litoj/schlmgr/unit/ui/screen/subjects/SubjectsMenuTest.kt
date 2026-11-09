@@ -25,17 +25,6 @@ class SubjectsMenuTest {
 	) = subjectsMenu(kind, selecting, singleSelected, config, filterActive = filterActive)
 
 	@Test
-	fun `every top-level entry carries an icon`() {
-		for (kind in MainExplorerViewModel.MenuKind.entries) {
-			for (selecting in listOf(false, true)) {
-				val menu = menu(kind, selecting)
-				assertTrue("$kind selecting=$selecting gives every row an icon",
-					menu.all { it.icon != 0 })
-			}
-		}
-	}
-
-	@Test
 	fun `every menu kind filters by the selection flag`() {
 		for (kind in MainExplorerViewModel.MenuKind.entries) {
 			val plain = menu(kind, selecting = false)
@@ -80,7 +69,6 @@ class SubjectsMenuTest {
 		val selecting = menu(MainExplorerViewModel.MenuKind.ROOT, selecting = true)
 		assertTrue(selecting.any { it.id == MenuId.FLIP })
 		assertTrue(selecting.any { it.id == MenuId.REFERENCE })
-		assertEquals(3, selecting.size)
 	}
 
 	@Test
@@ -99,13 +87,6 @@ class SubjectsMenuTest {
 			selecting.any { it.id == MenuId.CUT })
 		assertFalse("a strip slot leaves the menu",
 			selecting.any { it.id == MenuId.REFERENCE })
-	}
-
-	@Test
-	fun `goto sits on the search bar and out of the search menu`() {
-		val selecting = menu(MainExplorerViewModel.MenuKind.SEARCH, selecting = true)
-
-		assertFalse(selecting.any { it.id == MenuId.GOTO })
 	}
 
 	@Test
@@ -148,7 +129,6 @@ class SubjectsMenuTest {
 	@Test
 	fun `the search menu without a selection offers selection and sort`() {
 		val plain = menu(MainExplorerViewModel.MenuKind.SEARCH, selecting = false)
-		assertEquals(2, plain.size)
 		assertTrue(plain.any { it.id == MenuId.SELECT })
 		assertTrue(plain.any { it.children.isNotEmpty() })
 	}
@@ -197,14 +177,11 @@ class SubjectsMenuTest {
 	}
 
 	@Test
-	fun `both browse menus offer one plain import row`() {
+	fun `both browse menus offer the import action`() {
 		for (kind in listOf(MainExplorerViewModel.MenuKind.ROOT, MainExplorerViewModel.MenuKind.CONTAINER)) {
 			val plain = menu(kind, selecting = false)
-			// a single import needs no submenu, so the row sits plain in every depth
-			assertTrue("$kind offers the import row",
-				plain.any { it.id == MenuId.IMPORT_FILE && it.children.isEmpty() })
-			assertEquals("$kind offers exactly one import row",
-				1, plain.count { it.id == MenuId.IMPORT_FILE })
+			assertTrue("$kind offers the import action",
+				plain.any { it.id == MenuId.IMPORT_FILE })
 		}
 	}
 

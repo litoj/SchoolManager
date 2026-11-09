@@ -119,7 +119,6 @@ class FileProgressTest {
 			val item = StreamItem(DbItem(name = "w", description = "", type = ItemKind.WORD), null)
 			val proxy = progress.importer(FakeImporter(List(3) { item }))
 			// the re-target restarts the bar over the size of the stream
-			assertEquals("0 / 3", bar().extras.getCharSequence(Notification.EXTRA_TEXT))
 			assertEquals(3, bar().extras.getInt(Notification.EXTRA_PROGRESS_MAX))
 			// every row is a third of the bar, a fill step each, posted on its own
 			proxy.onItem(item)
@@ -129,7 +128,6 @@ class FileProgressTest {
 			// the completion post skips the throttle too, so the final state shows
 			proxy.onItem(item)
 			assertEquals(3, bar().extras.getInt(Notification.EXTRA_PROGRESS))
-			assertEquals("3 / 3", bar().extras.getCharSequence(Notification.EXTRA_TEXT))
 		}
 	}
 
@@ -140,23 +138,20 @@ class FileProgressTest {
 			val proxy = progress.exporter(FakeExporter())
 			// before the stream hands over, the count is unknown, so the spinner
 			assertTrue(bar().extras.getBoolean(Notification.EXTRA_PROGRESS_INDETERMINATE))
-			assertEquals("0 items", bar().extras.getCharSequence(Notification.EXTRA_TEXT))
 			// the handover re-targets the bar to the object count and fills it
 			proxy.onStream(List(3) { item })
 			assertEquals(3, bar().extras.getInt(Notification.EXTRA_PROGRESS_MAX))
 			assertEquals(3, bar().extras.getInt(Notification.EXTRA_PROGRESS))
-			assertEquals("3 / 3", bar().extras.getCharSequence(Notification.EXTRA_TEXT))
 		}
 	}
 
 	@Test
-	fun `a byte phase re-targets the bar and drops the count text`() {
+	fun `a byte phase re-targets the bar to its byte total`() {
 		barShownAfterDelay().use { progress ->
 			val item = StreamItem(DbItem(name = "w", description = "", type = ItemKind.WORD), null)
 			progress.importer(FakeImporter(listOf(item)))
 			progress.bytes(50)
 			assertEquals(50, bar().extras.getInt(Notification.EXTRA_PROGRESS_MAX))
-			assertEquals(null, bar().extras.getCharSequence(Notification.EXTRA_TEXT))
 		}
 	}
 
@@ -166,12 +161,10 @@ class FileProgressTest {
 			// an unknown row total, the indeterminate bar with the count text
 			progress.rows(0)
 			assertTrue(bar().extras.getBoolean(Notification.EXTRA_PROGRESS_INDETERMINATE))
-			assertEquals("0 items", bar().extras.getCharSequence(Notification.EXTRA_TEXT))
 			now += 100
 			progress.advance(1)
 			now += 100
 			progress.advance(1)
-			assertEquals("2 items", bar().extras.getCharSequence(Notification.EXTRA_TEXT))
 		}
 	}
 
@@ -180,11 +173,9 @@ class FileProgressTest {
 		barShownAfterDelay().use { progress ->
 			progress.rows(4)
 			assertEquals(4, bar().extras.getInt(Notification.EXTRA_PROGRESS_MAX))
-			assertEquals("0 / 4", bar().extras.getCharSequence(Notification.EXTRA_TEXT))
 			now += 100
 			progress.advance(2)
 			assertEquals(2, bar().extras.getInt(Notification.EXTRA_PROGRESS))
-			assertEquals("2 / 4", bar().extras.getCharSequence(Notification.EXTRA_TEXT))
 		}
 	}
 

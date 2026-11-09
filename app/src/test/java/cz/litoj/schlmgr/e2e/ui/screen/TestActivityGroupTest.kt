@@ -1,10 +1,10 @@
 package cz.litoj.schlmgr.e2e.ui.screen
 
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNodeWithText
 import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
@@ -79,21 +79,20 @@ class TestActivityGroupTest {
 			}
 
 			assertEquals(3, task.answerFields.size)
-			rule.onAllNodesWithText("Word variant").assertCountEquals(3)
+			rule.onAllNodes(hasSetTextAction()).assertCountEquals(3)
 		} finally {
 			TestEngine.applyRequireAllVariants(false)
 		}
 	}
 
 	@Test
-	fun `identical prompts merge into a labeled shared block`() {
+	fun `identical prompts merge into one block with both answer fields`() {
 		rule.setContent {
 			SharedPromptRow(task, -1, hashMapOf(), false, rememberLazyListState(), {})
 		}
 
 		assertEquals(2, task.members.size)
-		rule.onNodeWithText("Synonyms: 2").assertExists()
-		rule.onNodeWithText("Every answer must be different.").assertExists()
+		rule.onAllNodes(hasSetTextAction()).assertCountEquals(2)
 		rule.onAllNodesWithText("pes").assertCountEquals(1)
 	}
 

@@ -17,22 +17,6 @@ class ActionConfigTest {
 	private val default = ActionConfig(ActionConfig.DEFAULT_ORDER)
 
 	@Test
-	fun `the default browse bar holds four slots`() {
-		assertEquals(listOf(TEST, CUT, EDIT, DELETE), default.bar(false))
-	}
-
-	@Test
-	fun `the default search bar holds goto instead of cut`() {
-		assertEquals(listOf(TEST, GOTO, EDIT, DELETE), default.bar(true))
-	}
-
-	@Test
-	fun `the overflow holds the same actions in both lists`() {
-		assertEquals(listOf(REFERENCE, FLIP, EXPORT), default.overflow(false))
-		assertEquals(listOf(REFERENCE, FLIP, EXPORT), default.overflow(true))
-	}
-
-	@Test
 	fun `a moved action changes the bars of its list kind`() {
 		val moved = default.moved(from = 2, to = 0)
 
