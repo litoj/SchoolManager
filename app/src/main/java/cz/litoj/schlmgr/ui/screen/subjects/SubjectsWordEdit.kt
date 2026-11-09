@@ -83,20 +83,12 @@ internal class SubjectsWordEdit(
 	}
 
 	/**
-	 * An edit that keeps the word id updates its row in place, since a reload
-	 * would drop the scroll and flip state of the view.
-	 * - a fork or a rename join moves rows around, so the list rebuilds whole.
+	 * Every edit updates its shown row in place, without rebuilding its list.
+	 * - a rename join keeps the surviving word at the edited row.
+	 * - list membership and view position stay as they were before the edit.
 	 */
 	private suspend fun commitWordEditNow(row: ItemRow, edit: WordEdit, rowId: Int) {
 		val word = ItemRepository.editWord(edit)
-		if (word.id != rowId) {
-			host.postToUi {
-				host.reloadContent()
-				host.clearSelection()
-				host.refreshInfo()
-			}
-			return
-		}
 		val flip = ItemRow.flipContentOf(word)
 		// a touched shared translation re-renders the rows that show it
 		val touched = edit.kept.map { it.id } + edit.removed

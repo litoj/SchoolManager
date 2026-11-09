@@ -964,6 +964,48 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
+	fun `a browse edit keeps its row through a rename join too`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		val c2 = ItemRepository.createChapter(aId, "c2", null, 1)
+		val target = ItemRepository.createWord(c2.id, "plain", null, listOf("t" to null))
+		val hit = ItemRepository.createWord(c1.id, "[hit", null, listOf("h" to null))
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.id == c1.id })
+		val row = model.items().single()
+		val translation = ItemRepository.translations(hit.id).single()
+
+		assertTrue(model.commitWordEdit(row, CreatorResult(
+			"plain", "", listOf(TranslationValue("h", "", translation)), emptyList())))
+
+		assertEquals(listOf(target.id), model.items().map { it.item.id })
+		assertEquals(listOf("plain"), model.items().map { it.item.name })
+		assertTrue(model.listState.value.variant == ExplorerRowVariant.Browse)
+	}
+
+	@Test
+	fun `an edited search hit survives its rename join until the query changes`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		val target = ItemRepository.createWord(c1.id, "plain", null, listOf("t" to null))
+		val hit = ItemRepository.createWord(c1.id, "[hit", null, listOf("h" to null))
+		val model = vmIn("A")
+		model.openSearchField()
+		model.onQuerySubmit("[")
+		assertEquals(listOf("[hit"), model.items().map { it.item.name })
+		val row = model.items().single()
+		val translation = ItemRepository.translations(hit.id).single()
+
+		assertTrue(model.commitWordEdit(row, CreatorResult(
+			"plain", "", listOf(TranslationValue("h", "", translation)), emptyList())))
+
+		assertEquals(listOf(target.id), model.items().map { it.item.id })
+		assertEquals(listOf("plain"), model.items().map { it.item.name })
+		assertEquals("[", model.query.value)
+		assertTrue(model.listState.value.variant == ExplorerRowVariant.Search)
+	}
+
+	@Test
 	fun `refreshSearchRows re-reads the shown rows in place`() {
 		val (model, row) = searchedWord()
 		ItemRepository.rename(row.item.id, "renamed")

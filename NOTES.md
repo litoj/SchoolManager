@@ -101,6 +101,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A word hit starts on its translations through the search translate setting.
 - Go-to is search-only, opens the hit's parent and pulses the landed row once.
 - Live results keep their state across settings changes, which take effect on a new run.
+- Edits never rematch an active query, and a rename join rebinds its hit to the surviving word.
 - The diacritics toggle folds plain names and queries, while regex patterns stay as written.
 
 ### Editing
@@ -108,10 +109,9 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Names and descriptions are trimmed at the write boundary.
 - Every change saves immediately, with no save button.
 - Keep `passed_tests` and `failed_tests`.
-- An edit that keeps the row identity updates its row in place.
+- Every edit updates its shown row in place, including a rename join to a surviving word.
 - Rows sharing a touched translation re-render.
-- A fork or rename join rebuilds the list, preserving the view state.
-- A rename join keeps the renamed row's slot in its chapter.
+- An edit never reloads the list or changes its membership.
 
 ### Flip
 
@@ -228,6 +228,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Passive message snackbars dismiss on a tap, while action snackbars remain clickable only through their action.
 - The snackbar dismissal behavior passes 816 behavior tests and debug lint.
 - Selection strip labels stay centered and the Go-to glyph is centered.
+- Browse and search rows update edits in place, including rename joins.
 - No emulator is connected for a physical keyboard check.
 - The selection More slot passes focused tests and lint, and is committed.
 - The top and selection More dropdowns render below and above their buttons, checked on Small_Phone.
