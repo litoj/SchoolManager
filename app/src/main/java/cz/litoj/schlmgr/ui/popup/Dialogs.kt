@@ -187,8 +187,9 @@ fun DialogHost() {
  * - a pause drops the keyboard, a [StickyImePad] keeps the card layout put
  *   until the resume brings the keyboard back.
  */
+@VisibleForTesting
 @Composable
-private fun DialogScrim(spec: DialogSpec) {
+internal fun DialogScrim(spec: DialogSpec) {
 	val sticky = remember { StickyImePad() }
 	val lifecycleOwner = LocalLifecycleOwner.current
 	DisposableEffect(lifecycleOwner) {

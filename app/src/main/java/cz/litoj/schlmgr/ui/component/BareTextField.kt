@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.layout
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.R
@@ -76,6 +78,7 @@ fun WideTextField(
 	onValueChange: (String) -> Unit,
 	fontSize: TextUnit,
 	modifier: Modifier = Modifier,
+	textPadding: Dp = 0.dp,
 	hint: String? = null,
 	required: Boolean = false,
 	style: BareTextFieldStyle = BareTextFieldStyle(),
@@ -90,6 +93,7 @@ fun WideTextField(
 	onValueChange = onValueChange,
 	fontSize = fontSize,
 	modifier = modifier,
+	textPadding = textPadding,
 	keyboardType = keyboardType,
 	hint = hint,
 	required = required,
@@ -112,6 +116,7 @@ private fun BareTextFieldCore(
 	onValueChange: (String) -> Unit,
 	fontSize: TextUnit,
 	modifier: Modifier = Modifier,
+	textPadding: Dp = 0.dp,
 	keyboardType: KeyboardType = KeyboardType.Text,
 	hint: String? = null,
 	required: Boolean = false,
@@ -191,6 +196,7 @@ private fun BareTextFieldCore(
 					append(hint)
 					if (required) withStyle(SpanStyle(color = danger)) { append(" *") }
 				},
+				modifier = Modifier.padding(textPadding),
 				style = textStyle.copy(color = hintColor),
 			)
 		}
@@ -221,6 +227,7 @@ private fun BareTextFieldCore(
 			modifier = Modifier
 				.then(if (fillWidth) Modifier.fillMaxWidth() else Modifier.width(IntrinsicSize.Min))
 				.then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier),
+			decorator = { inner -> Box(Modifier.padding(textPadding)) { inner() } },
 		)
 	}
 }

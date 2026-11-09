@@ -3,6 +3,7 @@ package cz.litoj.schlmgr.ui.popup
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.TextStyle
@@ -44,7 +46,6 @@ val PopupMargin = 30.dp
 /**
  * The shared look of the small dialogs: a theme-background card, only as tall as its content.
  * - it grows to the full height between the status-bar-height gaps.
- * - a centered [Box] hugs it, so no dead space surrounds the bar.
  * - a scrollable middle takes weight 1f without fill and fills the free height first.
  *
  * @param margin the gap around the card, which sets its width
@@ -60,14 +61,16 @@ internal fun PopupCard(
 	Box(
 		Modifier
 			.fillMaxSize()
-			.padding(top = statusBar, bottom = statusBar),
+			.padding(top = statusBar, bottom = statusBar)
+			.padding(margin),
 		contentAlignment = Alignment.Center,
 	) {
 		Column(
 			Modifier
-				.padding(margin)
 				.fillMaxWidth()
 				.background(colorResource(R.color.colorPrimaryBg))
+				// the card is the dialog window, so its surface swallows the backdrop tap
+				.pointerInput(Unit) { detectTapGestures { } }
 		) {
 			content()
 		}
@@ -177,27 +180,24 @@ internal fun BorderedTextField(
 	required: Boolean = false,
 	isError: Boolean = false,
 ) {
-	Box(
-		modifier
+	WideTextField(
+		value = value,
+		onValueChange = onValueChange,
+		fontSize = 17.sp,
+		modifier = modifier
 			.fillMaxWidth()
 			.padding(horizontal = horizontalPadding, vertical = 5.dp)
-			.border(0.8.dp, colorResource(if (isError) R.color.colorDanger else R.color.colorControlLine))
-			.padding(5.dp)
-	) {
-		WideTextField(
-			value = value,
-			onValueChange = onValueChange,
-			fontSize = 17.sp,
-			style = BareTextFieldStyle(textColor = textColor, cursorColor = textColor, underline = false),
-			focusRequester = focusRequester,
-			imeAction = imeAction
-				?: if (onImeAction != null) ImeAction.Next else ImeAction.Default,
-			hint = label,
-			required = required,
-			singleLine = singleLine,
-			onImeAction = onImeAction,
-			onEmptyImeAction = onEmptyImeAction,
-			keyboardType = keyboardType,
-		)
-	}
+			.border(0.8.dp, colorResource(if (isError) R.color.colorDanger else R.color.colorControlLine)),
+		textPadding = 5.dp,
+		style = BareTextFieldStyle(textColor = textColor, cursorColor = textColor, underline = false),
+		focusRequester = focusRequester,
+		imeAction = imeAction
+			?: if (onImeAction != null) ImeAction.Next else ImeAction.Default,
+		hint = label,
+		required = required,
+		singleLine = singleLine,
+		onImeAction = onImeAction,
+		onEmptyImeAction = onEmptyImeAction,
+		keyboardType = keyboardType,
+	)
 }
