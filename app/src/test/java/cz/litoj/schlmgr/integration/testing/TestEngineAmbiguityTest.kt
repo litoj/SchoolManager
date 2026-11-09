@@ -331,6 +331,43 @@ class TestEngineAmbiguityTest {
 	}
 
 	@Test
+	fun `independent sides accept any complete cover instead of every combination`() {
+		val (_, chapter) = subjectWith("c", listOf("a/b c/d/e" to listOf("letters")))
+		TestEngine.applyRequireAllVariants(true)
+		try {
+			val entries = entries(chapter)
+			val engine = TestEngine()
+			engine.setTested(1, null, 20, entries)
+			val task = TestTaskModel.flatten(
+				engine.getTestSrc().map(::TestItemModel), engine.getTestGroups()).single()
+
+			assertEquals("only the widest side takes answer fields", 3, task.answerFields.size)
+			assertEquals("time scales with those fields", 45, TestEngine.timeForVariants(20, entries))
+			assertEquals(listOf(true), grades(engine, listOf(listOf("a c", "b d", "a e"))))
+		} finally {
+			TestEngine.applyRequireAllVariants(false)
+		}
+	}
+
+	@Test
+	fun `nested alternatives accept the three required sides`() {
+		val (_, chapter) = subjectWith("c", listOf("a/(b 1/2)" to listOf("letters")))
+		TestEngine.applyRequireAllVariants(true)
+		try {
+			val entries = entries(chapter)
+			val engine = TestEngine()
+			engine.setTested(1, null, 1, entries)
+			val task = TestTaskModel.flatten(
+				engine.getTestSrc().map(::TestItemModel), engine.getTestGroups()).single()
+
+			assertEquals(3, task.answerFields.size)
+			assertEquals(listOf(true), grades(engine, listOf(listOf("a", "b 1", "b 2"))))
+		} finally {
+			TestEngine.applyRequireAllVariants(false)
+		}
+	}
+
+	@Test
 	fun `all variants score the word exactly once`() {
 		val (_, chapter) = subjectWith("c", listOf("/I/You smile." to listOf("laugh")))
 		TestEngine.applyRequireAllVariants(true)

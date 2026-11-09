@@ -2,6 +2,8 @@ package cz.litoj.schlmgr.unit.data
 
 import cz.litoj.schlmgr.data.WordNames
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -113,5 +115,38 @@ class WordNamesTest {
 		// the unmatched closing parenthesis collapses into the pending variant instead
 		// of discarding everything after it
 		assertEquals(listOf("a d", "b)c d"), WordNames.parseVariants("a/b)c d"))
+	}
+
+	@Test
+	fun `independent sides need only the widest answer count`() {
+		val name = "a/b c/d/e"
+		assertEquals(listOf("a c", "a d", "a e", "b c", "b d", "b e"), WordNames.parseVariants(name))
+		assertEquals(3, WordNames.requiredVariantCount(name))
+		assertTrue(WordNames.coversAllVariants(name, listOf("a c", "b d", "a e")))
+		assertFalse("the third side still lacks e", WordNames.coversAllVariants(name, listOf("a c", "b d", "a d")))
+	}
+
+	@Test
+	fun `nested sides add their required answers`() {
+		val name = "a/(b 1/2)"
+		assertEquals(listOf("a", "b 1", "b 2"), WordNames.parseVariants(name))
+		assertEquals(3, WordNames.requiredVariantCount(name))
+		assertTrue(WordNames.coversAllVariants(name, listOf("a", "b 1", "b 2")))
+		assertFalse(WordNames.coversAllVariants(name, listOf("a", "b 1")))
+	}
+
+	@Test
+	fun `an empty side still needs its shortest variant`() {
+		val name = "/I/You smile."
+		assertEquals(3, WordNames.requiredVariantCount(name))
+		assertFalse(WordNames.coversAllVariants(name, listOf("I smile.", "You smile.")))
+		assertTrue(WordNames.coversAllVariants(name, listOf("smile.", "I smile.", "You smile.")))
+	}
+
+	@Test
+	fun `independent halves accept cross combinations`() {
+		val name = "I 'm/am here/there."
+		assertEquals(2, WordNames.requiredVariantCount(name))
+		assertTrue(WordNames.coversAllVariants(name, listOf("I 'm there.", "I am here.")))
 	}
 }

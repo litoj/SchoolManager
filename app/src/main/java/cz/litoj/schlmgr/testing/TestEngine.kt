@@ -243,10 +243,10 @@ class TestEngine {
 			return source
 		}
 
-		/** The variants an entry asks for when the option requires every name variant. */
+		/** The answers an entry asks for when the option requires every answer side. */
 		private fun variantCount(entry: TestEntry): Int = if (isReversed)
-			entry.translations().sumOf { WordNames.parseVariants(it.name).size }
-		else WordNames.parseVariants(entry.word.name).size
+			entry.translations().sumOf { WordNames.requiredVariantCount(it.name) }
+		else WordNames.requiredVariantCount(entry.word.name)
 
 		/**
 		 * Total seconds for the selected entries, scaled as 1.5 per extra variant.
@@ -383,15 +383,14 @@ class TestEngine {
 			if (isReversed) translations.filter { matchesName(it.name, answer ?: "") } else translations
 
 		/**
-		 * Whether every parsed variant has its own answer.
-		 * - each distinct variant must be present, while extra answers are allowed.
+		 * Whether supplied valid variants cover every answer side once.
+		 * - extra answers are allowed, while an uncovered side fails the word.
 		 */
 		private fun matchesAllVariants(word: DbItem, translations: List<DbItem>, answers: List<String>): Boolean {
 			if (answers.isEmpty()) return false
-			val supplied = answers.map { it.trim() }.toSet()
-			val expected = if (isReversed) translations.flatMap { WordNames.parseVariants(it.name) }
-			else WordNames.parseVariants(word.name)
-			return expected.map { it.trim() }.toSet().all { it in supplied }
+			val supplied = answers.map { it.trim() }
+			val names = if (isReversed) translations.map { it.name } else listOf(word.name)
+			return names.all { WordNames.coversAllVariants(it, supplied) }
 		}
 
 		private fun matchesName(name: String, answer: String): Boolean {

@@ -11,17 +11,19 @@ class TestTaskModel(
 
 	val answerFields: List<TestAnswerField> = if (TestEngine.requireAllVariants) {
 		members.flatMap { member ->
-			val expected = if (TestEngine.isReversed)
-				member.translations.flatMap { WordNames.parseVariants(it.name) }
-			else WordNames.parseVariants(member.word.name)
-			expected.map { TestAnswerField(member, it.trim()) }
+			val names = if (TestEngine.isReversed) member.translations.map { it.name }
+			else listOf(member.word.name)
+			names.flatMap { name ->
+				val variants = WordNames.parseVariants(name).mapTo(HashSet()) { it.trim() }
+				List(WordNames.requiredVariantCount(name)) { TestAnswerField(member, variants) }
+			}
 		}
 	} else members.map { TestAnswerField(it) }
 
 	/**
 	 * Assigns the typed answers to members, so their field order does not decide.
 	 * - ordinary fields need distinct answers that the member accepts.
-	 * - variant fields match their expected text, so a shared variant can repeat.
+	 * - variant fields accept any valid variant, so a shared variant can repeat.
 	 */
 	fun assign(answers: List<String>): Map<TestItemModel, List<String>> =
 		if (TestEngine.requireAllVariants) assignVariants(answers) else assignAnswers(answers)
@@ -40,8 +42,7 @@ class TestTaskModel(
 	private fun assignVariants(answers: List<String>): Map<TestItemModel, List<String>> {
 		val texts = answers.map { it.trim() }
 		val matched = maximumMatching(answerFields.size, texts.size) { slot, text ->
-			val expected = answerFields[slot].expected
-			expected.isNotEmpty() && expected == texts[text]
+			texts[text] in answerFields[slot].validVariants
 		}
 		val slotTexts = Array(answerFields.size) { slot ->
 			if (matched[slot] >= 0) texts[matched[slot]] else ""

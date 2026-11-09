@@ -13,8 +13,24 @@ object WordNames {
 	 * - an escaped slash, parenthesis or backslash stays literal.
 	 */
 	@JvmStatic
-	fun parseVariants(name: String): List<String> =
-		if (name.contains("/")) NameVariantParser(name).result else listOf(name)
+	fun parseVariants(name: String): List<String> = variantTree(name).forms.map { it.text }
+
+	/** Minimum valid variants that can cover every side once. */
+	@JvmStatic
+	fun requiredVariantCount(name: String): Int = variantTree(name).answerCount
+
+	/** Whether supplied valid variants cover every side, including an empty alternative. */
+	@JvmStatic
+	fun coversAllVariants(name: String, answers: List<String>): Boolean {
+		val supplied = answers.mapTo(HashSet()) { it.trim() }
+		val tree = variantTree(name)
+		val matched = tree.forms.filter { it.text.trim() in supplied }
+		val covered = matched.flatMapTo(HashSet()) { it.choices }
+		return matched.isNotEmpty() && covered.containsAll(tree.requiredChoices)
+	}
+
+	private fun variantTree(name: String): VariantNode = if (name.contains("/")) NameVariantParser(name).result
+	else VariantNode(listOf(VariantForm(name, emptySet())), 1, emptySet())
 
 	/**
 	 * - a backslash starts a new word, unless it escapes the next character.
@@ -41,161 +57,108 @@ object WordNames {
 	}
 }
 
+private data class VariantForm(val text: String, val choices: Set<Int>)
+
+private data class VariantNode(
+	val forms: List<VariantForm>,
+	val answerCount: Int,
+	val requiredChoices: Set<Int>,
+)
+
 /**
  * Variant parser for slash alternatives and parenthesized groups, with backslash escapes.
- * Segments break on a period, an exclamation mark, a question mark, a comma and a space.
+ * Each expanded form also carries the side choices it covers.
  */
 private class NameVariantParser(private val str: String) {
 
-	private val length = str.length
 	private var i = 0
+	private var nextChoice = 0
 
-	val result: List<String>
+	val result: VariantNode = expression(false)
 
-	init {
-		val parts = ArrayList<StringBuilder>(3)
-		getParts(parts)
-		result = parts.map { it.toString() }
-	}
-
-	private fun getParts(ret: MutableList<StringBuilder>, group: Boolean = false) {
-		var parts: MutableList<StringBuilder>? = null
-		var recursiveParts: MutableList<StringBuilder>? = null
-		var sb = StringBuilder(8)
-		var lastSplitter = i - 1
-		renderer@ while (i < length) {
-			val now = str[i]
-			when (now) {
+	private fun expression(group: Boolean): VariantNode {
+		val options = ArrayList<VariantNode>()
+		var current = text("")
+		while (i < str.length) {
+			when (val now = str[i]) {
 				'/' -> {
-					if (recursiveParts == null) {
-						if (sb.length > 0 || lastSplitter == i - 1) {
-							if (parts == null) parts = ArrayList(3)
-							parts.add(sb)
-							sb = StringBuilder(8)
-						}
-					} else {
-						if (parts == null) {
-							if (sb.length > 0) for (part in recursiveParts) part.append(sb)
-							parts = recursiveParts
-						} else for (part in recursiveParts) parts.add(part.append(sb))
-						sb = StringBuilder(0)
-						recursiveParts = null
-					}
-					lastSplitter = i
+					options.add(current)
+					current = text("")
+					i++
 				}
-				'.', '!', '?', ',', ' ' -> {
-					if (parts == null) {
-						if (recursiveParts == null) {
-							sb.append(now)
-							if (ret.isEmpty()) ret.add(sb)
-							else for (part in ret) part.append(sb)
-							sb = StringBuilder(8)
-						} else {
-							if (ret.isEmpty()) {
-								for (part in recursiveParts) ret.add(part.append(sb).append(now))
-							} else {
-								val size = ret.size
-								for (j in 0 until size) {
-									val retPart = ret.removeAt(0)
-									for (part in recursiveParts)
-										ret.add(
-											if (part.length > 0) StringBuilder(retPart).append(part).append(sb).append(now)
-											else StringBuilder(retPart).append(sb)
-										)
-								}
-							}
-						}
-						sb = StringBuilder(0)
-						recursiveParts = null
-					} else {
-						if (sb.length > 0) {
-							if (recursiveParts == null) parts.add(sb)
-							else {
-								for (part in recursiveParts) parts.add(part.append(sb))
-								recursiveParts = null
-							}
-							sb = StringBuilder(8)
-						} else if (recursiveParts != null) {
-							for (part in recursiveParts) parts.add(part)
-							recursiveParts = null
-						}
-						if (ret.isEmpty()) {
-							for (part in parts) ret.add(if (part.length > 0) part.append(now) else part)
-						} else {
-							val size = ret.size
-							for (j in 0 until size) {
-								val retPart = ret.removeAt(0)
-								for (part in parts)
-									ret.add(
-										if (part.length > 0) StringBuilder(retPart).append(part).append(now)
-										else StringBuilder(retPart).append(part)
-									)
-							}
-						}
-						parts = null
-					}
-					lastSplitter = i
-				}
-				// a closing paren inside a group ends it, and a stray one is text
-				')' -> if (group) break@renderer else sb.append(now)
 				'(' -> {
 					i++
-					recursiveParts = ArrayList(2)
-					if (sb.length > 0) recursiveParts.add(sb)
-					sb = StringBuilder(8)
-					getParts(recursiveParts, group = true)
-					if (recursiveParts.size == 1) {
-						if (sb.length > 0) sb.append(recursiveParts[0])
-						else sb = recursiveParts[0]
-						recursiveParts = null
-					} else if (recursiveParts.isEmpty()) {
-						// an empty group carries nothing, so the pending text goes on
-						recursiveParts = null
-					}
+					current = join(current, expression(true))
+					if (i < str.length && str[i] == ')') i++
+				}
+				')' -> if (group) {
+					options.add(current)
+					return alternatives(options)
+				} else {
+					current = joinText(current, ")")
+					i++
 				}
 				'\\' -> {
 					i++
 					// a trailing backslash escapes nothing, so it is dropped, not crashed on
-					if (i < length) sb.append(str[i])
-				}
-				else -> sb.append(now)
-			}
-			i++
-		}
-		if (parts == null) {
-			if (recursiveParts == null) {
-				if (sb.length > 0) {
-					if (ret.isEmpty()) ret.add(sb)
-					else for (part in ret) part.append(sb)
-				}
-			} else {
-				if (ret.isEmpty()) for (part in recursiveParts) ret.add(part.append(sb))
-				else {
-					val size = ret.size
-					for (j in 0 until size) {
-						val retPart = ret.removeAt(0)
-						for (part in recursiveParts)
-							ret.add(StringBuilder(retPart).append(part).append(sb))
+					if (i < str.length) {
+						current = joinText(current, str[i].toString())
+						i++
 					}
 				}
-			}
-		} else {
-			if (sb.length > 0) {
-				if (recursiveParts == null) parts.add(sb)
-				else for (part in recursiveParts) parts.add(part.append(sb))
-			} else if (recursiveParts != null) {
-				for (part in recursiveParts) parts.add(part)
-			} else if (parts.isEmpty()) parts.add(sb)
-			// a pending-empty tail after real parts adds nothing, since a trailing
-			// separator or empty group is not an empty variant
-			if (ret.isEmpty()) for (part in parts) ret.add(part)
-			else {
-				val size = ret.size
-				for (j in 0 until size) {
-					val retPart = ret.removeAt(0)
-					for (part in parts) ret.add(StringBuilder(retPart).append(part))
+				'.', '!', '?', ',', ' ' -> {
+					options.add(current)
+					val left = joinSeparator(alternatives(options), now.toString())
+					i++
+					return join(left, expression(group))
+				}
+				else -> {
+					current = joinText(current, now.toString())
+					i++
 				}
 			}
 		}
+		options.add(current)
+		return alternatives(options)
 	}
+
+	private fun alternatives(options: List<VariantNode>): VariantNode {
+		val kept = options.toMutableList()
+		// a trailing empty group or separator adds no empty variant
+		while (kept.size > 1 && kept.last().forms.singleOrNull()?.text == ""
+			&& kept.last().requiredChoices.isEmpty()
+		) kept.removeAt(kept.lastIndex)
+		if (kept.size == 1) return kept[0]
+		val branchIds = kept.map { nextChoice++ }
+		return VariantNode(
+			forms = kept.flatMapIndexed { branch, node ->
+				node.forms.map { form -> VariantForm(form.text, form.choices + branchIds[branch]) }
+			},
+			// nested alternatives add, independent sequence positions take the widest one
+			answerCount = kept.sumOf { it.answerCount },
+			requiredChoices = (branchIds + kept.flatMap { it.requiredChoices }).toSet(),
+		)
+	}
+
+	private fun joinSeparator(node: VariantNode, separator: String): VariantNode = VariantNode(
+		forms = node.forms.map { form ->
+			// an empty alternative owns no separator, so the shortest form has no leading space
+			val suffix = if (form.text.isEmpty() && node.requiredChoices.isNotEmpty()) "" else separator
+			VariantForm(form.text + suffix, form.choices)
+		},
+		answerCount = node.answerCount,
+		requiredChoices = node.requiredChoices,
+	)
+
+	private fun joinText(node: VariantNode, suffix: String): VariantNode = join(node, text(suffix))
+
+	private fun join(left: VariantNode, right: VariantNode): VariantNode = VariantNode(
+		forms = left.forms.flatMap { a ->
+			right.forms.map { b -> VariantForm(a.text + b.text, a.choices + b.choices) }
+		},
+		answerCount = maxOf(left.answerCount, right.answerCount),
+		requiredChoices = left.requiredChoices + right.requiredChoices,
+	)
+
+	private fun text(value: String) = VariantNode(listOf(VariantForm(value, emptySet())), 1, emptySet())
 }
