@@ -62,6 +62,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A picker row tap only toggles the selection.
 - Every performed action finishes the selection, a refused one keeps it.
 - The strip takes the first four applicable actions from the configurable order, and its More slot opens the rest.
+- A strip label stays centered and ellipsizes when its slot cannot hold the full text.
 - The top More button hides while a selection runs.
 - Cut applies only to a browse list.
 - The settings editor names the strips that show each action.
@@ -201,6 +202,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 ### Theme
 
 - Icons use the Material 24dp standard through `IconSize`.
+- The Go-to glyph sits on the center of its 24dp viewport.
 - Custom visuals derive from their surroundings.
 - Disabled icons only tint, with no separate disabled variants.
 - The New palette uses the light grey wash.
@@ -225,6 +227,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Creator descriptions keep their input session during typing, with 814 behavior tests and debug lint green.
 - Passive message snackbars dismiss on a tap, while action snackbars remain clickable only through their action.
 - The snackbar dismissal behavior passes 816 behavior tests and debug lint.
+- Selection strip labels stay centered and the Go-to glyph is centered.
 - No emulator is connected for a physical keyboard check.
 - The selection More slot passes focused tests and lint, and is committed.
 - The top and selection More dropdowns render below and above their buttons, checked on Small_Phone.
