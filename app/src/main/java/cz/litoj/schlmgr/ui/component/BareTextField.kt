@@ -9,6 +9,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.layout
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.KeyboardActionHandler
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
@@ -80,6 +81,7 @@ fun WideTextField(
 	style: BareTextFieldStyle = BareTextFieldStyle(),
 	imeAction: ImeAction? = null,
 	onImeAction: (() -> Unit)? = null,
+	onEmptyImeAction: (() -> Unit)? = null,
 	focusRequester: FocusRequester? = null,
 	singleLine: Boolean = true,
 	keyboardType: KeyboardType = KeyboardType.Text,
@@ -95,6 +97,7 @@ fun WideTextField(
 	fillWidth = true,
 	imeAction = imeAction,
 	onImeAction = onImeAction,
+	onEmptyImeAction = onEmptyImeAction,
 	focusRequester = focusRequester,
 	singleLine = singleLine,
 )
@@ -118,6 +121,7 @@ private fun BareTextFieldCore(
 	imeAction: ImeAction? = null,
 	onFocusLost: (() -> Unit)? = null,
 	onImeAction: (() -> Unit)? = null,
+	onEmptyImeAction: (() -> Unit)? = null,
 	singleLine: Boolean = true,
 ) {
 	// theme colors captured here, because the draw scope below cannot read them
@@ -202,12 +206,18 @@ private fun BareTextFieldCore(
 			keyboardOptions = KeyboardOptions(
 				keyboardType = keyboardType,
 				imeAction = imeAction
-					?: if (onImeAction != null) ImeAction.Done else ImeAction.Default,
+					?: if (onImeAction != null || onEmptyImeAction != null) ImeAction.Done else ImeAction.Default,
 			),
-			// name the action: inside the SAM lambda the implicit it is
-			// performDefaultAction, not the outer onImeAction.
-			// - a plain let with an inner it would invoke the default focus move.
-			onKeyboardAction = onImeAction?.let { action -> { action() } },
+			// the empty-only override keeps the keyboard options stable while the text changes
+			onKeyboardAction = when {
+				onImeAction != null -> onImeAction.let { action -> KeyboardActionHandler { action() } }
+				onEmptyImeAction != null -> onEmptyImeAction.let { action -> KeyboardActionHandler { defaultAction ->
+					if (state.text.isEmpty()) action()
+					else if (singleLine) defaultAction()
+					else state.edit { replace(selection.start, selection.end, "\n") }
+				} }
+				else -> null
+			},
 			modifier = Modifier
 				.then(if (fillWidth) Modifier.fillMaxWidth() else Modifier.width(IntrinsicSize.Min))
 				.then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier),

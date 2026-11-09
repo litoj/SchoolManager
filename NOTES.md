@@ -192,6 +192,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The add button scrolls to the bottom and focuses the new row.
 - A text field reseeds its parent value in a deferred effect, so recomposition cannot clobber it.
 - Creator Enter moves from each name to its description, then empty descriptions advance to the next name or confirm the last field.
+- Description keyboard options stay fixed while typing, so a non-empty Enter can insert a newline without restarting the input session.
 - OK discards blank translation rows, then outlines missing required names red and restores one translation row when none has actual text.
 - Required creator hints append a red asterisk while their default text is visible.
 - A new word swaps with its translations through the button beside its name, exchanging escaped-backslash lists both ways.
@@ -221,7 +222,8 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 
 - The Delete action dispatches through `MenuId.DELETE` again, with regression tests through the strip action.
 - A refused creator confirm focuses the first missing required field, with 812 behavior tests and debug lint green.
-- The creator Enter chain passes 31 focused unit and UI tests and debug lint.
+- Creator descriptions keep their input session during typing, with 814 behavior tests and debug lint green.
+- No emulator is connected for a physical keyboard check.
 - The selection More slot passes focused tests and lint, and is committed.
 - The top and selection More dropdowns render below and above their buttons, checked on Small_Phone.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.

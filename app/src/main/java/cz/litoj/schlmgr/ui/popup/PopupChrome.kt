@@ -169,6 +169,7 @@ internal fun BorderedTextField(
 	modifier: Modifier = Modifier,
 	singleLine: Boolean = false,
 	onImeAction: (() -> Unit)? = null,
+	onEmptyImeAction: (() -> Unit)? = null,
 	imeAction: ImeAction? = null,
 	focusRequester: FocusRequester? = null,
 	horizontalPadding: androidx.compose.ui.unit.Dp = 20.dp,
@@ -195,6 +196,7 @@ internal fun BorderedTextField(
 			required = required,
 			singleLine = singleLine,
 			onImeAction = onImeAction,
+			onEmptyImeAction = onEmptyImeAction,
 			keyboardType = keyboardType,
 		)
 	}

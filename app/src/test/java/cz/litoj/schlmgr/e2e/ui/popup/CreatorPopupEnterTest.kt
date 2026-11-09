@@ -335,6 +335,41 @@ class CreatorPopupEnterTest {
 		rule.onNodeWithText("stavba").assertIsFocused()
 	}
 
+	@Test
+	fun `typing keeps the description text and its keyboard options stable`() {
+		val popup = wordPopup()
+		popup.name = "Haus"
+		popup.translations[0].name = "dům"
+		rule.setContent { popup.Content() }
+
+		rule.onNodeWithText("Haus").performImeAction()
+		val field = rule.onNode(focusedField)
+		val initialAction = field.fetchSemanticsNode().config[SemanticsProperties.ImeAction]
+		field.performTextInput("a")
+		field.performTextInput("b")
+
+		rule.runOnIdle { assertEquals("ab", popup.description) }
+		assertEquals(initialAction, field.fetchSemanticsNode().config[SemanticsProperties.ImeAction])
+	}
+
+	@Test
+	fun `enter in a filled description inserts a newline`() {
+		val popup = CreatorPopup(CreatorPopup.Kind.NEW_NOTE, null, CreatorContent.Simple)
+		popup.name = "Einkäufe"
+		popup.description = "note"
+		var committed = false
+		popup.setOkListener { committed = true; true }
+		rule.setContent { popup.Content() }
+
+		rule.onNodeWithText("Einkäufe").performImeAction()
+		rule.onNodeWithText("note").performImeAction()
+
+		rule.runOnIdle {
+			assertEquals("note\n", popup.description)
+			assertFalse(committed)
+		}
+	}
+
 	/** The field holding the keyboard: typing lands where this matcher points. */
 	private val focusedField = SemanticsMatcher("focused field") {
 		it.config.getOrElse(SemanticsProperties.Focused) { false }

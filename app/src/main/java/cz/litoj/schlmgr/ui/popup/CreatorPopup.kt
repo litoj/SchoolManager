@@ -391,12 +391,8 @@ class CreatorPopup(
 					textColor,
 					modifier = trackFocus,
 					focusRequester = descriptionFocus,
-					onImeAction = { if (description.isEmpty()) onDescriptionEnter(null) },
-					imeAction = when {
-						description.isNotEmpty() -> ImeAction.Default
-						content is CreatorContent.Word -> ImeAction.Next
-						else -> ImeAction.Done
-					},
+					onEmptyImeAction = { onDescriptionEnter(null) },
+					imeAction = if (content is CreatorContent.Word) ImeAction.Next else ImeAction.Done,
 				)
 				// the variable middle holds the type-specific editor.
 				// - it scrolls when it outgrows the window, which the keyboard resizes.
@@ -513,14 +509,8 @@ class CreatorPopup(
 						modifier = modifier,
 						horizontalPadding = 0.dp,
 						focusRequester = rowDescriptionFocus,
-						onImeAction = {
-							if (row.description.isEmpty()) onDescriptionEnter(translations.indexOf(row))
-						},
-						imeAction = when {
-							row.description.isNotEmpty() -> ImeAction.Default
-							row === translations.last() -> ImeAction.Done
-							else -> ImeAction.Next
-						},
+						onEmptyImeAction = { onDescriptionEnter(translations.indexOf(row)) },
+						imeAction = if (row === translations.last()) ImeAction.Done else ImeAction.Next,
 					)
 				}
 				Icon(
