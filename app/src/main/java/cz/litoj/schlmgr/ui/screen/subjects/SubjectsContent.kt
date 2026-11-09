@@ -117,6 +117,10 @@ internal fun SubjectsContent(
 						onAction = viewModel::onSelectionAction,
 						exportEntries = exportMenu,
 						onExport = viewModel::onMenuItemClick,
+						overflowEntries = selectionOverflowMenu(
+							config, searching, listState.singleSelected, exportBlockedReason,
+						),
+						onOverflow = viewModel::onMenuItemClick,
 						exportBlockedReason = exportBlockedReason,
 					)
 				}

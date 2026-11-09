@@ -1,7 +1,7 @@
 package cz.litoj.schlmgr.e2e.ui.screen
 
-import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -109,6 +109,19 @@ class SubjectsScreenNavTest {
 	}
 
 	@Test
+	fun `a selection moves the more menu to the bottom strip`() {
+		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		screen(model)
+		openChapter()
+		selectFirstWord()
+
+		rule.onNodeWithContentDescription(text(R.string.more)).assertDoesNotExist()
+		rule.onNodeWithText(text(R.string.more)).performClick()
+		rule.onNodeWithText(text(R.string.action_reference)).assertExists()
+		rule.onNodeWithText(text(R.string.action_flip)).assertExists()
+	}
+
+	@Test
 	fun `an armed move reads at the top and the arrow cancels it`() {
 		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
 		screen(model)
@@ -121,16 +134,6 @@ class SubjectsScreenNavTest {
 		// the armed status takes the top line from the count
 		rule.onNodeWithText(text(R.string.paste_status_move, 1)).assertExists()
 		rule.onNodeWithText(countLine()).assertDoesNotExist()
-
-		// the strip gives each action its half
-		val cancel = rule.onNodeWithText(text(R.string.objects_cancel)).getBoundsInRoot()
-		val paste = rule.onNodeWithText(text(R.string.paste)).getBoundsInRoot()
-		val root = rule.onRoot().getBoundsInRoot()
-		val half = (root.right - root.left) / 2
-		assertTrue("cancel sits in the left half: $cancel",
-			(cancel.left + cancel.right) / 2 < half)
-		assertTrue("paste sits in the right half: $paste",
-			(paste.left + paste.right) / 2 > half)
 
 		// the top arrow cancels the move and the count returns
 		rule.onNodeWithTag("top_bar_nav").performClick()

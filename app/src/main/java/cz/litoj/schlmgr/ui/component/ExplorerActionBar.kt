@@ -52,6 +52,7 @@ private class Action(
  * - the slots are the first four actions that apply to the list kind.
  * - edit and go-to act on one row, so a wider selection mutes them with a reason.
  * - export opens its word and JSON chooser right on the strip.
+ * - the last slot opens the overflow, so the top bar keeps no menu during a selection.
  *
  * @param exportBlockedReason the reason of an empty writable selection, 0 when it can export
  */
@@ -62,6 +63,8 @@ fun SelectionActionBar(
 	onAction: (SelectionAction) -> Unit,
 	exportEntries: List<MenuEntry>,
 	onExport: (Int) -> Unit,
+	overflowEntries: List<MenuEntry>,
+	onOverflow: (Int) -> Unit,
 	modifier: Modifier = Modifier,
 	exportBlockedReason: Int = 0,
 ) {
@@ -81,6 +84,7 @@ fun SelectionActionBar(
 				Modifier.weight(1f),
 			)
 		}
+		if (overflowEntries.isNotEmpty()) OverflowStripButton(overflowEntries, onOverflow)
 	}
 }
 
@@ -95,8 +99,18 @@ private fun RowScope.ExportStripButton(
 	var open by remember { mutableStateOf(false) }
 	// the box holds the strip share of the slot, since the button loses the row scope
 	Box(Modifier.weight(1f).fillMaxHeight()) {
-		ActionButton(Action(action.icon, action.label) { open = true }, blockedReason)
+		ActionButton(Action(action.icon, action.label) { open = true }, blockedReason, Modifier.fillMaxWidth())
 		if (open) MoreMenu(entries, { open = false; onExport(it) }) { open = false }
+	}
+}
+
+/** The More slot, which hosts the overflow actions as a dropdown. */
+@Composable
+private fun RowScope.OverflowStripButton(entries: List<MenuEntry>, onPick: (Int) -> Unit) {
+	var open by remember { mutableStateOf(false) }
+	Box(Modifier.weight(1f).fillMaxHeight()) {
+		ActionButton(Action(R.drawable.ic_more, R.string.more) { open = true }, 0, Modifier.fillMaxWidth())
+		if (open) MoreMenu(entries, { open = false; onPick(it) }) { open = false }
 	}
 }
 

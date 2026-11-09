@@ -18,6 +18,18 @@ fun menuKindFor(searching: Boolean, pathSize: Int): MainExplorerViewModel.MenuKi
 }
 
 /**
+ * The overflow actions of one list kind as menu rows.
+ * - the strip shares this list through its More slot, so both places show one order.
+ */
+internal fun selectionOverflowMenu(
+	config: ActionConfig,
+	search: Boolean,
+	singleSelected: Boolean,
+	exportBlockedReason: Int,
+): List<MenuEntry> =
+	config.overflow(search).map { it.menuEntry(singleSelected, exportBlockedReason) }
+
+/**
  * The more menu of one list kind.
  * - the selection actions come from the config overflow, in the picked order.
  * - edit and go-to act on one row, so a wider selection mutes them with a reason.
@@ -35,7 +47,7 @@ fun subjectsMenu(
 	filterActive: Boolean = false,
 ): List<MenuEntry> {
 	val search = kind == MainExplorerViewModel.MenuKind.SEARCH
-	val actions = config.overflow(search).map { it.menuEntry(singleSelected, exportBlockedReason) }
+	val actions = selectionOverflowMenu(config, search, singleSelected, exportBlockedReason)
 	val clear = if (search && filterActive)
 		listOf(MenuEntry(MenuId.CLEAR_FILTER, R.string.clear_filter, icon = R.drawable.ic_cancel))
 	else emptyList()

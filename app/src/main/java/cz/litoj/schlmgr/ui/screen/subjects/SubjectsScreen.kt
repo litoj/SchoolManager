@@ -214,7 +214,7 @@ fun SubjectsScreen(
 			) {
 				if (selecting) viewModel.onSelectAllToggle() else viewModel.openSearchField()
 			}
-			TopBarMoreButton(
+			if (!selecting) TopBarMoreButton(
 				// the menu reads the config per build, so a settings change reaches the next open
 				contentDescription = stringResource(R.string.more),
 				entries = subjectsMenu(
