@@ -61,7 +61,8 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The row tap keeps its own meaning.
 - A picker row tap only toggles the selection.
 - Every performed action finishes the selection, a refused one keeps it.
-- The strip takes the first four applicable actions from the configurable order, the rest go into More.
+- The strip takes the first four applicable actions from the configurable order, and its More slot opens the rest.
+- The top More button hides while a selection runs.
 - Cut applies only to a browse list.
 - The settings editor names the strips that show each action.
 - The top arrow cancels the selection and an armed move.
@@ -167,12 +168,13 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The answer hint names the asked side.
 - The countdown pauses while the app is away.
 - Back confirms before ending an ungraded run, and a run-out time reports itself.
-- Requiring every name variant gives each variant its own answer field.
-- An added variant multiplies that word's time by 1.5.
+- Requiring all variants accepts any valid answers that cover every side once, with the widest independent part setting the field count.
+- An added required answer multiplies that word's time by 1.5.
 - A tested word scores once regardless of variants, while different words score separately.
 - Grading matches name variants and linked translations, then counters go up the plain-parent chain.
 - Only the first line of the tested word's description shows in a prompt.
 - Results round the rate, pair wrong answers with the expected one and offer a retake.
+- Result positions follow item order, with lifetime passed/total only at the trailing edge.
 
 ### Settings
 
@@ -189,7 +191,9 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - New creators focus the name field and show the keyboard, edits focus too.
 - The add button scrolls to the bottom and focuses the new row.
 - A text field reseeds its parent value in a deferred effect, so recomposition cannot clobber it.
+- Creator Enter moves from each name to its description, then empty descriptions advance to the next name or confirm the last field.
 - OK discards blank translation rows, then outlines missing required names red and restores one translation row when none has actual text.
+- Required creator hints append a red asterisk while their default text is visible.
 - A new word swaps with its translations through the button beside its name, exchanging escaped-backslash lists both ways.
 - The creator name hint names the created or edited type.
 
@@ -216,6 +220,8 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 ## Current
 
 - The Delete action dispatches through `MenuId.DELETE` again, with regression tests through the strip action.
-- The word swap button and type-specific creator name hints pass 838 tests and both lints, and are committed.
-- No emulator is connected for a visual check.
+- A refused creator confirm focuses the first missing required field, with 812 behavior tests and debug lint green.
+- The creator Enter chain passes 31 focused unit and UI tests and debug lint.
+- The selection More slot passes focused tests and lint, and is committed.
+- The top and selection More dropdowns render below and above their buttons, checked on Small_Phone.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
