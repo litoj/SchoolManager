@@ -110,14 +110,17 @@ internal fun SubjectsContent(
 					// the read lands on every recomposition, so a settings change reaches the next selection
 					val config = ActionConfig.load()
 					SelectionActionBar(
-						actions = config.bar(searching),
+						config = config,
+						search = searching,
 						singleSelected = listState.singleSelected,
 						onAction = viewModel::onSelectionAction,
 						exportEntries = exportMenu,
 						onExport = viewModel::onMenuItemClick,
-						overflowEntries = selectionOverflowMenu(
-							config, searching, listState.singleSelected, exportBlockedReason,
-						),
+						overflowEntries = { direct ->
+							selectionOverflowMenu(
+								config, searching, listState.singleSelected, exportBlockedReason, direct,
+							)
+						},
 						onOverflow = viewModel::onMenuItemClick,
 						exportBlockedReason = exportBlockedReason,
 					)

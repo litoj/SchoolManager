@@ -93,7 +93,7 @@ class SettingsScreenTest {
 		drag("action_GOTO", "action_TEST")
 
 		assertEquals(GOTO, model.state.selectionOrder.first())
-		assertEquals(GOTO, ActionConfig(model.state.selectionOrder).bar(true).first())
+		assertEquals(GOTO, ActionConfig(model.state.selectionOrder).bar(true, direct = 4).first())
 	}
 
 	@Test
@@ -150,7 +150,7 @@ class SettingsScreenTest {
 	fun `a reorder moves cut out of the browse bar`() {
 		drag("action_CUT", "action_EXPORT")
 
-		assertFalse(ActionConfig(model.state.selectionOrder).bar(false).contains(
+		assertFalse(ActionConfig(model.state.selectionOrder).bar(false, direct = 4).contains(
 			cz.litoj.schlmgr.ui.viewmodel.SelectionAction.CUT))
 	}
 }

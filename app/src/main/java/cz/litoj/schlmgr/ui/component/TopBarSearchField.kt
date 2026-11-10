@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
@@ -35,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.ui.shell.TopBarSizes
 
 /**
  * The top bar search field, fully stateless.
@@ -109,7 +111,7 @@ fun TopBarSearchField(
 		backgroundColor = onBar.copy(alpha = 0.4f),
 	)
 	Row(
-		modifier.fillMaxHeight(),
+		modifier.defaultMinSize(minWidth = TopBarSizes.titleMin).fillMaxHeight(),
 		verticalAlignment = Alignment.CenterVertically,
 	) {
 		CompositionLocalProvider(LocalTextSelectionColors provides selection) {

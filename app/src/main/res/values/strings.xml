@@ -197,7 +197,7 @@
     <string name="help_select">Editing</string>
     <string name="help_select_delete">Deletes the selected items after the confirmation.</string>
     <string name="help_select_edit">Edit opens the single selected item. OK saves the changes.</string>
-    <string name="help_select_how">The More menu starts a selection. A tap on the type icon toggles a row while it runs.
+    <string name="help_select_how">Long-press the first row starts a selection. A tap on the type icon toggles a row while it runs.
         \nDrag across rows to select a range. The top-right check selects all or ends the selection. Back ends it too.</string>
     <string name="help_select_move">Cut takes the selected rows and shows the paste strip. Open the target and press Paste.
         \nThe armed move survives a chapter switch.</string>
@@ -273,7 +273,6 @@
     <string name="permission_pending">An action already waits for the permission</string>
     <string name="search">Search</string>
     <string name="select">Select</string>
-    <string name="select_rows">Select rows</string>
     <string name="select_all">Select all</string>
     <string name="back">Back</string>
     <string name="select_test">Test</string>
@@ -381,5 +380,4 @@
     <string name="unavailable_search_move">Finish or cancel the move first.</string>
     <string name="unavailable_search_root">Search needs an open set.</string>
     <string name="unavailable_single_row">Select exactly one row.</string>
-    <string name="unavailable_no_rows">No rows to select.</string>
 </resources>

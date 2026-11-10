@@ -5,7 +5,7 @@ import cz.litoj.schlmgr.app.AppSettings
 
 /**
  * One action of the selection strip and the more menu.
- * - the settings order places the first four applicable to the list on the strip.
+ * - direct slots fill in the picked order, as width allows.
  * - Cut applies to a browse list, Go-to to a search list.
  */
 enum class SelectionAction {
@@ -62,16 +62,18 @@ val SelectionAction.description: Int
 
 /**
  * The ordered selection actions.
- * - each list kind takes the first four applicable actions for its strip, the rest fill the menu.
+ * - each list kind takes as many applicable actions as fit on its strip, the rest fill the menu.
  * - Go-to applies only in search, so it never takes a browse slot and vice versa for Cut.
  */
 class ActionConfig(val order: List<SelectionAction>) {
 
 	/** The strip slots of one list kind, in the picked order. */
-	fun bar(search: Boolean): List<SelectionAction> = applicable(search).take(BAR_SLOTS)
+	fun bar(search: Boolean, direct: Int): List<SelectionAction> = applicable(search).take(direct)
 
 	/** The more-menu actions of one list kind, in the picked order. */
-	fun overflow(search: Boolean): List<SelectionAction> = applicable(search).drop(BAR_SLOTS)
+	fun overflow(search: Boolean, direct: Int): List<SelectionAction> = applicable(search).drop(direct)
+
+	fun actionCount(search: Boolean): Int = order.count { it.applies(search) }
 
 	private fun applicable(search: Boolean): List<SelectionAction> =
 		order.filter { it.applies(search) }
@@ -84,8 +86,6 @@ class ActionConfig(val order: List<SelectionAction>) {
 	}
 
 	companion object {
-
-		const val BAR_SLOTS = 4
 
 		val DEFAULT_ORDER = listOf(
 			SelectionAction.TEST, SelectionAction.CUT, SelectionAction.GOTO,

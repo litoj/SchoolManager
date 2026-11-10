@@ -4,6 +4,7 @@ import android.os.Looper
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -106,6 +107,17 @@ class PickerScreenTest {
 		rule.mainClock.advanceTimeBy(1000)
 		Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(1000))
 		rule.waitForIdle()
+	}
+
+	@Test
+	fun `sorting stays directly available in the picker`() {
+		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		rule.setContent { PickerScreen(model, {}) }
+		rule.waitForIdle()
+
+		rule.onNodeWithContentDescription(text(R.string.sort)).performClick()
+		rule.onNodeWithText(text(R.string.sort_alpha_ZA)).performClick()
+		rule.runOnIdle { assertEquals(listOf("B", "A"), model.items().map { it.item.name }) }
 	}
 
 	@Test

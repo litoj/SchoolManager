@@ -1,5 +1,6 @@
 package cz.litoj.schlmgr.ui.screen.picker
 
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -17,11 +18,17 @@ import cz.litoj.schlmgr.ui.component.PickerActionBar
 import cz.litoj.schlmgr.ui.popup.SearchFilterPopup
 import cz.litoj.schlmgr.ui.shell.ExplorerBackHandler
 import cz.litoj.schlmgr.ui.shell.TopBar
+import cz.litoj.schlmgr.ui.shell.TopBarActions
 import cz.litoj.schlmgr.ui.shell.TopBarIconButton
 import cz.litoj.schlmgr.ui.shell.TopBarNav
 import cz.litoj.schlmgr.ui.shell.TopBarTitle
 import cz.litoj.schlmgr.ui.shell.explorerBack
 import cz.litoj.schlmgr.ui.shell.headerShadow
+import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
+import cz.litoj.schlmgr.ui.screen.subjects.MenuId
+import cz.litoj.schlmgr.ui.screen.subjects.subjectsMenu
+import cz.litoj.schlmgr.ui.viewmodel.ActionConfig
+import cz.litoj.schlmgr.ui.viewmodel.InfoBar
 import cz.litoj.schlmgr.ui.viewmodel.SearchUi
 
 /**
@@ -52,7 +59,8 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 	ExplorerBackHandler(viewModel, onExit)
 	val context = LocalContext.current
 
-	Column(Modifier.fillMaxSize()) {
+	BoxWithConstraints(Modifier.fillMaxSize()) {
+		Column(Modifier.fillMaxSize()) {
 		TopBar {
 			// the arrow walks the back chain, so a search or a selection ends before the picker
 			TopBarNav(
@@ -70,6 +78,15 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 				},
 			)
 			else TopBarTitle(stringResource(R.string.test_add))
+			TopBarActions(
+				entries = subjectsMenu(
+					MainExplorerViewModel.MenuKind.SEARCH, false, false, ActionConfig.load(),
+					filterActive = (state.info as? InfoBar.Search)?.filter != null,
+				),
+				width = this@BoxWithConstraints.maxWidth,
+				pinned = 2,
+				onPick = { viewModel.onMenuItemClick(it) },
+			)
 			TopBarIconButton(
 				icon = R.drawable.ic_search,
 				contentDescription = stringResource(R.string.search),
@@ -85,6 +102,7 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 			)
 		}
 		PickerContent(viewModel, Modifier.weight(1f).headerShadow())
+		}
 	}
 }
 

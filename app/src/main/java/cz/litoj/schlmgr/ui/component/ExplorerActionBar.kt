@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -33,7 +34,10 @@ import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.shell.MenuEntry
 import cz.litoj.schlmgr.ui.shell.MoreMenu
+import cz.litoj.schlmgr.ui.viewmodel.ACTION_SLOT_RATIO
+import cz.litoj.schlmgr.ui.viewmodel.ActionConfig
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction
+import cz.litoj.schlmgr.ui.viewmodel.actionLayout
 import cz.litoj.schlmgr.ui.viewmodel.icon
 import cz.litoj.schlmgr.ui.viewmodel.label
 
@@ -50,43 +54,48 @@ private class Action(
 )
 
 /**
- * The bottom-strip selection actions of one list kind.
- * - the slots are the first four actions that apply to the list kind.
- * - edit and go-to act on one row, so a wider selection mutes them with a reason.
- * - export opens its word and JSON chooser right on the strip.
- * - the last slot opens the overflow, so the top bar keeps no menu during a selection.
+ * Selection actions sit in the picked order and collapse into More by width.
  *
  * @param exportBlockedReason the reason of an empty writable selection, 0 when it can export
  */
 @Composable
 fun SelectionActionBar(
-	actions: List<SelectionAction>,
+	config: ActionConfig,
+	search: Boolean,
 	singleSelected: Boolean,
 	onAction: (SelectionAction) -> Unit,
 	exportEntries: List<MenuEntry>,
 	onExport: (Int) -> Unit,
-	overflowEntries: List<MenuEntry>,
+	overflowEntries: (Int) -> List<MenuEntry>,
 	onOverflow: (Int) -> Unit,
 	modifier: Modifier = Modifier,
 	exportBlockedReason: Int = 0,
 ) {
-	ActionStrip(modifier) {
-		for (action in actions) {
-			val blockedReason = when (action) {
-				SelectionAction.EDIT, SelectionAction.GOTO ->
-					if (singleSelected) 0 else R.string.unavailable_single_row
-				SelectionAction.EXPORT -> exportBlockedReason
-				else -> 0
+	BoxWithConstraints(modifier) {
+		val layout = actionLayout(
+			config.actionCount(search),
+			maxWidth,
+			slotWidth = ActionStripHeight * ACTION_SLOT_RATIO,
+		)
+		val actions = config.bar(search, layout.direct)
+		ActionStrip(Modifier.fillMaxWidth()) {
+			for (action in actions) {
+				val blockedReason = when (action) {
+					SelectionAction.EDIT, SelectionAction.GOTO ->
+						if (singleSelected) 0 else R.string.unavailable_single_row
+					SelectionAction.EXPORT -> exportBlockedReason
+					else -> 0
+				}
+				if (action == SelectionAction.EXPORT)
+					ExportStripButton(action, blockedReason, exportEntries, onExport)
+				else ActionButton(
+					Action(action.icon, action.label) { onAction(action) },
+					blockedReason,
+					Modifier.weight(1f),
+				)
 			}
-			if (action == SelectionAction.EXPORT)
-				ExportStripButton(action, blockedReason, exportEntries, onExport)
-			else ActionButton(
-				Action(action.icon, action.label) { onAction(action) },
-				blockedReason,
-				Modifier.weight(1f),
-			)
+			if (layout.showMore) OverflowStripButton(overflowEntries(layout.direct), onOverflow)
 		}
-		if (overflowEntries.isNotEmpty()) OverflowStripButton(overflowEntries, onOverflow)
 	}
 }
 

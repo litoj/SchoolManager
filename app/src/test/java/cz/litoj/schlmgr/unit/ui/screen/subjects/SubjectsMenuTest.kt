@@ -127,20 +127,10 @@ class SubjectsMenuTest {
 	}
 
 	@Test
-	fun `the search menu without a selection offers selection and sort`() {
+	fun `the search menu offers sorting without an extra selection action`() {
 		val plain = menu(MainExplorerViewModel.MenuKind.SEARCH, selecting = false)
-		assertTrue(plain.any { it.id == MenuId.SELECT })
+		assertTrue(plain.all { !it.selectionAction })
 		assertTrue(plain.any { it.children.isNotEmpty() })
-	}
-
-	@Test
-	fun `the more menu starts a selection only when none runs`() {
-		val plain = menu(MainExplorerViewModel.MenuKind.CONTAINER, selecting = false)
-		assertTrue("the entry starts a selection", plain.any { it.id == MenuId.SELECT })
-
-		val selecting = menu(MainExplorerViewModel.MenuKind.CONTAINER, selecting = true)
-		assertFalse("a running selection keeps its own actions",
-			selecting.any { it.id == MenuId.SELECT })
 	}
 
 	@Test

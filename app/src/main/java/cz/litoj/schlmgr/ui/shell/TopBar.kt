@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
@@ -34,12 +35,28 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.component.IconSize
 import cz.litoj.schlmgr.ui.component.reportUnavailable
+import cz.litoj.schlmgr.ui.viewmodel.ACTION_SLOT_RATIO
+import cz.litoj.schlmgr.ui.viewmodel.actionLayout
+
+/** The one shared measurement rule for every layer of the top bar. */
+internal object TopBarSizes {
+	val nav = 60.dp
+	val icon = 50.dp
+	val titleMin = 96.dp
+	val action = icon * ACTION_SLOT_RATIO
+	private val titleReserved = nav + titleMin
+
+	fun reserved(pinned: Int): Dp = titleReserved + action * pinned
+}
 
 /**
  * The chrome of the top bar: the status strip above the 55dp row on the header colour.
@@ -82,7 +99,7 @@ fun RowScope.TopBarNav(
 	Box(
 		Modifier
 			.testTag("top_bar_nav")
-			.width(60.dp)
+			.width(TopBarSizes.nav)
 			.fillMaxHeight()
 			.clickable { if (enabled) onNavigate() else reportUnavailable(blockedReason) },
 		contentAlignment = Alignment.Center,
@@ -97,10 +114,15 @@ fun RowScope.TopBarNav(
 
 @Composable
 fun RowScope.TopBarTitle(title: String) {
-	Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+	Box(
+		Modifier.testTag("top_bar_title").defaultMinSize(minWidth = TopBarSizes.titleMin).weight(1f),
+		contentAlignment = Alignment.CenterStart,
+	) {
 		Text(
 			title,
 			style = TextStyle(fontSize = 20.sp, color = colorResource(R.color.colorOnHeader)),
+			maxLines = 1,
+			overflow = TextOverflow.Ellipsis,
 		)
 	}
 }
@@ -123,7 +145,7 @@ fun RowScope.TopBarIconButton(
 	val tint = colorResource(R.color.colorOnHeader).let { if (enabled) it else it.copy(alpha = 0.5f) }
 	Box(
 		Modifier
-			.width(50.dp)
+			.width(TopBarSizes.icon)
 			.fillMaxHeight()
 			.clickable { if (enabled) onClick() else reportUnavailable(blockedReason) },
 		contentAlignment = Alignment.Center,
@@ -135,6 +157,38 @@ fun RowScope.TopBarIconButton(
 			colorFilter = ColorFilter.tint(tint),
 		)
 	}
+}
+
+/** Direct actions fill measured slots, while More opens only with hidden actions. */
+@Composable
+fun RowScope.TopBarActions(
+	entries: List<MenuEntry>,
+	width: Dp,
+	onPick: (Int) -> Unit,
+	pinned: Int = 0,
+) {
+	val layout = actionLayout(
+		entries.size,
+		width,
+		reservedWidth = TopBarSizes.reserved(pinned),
+		slotWidth = TopBarSizes.action,
+	)
+	entries.take(layout.direct).forEach { entry -> TopBarEntryAction(entry, onPick) }
+	if (layout.showMore) TopBarMoreButton(entries.drop(layout.direct), stringResource(R.string.more), onPick)
+}
+
+@Composable
+private fun RowScope.TopBarEntryAction(entry: MenuEntry, onPick: (Int) -> Unit) {
+	var submenu by remember { mutableStateOf(false) }
+	TopBarIconButton(
+		icon = entry.icon,
+		contentDescription = stringResource(entry.label),
+		enabled = entry.enabled,
+		blockedReason = entry.blockedReason,
+	) {
+		if (entry.children.isEmpty()) onPick(entry.id) else submenu = true
+	}
+	if (submenu) MoreMenu(entry.children, onPick) { submenu = false }
 }
 
 /**
@@ -150,7 +204,7 @@ fun RowScope.TopBarMoreButton(
 	var open by remember { mutableStateOf(false) }
 	Box(
 		Modifier
-			.width(50.dp)
+			.width(TopBarSizes.icon)
 			.fillMaxHeight()
 			.clickable { open = true },
 		contentAlignment = Alignment.Center,

@@ -3,6 +3,9 @@ package cz.litoj.schlmgr.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.data.db.ratio
+import cz.litoj.schlmgr.testing.TestEngine
+import cz.litoj.schlmgr.ui.screen.subjects.MenuId
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -103,6 +106,27 @@ abstract class ExplorerViewModel<R>(
 	) = list.load(content, isSearch, isPicker, anchor)
 
 	fun applyOrder(items: List<ItemRow>) = list.applyOrder(items)
+
+	/** A pending navigation read refuses a reorder. */
+	protected fun sort(comparator: Comparator<ItemRow>) {
+		if (loadJob?.isActive == true) return
+		val items = items().toMutableList()
+		items.sortWith(comparator)
+		applyOrder(items)
+		refreshInfo()
+	}
+
+	/** The shared menu-id comparator for one sort action. */
+	protected fun sortItem(itemId: Int): Boolean = when (itemId) {
+		MenuId.SORT_ALPHA_AZ -> { sort(compareBy { it.toShow.lowercase() }); true }
+		MenuId.SORT_ALPHA_ZA -> { sort(compareBy<ItemRow> { it.toShow.lowercase() }.reversed()); true }
+		MenuId.SORT_SF_01 -> { sort(compareBy { it.item.ratio }); true }
+		MenuId.SORT_SF_10 -> { sort(compareBy<ItemRow> { it.item.ratio }.reversed()); true }
+		MenuId.SORT_PRIORITY -> { sort(compareByDescending { TestEngine.urgency(it.item) }); true }
+		MenuId.SORT_LENGTH_01 -> { sort(compareBy { it.toShow.length }); true }
+		MenuId.SORT_LENGTH_10 -> { sort(compareBy<ItemRow> { it.toShow.length }.reversed()); true }
+		else -> false
+	}
 
 	protected fun clearSortOrder() = list.clearSortOrder()
 

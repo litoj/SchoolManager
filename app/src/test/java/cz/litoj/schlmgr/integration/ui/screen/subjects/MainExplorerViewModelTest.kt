@@ -151,17 +151,6 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
-	fun `the more menu starts a selection`() {
-		seed()
-		val model = vmIn("A")
-
-		model.onMenuItemClick(MenuId.SELECT)
-
-		assertTrue(model.items().single().selected)
-		assertTrue(model.listState.value.selectionActive)
-	}
-
-	@Test
 	fun `the clear filter entry returns the browse list`() {
 		seed()
 		val model = vmIn("A")

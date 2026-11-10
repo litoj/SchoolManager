@@ -6,6 +6,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,18 +42,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.ui.component.ActionStripHeight
 import cz.litoj.schlmgr.ui.component.DefaultTextColor
 import cz.litoj.schlmgr.ui.component.IconSize
+import cz.litoj.schlmgr.ui.viewmodel.ACTION_SLOT_RATIO
 import cz.litoj.schlmgr.ui.viewmodel.ActionConfig
 import cz.litoj.schlmgr.ui.viewmodel.SettingsState
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction
+import cz.litoj.schlmgr.ui.viewmodel.actionLayout
 import cz.litoj.schlmgr.ui.viewmodel.description
 import cz.litoj.schlmgr.ui.viewmodel.icon
 import cz.litoj.schlmgr.ui.viewmodel.label
 
 /**
  * The editor of the selection actions.
- * - a long-press drag reorders every action, where the first four of a list sit on its strip.
+ * - a long-press drag reorders every action, with as many entries on the strip as width allows.
  * - the placement marker names the strips that show an action, so no hidden takeover exists.
  */
 @Composable
@@ -62,11 +66,6 @@ internal fun SelectionBarEditor(state: SettingsState) {
 	var grabOffset by remember { mutableFloatStateOf(0f) }
 	val rowBounds = remember { mutableMapOf<Int, Rect>() }
 	val haptic = LocalHapticFeedback.current
-	val browseBar = state.selectionOrder.filter { it.applies(false) }
-		.take(ActionConfig.BAR_SLOTS).toSet()
-	val searchBar = state.selectionOrder.filter { it.applies(true) }
-		.take(ActionConfig.BAR_SLOTS).toSet()
-
 	fun middleOf(index: Int): Float =
 		rowBounds[index]?.let { (it.top + it.bottom) / 2f } ?: 0f
 
@@ -110,7 +109,16 @@ internal fun SelectionBarEditor(state: SettingsState) {
 	val lineBeforeIndex = dragged?.let(::lineBefore)
 	val lineAtEnd = dragged != null && lineBeforeIndex == null
 
-	Box(Modifier.fillMaxWidth()) {
+	BoxWithConstraints(Modifier.fillMaxWidth()) {
+		val config = ActionConfig(state.selectionOrder)
+		val browseBar = config.bar(
+			false,
+			actionLayout(config.actionCount(false), maxWidth, slotWidth = ActionStripHeight * ACTION_SLOT_RATIO).direct,
+		).toSet()
+		val searchBar = config.bar(
+			true,
+			actionLayout(config.actionCount(true), maxWidth, slotWidth = ActionStripHeight * ACTION_SLOT_RATIO).direct,
+		).toSet()
 		Column(Modifier.fillMaxWidth()) {
 			state.selectionOrder.forEachIndexed { index, action ->
 				if (lineBeforeIndex == index) InsertionLine()

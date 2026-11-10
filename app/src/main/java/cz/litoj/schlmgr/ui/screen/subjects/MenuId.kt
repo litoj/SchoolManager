@@ -27,5 +27,4 @@ object MenuId {
 	const val GOTO = 23
 	const val DELETE = 24
 	const val CLEAR_FILTER = 25
-	const val SELECT = 26
 }

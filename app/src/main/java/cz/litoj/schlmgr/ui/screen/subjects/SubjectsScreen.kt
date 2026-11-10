@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -28,8 +29,8 @@ import cz.litoj.schlmgr.ui.popup.SourcePickPopup
 import cz.litoj.schlmgr.ui.shell.ExplorerBackHandler
 import cz.litoj.schlmgr.ui.shell.MainLaunchTarget
 import cz.litoj.schlmgr.ui.shell.TopBar
+import cz.litoj.schlmgr.ui.shell.TopBarActions
 import cz.litoj.schlmgr.ui.shell.TopBarIconButton
-import cz.litoj.schlmgr.ui.shell.TopBarMoreButton
 import cz.litoj.schlmgr.ui.shell.TopBarNav
 import cz.litoj.schlmgr.ui.shell.TopBarTitle
 import cz.litoj.schlmgr.ui.shell.headerShadow
@@ -179,7 +180,8 @@ fun SubjectsScreen(
 
 	ExplorerBackHandler(viewModel, onExitApp)
 
-	Column(Modifier.fillMaxSize()) {
+	BoxWithConstraints(Modifier.fillMaxSize()) {
+		Column(Modifier.fillMaxSize()) {
 		TopBar {
 			// the arrow leaves the deepest layer: the field, a selection or an armed move
 			TopBarNav(
@@ -214,19 +216,19 @@ fun SubjectsScreen(
 			) {
 				if (selecting) viewModel.onSelectAllToggle() else viewModel.openSearchField()
 			}
-			if (!selecting) TopBarMoreButton(
-				// the menu reads the config per build, so a settings change reaches the next open
-				contentDescription = stringResource(R.string.more),
+			if (!selecting) TopBarActions(
 				entries = subjectsMenu(
-					menuKind, selecting, listState.singleSelected, ActionConfig.load(),
+					menuKind, selecting = false, listState.singleSelected, ActionConfig.load(),
 					exportBlockedReason,
 					filterActive = (state.info as? InfoBar.Search)?.filter != null,
 				),
-			) { itemId ->
-				viewModel.onMenuItemClick(itemId)
-			}
+				width = this@BoxWithConstraints.maxWidth,
+				pinned = 1,
+				onPick = { viewModel.onMenuItemClick(it) },
+			)
 		}
 		SubjectsContent(viewModel, exportBlockedReason, Modifier.weight(1f).headerShadow())
+		}
 	}
 }
 

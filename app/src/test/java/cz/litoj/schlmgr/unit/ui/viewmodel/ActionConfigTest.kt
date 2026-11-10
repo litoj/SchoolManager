@@ -20,8 +20,8 @@ class ActionConfigTest {
 	fun `a moved action changes the bars of its list kind`() {
 		val moved = default.moved(from = 2, to = 0)
 
-		assertEquals(listOf(GOTO, TEST, EDIT, DELETE), moved.bar(true))
-		assertEquals(listOf(TEST, CUT, EDIT, DELETE), moved.bar(false))
+		assertEquals(listOf(GOTO, TEST, EDIT, DELETE), moved.bar(true, direct = 4))
+		assertEquals(listOf(TEST, CUT, EDIT, DELETE), moved.bar(false, direct = 4))
 	}
 
 	@Test
@@ -29,7 +29,7 @@ class ActionConfigTest {
 		val moved = default.moved(from = 2, to = 6)
 
 		// the search bar takes the first four applicable, so Goto leaves it here
-		assertEquals(listOf(TEST, EDIT, DELETE, REFERENCE), moved.bar(true))
-		assertEquals(listOf(FLIP, GOTO, EXPORT), moved.overflow(true))
+		assertEquals(listOf(TEST, EDIT, DELETE, REFERENCE), moved.bar(true, direct = 4))
+		assertEquals(listOf(FLIP, GOTO, EXPORT), moved.overflow(true, direct = 4))
 	}
 }

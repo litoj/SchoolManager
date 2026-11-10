@@ -184,7 +184,7 @@
     <string name="help_select">Upravování</string>
     <string name="help_select_delete">Smaže vybrané položky po potvrzení.</string>
     <string name="help_select_edit">Upravit otevře jedinou vybranou položku. OK uloží změny.</string>
-    <string name="help_select_how">Menu Více zapne výběr. Klepnutí na ikonu typu řádek přepne, dokud výběr trvá.
+    <string name="help_select_how">Dlouhý stisk prvního řádku spustí výběr. Klepnutí na ikonu typu řádek přepne, dokud výběr trvá.
         \nTažením přes řádky vyberete rozsah. Zaškrtnutí vpravo nahoře vybere vše nebo výběr ukončí. Ukončí ho i zpět.</string>
     <string name="help_select_move">Vyjmout vezme vybrané řádky a zobrazí vkládací lištu. Otevřete cíl a stiskněte Vložit.
         \nPřesun přežije přepnutí kapitoly.</string>
@@ -260,7 +260,6 @@
     <string name="permission_pending">Akce už čeká na oprávnění</string>
     <string name="search">Hledat</string>
     <string name="select">Zvolit</string>
-    <string name="select_rows">Vybrat řádky</string>
     <string name="select_all">Vybrat vše</string>
     <string name="back">Zpět</string>
     <string name="select_test">Test</string>
@@ -380,5 +379,4 @@
     <string name="unavailable_search_move">Nejprve dokončete nebo zrušte přesun.</string>
     <string name="unavailable_search_root">Hledání vyžaduje otevřenou sadu.</string>
     <string name="unavailable_single_row">Vyberte právě jeden řádek.</string>
-    <string name="unavailable_no_rows">Žádné řádky k výběru.</string>
 </resources>

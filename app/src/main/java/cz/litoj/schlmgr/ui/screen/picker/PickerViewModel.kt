@@ -6,6 +6,7 @@ import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.screen.test.TestSetupState
+import cz.litoj.schlmgr.ui.screen.subjects.MenuId
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
@@ -57,6 +58,16 @@ class PickerViewModel(
 
 	fun cancel() {
 		emitRequest(Request.Close)
+	}
+
+	/** The same top-bar menu ids as the explorer, trimmed to picker actions. */
+	fun onMenuItemClick(itemId: Int): Boolean = when (itemId) {
+		MenuId.CLEAR_FILTER -> { onQuerySubmit(""); true }
+		MenuId.SORT_ALPHA_AZ, MenuId.SORT_ALPHA_ZA,
+		MenuId.SORT_SF_01, MenuId.SORT_SF_10, MenuId.SORT_PRIORITY,
+		MenuId.SORT_LENGTH_01, MenuId.SORT_LENGTH_10,
+		-> sortItem(itemId)
+		else -> false
 	}
 
 	/** Leaving the picker does not exit the app, so one press is enough. */

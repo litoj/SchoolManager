@@ -26,8 +26,9 @@ internal fun selectionOverflowMenu(
 	search: Boolean,
 	singleSelected: Boolean,
 	exportBlockedReason: Int,
+	direct: Int,
 ): List<MenuEntry> =
-	config.overflow(search).map { it.menuEntry(singleSelected, exportBlockedReason) }
+	config.overflow(search, direct).map { it.menuEntry(singleSelected, exportBlockedReason) }
 
 /**
  * The more menu of one list kind.
@@ -45,9 +46,10 @@ fun subjectsMenu(
 	config: ActionConfig,
 	exportBlockedReason: Int = 0,
 	filterActive: Boolean = false,
+	direct: Int = 4,
 ): List<MenuEntry> {
 	val search = kind == MainExplorerViewModel.MenuKind.SEARCH
-	val actions = selectionOverflowMenu(config, search, singleSelected, exportBlockedReason)
+	val actions = selectionOverflowMenu(config, search, singleSelected, exportBlockedReason, direct)
 	val clear = if (search && filterActive)
 		listOf(MenuEntry(MenuId.CLEAR_FILTER, R.string.clear_filter, icon = R.drawable.ic_cancel))
 	else emptyList()
@@ -73,13 +75,11 @@ internal val exportMenu = listOf(
 )
 
 private val browseStatic = listOf(
-	MenuEntry(MenuId.SELECT, R.string.select_rows, icon = R.drawable.ic_select_black),
 	MenuEntry(0, R.string.sort, icon = R.drawable.ic_sort_black, children = sortMenu),
 	MenuEntry(MenuId.IMPORT_FILE, R.string.more_import, icon = R.drawable.ic_import_black),
 )
 
 private val searchStatic = listOf(
-	MenuEntry(MenuId.SELECT, R.string.select_rows, icon = R.drawable.ic_select_black),
 	// no sort-default, since search has no browse order.
 	MenuEntry(0, R.string.sort, icon = R.drawable.ic_sort_black,
 		children = sortMenu.filter { it.id != MenuId.SORT_DEFAULT }),

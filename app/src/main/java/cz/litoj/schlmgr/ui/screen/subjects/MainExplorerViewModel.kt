@@ -17,7 +17,6 @@ import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ROOT_ID
 import cz.litoj.schlmgr.data.db.WordEdit
 import cz.litoj.schlmgr.data.db.ratio
-import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.ui.viewmodel.CreatorResult
 import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
 import cz.litoj.schlmgr.ui.screen.test.TestSetupState
@@ -200,13 +199,10 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 	 * The New actions refuse during search.
 	 */
 	fun onMenuItemClick(itemId: Int): Boolean = when (itemId) {
-		MenuId.SORT_ALPHA_AZ -> { sort(compareBy { it.toShow.lowercase() }); true }
-		MenuId.SORT_ALPHA_ZA -> { sort(compareBy<ItemRow> { it.toShow.lowercase() }.reversed()); true }
-		MenuId.SORT_SF_01 -> { sort(compareBy { it.item.ratio }); true }
-		MenuId.SORT_SF_10 -> { sort(compareBy<ItemRow> { it.item.ratio }.reversed()); true }
-		MenuId.SORT_PRIORITY -> { sort(compareByDescending { TestEngine.urgency(it.item) }); true }
-		MenuId.SORT_LENGTH_01 -> { sort(compareBy { it.toShow.length }); true }
-		MenuId.SORT_LENGTH_10 -> { sort(compareBy<ItemRow> { it.toShow.length }.reversed()); true }
+		MenuId.SORT_ALPHA_AZ, MenuId.SORT_ALPHA_ZA,
+		MenuId.SORT_SF_01, MenuId.SORT_SF_10, MenuId.SORT_PRIORITY,
+		MenuId.SORT_LENGTH_01, MenuId.SORT_LENGTH_10,
+		-> sortItem(itemId)
 		MenuId.SORT_DEFAULT -> { reloadDefaultOrder(); true }
 		MenuId.NEW_SUBJECT -> newAction { newSubject() }
 		MenuId.NEW_CHAPTER -> newAction { newChapter() }
@@ -223,7 +219,6 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		MenuId.DELETE -> { onDeleteAction(); true }
 		MenuId.GOTO -> { onGoToAction(); true }
 		MenuId.CLEAR_FILTER -> { onQuerySubmit(""); true }
-		MenuId.SELECT -> { startSelection(); true }
 		else -> false
 	}
 
@@ -252,15 +247,6 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		return true
 	}
 
-	/** A pending navigation read refuses a reorder. */
-	private fun sort(comparator: Comparator<ItemRow>) {
-		if (loadJob?.isActive == true) return
-		val items = items().toMutableList()
-		items.sortWith(comparator)
-		applyOrder(items)
-		refreshInfo()
-	}
-
 	private fun reloadDefaultOrder() {
 		val container = history.path.lastOrNull()
 		clearSortOrder()
@@ -279,20 +265,6 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 			ItemKind.NOTE -> copyNote(row)
 			else -> {}
 		}
-	}
-
-	/** Starts a selection from the visible menu entry, so the gesture is not required. */
-	fun startSelection() {
-		if (pasteArmed) {
-			UserMessages.showNotice(UiNotice.ActionUnavailable(R.string.unavailable_search_move))
-			return
-		}
-		val first = items().firstOrNull()
-		if (first == null) {
-			UserMessages.showNotice(UiNotice.ActionUnavailable(R.string.unavailable_no_rows))
-			return
-		}
-		toggleSelect(first)
 	}
 
 	private fun copyNote(item: ItemRow) {

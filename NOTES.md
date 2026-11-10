@@ -56,16 +56,20 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Only a load landing shows the FAB again.
 - Insert and delete keep the FAB hidden.
 - An append at the list end reveals it, an insert in the middle does not scroll.
-- The More menu starts a selection with the first row.
+- A long-press starts selection, with the row type icon toggling each row.
 - The row type icon toggles a row during a selection or in the picker.
 - The row tap keeps its own meaning.
 - A picker row tap only toggles the selection.
 - Every performed action finishes the selection, a refused one keeps it.
-- The strip takes the first four applicable actions from the configurable order, and its More slot opens the rest.
+- The strip fits as many configured actions as width allows, and More holds the rest.
+- Settings highlights use the same capacity calculation as the shown strips.
+- The picker pins Select all on the right, with sorting shown directly or collapsed by width.
 - A strip label stays centered and ellipsizes when its slot cannot hold the full text.
 - The top More button hides while a selection runs.
 - Cut applies only to a browse list.
-- The settings editor names the strips that show each action.
+- The settings editor names the strips that show each action at the current width.
+- Top actions estimate capacity at 1.2 per slot, while titles and search keep 96 dp of intrinsic minimum space.
+- Search stays pinned and never becomes a More entry.
 - The top arrow cancels the selection and an armed move.
 - An armed move occupies the top line, with cancel and paste in its strip.
 - An unavailable action keeps its place and mutes, with the reason in a notice.
@@ -235,6 +239,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Selection strip labels stay centered and the Go-to glyph is centered.
 - Browse and search rows update edits in place, including rename joins.
 - Search history keeps its scroll through the shared anchor path, and a new query starts at the top.
+- Top and bottom actions collapse by width through one shared calculation, with 837 behavior tests and debug lint green.
 - No emulator is connected for a physical keyboard check.
 - The selection More slot passes focused tests and lint, and is committed.
 - The top and selection More dropdowns render below and above their buttons, checked on Small_Phone.
