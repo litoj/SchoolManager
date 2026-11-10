@@ -139,6 +139,22 @@ class TestResultsPopupTest {
 	}
 
 	@Test
+	fun `a correct variant answer still labels the full word`() {
+		val subject = ItemRepository.createSubject("B", null)
+		val chapter = ItemRepository.createChapter(subject.id, "c1", null)
+		val word = ItemRepository.createWord(
+			chapter.id, "laufen/rennen", null, listOf("run" to null))
+		val model = TestItemModel(TestEntry(word, listOf(word)))
+		model.correct = true
+		model.answer = "laufen"
+
+		show(TestResultsPopup(listOf(model), 100f))
+
+		rule.onNodeWithText("Correct: laufen/rennen").assertExists()
+		rule.onNodeWithText("Your answer: laufen").assertExists()
+	}
+
+	@Test
 	fun `a word without translations shows no empty label`() {
 		TestEngine.applyReversed(true)
 

@@ -177,6 +177,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Grading matches name variants and linked translations, then counters go up the plain-parent chain.
 - Only the first line of the tested word's description shows in a prompt.
 - Results round the rate, pair wrong answers with the expected one and offer a retake.
+- A correct variant answer still labels the full variant word.
 - Result positions follow item order, with lifetime passed/total only at the trailing edge.
 
 ### Settings

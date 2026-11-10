@@ -47,6 +47,7 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 		val expected: String,
 		val answer: String,
 		val correct: Boolean,
+		val hasVariants: Boolean,
 		val passed: Int,
 		val tested: Int,
 	)
@@ -107,8 +108,8 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 			// the labels need string resources, and the model is built outside composition.
 			// this slot also ignores the description limit, so no translation collapses.
 			answer = {
-				// a right guess already names the answer, so the correct line stays for the rest
-				if (!row.correct && row.expected.isNotEmpty()) Text(
+				// a right guess already names the answer, unless variants need the full word
+				if (row.expected.isNotEmpty() && (!row.correct || row.hasVariants)) Text(
 					stringResource(R.string.test_correct, row.expected),
 					style = TextStyle(fontSize = 15.sp, color = ExplorerColors.description),
 				)
@@ -143,6 +144,7 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 			expected,
 			item.answer,
 			item.correct,
+			item.word.name.contains('/'),
 			item.word.passedTests,
 			item.word.testedCount,
 		)
