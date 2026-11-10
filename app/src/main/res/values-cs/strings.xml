@@ -169,7 +169,7 @@
     <string name="help_search_hint">Hledat v nápovědě</string>
     <string name="help_search_how">Hledání najde názvy a překlady v otevřené sadě.
         \nIkona filtru sestaví dotaz z popsaných voleb, takže prefixová syntaxe zůstává volitelná.
-        \nNalezené slovíčko zobrazuje své překlady přímo, přepínač v nastavení to vypne.
+        \nVýsledek hledání slovíčka zobrazuje jeho překlady přímo, přepínač v nastavení to vypne.
         \nPřepínač v nastavení zapne vyhledávání bez diakritiky.</string>
     <string name="help_search_filter">Filtr</string>
     <string name="help_search_filter_how">Zvolte typ, co porovnávat a podmínku, pak zadejte hodnotu.
@@ -266,10 +266,10 @@
     <string name="select_test">Test</string>
     <string name="setts_him_flipped">Zobrazovat překlady při otevření</string>
     <string name="setts_him_flipped_hint">Řádek slovíčka se otevře na překladech.</string>
-    <string name="setts_him_flipped_search">Zobrazovat překlady u nálezů</string>
-    <string name="setts_him_flipped_search_hint">Nález slovíčka se otevře na překladech.</string>
+    <string name="setts_him_flipped_search">Zobrazovat překlady u výsledků hledání</string>
+    <string name="setts_him_flipped_search_hint">Výsledek hledání slovíčka se otevře na překladech.</string>
     <string name="setts_search_show_path">Zobrazovat cestu u výsledků hledání</string>
-    <string name="setts_search_show_path_hint">Pod nalezeným slovem nebo překladem zobrazí složku a sadu.</string>
+    <string name="setts_search_show_path_hint">Pod výsledkem hledání zobrazí složku a sadu.</string>
     <string name="setts_him_parse">Zpracovat varianty názvů</string>
     <string name="setts_him_parse_hint">Čte A/B a (A)/(B) jako několik variant názvu.</string>
     <string name="setts_explorer">Průzkumník</string>
@@ -302,7 +302,7 @@
     <string name="setts_act_reference">Vytvoří z řádků zástupce v kontejneru</string>
     <string name="setts_act_flip">Prohodí uložené slovíčko a jeho překlady</string>
     <string name="setts_act_export">Exportuje vybrané řádky do souboru</string>
-    <string name="setts_act_goto">Otevře kontejner jediného nálezu</string>
+    <string name="setts_act_goto">Otevře kontejner jediného výsledku hledání</string>
     <string name="sort">Seřadit podle</string>
     <string name="sort_alpha_AZ">A → Z</string>
     <string name="sort_alpha_ZA">Z → A</string>
