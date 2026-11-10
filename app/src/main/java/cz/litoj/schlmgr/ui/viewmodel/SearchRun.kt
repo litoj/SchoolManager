@@ -56,7 +56,8 @@ internal class SearchRun(
 				var position = 0
 				engine.search(index, path) { item, hitPath, matchedTranslation ->
 					rows.trySend(ItemRow.ofSearchHit(item, hitPath, ++position, index.linksOf(item.id),
-						index.wordTranslations(item), matchedTranslation))
+						index.wordTranslations(item), matchedTranslation,
+						shownPath = hitPath.drop(path.size)))
 				}
 				rows.close()
 			}

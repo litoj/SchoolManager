@@ -321,8 +321,7 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 			endSearch()
 			return
 		}
-		val path = mutableListOf<DbItem>()
-		ui.trackPath?.let(path::addAll)
+		val path = row.path?.toMutableList() ?: return
 		path.add(row.item)
 		openChain(path)
 	}

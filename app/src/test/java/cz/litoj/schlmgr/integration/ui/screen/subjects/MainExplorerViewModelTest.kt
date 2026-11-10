@@ -1018,6 +1018,22 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
+	fun `a search result shows only the path below the search root`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		val inner = ItemRepository.createChapter(c1.id, "inner", null, 0)
+		ItemRepository.createWord(inner.id, "nest", null, listOf("hnízdo" to null))
+		val model = vmIn("A")
+		model.openSearchField()
+		model.onQuerySubmit("nest")
+
+		val hit = model.listState.value.items.single()
+		assertEquals(listOf("c1", "inner"), hit.trackPath?.map { it.name })
+		assertEquals("the full path still serves navigation",
+			listOf("A", "c1", "inner"), model.items().single().path?.map { it.name })
+	}
+
+	@Test
 	fun `a submitted search lands its hits in the list`() {
 		val (aId, _) = seed()
 		val model = vmIn("A")

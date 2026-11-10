@@ -282,7 +282,7 @@
     <string name="setts_him_flipped_search">Show translations on search hits</string>
     <string name="setts_him_flipped_search_hint">A word hit opens on its translations.</string>
     <string name="setts_search_show_path">Show path in search results</string>
-    <string name="setts_search_show_path_hint">Displays the folder and set under a matched word or translation.</string>
+    <string name="setts_search_show_path_hint">Displays the folder trail below the search start.</string>
     <string name="setts_him_parse">Parse name variants</string>
     <string name="setts_him_parse_hint">Reads A/B and (A)/(B) as several name variants.</string>
     <string name="setts_explorer">Explorer</string>

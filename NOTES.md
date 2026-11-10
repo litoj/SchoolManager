@@ -104,6 +104,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Edits never rematch an active query, and a rename join rebinds its hit to the surviving word.
 - History restores a search's rows and scroll, while a new query starts at the top.
 - Search rows update through the shared list path, with history state captured only on leaving.
+- A search hit shows only the container trail below the search start.
 - The diacritics toggle folds plain names and queries, while regex patterns stay as written.
 
 ### Editing

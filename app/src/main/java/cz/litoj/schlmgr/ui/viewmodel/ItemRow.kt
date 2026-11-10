@@ -55,6 +55,13 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	var path: MutableList<DbItem>? = null
 		private set
 
+	/**
+	 * The displayed trail below the search root, empty for a direct hit.
+	 * - [path] keeps the full chain for navigation.
+	 */
+	var shownPath: List<DbItem>? = null
+		private set
+
 	var isReference = false
 		private set
 
@@ -371,6 +378,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		 * - so a run with thousands of hits stays database-free after preload.
 		 * @param flipContent the translations of a word hit, null leaves the row unflipped to read on demand
 		 * @param matchedTranslation true when the query matched a translation of the word rather than its name
+		 * @param shownPath the trail displayed below the search root, the full path by default
 		 */
 		@JvmStatic
 		fun ofSearchHit(
@@ -380,10 +388,12 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 			links: List<DbLink>,
 			flipContent: List<DbItem>? = null,
 			matchedTranslation: Boolean = false,
+			shownPath: List<DbItem> = path,
 		): ItemRow {
 			val parent = path.lastOrNull()?.id
 			val row = ItemRow(item, null, position, applyDefFlip = false)
 			row.path = ArrayList(path)
+			row.shownPath = ArrayList(shownPath)
 			row.parentId = parent
 			row.isReference = links.any { it.parentId == parent && it.isReference }
 			row.hasSource = row.isReference && links.any { it.parentId != parent }

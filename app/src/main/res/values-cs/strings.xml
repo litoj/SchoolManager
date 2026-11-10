@@ -269,7 +269,7 @@
     <string name="setts_him_flipped_search">Zobrazovat překlady u výsledků hledání</string>
     <string name="setts_him_flipped_search_hint">Výsledek hledání slovíčka se otevře na překladech.</string>
     <string name="setts_search_show_path">Zobrazovat cestu u výsledků hledání</string>
-    <string name="setts_search_show_path_hint">Pod výsledkem hledání zobrazí složku a sadu.</string>
+    <string name="setts_search_show_path_hint">Zobrazí cestu složek pod místem spuštění hledání.</string>
     <string name="setts_him_parse">Zpracovat varianty názvů</string>
     <string name="setts_him_parse_hint">Čte A/B a (A)/(B) jako několik variant názvu.</string>
     <string name="setts_explorer">Průzkumník</string>

@@ -12,7 +12,7 @@ import cz.litoj.schlmgr.data.db.ratio
  * @property position 1-based index in the shown list
  * @property name the parsed display name, the translations of a flipped word
  * @property description the line under the name, empty when none
- * @property trackPath the container chain of a hit, null otherwise
+ * @property trackPath the displayed trail below the search root, null otherwise
  */
 data class ItemUiModel(
 	val key: Any,
@@ -67,7 +67,7 @@ fun ItemRow.toUi(): ItemUiModel {
 		hasSource = hasSource,
 		selected = selected,
 		payload = this,
-		trackPath = path?.toList(),
+		trackPath = shownPath?.toList(),
 		translations = translationLines,
 	)
 }
