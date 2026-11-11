@@ -86,6 +86,51 @@
     <string name="fail_paste_other_subject">"Položky nelze přesouvat do jiné sady."</string>
     <string name="fail_kind_file">soubor:</string>
     <string name="fail_type">", typ: "</string>
+    <string name="import_error_title">Import seznamu slovíček se nezdařil</string>
+    <string name="import_error_location">Soubor %1$s, řádek %2$d</string>
+    <string name="import_hint_invalid_separator">Znaková šipka -&gt; zde nic nedělí, formát zná jen = ; a →.</string>
+    <string name="import_hint_incomplete_entry">Samotný text neurčuje druh položky, chybí oddělovač a jeho překlad.</string>
+    <string name="import_hint_symbol_only">Samostatný symbol zde není ani položka, ani oddělovač.</string>
+    <string name="import_hint_missing_chapter_open">Odsazené řádky pod tímto patří do kapitoly, za názvem chybí {.</string>
+    <string name="import_hint_translation_before_description">[ otevírá popis příliš brzy, za oddělovačem chybí překlad.</string>
+    <string name="import_hint_empty_variant">Toto zpětné lomítko otevírá variantu, které chybí text.</string>
+    <string name="import_hint_missing_chapter_name">Toto { otevírá kapitolu, které před ním chybí název.</string>
+    <string name="import_hint_description_closing">Tato ] nemá před sebou [, popis zde tedy není otevřený.</string>
+    <string name="import_hint_chapter_end">Toto { otevírá kapitolu, za jejímž obsahem chybí }. Doplňte ji na samostatný řádek.</string>
+    <string name="import_hint_incomplete_escape">Toto zpětné lomítko nemá co označit, doslovné lomítko potřebuje druhé.</string>
+    <string name="import_hint_missing_translation">Za tímto oddělovačem chybí překlad.</string>
+    <string name="import_hint_extra_separator">Řádek slovíčka má jeden oddělovač, další překlad potřebuje zpětné lomítko.</string>
+    <string name="import_hint_trailing_separator">Tento oddělovač končí řádek, za ním chybí překlad.</string>
+    <string name="import_hint_missing_note_text">Úvodní oddělovač otevírá poznámku, za ním chybí její text.</string>
+    <string name="import_hint_description_without_text">Tato [ nemá před sebou slovíčko ani překlad.</string>
+    <string name="import_hint_no_single_fix">Nepatří sem jen jedna změna, řádek opravte a import zopakujte.</string>
+    <string name="import_fix_another">Nebo: %s</string>
+    <string name="import_fix_separator_swap">Mysleli jste oddělovač, který soubor používá: %s</string>
+    <string name="import_fix_translation_text">Mysleli jste slovíčko s překladem: %s</string>
+    <string name="import_fix_translation_order">Mysleli jste překlad před popisem: %s</string>
+    <string name="import_fix_note_text">Mysleli jste poznámku s tímto textem: %s</string>
+    <string name="import_fix_chapter_name">Mysleli jste kapitolu s tímto názvem: %s</string>
+    <string name="import_fix_chapter_named_block">Mysleli jste kapitolu s obsahem mezi závorkami: %s</string>
+    <string name="import_fix_chapter_open">Mysleli jste zde otevřít kapitolu: %s</string>
+    <string name="import_fix_chapter_block">Mysleli jste kapitolu kolem odsazených řádků: %s</string>
+    <string name="import_fix_chapter_close">Mysleli jste zde kapitolu uzavřít: %s</string>
+    <string name="import_fix_description_close">Mysleli jste zde popis uzavřít: %s</string>
+    <string name="import_fix_variant_text">Mysleli jste další tvar tohoto textu: %s</string>
+    <string name="import_fix_variant_divider">Mysleli jste další překlad za zpětným lomítkem: %s</string>
+    <string name="import_fix_described_text">Mysleli jste slovíčko s popisem: %s</string>
+    <string name="import_fix_escaped_separator">Mysleli jste tento oddělovač jako text: %s</string>
+    <string name="import_fix_doubled_backslash">Mysleli jste doslovné zpětné lomítko: %s</string>
+    <string name="import_hint_note_divider">Poznámka nese jen text, toto zpětné lomítko potřebuje druhé.</string>
+    <string name="import_hint_chapter_divider">Název kapitoly nemá varianty, toto lomítko a jeden z jeho názvů jsou navíc.</string>
+    <string name="import_hint_note_second_separator">Poznámka má jen úvodní oddělovač, další před sebou potřebuje zpětné lomítko.</string>
+    <string name="import_hint_trailing_note_separator">Tento oddělovač končí poznámku, za ním chybí text.</string>
+    <string name="import_hint_description_end">Tato [ otevírá popis, za jehož textem chybí ].</string>
+    <string name="import_hint_chapter_braces">Tato } nemá před sebou {, začátek kapitoly nad jejím obsahem chybí.</string>
+    <string name="import_placeholder_chapter">kapitola</string>
+    <string name="import_placeholder_text">text</string>
+    <string name="import_placeholder_translation">překlad</string>
+    <string name="import_placeholder_note">poznámka</string>
+    <string name="import_placeholder_variant">varianta</string>
     <plurals name="stat_words">
         <item quantity="one">%1$d slovo</item>
         <item quantity="few">%1$d slova</item>
@@ -158,6 +203,7 @@
     <string name="help_import_format_body">Kapitola: název { a } na samostatných řádcích.
         \nSlovíčko: slovíčko = překlad.
         \nPoznámka: = text.
+        \nMezi názvem slovíčka a překladem může být =, ; nebo →.
         \nPopis: [text] za názvem.
         \nVarianty: první\\druhý.
         \n\nKapitel 1 {

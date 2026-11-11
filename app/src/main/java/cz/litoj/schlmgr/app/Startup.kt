@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.annotation.VisibleForTesting
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.data.wordlist.WordListParseException
 import cz.litoj.schlmgr.data.wordlist.WordListWriter
 import cz.litoj.schlmgr.testing.TestEngine
 
@@ -81,6 +82,10 @@ object Startup {
 	// the transfer layer files are work in progress and still call the file
 	// outcome reports here, so each forwards to [UserMessages] until that
 	// layer moves
+
+	/** Word-list parse failure with file examples kept line by line. */
+	@JvmStatic
+	fun onWordListParseFail(error: WordListParseException) = UserMessages.onWordListParseFail(error)
 
 	/** Word-list parse failure with [msg] as both snackbar line and popup body. */
 	@JvmStatic

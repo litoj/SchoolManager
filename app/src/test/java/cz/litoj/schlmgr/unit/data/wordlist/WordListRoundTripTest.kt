@@ -4,6 +4,8 @@ import cz.litoj.schlmgr.data.StreamItem
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.wordlist.WordListImporter
+import cz.litoj.schlmgr.data.wordlist.WordListParseException
+import cz.litoj.schlmgr.data.wordlist.WordListProblem
 import cz.litoj.schlmgr.data.wordlist.WordListReader
 import cz.litoj.schlmgr.data.wordlist.WordListWriter
 import org.junit.After
@@ -219,9 +221,10 @@ class WordListRoundTripTest {
 		try {
 			WordListReader.parse("ch {\n\n\nword without separator\n}\n", "c")
 			fail("a word line without translations must fail the parse")
-		} catch (e: IllegalArgumentException) {
-			assertTrue("the error names line 4, was: ${e.message}",
-				e.message!!.contains("line 4"))
+		} catch (e: WordListParseException) {
+			assertEquals(4, e.lineNumber)
+			assertEquals("word without separator", e.sourceLine)
+			assertEquals(e.sourceLine.length, e.problemIndex)
 		}
 	}
 
@@ -238,9 +241,9 @@ class WordListRoundTripTest {
 		try {
 			WordListReader.parse("ch {\r\n\r\nword without separator\r\n}\r\n", "c")
 			fail("a word line without translations must fail the parse")
-		} catch (e: IllegalArgumentException) {
-			assertTrue("the error names line 3, was: ${e.message}",
-				e.message!!.contains("line 3"))
+		} catch (e: WordListParseException) {
+			assertEquals(3, e.lineNumber)
+			assertEquals("word without separator", e.sourceLine)
 		}
 	}
 
@@ -257,8 +260,9 @@ class WordListRoundTripTest {
 		try {
 			WordListReader.parse("}\nword;t\n", "c")
 			fail("a stray brace at the root must fail the parse")
-		} catch (e: IllegalArgumentException) {
-			assertTrue(e.message!!.contains("No chapter is open"))
+		} catch (e: WordListParseException) {
+			assertEquals(WordListProblem.CHAPTER_BRACES, e.problem)
+			assertEquals(0, e.problemIndex)
 		}
 	}
 
@@ -315,8 +319,9 @@ class WordListRoundTripTest {
 		try {
 			WordListReader.parse("word\\ [d]=trl\n", "c")
 			fail("a whitespace-only word piece must fail the parse")
-		} catch (e: IllegalArgumentException) {
-			assertTrue(e.message!!.contains("Expected text"))
+		} catch (e: WordListParseException) {
+			assertEquals(WordListProblem.EMPTY_VARIANT, e.problem)
+			assertEquals(e.sourceLine.indexOf('\\'), e.problemIndex)
 		}
 	}
 
@@ -327,8 +332,11 @@ class WordListRoundTripTest {
 		try {
 			WordListReader.parse("a\\b {\nword;t\n}\n", "c")
 			fail("a lone divider in a chapter name must fail the parse")
-		} catch (e: IllegalArgumentException) {
-			assertTrue(e.message!!.contains("divider"))
+		} catch (e: WordListParseException) {
+			assertEquals(WordListProblem.CHAPTER_DIVIDER, e.problem)
+			assertEquals(1, e.lineNumber)
+			assertEquals("a\\b {", e.sourceLine)
+			assertEquals(1, e.problemIndex)
 		}
 	}
 

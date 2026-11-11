@@ -3,7 +3,10 @@ package cz.litoj.schlmgr.app
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import cz.litoj.schlmgr.data.wordlist.WordListParseException
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.ui.popup.MessagePopup
+import cz.litoj.schlmgr.ui.popup.MessageSource
 
 /** The transient user messages of the app, safe to report from any thread. */
 object UserMessages {
@@ -28,6 +31,18 @@ object UserMessages {
 	@JvmStatic
 	fun showUndoable(notice: UiNotice, onUndo: () -> Unit) {
 		GlobalDependencies.messages.tryEmit(GlobalDependencies.UiMessage.Undoable(notice, onUndo))
+	}
+
+	/** Word-list parse failure shown with its own actionable file context. */
+	@JvmStatic
+	fun onWordListParseFail(error: WordListParseException): MessagePopup {
+		val content = ImportFailureExplanation.of(error)
+		return MessagePopup(
+			msg = content.guidance,
+			copyText = content.text,
+			title = GlobalDependencies.appContext.getString(R.string.import_error_title),
+			source = MessageSource(content.location, content.source, error.problemIndex),
+		)
 	}
 
 	/** Word-list parse failure with [msg] as both snackbar line and popup body. */

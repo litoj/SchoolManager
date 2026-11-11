@@ -11,6 +11,8 @@ import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.transfer.ExportFormat
 import cz.litoj.schlmgr.data.transfer.ExportPipeline
 import cz.litoj.schlmgr.data.transfer.ImporterFactory
+import cz.litoj.schlmgr.ui.popup.Dialogs
+import cz.litoj.schlmgr.ui.popup.MessagePopup
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
 import kotlinx.coroutines.CoroutineStart
@@ -273,17 +275,27 @@ class FileWorkerTest {
 	}
 
 	@Test
-	fun `a word list parse error names the picked file, not the target container`() = runBlocking {
+	fun `a word list parse failure opens a persistent popup`() {
 		val deutsch = ItemRepository.createSubject("Deutsch", null)
 		val lektion = ItemRepository.createChapter(deutsch.id, "Lektion 1", null)
+		Dialogs.clear()
+
+		importPicked("Broken.txt", { lektion }, "Haus\n")
+		assertTrue(Dialogs.isShowing<MessagePopup>())
+		Dialogs.clear()
+	}
+
+	@Test
+	fun `a malformed tree import reports through the original snackbar`() = runBlocking {
+		Dialogs.clear()
 		val message = async(start = CoroutineStart.UNDISPATCHED) {
 			withTimeout(2_000) { GlobalDependencies.messages.first() }
 		}
 
-		importPicked("Broken.txt", { lektion }, "Haus\n")
+		importPicked("tree.hjson", { null }, "{\n  name: \"x\"\n")
 
-		val text = (message.await() as GlobalDependencies.UiMessage.Text).text
-		assertTrue(text.startsWith("Broken.txt - line 1"))
+		assertTrue((message.await() as GlobalDependencies.UiMessage.Text).text.isNotEmpty())
+		assertFalse(Dialogs.isShowing<MessagePopup>())
 	}
 
 	@Test

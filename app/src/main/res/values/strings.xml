@@ -86,6 +86,51 @@
     <string name="fail_paste_other_subject">"Items cannot be moved into another set."</string>
     <string name="fail_kind_file">file:</string>
     <string name="fail_type">", of type: "</string>
+    <string name="import_error_title">Word-list import failed</string>
+    <string name="import_error_location">File %1$s, line %2$d</string>
+    <string name="import_hint_invalid_separator">The ASCII arrow -&gt; divides nothing here, the format knows only = ; and →.</string>
+    <string name="import_hint_incomplete_entry">Text alone names no entry, so a separator and its translation are missing.</string>
+    <string name="import_hint_symbol_only">A lone symbol is no entry and no separator here.</string>
+    <string name="import_hint_missing_chapter_open">The indented lines below belong to a chapter, so { is missing after this name.</string>
+    <string name="import_hint_translation_before_description">[ opens a description too early, the translation after the separator is missing.</string>
+    <string name="import_hint_empty_variant">This backslash opens a variant whose text is missing.</string>
+    <string name="import_hint_missing_chapter_name">This { opens a chapter whose name before it is missing.</string>
+    <string name="import_hint_description_closing">This ] has no [ before it, so no description is open here.</string>
+    <string name="import_hint_chapter_end">This { opens a chapter whose closing } is missing after its content.</string>
+    <string name="import_hint_incomplete_escape">This backslash has no character to escape, a literal one needs a second backslash.</string>
+    <string name="import_hint_missing_translation">This separator has no translation after it.</string>
+    <string name="import_hint_extra_separator">A word line has one separator, so the next translation needs a backslash instead.</string>
+    <string name="import_hint_trailing_separator">This separator ends the line, its translation after it is missing.</string>
+    <string name="import_hint_missing_note_text">The leading separator opens a note whose text after it is missing.</string>
+    <string name="import_hint_description_without_text">This [ has no word or translation in front of it.</string>
+    <string name="import_hint_no_single_fix">More than one change belongs here, so correct the line and import the file again.</string>
+    <string name="import_fix_another">Or: %s</string>
+    <string name="import_fix_separator_swap">Did you mean the separator this file uses: %s</string>
+    <string name="import_fix_translation_text">Did you mean a word with its translation: %s</string>
+    <string name="import_fix_translation_order">Did you mean the translation before its description: %s</string>
+    <string name="import_fix_note_text">Did you mean a note with this text: %s</string>
+    <string name="import_fix_chapter_name">Did you mean a chapter named like this: %s</string>
+    <string name="import_fix_chapter_named_block">Did you mean a chapter with its content between the braces: %s</string>
+    <string name="import_fix_chapter_open">Did you mean to open a chapter here: %s</string>
+    <string name="import_fix_chapter_block">Did you mean a chapter around the indented lines: %s</string>
+    <string name="import_fix_chapter_close">Did you mean to close the chapter here: %s</string>
+    <string name="import_fix_description_close">Did you mean to close the description here: %s</string>
+    <string name="import_fix_variant_text">Did you mean another form of this text: %s</string>
+    <string name="import_fix_variant_divider">Did you mean another translation after a backslash: %s</string>
+    <string name="import_fix_described_text">Did you mean a described word: %s</string>
+    <string name="import_fix_escaped_separator">Did you mean this separator as text: %s</string>
+    <string name="import_fix_doubled_backslash">Did you mean a literal backslash: %s</string>
+    <string name="import_hint_note_divider">A note holds text only, so this backslash needs a second one.</string>
+    <string name="import_hint_chapter_divider">A chapter name has no variants, so this backslash and one of its names are too much.</string>
+    <string name="import_hint_note_second_separator">A note has only its leading separator, a later one needs a backslash in front.</string>
+    <string name="import_hint_trailing_note_separator">This separator ends the note, its text after it is missing.</string>
+    <string name="import_hint_description_end">The [ here opens a description whose ] is missing after its text.</string>
+    <string name="import_hint_chapter_braces">This } has no { before it, so the chapter opening above its content is missing.</string>
+    <string name="import_placeholder_chapter">chapter</string>
+    <string name="import_placeholder_text">text</string>
+    <string name="import_placeholder_translation">translation</string>
+    <string name="import_placeholder_note">note</string>
+    <string name="import_placeholder_variant">variant</string>
     <plurals name="stat_words">
         <item quantity="one">%1$d word</item>
         <item quantity="other">%1$d words</item>
@@ -147,6 +192,7 @@
     <string name="help_import_format_body">Chapter: name { and } on their own lines.
         \nWord: word = translation.
         \nNote: = text.
+        \nA word uses =, ; or → between its name and translation.
         \nDescription: [text] after a name.
         \nVariants: first\\second.
         \n\nKapitel 1 {

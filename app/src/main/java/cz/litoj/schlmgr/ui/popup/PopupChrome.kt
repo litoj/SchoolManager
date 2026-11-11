@@ -98,23 +98,30 @@ internal fun PopupTitle(text: String, trailing: (@Composable BoxScope.() -> Unit
 	}
 }
 
+/** The shared body text style of a popup card. */
+@Composable
+internal fun PopupBodyText(text: String, modifier: Modifier = Modifier) {
+	Text(text, modifier, style = TextStyle(fontSize = 20.sp, color = TextColor))
+}
+
 /**
- * The scrollable text body of a popup card.
+ * The scrollable body of a popup card.
  * - the weight grows it to the free screen height, so the button row stays at the bottom.
  */
 @Composable
-internal fun ColumnScope.PopupScrollBody(text: String) {
-	Box(
+internal fun ColumnScope.PopupScrollBody(content: @Composable ColumnScope.() -> Unit) {
+	Column(
 		Modifier
 			.weight(1f, fill = false)
 			.verticalScroll(rememberScrollState())
-	) {
-		Text(
-			text,
-			Modifier.padding(5.dp),
-			style = TextStyle(fontSize = 20.sp, color = TextColor),
-		)
-	}
+			.padding(5.dp),
+		content = content,
+	)
+}
+
+@Composable
+internal fun ColumnScope.PopupScrollBody(text: String) = PopupScrollBody {
+	PopupBodyText(text)
 }
 
 /** The bottom button row of a popup card, one flat bar of the shared height. */

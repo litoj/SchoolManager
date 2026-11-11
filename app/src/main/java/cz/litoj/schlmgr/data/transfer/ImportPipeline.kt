@@ -8,6 +8,7 @@ import cz.litoj.schlmgr.app.FileText
 import cz.litoj.schlmgr.app.Startup
 import cz.litoj.schlmgr.data.json.HJsonImporter
 import cz.litoj.schlmgr.data.wordlist.WordListImporter
+import cz.litoj.schlmgr.data.wordlist.WordListParseException
 import cz.litoj.schlmgr.data.DataImporter
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ImportResult
@@ -38,7 +39,10 @@ abstract class FileWorker(
 		try {
 			doRun()
 		} catch (iae: IllegalArgumentException) {
-			onParseFail(iae)
+			when (iae) {
+				is WordListParseException -> onWordListParseFail(iae)
+				else -> onParseFail(iae)
+			}
 		} catch (e: Exception) {
 			onLoadFail(e)
 		} catch (e: StackOverflowError) {
@@ -49,6 +53,10 @@ abstract class FileWorker(
 
 	/** Read -> parse -> persist -> refresh/notify. Runs on the worker thread. */
 	protected abstract fun doRun()
+
+	protected open fun onWordListParseFail(e: WordListParseException) {
+		Startup.onWordListParseFail(e)
+	}
 
 	protected open fun onParseFail(e: IllegalArgumentException) {
 		Startup.onParseFail(e.message ?: "")

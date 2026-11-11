@@ -142,7 +142,23 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The explorer picks the target.
 - One top-level container opens directly, otherwise Done opens the target path.
 - The import result bar shows only Done.
-- The import error names the picked file.
+- The popup title stays generic, the file name belongs to the location line.
+- That line labels both values: `File <name>, line <number>`.
+- Offered fixes come from a single-edit search the parser validates against the whole file.
+- The blanked failing line gives the baseline, so a fix never hides an error it caused.
+- Text only the user knows stays a localized placeholder.
+- Each fix reads as a suggestion: the kind of edit, then the line it produces.
+- A fix never removes anything: no line, name or word is ever offered as deleted.
+- A fix is the whole message, the diagnosis line appears only when no fix survived.
+- One repair kind per edit type, so wording and validated edit can never drift apart.
+- Bare text is incomplete unless an arrow relation or following indented chapter block gives evidence.
+- Unclosed chapters, stray description closings and unfinished escapes fail instead of importing silently.
+- The complete source line uses a monospace block on a contrasting surface.
+- A `↓` aligns through measured glyph bounds with the exact symbol or missing-character insertion point.
+- Long source lines keep their alignment through horizontal scrolling.
+- An unfinished multiline description points to its opening line.
+- JSON failures retain the original snackbar path.
+- The word-list format supports `=`, `;` and `→` separators.
 - A finished import reloads the target and scrolls to its last row.
 
 ### Export
@@ -243,4 +259,6 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - No emulator is connected for a physical keyboard check.
 - The selection More slot passes focused tests and lint, and is committed.
 - The top and selection More dropdowns render below and above their buttons, checked on Small_Phone.
+- Validated import suggestions and measured markers pass 871 behavior tests and debug lint.
+- Repair and wording matrices run as unit tests, the popup keeps only the measured marker.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
