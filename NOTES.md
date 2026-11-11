@@ -55,7 +55,9 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A downward move shows the FAB and resets travel.
 - Only a load landing shows the FAB again.
 - Insert and delete keep the FAB hidden.
-- An append at the list end reveals it, an insert in the middle does not scroll.
+- An append reveals its row only when the screen does not show it whole.
+- The reveal obeys the phone's animation setting, an off setting places the list at once.
+- Rows appear and leave without a fade, so a fast scroll shows no shimmer.
 - A long-press starts selection, with the row type icon toggling each row.
 - The row type icon toggles a row during a selection or in the picker.
 - The row tap keeps its own meaning.
@@ -260,5 +262,6 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The selection More slot passes focused tests and lint, and is committed.
 - The top and selection More dropdowns render below and above their buttons, checked on Small_Phone.
 - Validated import suggestions and measured markers pass 871 behavior tests and debug lint.
+- The list reveal skips a shown row and obeys the phone, with 874 behavior tests and debug lint green.
 - Repair and wording matrices run as unit tests, the popup keeps only the measured marker.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.

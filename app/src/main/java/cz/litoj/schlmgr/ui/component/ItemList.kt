@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.colorResource
@@ -39,6 +40,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.app.SystemAnimation
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 import cz.litoj.schlmgr.ui.viewmodel.ItemListState
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
@@ -316,9 +318,9 @@ fun ItemList(
 								.background(colorResource(R.color.colorPrimaryBg))
 						} ?: Modifier,
 					)
-					// no fade-out: a container swap removes the old rows at once, while
-					// the fade of the old list lingers over the restored scroll
-					.animateItem(placementSpec = RowPlacementSpec, fadeOutSpec = null)
+					// no fade at either end: a row appears and leaves with its content whole,
+					// so a fast scroll never shimmers over the rows it passes
+					.animateItem(fadeInSpec = null, placementSpec = RowPlacementSpec, fadeOutSpec = null)
 					.animateContentSize(animationSpec = RowSizeSpec),
 				infoAction = if (!state.pickerMode && item.description.isNotEmpty() && !ItemRow.showsDescription(item.description)) {
 					{ InfoActionIcon { callbacks.onInfo(item) } }
@@ -370,21 +372,32 @@ private data class DragOver(val anchor: Int, val grab: Float, val fingerY: Float
 
 /**
  * Reveals the last row of the list whenever [ItemListState.scrollToBottom] asks.
- * - the reveal animates, so the rows it passes stay readable.
+ * - a row already on the screen is revealed by the insert itself, so nothing moves.
+ * - the phone's animation setting decides: an off setting places the list at once.
  * - the counter is consumed across recreations, so a rotation never replays
  *   a scroll that the import already asked for.
  */
 @Composable
 internal fun ListEndReveal(listState: ItemListState, scrollState: LazyListState) {
 	var revealed by rememberSaveable { mutableIntStateOf(0) }
+	val context = LocalContext.current
 	LaunchedEffect(listState.scrollToBottom) {
 		// a fresh view model restarts its counter, so the remembered level must follow
 		if (listState.scrollToBottom < revealed) revealed = listState.scrollToBottom
-		if (listState.scrollToBottom > revealed && listState.items.isNotEmpty()) {
-			revealed = listState.scrollToBottom
-			scrollState.animateScrollToItem(listState.items.lastIndex)
-		}
+		if (listState.scrollToBottom <= revealed || listState.items.isEmpty()) return@LaunchedEffect
+		revealed = listState.scrollToBottom
+		val last = listState.items.lastIndex
+		if (scrollState.shownWhole(last)) return@LaunchedEffect
+		if (SystemAnimation.enabled(context)) scrollState.animateScrollToItem(last)
+		else scrollState.scrollToItem(last)
 	}
+}
+
+/** Whether the row already stands whole inside the screen, so a reveal would move nothing. */
+private fun LazyListState.shownWhole(index: Int): Boolean {
+	val row = layoutInfo.visibleItemsInfo.firstOrNull { it.index == index } ?: return false
+	return row.offset >= layoutInfo.viewportStartOffset &&
+		row.offset + row.size <= layoutInfo.viewportEndOffset
 }
 
 /**
