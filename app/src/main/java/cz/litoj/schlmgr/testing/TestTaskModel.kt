@@ -14,7 +14,7 @@ class TestTaskModel(
 			val names = if (TestEngine.isReversed) member.translations.map { it.name }
 			else listOf(member.word.name)
 			names.flatMap { name ->
-				val variants = WordNames.parseVariants(name).mapTo(HashSet()) { it.trim() }
+				val variants = WordNames.parseVariants(name).mapTo(HashSet(), TestEngine::normalizeAnswer)
 				List(WordNames.requiredVariantCount(name)) { TestAnswerField(member, variants) }
 			}
 		}
@@ -41,8 +41,9 @@ class TestTaskModel(
 
 	private fun assignVariants(answers: List<String>): Map<TestItemModel, List<String>> {
 		val texts = answers.map { it.trim() }
+		val normalized = texts.map(TestEngine::normalizeAnswer)
 		val matched = maximumMatching(answerFields.size, texts.size) { slot, text ->
-			texts[text] in answerFields[slot].validVariants
+			normalized[text] in answerFields[slot].validVariants
 		}
 		val slotTexts = Array(answerFields.size) { slot ->
 			if (matched[slot] >= 0) texts[matched[slot]] else ""

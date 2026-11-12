@@ -26,6 +26,7 @@ class SettingsState(
 	wordSplitText: String = ";",
 	clever: Boolean = false,
 	requireVariants: Boolean = false,
+	ignoredMistakesText: String = TestEngine.ignoredMistakesText,
 	amountText: String = "10",
 	timeText: String = TestEngine.getSecondsPerChar().toString(),
 	defaultReverse: Boolean = false,
@@ -50,6 +51,10 @@ class SettingsState(
 		private set
 	var requireVariants by mutableStateOf(requireVariants)
 		private set
+	var ignoredMistakesText by mutableStateOf(ignoredMistakesText)
+		private set
+	val ignoredMistakes: List<String>
+		get() = ignoredMistakesText.lines().filter { it.isNotEmpty() }
 	var amountText by mutableStateOf(amountText)
 		private set
 	var timeText by mutableStateOf(timeText)
@@ -126,6 +131,22 @@ class SettingsState(
 		requireVariants = !requireVariants
 		TestEngine.applyRequireAllVariants(requireVariants)
 		AppSettings.set("testRequireAllVariants", requireVariants)
+	}
+
+	fun setIgnoredMistakes(text: String) {
+		ignoredMistakesText = text
+		TestEngine.applyIgnoredMistakes(text)
+		AppSettings.set("testIgnoredMistakes", text)
+	}
+
+	fun setIgnoredMistake(index: Int, text: String) {
+		val entries = ignoredMistakes.toMutableList()
+		require(index in 0..entries.size)
+		if (text.isEmpty()) {
+			if (index < entries.size) entries.removeAt(index)
+		} else if (index == entries.size) entries.add(text)
+		else entries[index] = text
+		setIgnoredMistakes(entries.joinToString("\n"))
 	}
 
 	/** A fresh setup reads the engine, so the next test takes the new default. */
@@ -224,6 +245,7 @@ class SettingsViewModel : ViewModel() {
 		wordSplitText = WordListWriter.wordTranslationSplitter,
 		clever = TestEngine.isClever,
 		requireVariants = AppSettings.getBool("testRequireAllVariants", false),
+		ignoredMistakesText = TestEngine.ignoredMistakesText,
 		amountText = TestEngine.amount.toString(),
 		timeText = TestEngine.getSecondsPerChar().toString(),
 		defaultReverse = TestEngine.isReversed,

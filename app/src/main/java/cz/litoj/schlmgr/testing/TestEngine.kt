@@ -136,7 +136,8 @@ class TestEngine {
 		var correct = if (requireAllVariants) matchesAllVariants(entry.word, translations, texts)
 		else matchesEntry(entry.word, translations, texts.firstOrNull())
 		// required variant lists may repeat one text across different words
-		if (!requireAllVariants) for (text in texts) {
+		if (!requireAllVariants) for (rawText in texts) {
+			val text = normalizeAnswer(rawText)
 			if (text.isEmpty()) continue
 			val group = groupIds.getOrElse(index) { -1 }
 			if (group >= 0 && !usedAnswers.getOrPut(group) { HashSet() }.add(text)) {
@@ -189,6 +190,12 @@ class TestEngine {
 			requireAllVariants = on
 		}
 
+		/** One global answer exception per line, where blank lines stay out. */
+		@JvmStatic
+		fun applyIgnoredMistakes(text: String) {
+			ignoredMistakesText = text
+			ignoredMistakes = text.lines().filter { it.isNotEmpty() }.distinct()
+		}
 
 		/**
 		 * The size of the success-rate belts in percents.
@@ -340,6 +347,12 @@ class TestEngine {
 		var requireAllVariants = false
 			private set
 
+		@JvmStatic
+		var ignoredMistakesText = ""
+			private set
+
+		private var ignoredMistakes: List<String> = emptyList()
+
 		/**
 		 * Whether a test shows the tested word and expects one of its translations,
 		 * instead of the default of showing the translations and expecting the word.
@@ -352,6 +365,14 @@ class TestEngine {
 		@JvmStatic
 		var amount = 10
 			private set
+
+		/** The comparison form after configured literals disappear and outer space trims. */
+		@JvmStatic
+		fun normalizeAnswer(text: String): String {
+			var normalized = text
+			for (mistake in ignoredMistakes) normalized = normalized.replace(mistake, "")
+			return normalized.trim()
+		}
 
 		/**
 		 * Whether [answer] names the tested word in the current direction.
@@ -400,13 +421,15 @@ class TestEngine {
 			if (answers.isEmpty()) return false
 			val supplied = answers.map { it.trim() }
 			val names = if (isReversed) translations.map { it.name } else listOf(word.name)
-			return names.all { WordNames.coversAllVariants(it, supplied) }
+			return names.all { WordNames.coversAllVariants(it, supplied, ::normalizeAnswer) }
 		}
 
 		private fun matchesName(name: String, answer: String): Boolean {
-			val expected = name.trim()
-			val candidate = answer.trim()
-			return candidate == expected || WordNames.parseVariants(expected).any { it.trim() == candidate }
+			val expected = normalizeAnswer(name)
+			val candidate = normalizeAnswer(answer)
+			return candidate == expected || WordNames.parseVariants(name.trim()).any {
+				normalizeAnswer(it) == candidate
+			}
 		}
 	}
 }

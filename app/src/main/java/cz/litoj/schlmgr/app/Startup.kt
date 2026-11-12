@@ -80,6 +80,7 @@ object Startup {
 			AppSettings.getFloat("testSecondsPerChar", TestEngine.DEFAULT_SECONDS_PER_CHAR))
 		TestEngine.applyReversed(AppSettings.getBool("reverseTest", false))
 		TestEngine.applyRequireAllVariants(AppSettings.getBool("testRequireAllVariants", false))
+		TestEngine.applyIgnoredMistakes(AppSettings.getString("testIgnoredMistakes", ""))
 		WordListWriter.setWordTranslationSplitter(AppSettings.getString("exportWordSplit", "="))
 	}
 

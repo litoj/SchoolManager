@@ -21,10 +21,15 @@ object WordNames {
 
 	/** Whether supplied valid variants cover every side, including an empty alternative. */
 	@JvmStatic
-	fun coversAllVariants(name: String, answers: List<String>): Boolean {
-		val supplied = answers.mapTo(HashSet()) { it.trim() }
+	@JvmOverloads
+	fun coversAllVariants(
+		name: String,
+		answers: List<String>,
+		normalize: (String) -> String = { it.trim() },
+	): Boolean {
+		val supplied = answers.mapTo(HashSet(), normalize)
 		val tree = variantTree(name)
-		val matched = tree.forms.filter { it.text.trim() in supplied }
+		val matched = tree.forms.filter { normalize(it.text) in supplied }
 		val covered = matched.flatMapTo(HashSet()) { it.choices }
 		return matched.isNotEmpty() && covered.containsAll(tree.requiredChoices)
 	}

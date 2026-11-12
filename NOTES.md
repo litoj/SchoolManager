@@ -201,6 +201,8 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A tested word scores once regardless of variants, while different words score separately.
 - Grading matches name variants and linked translations, then counters go up the plain-parent chain.
 - Only the first line of the tested word's description shows in a prompt.
+- Global grading removes each configured answer literal from both sides.
+- Ignorable literals use one settings field per value with a trailing empty field.
 - Results round the rate, mark answer edits against the nearest expanded variant and offer a retake.
 - The marked answer precedes the complete expected answer, with green matches, gray missing letters and red extra letters.
 - A correct variant answer still labels the full variant word.
@@ -211,6 +213,8 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Settings are an exported activity.
 - The drawer opens Settings, whose screen has a back arrow.
 - A field row focuses its field from the label.
+- Ignored answer fields move focus to the next field on Enter.
+- The settings list ends with a margin, so its last row clears the screen edge.
 - Switch and choice rows act on any tap.
 
 ### Dialogs and creators
@@ -272,3 +276,4 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
 - Colored answer diffs compare only expanded variants and pass 907 behavior tests and debug lint.
 - Seconds per character and its stored-format migration pass 907 behavior tests and debug lint.
+- Ignorable literal fields chain Enter and pass 907 behavior tests and debug lint.

@@ -345,6 +345,8 @@
     <string name="setts_test_time">Seconds per character</string>
     <string name="setts_test_direction">Default answer side</string>
     <string name="setts_test_direction_hint">Which side you answer with.</string>
+    <string name="setts_test_ignored">Ignorable answer text</string>
+    <string name="setts_test_ignored_hint">Each field is ignored when missing or extra, including spaces. Use the last empty field to add another.</string>
     <string name="setts_word_splitter">Word/translation splitter</string>
     <string name="setts_word_splitter_hint">The character between a word and its translations in exported files.</string>
     <string name="setts_search_diacritics">Search without diacritics</string>

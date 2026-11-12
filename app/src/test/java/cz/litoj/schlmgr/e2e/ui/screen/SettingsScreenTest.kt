@@ -2,12 +2,17 @@ package cz.litoj.schlmgr.e2e.ui.screen
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.onChild
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.GlobalDependencies
@@ -47,11 +52,15 @@ class SettingsScreenTest {
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
 		// the engine survives between tests, so the direction pin starts from the word
 		TestEngine.applyReversed(false)
+		TestEngine.applyIgnoredMistakes("")
 		AppSettings.set("reverseTest", false)
+		AppSettings.set("testIgnoredMistakes", "")
 		model = SettingsViewModel()
 		rule.setContent { SettingsScreen(model) {} }
 		rule.waitForIdle()
 	}
+
+	private fun ignoredField(index: Int) = rule.onNodeWithTag("ignored_mistake_$index").onChild()
 
 	private fun rowCenter(tag: String): Offset {
 		val node = rule.onNodeWithTag(tag).fetchSemanticsNode()
@@ -109,6 +118,29 @@ class SettingsScreenTest {
 
 		assertTrue("the default flipped to the typed translation", TestEngine.isReversed)
 		assertTrue("the default reached the storage", AppSettings.getBool("reverseTest", false))
+	}
+
+	@Test
+	fun `an ignored text field always leaves one empty field`() {
+		ignoredField(0).performScrollTo().performTextInput("。")
+		rule.waitForIdle()
+		ignoredField(0).performImeAction()
+		rule.waitForIdle()
+		ignoredField(1).assertIsFocused()
+		assertEquals("。", model.state.ignoredMistakesText)
+
+		ignoredField(1).performTextInput("...")
+		rule.waitForIdle()
+
+		ignoredField(2).assertExists()
+		assertEquals("。\n...", model.state.ignoredMistakesText)
+
+		ignoredField(0).performTextClearance()
+		rule.waitForIdle()
+
+		ignoredField(1).assertExists()
+		rule.onNodeWithTag("ignored_mistake_2").assertDoesNotExist()
+		assertEquals("...", model.state.ignoredMistakesText)
 	}
 
 	@Test

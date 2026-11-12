@@ -332,6 +332,8 @@
     <string name="setts_test_time">Sekundy na znak</string>
     <string name="setts_test_direction">Výchozí strana odpovědi</string>
     <string name="setts_test_direction_hint">Kterou stranou odpovídáte.</string>
+    <string name="setts_test_ignored">Ignorovaný text v odpovědích</string>
+    <string name="setts_test_ignored_hint">Obsah každého pole se ignoruje, když chybí nebo je navíc, včetně mezer. Další přidáte zápisem do posledního prázdného pole.</string>
     <string name="setts_word_splitter">Oddělovač slov a překladů</string>
     <string name="setts_word_splitter_hint">Znak mezi slovíčkem a jeho překlady v exportovaných souborech.</string>
     <string name="setts_search_diacritics">Hledat bez diakritiky</string>

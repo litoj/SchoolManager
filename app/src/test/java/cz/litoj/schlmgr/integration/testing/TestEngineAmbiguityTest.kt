@@ -459,4 +459,38 @@ class TestEngineAmbiguityTest {
 		assertFalse("matching only one shown translation cannot pass",
 			engine.isAnswer(0, "wrong", entry(target).translations()))
 	}
+
+	@Test
+	fun `required variant assignment accepts configured extra text`() {
+		TestEngine.applyIgnoredMistakes("?")
+		TestEngine.applyRequireAllVariants(true)
+		try {
+			val entries = sharedPair("a/b", "c")
+			val engine = TestEngine()
+			engine.setTested(-1, null, 1f, entries)
+
+			val results = grades(engine, listOf(listOf("a?", "b", "c?")))
+
+			assertEquals(2, results.count { it })
+		} finally {
+			TestEngine.applyRequireAllVariants(false)
+			TestEngine.applyIgnoredMistakes("")
+		}
+	}
+
+	@Test
+	fun `answers equal after normalization still repeat only once`() {
+		TestEngine.applyIgnoredMistakes("?")
+		try {
+			val entries = sharedPair("same?", "same")
+			val engine = TestEngine()
+			engine.setTested(-1, null, 1f, entries)
+
+			val results = grades(engine, listOf(listOf("same?", "same")))
+
+			assertEquals(1, results.count { it })
+		} finally {
+			TestEngine.applyIgnoredMistakes("")
+		}
+	}
 }
