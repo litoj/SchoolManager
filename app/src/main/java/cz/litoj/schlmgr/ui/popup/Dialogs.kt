@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -167,6 +168,7 @@ fun DialogHost() {
 	val stack by Dialogs.stack.collectAsState()
 	stack.forEach { spec ->
 		key(spec) {
+			KeyboardLeavesWithDialog()
 			Dialog(
 				onDismissRequest = { Dialogs.dismiss(spec) },
 				properties = DialogProperties(
@@ -178,6 +180,21 @@ fun DialogHost() {
 			) {
 				DialogScrim(spec)
 			}
+		}
+	}
+}
+
+/**
+ * Hides the keyboard when its dialog leaves with no dialog below it.
+ * - the dialog window raised the keyboard and dies with its field, so the host window asks
+ *   for the hide, since that window survives.
+ */
+@Composable
+private fun KeyboardLeavesWithDialog() {
+	val keyboard = LocalSoftwareKeyboardController.current
+	DisposableEffect(Unit) {
+		onDispose {
+			if (Dialogs.stack.value.isEmpty()) keyboard?.hide()
 		}
 	}
 }

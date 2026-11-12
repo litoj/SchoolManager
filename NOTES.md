@@ -216,6 +216,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A `DialogSpec` stack uses one window per dialog, so dialogs survive rotation.
 - The conflict title info icon opens a stacked `InfoPopup`.
 - A paused dialog holds the last keyboard inset, and the creator reopens the keyboard on resume.
+- The keyboard leaves with the last dialog, so none stays over a screen with no field.
 - New creators focus the name field and show the keyboard, edits focus too.
 - The add button scrolls to the bottom and focuses the new row.
 - A text field reseeds its parent value in a deferred effect, so recomposition cannot clobber it.
@@ -264,5 +265,6 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The top and selection More dropdowns render below and above their buttons, checked on Small_Phone.
 - Validated import suggestions and measured markers pass 871 behavior tests and debug lint.
 - The list reveal skips a shown row and obeys the phone, with 874 behavior tests and debug lint green.
+- The abort label and the dialog keyboard handoff pass 878 behavior tests and debug lint.
 - Repair and wording matrices run as unit tests, the popup keeps only the measured marker.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
