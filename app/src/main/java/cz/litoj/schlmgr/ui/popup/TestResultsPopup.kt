@@ -119,8 +119,13 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 				AnswerText(row)
 				// a right guess already names the answer, unless variants need the full word
 				if (row.expected.isNotEmpty() && (!row.correct || row.hasVariants)) Text(
-					stringResource(R.string.test_correct, row.expected),
-					style = TextStyle(fontSize = 15.sp, color = ExplorerColors.description),
+					buildAnnotatedString {
+						append(stringResource(R.string.test_correct, ""))
+						withStyle(SpanStyle(color = ExplorerColors.description)) {
+							append(row.expected)
+						}
+					},
+					style = TextStyle(fontSize = 15.sp, color = ExplorerColors.body),
 				)
 			},
 			trailing = {

@@ -205,6 +205,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Ignorable literals use one settings field per value with a trailing empty field.
 - Results round the rate, mark answer edits against the nearest expanded variant and offer a retake.
 - The marked answer precedes the complete expected answer, with green matches, gray missing letters and red extra letters.
+- The expected-answer label uses the normal answer color, while its value stays faded.
 - A correct variant answer still labels the full variant word.
 - Result positions follow item order, with lifetime passed/total only at the trailing edge.
 
