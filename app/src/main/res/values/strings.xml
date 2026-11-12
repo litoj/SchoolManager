@@ -371,7 +371,7 @@
     <string name="sort_sf_10">Strongest first</string>
     <string name="sort_priority">Test priority</string>
     <string name="start">Start</string>
-    <string name="test_abort">QUIT</string>
+    <string name="test_abort">ABORT</string>
     <string name="test_abort_question">Abort this test? Your answers are dropped and the statistics stay unchanged.</string>
     <string name="test_add">Add source</string>
     <string name="test_direction">Answer with</string>

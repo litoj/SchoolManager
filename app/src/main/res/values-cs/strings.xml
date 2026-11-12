@@ -358,7 +358,7 @@
     <string name="sort_sf_10">Nejsilnější první</string>
     <string name="sort_priority">Priorita testu</string>
     <string name="start">Začít</string>
-    <string name="test_abort">UKONČIT</string>
+    <string name="test_abort">ZRUŠIT</string>
     <string name="test_abort_question">Zrušit tento test? Odpovědi se zahodí a statistiky zůstanou beze změny.</string>
     <string name="test_add">Přidat zdroj</string>
     <string name="test_direction">Odpověď</string>

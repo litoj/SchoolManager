@@ -194,6 +194,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The answer hint names the asked side.
 - The countdown pauses while the app is away.
 - Back confirms before ending an ungraded run, and a run-out time reports itself.
+- The red button aborts and drops the answers, only Done grades them.
 - Requiring all variants accepts any valid answers that cover every side once, with the widest independent part setting the field count.
 - An added required answer multiplies that word's time by 1.5.
 - A tested word scores once regardless of variants, while different words score separately.
