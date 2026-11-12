@@ -42,6 +42,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
@@ -127,8 +128,9 @@ private fun TestSetupContent(viewModel: TestSetupViewModel, modifier: Modifier =
 				stringResource(R.string.test_time), TestSetupState.timeText,
 				viewModel::setTime,
 				{ viewModel.restoreTime(); keyboard?.hide() },
-				// the caption derives the run length, since the row itself holds only one word's share
+				// the caption times the whole run, the field holds one character's share
 				caption = stringResource(R.string.test_total_time, TestSetupState.timeTotal().total),
+				keyboardType = KeyboardType.Decimal,
 			)
 			HairlineDivider()
 			DirectionRow(TestSetupState.reverseTest, viewModel::toggleReverse)

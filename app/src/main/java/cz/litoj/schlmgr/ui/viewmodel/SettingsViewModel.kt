@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import cz.litoj.schlmgr.app.AppSettings
 import cz.litoj.schlmgr.data.wordlist.WordListWriter
 import cz.litoj.schlmgr.testing.TestEngine
+import cz.litoj.schlmgr.ui.component.NumberInput
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 
 /**
@@ -26,7 +27,7 @@ class SettingsState(
 	clever: Boolean = false,
 	requireVariants: Boolean = false,
 	amountText: String = "10",
-	timeText: String = TestEngine.DEFAULT_TIME_SECONDS.toString(),
+	timeText: String = TestEngine.getSecondsPerChar().toString(),
 	defaultReverse: Boolean = false,
 	searchDiacritics: Boolean = false,
 	selectionOrder: List<SelectionAction> = ActionConfig.DEFAULT_ORDER,
@@ -167,18 +168,16 @@ class SettingsState(
 	}
 
 	fun setTime(text: String) {
-		timeText = digitsOnly(text)
-		timeText.toIntOrNull()?.let {
-			if (it >= 1) {
-				TestEngine.setDefaultTime(it)
-				AppSettings.set("defaultTestTime", it)
-			}
+		timeText = NumberInput.decimal(text)
+		NumberInput.amount(timeText)?.let {
+			TestEngine.setSecondsPerChar(it)
+			AppSettings.set("testSecondsPerChar", it)
 		}
 	}
 
 	fun timeFocusLost() {
-		if (needsRestore(timeText))
-			timeText = TestEngine.getDefaultTime().toString()
+		if (NumberInput.amount(timeText) == null)
+			timeText = TestEngine.getSecondsPerChar().toString()
 	}
 
 	/** The search reads the flag per run, so nothing else needs to react. */
@@ -226,7 +225,7 @@ class SettingsViewModel : ViewModel() {
 		clever = TestEngine.isClever,
 		requireVariants = AppSettings.getBool("testRequireAllVariants", false),
 		amountText = TestEngine.amount.toString(),
-		timeText = TestEngine.getDefaultTime().toString(),
+		timeText = TestEngine.getSecondsPerChar().toString(),
 		defaultReverse = TestEngine.isReversed,
 		searchDiacritics = AppSettings.getBool("searchNoDiacritics", false),
 		selectionOrder = config.order,

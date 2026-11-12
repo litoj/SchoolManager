@@ -7,6 +7,7 @@ import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.testing.TestEngine
+import cz.litoj.schlmgr.ui.component.NumberInput
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -78,8 +79,8 @@ class TestSetupViewModel(
 	}
 
 	fun restoreTime() {
-		val n = TestSetupState.timeText.toIntOrNull() ?: 0
-		if (n < 1) TestSetupState.setTime(TestEngine.getDefaultTime().toString())
+		if (NumberInput.amount(TestSetupState.timeText) == null)
+			TestSetupState.setTime(TestEngine.getSecondsPerChar().toString())
 	}
 
 	fun toggleReverse() {

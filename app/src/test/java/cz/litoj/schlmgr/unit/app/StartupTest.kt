@@ -86,4 +86,40 @@ class StartupTest {
 
 		assertFalse(AppSettings.has("descLines"))
 	}
+
+	@Test
+	fun `the old default time converts to the new one`() {
+		AppSettings.set("defaultTestTime", 18)
+
+		migrateStoredSettings()
+
+		assertEquals(1.5f, AppSettings.getFloat("testSecondsPerChar", 0f), 0f)
+		assertFalse("the old key leaves with the conversion", AppSettings.has("defaultTestTime"))
+	}
+
+	@Test
+	fun `a changed old time keeps its ratio to the default`() {
+		AppSettings.set("defaultTestTime", 36)
+
+		migrateStoredSettings()
+
+		assertEquals("double the old default stays double", 3.0f,
+			AppSettings.getFloat("testSecondsPerChar", 0f), 0f)
+	}
+
+	@Test
+	fun `a converted time keeps the one decimal of its field`() {
+		AppSettings.set("defaultTestTime", 9)
+
+		migrateStoredSettings()
+
+		assertEquals(0.8f, AppSettings.getFloat("testSecondsPerChar", 0f), 0f)
+	}
+
+	@Test
+	fun `an absent old time migrates nothing`() {
+		migrateStoredSettings()
+
+		assertFalse(AppSettings.has("testSecondsPerChar"))
+	}
 }

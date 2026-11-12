@@ -55,6 +55,23 @@ fun SettingSwitchRow(
 	}
 }
 
+/**
+ * The input rules of the number fields, shared by the screens that host them.
+ * - a decimal field takes digits and one separator, a comma standing for a dot.
+ */
+object NumberInput {
+
+	/** [text] without the characters a decimal field cannot take. */
+	fun decimal(text: String): String {
+		val typed = text.filter { it.isDigit() || it == '.' || it == ',' }.replace(',', '.')
+		val second = typed.indexOf('.', typed.indexOf('.') + 1)
+		return if (second < 0) typed else typed.substring(0, second)
+	}
+
+	/** The written seconds, null when the field holds no usable amount. */
+	fun amount(text: String): Float? = text.toFloatOrNull()?.takeIf { it > 0f }
+}
+
 /** [onFocusLost] typically restores an empty field. */
 @Composable
 fun SettingNumberRow(
@@ -63,6 +80,7 @@ fun SettingNumberRow(
 	onValueChange: (String) -> Unit,
 	onFocusLost: () -> Unit,
 	caption: String? = null,
+	keyboardType: KeyboardType = KeyboardType.Number,
 ) {
 	SettingFieldRow(label, caption) { focus ->
 		// the field takes the font size of the row label.
@@ -71,7 +89,7 @@ fun SettingNumberRow(
 			value = value,
 			onValueChange = onValueChange,
 			fontSize = 18.sp,
-			keyboardType = KeyboardType.Number,
+			keyboardType = keyboardType,
 			onFocusLost = onFocusLost,
 			focusRequester = focus,
 		)

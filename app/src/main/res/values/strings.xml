@@ -262,9 +262,10 @@
     <string name="help_test_run_how">Start needs at least one source. Each word is asked once in a shuffled order.
         \nWords with the exact same translation set share one prompt. A repeated answer passes only once.
         \nThe countdown blinks red for the last 30 seconds.
+        \nEach word gets 5 seconds plus its answer length times the seconds per character.
         \nRequiring name variants adds one answer field per alternative and scales time by 1.5 per added variant.
         \nThe prompt shows the first line of the word\'s description.
-        \nDone submits and asks first when answers are missing. QUIT or Back ends without grading.</string>
+        \nDone submits and asks first when answers are missing. ABORT or Back ends without grading.</string>
     <string name="help_test_select">Selecting items for the test</string>
     <string name="help_test_select_how">Add source opens the picker. Long-press a row or tap its type icon to pick it, then Select.
         \nAll sources must belong to one set.</string>
@@ -341,7 +342,7 @@
     <string name="setts_test_clever_hint">Orders the test by priority: weak and rarely tested words first.</string>
     <string name="setts_test_variants">Require every name variant</string>
     <string name="setts_test_variants_hint">A word like A/B asks for A and B in separate answer fields. Time multiplies by 1.5 per added variant.</string>
-    <string name="setts_test_time">Seconds per word</string>
+    <string name="setts_test_time">Seconds per character</string>
     <string name="setts_test_direction">Default answer side</string>
     <string name="setts_test_direction_hint">Which side you answer with.</string>
     <string name="setts_word_splitter">Word/translation splitter</string>
@@ -395,7 +396,7 @@
         <item quantity="one">Only %d word is available, all will be tested.</item>
         <item quantity="other">Only %d words are available, all will be tested.</item>
     </plurals>
-    <string name="test_time">Seconds per word</string>
+    <string name="test_time">Seconds per character</string>
     <string name="test_total_time">Total time: %1$d s</string>
     <string name="test_sources_header">Sources · one set</string>
     <string name="test_sources_hint">A picked chapter covers its words.</string>

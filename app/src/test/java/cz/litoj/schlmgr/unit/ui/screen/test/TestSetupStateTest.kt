@@ -57,9 +57,9 @@ class TestSetupStateTest {
 		DbItem(id = id, name = name, description = "", type = ItemKind.CHAPTER)
 
 	@Test
-	fun `an input below one falls back to the engine default at the start`() {
+	fun `an emptied field falls back to the engine setting at the start`() {
 		TestSetupState.setAmount("5")
-		TestSetupState.setTime("9")
+		TestSetupState.setTime("1.5")
 
 		TestSetupState.setAmount("0")
 		TestSetupState.setTime("")
@@ -70,7 +70,7 @@ class TestSetupStateTest {
 		// the fresh-entry reset re-reads the settings of the engine
 		TestSetupState.reset()
 		assertEquals(TestEngine.amount.toString(), TestSetupState.amountText)
-		assertEquals(TestEngine.getDefaultTime().toString(), TestSetupState.timeText)
+		assertEquals(TestEngine.getSecondsPerChar().toString(), TestSetupState.timeText)
 	}
 
 	@Test
@@ -86,7 +86,7 @@ class TestSetupStateTest {
 	}
 
 	@Test
-	fun `the focus-lost doors restore a below-one field, keeping a valid one`() {
+	fun `the focus-lost doors restore an unusable field, keeping a valid one`() {
 		val model = TestSetupViewModel()
 		TestSetupState.setAmount("0")
 		TestSetupState.setTime("")
@@ -95,11 +95,24 @@ class TestSetupStateTest {
 		model.restoreTime()
 
 		assertEquals(TestEngine.amount.toString(), TestSetupState.amountText)
-		assertEquals(TestEngine.getDefaultTime().toString(), TestSetupState.timeText)
+		assertEquals(TestEngine.getSecondsPerChar().toString(), TestSetupState.timeText)
 
 		TestSetupState.setAmount("7")
+		TestSetupState.setTime("0.8")
 		model.restoreAmount()
+		model.restoreTime()
 		assertEquals("7", TestSetupState.amountText)
+		assertEquals("0.8", TestSetupState.timeText)
+	}
+
+	@Test
+	fun `a written separator stands for a dot and a zero restores the setting`() {
+		TestSetupState.setTime("2,5")
+		assertEquals("2.5", TestSetupState.timeText)
+
+		TestSetupState.setTime("0")
+		TestSetupViewModel().restoreTime()
+		assertEquals(TestEngine.getSecondsPerChar().toString(), TestSetupState.timeText)
 	}
 
 	@Test
@@ -371,20 +384,22 @@ class TestSetupStateTest {
 	}
 
 	@Test
-	fun `requiring variants multiplies total time by one point five per added variant`() {
+	fun `the caption time follows the answer length and each required variant`() {
 		TestSetupState.childrenLookup = { emptyList() }
-		TestSetupState.setTime("18")
 		TestSetupState.setAmount("1")
 		TestEngine.applyRequireAllVariants(true)
 		try {
 			val plain = DbItem(id = 1, name = "plain", description = "", type = ItemKind.WORD)
 			TestSetupState.addPicked(listOf(TestSetupState.seedOf(ItemRow(plain, null, 1))))
-			assertEquals(18, TestSetupState.timeTotal().total)
+			TestSetupState.setTime("2")
+			assertEquals(15, TestSetupState.timeTotal().total)
 
 			TestSetupState.reset()
 			val variant = DbItem(id = 2, name = "/I/You smile.", description = "", type = ItemKind.WORD)
 			TestSetupState.addPicked(listOf(TestSetupState.seedOf(ItemRow(variant, null, 1))))
-			assertEquals(41, TestSetupState.timeTotal().total)
+			TestSetupState.setTime("2")
+			// 5 plus 26 characters over three fields: 31 times 1.5 squared
+			assertEquals(70, TestSetupState.timeTotal().total)
 		} finally {
 			TestEngine.applyRequireAllVariants(false)
 		}

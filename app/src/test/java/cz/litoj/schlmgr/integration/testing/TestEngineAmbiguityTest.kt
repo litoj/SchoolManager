@@ -117,7 +117,7 @@ class TestEngineAmbiguityTest {
 
 	private fun answerFirstAndRepeat(entries: List<TestEntry>): Pair<Boolean, Boolean> {
 		val engine = TestEngine()
-		engine.setTested(-1, null, 1, entries)
+		engine.setTested(-1, null, 1f, entries)
 		val picked = engine.getTestSrc()
 		val name = picked[0].word.name
 		val first = engine.isAnswer(0, name, picked[0].translations())
@@ -130,7 +130,7 @@ class TestEngineAmbiguityTest {
 		val (_, chapter) = subjectWith("c", listOf("first" to listOf("same")))
 		val entries = entries(chapter)
 		val engine = TestEngine()
-		engine.setTested(1, null, 1, entries)
+		engine.setTested(1, null, 1f, entries)
 
 		assertTrue("spaces are not part of the answer",
 			engine.isAnswer(0, "  first  ", entries[0].translations()))
@@ -144,7 +144,7 @@ class TestEngineAmbiguityTest {
 			"third" to listOf("same", "other"),
 		))
 		val engine = TestEngine()
-		engine.setTested(-1, null, 1, entries(chapter))
+		engine.setTested(-1, null, 1f, entries(chapter))
 		val tasks = engine.getTestGroups()
 
 		assertEquals("only the exact duplicate pair becomes one task", 2, tasks.size)
@@ -164,7 +164,7 @@ class TestEngineAmbiguityTest {
 		))
 		val entries = entries(chapter)
 		val engine = TestEngine()
-		engine.setTested(-1, null, 1, entries)
+		engine.setTested(-1, null, 1f, entries)
 		val names = engine.getTestSrc().map { it.word.name }
 
 		assertTrue("the shared pair lands next to each other: $names",
@@ -180,7 +180,7 @@ class TestEngineAmbiguityTest {
 			"last" to listOf("last"),
 		))
 		val engine = TestEngine()
-		engine.setTested(-1, null, 1, entries(chapter))
+		engine.setTested(-1, null, 1f, entries(chapter))
 		val picked = engine.getTestSrc()
 		val firstIndex = picked.indexOfFirst { it.word.name == "first" }
 		val secondIndex = picked.indexOfFirst { it.word.name == "second" }
@@ -218,7 +218,7 @@ class TestEngineAmbiguityTest {
 		))
 		val entries = entries(chapter)
 		val engine = TestEngine()
-		engine.setTested(-1, null, 1, entries)
+		engine.setTested(-1, null, 1f, entries)
 		val picked = engine.getTestSrc()
 
 		assertTrue("the first different answer passes",
@@ -237,7 +237,7 @@ class TestEngineAmbiguityTest {
 	fun `shared prompt answers land on the member that accepts them`() {
 		val entries = sharedPair("なに/なん", "なん")
 		val engine = TestEngine()
-		engine.setTested(-1, null, 1, entries)
+		engine.setTested(-1, null, 1f, entries)
 		val tasks = engine.getTestGroups()
 
 		assertEquals("the shared translation row makes one prompt", 1, tasks.size)
@@ -252,7 +252,7 @@ class TestEngineAmbiguityTest {
 	fun `a repeated answer still fails one shared prompt member`() {
 		val entries = sharedPair("なに/なん", "なん")
 		val engine = TestEngine()
-		engine.setTested(-1, null, 1, entries)
+		engine.setTested(-1, null, 1f, entries)
 
 		val results = grades(engine, listOf(listOf("なん", "なん")))
 
@@ -265,7 +265,7 @@ class TestEngineAmbiguityTest {
 		try {
 			val entries = sharedPair("なに/なん", "なん")
 			val engine = TestEngine()
-			engine.setTested(-1, null, 1, entries)
+			engine.setTested(-1, null, 1f, entries)
 			val task = TestTaskModel.flatten(
 				engine.getTestSrc().map(::TestItemModel), engine.getTestGroups()).single()
 
@@ -284,7 +284,7 @@ class TestEngineAmbiguityTest {
 		try {
 			val entries = sharedPair("なに/なん", "なに/なん")
 			val engine = TestEngine()
-			engine.setTested(-1, null, 1, entries)
+			engine.setTested(-1, null, 1f, entries)
 
 			val results = grades(engine, listOf(listOf("なん", "なに", "なん", "なに")))
 
@@ -300,7 +300,7 @@ class TestEngineAmbiguityTest {
 		try {
 			val entries = sharedPair("なに/なん", "なん")
 			val engine = TestEngine()
-			engine.setTested(-1, null, 1, entries)
+			engine.setTested(-1, null, 1f, entries)
 			val tasks = engine.getTestGroups()
 
 			assertEquals("different word prompts stay separate", 2, tasks.size)
@@ -315,7 +315,7 @@ class TestEngineAmbiguityTest {
 	fun `the same variant answers unshared prompts independently`() {
 		val entries = unsharedPair()
 		val engine = TestEngine()
-		engine.setTested(-1, null, 1, entries)
+		engine.setTested(-1, null, 1f, entries)
 
 		assertEquals("separate translation rows stay separate", 2, engine.getTestGroups().size)
 		val results = grades(engine, listOf(listOf("なん"), listOf("なん")))
@@ -323,11 +323,15 @@ class TestEngineAmbiguityTest {
 	}
 
 	@Test
-	fun `variant timings scale by one point five per added variant`() {
+	fun `the answer length and each required variant set the time`() {
 		val (_, chapter) = subjectWith("c", listOf("/I/You smile." to listOf("laugh")))
-		assertEquals(41, TestEngine.timeForVariants(18, entries(chapter)))
-		val (_, plain) = subjectWith("plain", listOf("plain" to listOf("laugh")))
-		assertEquals(18, TestEngine.timeForVariants(18, entries(plain)))
+		assertEquals("five seconds plus 13 characters", 18, TestEngine.testTime(1f, entries(chapter)))
+		TestEngine.applyRequireAllVariants(true)
+		try {
+			assertEquals("three fields multiply by 1.5 squared", 41, TestEngine.testTime(1f, entries(chapter)))
+		} finally {
+			TestEngine.applyRequireAllVariants(false)
+		}
 	}
 
 	@Test
@@ -337,12 +341,12 @@ class TestEngineAmbiguityTest {
 		try {
 			val entries = entries(chapter)
 			val engine = TestEngine()
-			engine.setTested(1, null, 20, entries)
+			engine.setTested(1, null, 1f, entries)
 			val task = TestTaskModel.flatten(
 				engine.getTestSrc().map(::TestItemModel), engine.getTestGroups()).single()
 
 			assertEquals("only the widest side takes answer fields", 3, task.answerFields.size)
-			assertEquals("time scales with those fields", 45, TestEngine.timeForVariants(20, entries))
+			assertEquals("time scales with those fields", 32, TestEngine.testTime(1f, entries))
 			assertEquals(listOf(true), grades(engine, listOf(listOf("a c", "b d", "a e"))))
 		} finally {
 			TestEngine.applyRequireAllVariants(false)
@@ -356,7 +360,7 @@ class TestEngineAmbiguityTest {
 		try {
 			val entries = entries(chapter)
 			val engine = TestEngine()
-			engine.setTested(1, null, 1, entries)
+			engine.setTested(1, null, 1f, entries)
 			val task = TestTaskModel.flatten(
 				engine.getTestSrc().map(::TestItemModel), engine.getTestGroups()).single()
 
@@ -374,7 +378,7 @@ class TestEngineAmbiguityTest {
 		try {
 			val entries = entries(chapter)
 			val engine = TestEngine()
-			engine.setTested(1, null, 1, entries)
+			engine.setTested(1, null, 1f, entries)
 
 			assertTrue(engine.isAnswer(0, listOf("I smile.", "You smile.", "smile."), entries[0].translations()))
 			assertEquals(1, ItemRepository.get(entries[0].word.id)!!.passedTests)
@@ -391,7 +395,7 @@ class TestEngineAmbiguityTest {
 		try {
 			val entries = entries(chapter)
 			val engine = TestEngine()
-			engine.setTested(1, null, 1, entries)
+			engine.setTested(1, null, 1f, entries)
 
 			assertFalse(engine.isAnswer(0, "I smile.", entries[0].translations()))
 			assertEquals(1, ItemRepository.get(entries[0].word.id)!!.failedTests)
@@ -408,11 +412,11 @@ class TestEngineAmbiguityTest {
 		try {
 			val entries = entries(chapter)
 			val engine = TestEngine()
-			engine.setTested(1, null, 1, entries)
+			engine.setTested(1, null, 1f, entries)
 			assertFalse("one variant alone does not suffice",
 				engine.isAnswer(0, "I smile.", entries[0].translations()))
 			val complete = TestEngine()
-			complete.setTested(1, null, 1, entries)
+			complete.setTested(1, null, 1f, entries)
 			assertTrue("every parsed variant satisfies the requirement",
 				complete.isAnswer(0, listOf("I smile.", "You smile.", "smile."), entries[0].translations()))
 		} finally {
@@ -428,11 +432,11 @@ class TestEngineAmbiguityTest {
 		try {
 			val entries = entries(chapter)
 			val complete = TestEngine()
-			complete.setTested(1, null, 1, entries)
+			complete.setTested(1, null, 1f, entries)
 			assertTrue("both reversed alternatives are accepted",
 				complete.isAnswer(0, listOf("dům", "domov"), entries[0].translations()))
 			val partial = TestEngine()
-			partial.setTested(1, null, 1, entries)
+			partial.setTested(1, null, 1f, entries)
 			assertFalse("a single reversed alternative fails",
 				partial.isAnswer(0, "dům", entries[0].translations()))
 		} finally {
@@ -450,7 +454,7 @@ class TestEngineAmbiguityTest {
 		val target = ItemRepository.children(chapter.id).single { it.name == "target"
 			&& it.type == cz.litoj.schlmgr.data.db.ItemKind.WORD }
 		val engine = TestEngine()
-		engine.setTested(1, null, 1, listOf(entry(target)))
+		engine.setTested(1, null, 1f, listOf(entry(target)))
 
 		assertFalse("matching only one shown translation cannot pass",
 			engine.isAnswer(0, "wrong", entry(target).translations()))

@@ -249,9 +249,10 @@
     <string name="help_test_run_how">Začít potřebuje aspoň jeden zdroj. Každé slovíčko je zadáno jednou v zamíchaném pořadí.
         \nSlovíčka se stejnou sadou překladů sdílí jedno zadání. Opakovaná odpověď uspěje jen jednou.
         \nOdpočet posledních 30 sekund bliká červeně.
+        \nKaždé slovíčko má 5 sekund plus délka odpovědi krát sekundy na znak.
         \nPožadované varianty přidávají jedno odpověďové pole za každou alternativu a čas násobí 1,5krát za každou další variantu.
         \nZadání ukazuje první řádek popisu slovíčka.
-        \nHotovo odešle odpovědi a při chybějících se nejprve zeptá. UKONČIT nebo zpět ukončí běh bez hodnocení.</string>
+        \nHotovo odešle odpovědi a při chybějících se nejprve zeptá. ZRUŠIT nebo zpět ukončí běh bez hodnocení.</string>
     <string name="help_test_select">Výběr položek do testu</string>
     <string name="help_test_select_how">Přidat zdroj otevře prohlížeč. Dlouhým stiskem řádku nebo klepnutím na ikonu typu vyberte zdroj, pak stiskněte Zvolit.
         \nVšechny zdroje musí patřit jedné sadě.</string>
@@ -328,7 +329,7 @@
     <string name="setts_test_clever_hint">Seřadí test podle priority: slabá a málo testovaná slovíčka první.</string>
     <string name="setts_test_variants">Požadovat všechny varianty názvu</string>
     <string name="setts_test_variants_hint">Slovíčko A/B vyžaduje A i B, každé na vlastním řádku. Čas roste 1,5krát na každou další variantu.</string>
-    <string name="setts_test_time">Sekundy na slovíčko</string>
+    <string name="setts_test_time">Sekundy na znak</string>
     <string name="setts_test_direction">Výchozí strana odpovědi</string>
     <string name="setts_test_direction_hint">Kterou stranou odpovídáte.</string>
     <string name="setts_word_splitter">Oddělovač slov a překladů</string>
@@ -388,7 +389,7 @@
         <item quantity="many">K dispozici je jen %d slov, otestují se.</item>
         <item quantity="other">K dispozici je jen %d slov, otestují se.</item>
     </plurals>
-    <string name="test_time">Sekundy na slovíčko</string>
+    <string name="test_time">Sekundy na znak</string>
     <string name="test_total_time">Celkový čas: %1$d s</string>
     <string name="test_sources_header">Zdroje · jedna sada</string>
     <string name="test_sources_hint">Vybraná kapitola zastupuje svá slovíčka.</string>

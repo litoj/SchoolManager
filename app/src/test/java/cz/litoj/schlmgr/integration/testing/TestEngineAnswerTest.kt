@@ -45,7 +45,7 @@ class TestEngineAnswerTest {
 
 	private fun answer(entry: TestEntry, text: String?): Boolean {
 		val engine = TestEngine()
-		engine.setTested(1, null, 1, listOf(entry))
+		engine.setTested(1, null, 1f, listOf(entry))
 		return engine.isAnswer(0, text, entry.translations())
 	}
 

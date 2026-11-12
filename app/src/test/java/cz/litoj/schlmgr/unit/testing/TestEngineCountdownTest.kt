@@ -30,7 +30,7 @@ class TestEngineCountdownTest {
 			ticks.incrementAndGet()
 			ticked.countDown()
 			false
-		}, 3, listOf(entry()))
+		}, 3f, listOf(entry()))
 
 		engine.startTest()
 
@@ -44,7 +44,7 @@ class TestEngineCountdownTest {
 	fun `a pause holds the countdown and the resume continues it`() {
 		val engine = TestEngine()
 		val ticks = AtomicInteger()
-		engine.setTested(1, { ticks.incrementAndGet(); true }, 30, listOf(entry()))
+		engine.setTested(1, { ticks.incrementAndGet(); true }, 30f, listOf(entry()))
 
 		engine.startTest()
 		// the first tick runs before any sleep, so the wait only covers the thread start

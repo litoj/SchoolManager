@@ -8,6 +8,7 @@ import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.wordlist.WordListParseException
 import cz.litoj.schlmgr.data.wordlist.WordListWriter
 import cz.litoj.schlmgr.testing.TestEngine
+import kotlin.math.roundToInt
 
 /**
  * App startup and the file outcome reports of the transfer layer, called by
@@ -35,17 +36,36 @@ object Startup {
 	/**
 	 * The compatibility checker, converting a stored format left by an older version.
 	 * - it runs before the options apply, once per old key.
-	 * - the conversion removes the key.
-	 * - the description switch became a line limit: on converts to 5 lines, off to 0.
+	 * - each conversion removes its key, so it never runs twice.
 	 */
 	@VisibleForTesting
 	internal fun migrateStoredSettings() {
+		migrateDescriptionSwitch()
+		migrateSecondsPerChar()
+	}
+
+	/** The description switch became a line limit: on converts to 5 lines, off to 0. */
+	private fun migrateDescriptionSwitch() {
 		if (!AppSettings.has("doShowDesc")) return
 		AppSettings.set("descLines", if (AppSettings.getBool("doShowDesc", true)) DescLinesOn else 0)
 		AppSettings.remove("doShowDesc")
 	}
 
+	/**
+	 * The seconds per word became the seconds per answer character.
+	 * - the value keeps its ratio to the old default of 18, so a changed setting stays changed.
+	 * - the result keeps one decimal, the precision of the field.
+	 */
+	private fun migrateSecondsPerChar() {
+		if (!AppSettings.has("defaultTestTime")) return
+		val written = AppSettings.getInt("defaultTestTime", OldWordSeconds)
+		val scaled = written * TestEngine.DEFAULT_SECONDS_PER_CHAR / OldWordSeconds
+		AppSettings.set("testSecondsPerChar", (scaled * 10).roundToInt() / 10f)
+		AppSettings.remove("defaultTestTime")
+	}
+
 	private const val DescLinesOn = 5
+	private const val OldWordSeconds = 18
 
 	/**
 	 * Pushes the stored options into the config statics of the engine.
@@ -56,7 +76,8 @@ object Startup {
 		TestEngine.applyOptions(
 			AppSettings.getBool("isClever", true),
 			AppSettings.getInt("testAmount", 10))
-		TestEngine.setDefaultTime(AppSettings.getInt("defaultTestTime", TestEngine.DEFAULT_TIME_SECONDS))
+		TestEngine.setSecondsPerChar(
+			AppSettings.getFloat("testSecondsPerChar", TestEngine.DEFAULT_SECONDS_PER_CHAR))
 		TestEngine.applyReversed(AppSettings.getBool("reverseTest", false))
 		TestEngine.applyRequireAllVariants(AppSettings.getBool("testRequireAllVariants", false))
 		WordListWriter.setWordTranslationSplitter(AppSettings.getString("exportWordSplit", "="))

@@ -197,6 +197,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The red button aborts and drops the answers, only Done grades them.
 - Requiring all variants accepts any valid answers that cover every side once, with the widest independent part setting the field count.
 - An added required answer multiplies that word's time by 1.5.
+- A word's time is 5 seconds plus its answer characters times the seconds per character.
 - A tested word scores once regardless of variants, while different words score separately.
 - Grading matches name variants and linked translations, then counters go up the plain-parent chain.
 - Only the first line of the tested word's description shows in a prompt.
@@ -270,3 +271,4 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Repair and wording matrices run as unit tests, the popup keeps only the measured marker.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
 - Colored answer diffs compare only expanded variants and pass 907 behavior tests and debug lint.
+- Seconds per character and its stored-format migration pass 907 behavior tests and debug lint.

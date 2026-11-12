@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
@@ -122,6 +123,7 @@ private fun SettingsList(state: SettingsState, modifier: Modifier = Modifier) {
 		SettingNumberRow(
 			stringResource(R.string.setts_test_time), state.timeText, state::setTime,
 			onFocusLost = { state.timeFocusLost(); keyboard?.hide() },
+			keyboardType = KeyboardType.Decimal,
 		)
 		HairlineDivider()
 		SettingChoiceRow(

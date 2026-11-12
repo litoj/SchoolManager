@@ -41,7 +41,7 @@ class TestEngineSelectionTest {
 	private fun select(items: List<Item>, amount: Int): List<TestEntry> {
 		TestEngine.applyOptions(isClever = true, amount = TestEngine.amount)
 		val test = TestEngine()
-		test.setTested(amount, null, 1, items.map { it.toEntry() })
+		test.setTested(amount, null, 1f, items.map { it.toEntry() })
 		return test.getTestSrc()
 	}
 
@@ -52,7 +52,7 @@ class TestEngineSelectionTest {
 	fun `an empty source selects nothing instead of crashing`() {
 		TestEngine.applyOptions(isClever = true, amount = TestEngine.amount)
 		val test = TestEngine()
-		test.setTested(-1, null, 1, emptyList())
+		test.setTested(-1, null, 1f, emptyList())
 		assertTrue(test.getTestSrc().isEmpty())
 	}
 
@@ -60,7 +60,7 @@ class TestEngineSelectionTest {
 	fun `a single-entry source starts a one-item test`() {
 		TestEngine.applyOptions(isClever = true, amount = TestEngine.amount)
 		val test = TestEngine()
-		test.setTested(1, null, 1, listOf(Item(1, 0, 0).toEntry()))
+		test.setTested(1, null, 1f, listOf(Item(1, 0, 0).toEntry()))
 		assertEquals(1, test.getTestSrc().size)
 	}
 

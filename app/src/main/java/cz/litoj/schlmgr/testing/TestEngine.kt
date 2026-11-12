@@ -32,21 +32,19 @@ class TestEngine {
 	 * @param amount how many entries to use, -1 or more than [source] uses all of it.
 	 *   Clever mode picks by urgency, otherwise randomly.
 	 * @param doOnSec tick callback, null for none
-	 * @param timeSec seconds one item takes
+	 * @param timePerChar seconds one answer character takes
 	 * @param source the candidate entries
 	 */
-	fun setTested(amount: Int, doOnSec: Timer?, timeSec: Int, source: List<TestEntry>) {
+	fun setTested(amount: Int, doOnSec: Timer?, timePerChar: Float, source: List<TestEntry>) {
 		require(amount == -1 || amount >= 1) { "Amount of tested elements must be >= 1!" }
-		require(timeSec >= 1) { "Time given for an item must be >= 1 s!" }
+		require(timePerChar > 0f) { "Seconds per answer character must be > 0!" }
 		// an amount that covers the whole source uses all of it,
 		// a single-entry source included
 		val useAmount = if (amount == -1 || amount >= source.size) source.size else amount
 		val selected = if (isClever) cleverTest(source, useAmount) else rndTest(source.toMutableList(), useAmount)
 		groups = groupByWholePrompt(selected)
 		this.source = groups.flatMap(TestTask::entries)
-		// a huge per-item time must not overflow the run into a negative
-		time = if (requireAllVariants) timeForVariants(timeSec, this.source)
-		else (timeSec.toLong() * useAmount).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+		time = testTime(timePerChar, this.source)
 		this.doOnSec = doOnSec
 		answered = BooleanArray(this.source.size)
 		usedAnswers.clear()
@@ -249,17 +247,28 @@ class TestEngine {
 		else WordNames.requiredVariantCount(entry.word.name)
 
 		/**
-		 * Total seconds for the selected entries, scaled as 1.5 per extra variant.
-		 * - a one-variant entry keeps the base time, since its exponent is zero.
+		 * The characters the answer of [entry] writes.
+		 * - the tested side is the written one, and the longest text it offers decides.
+		 */
+		private fun answerChars(entry: TestEntry): Int =
+			(if (isReversed) entry.translations().map { it.name } else listOf(entry.word.name))
+				.maxOfOrNull { it.length } ?: 1
+
+		/** The seconds every word asks for besides the length of its answer. */
+		const val BASE_SECONDS_PER_WORD = 5f
+
+		/**
+		 * Total seconds for the entries: [BASE_SECONDS_PER_WORD] plus the characters they write.
+		 * - the option requiring every name variant adds 1.5 times per added answer field.
 		 */
 		@JvmStatic
-		fun timeForVariants(perWord: Int, entries: List<TestEntry>): Int {
+		fun testTime(perChar: Float, entries: List<TestEntry>): Int {
 			var total = 0.0
 			for (entry in entries) {
-				val exponent = (variantCount(entry) - 1).coerceAtLeast(0)
-				total += perWord * 1.5.pow(exponent)
+				val exponent = if (requireAllVariants) (variantCount(entry) - 1).coerceAtLeast(0) else 0
+				total += (BASE_SECONDS_PER_WORD + perChar * answerChars(entry)) * 1.5.pow(exponent)
 			}
-			return total.roundToInt()
+			return total.coerceAtMost(Int.MAX_VALUE.toDouble()).roundToInt()
 		}
 
 		/**
@@ -302,20 +311,21 @@ class TestEngine {
 			}
 		}
 
-		const val DEFAULT_TIME_SECONDS = 18
+		/** The seconds one answer character takes on a first launch. */
+		const val DEFAULT_SECONDS_PER_CHAR = 1.5f
 
-		private var defaultTime = DEFAULT_TIME_SECONDS
+		private var secondsPerChar = DEFAULT_SECONDS_PER_CHAR
 
 		@JvmStatic
-		fun getDefaultTime(): Int = defaultTime
+		fun getSecondsPerChar(): Float = secondsPerChar
 
 		/**
-		 * @throws IllegalArgumentException when [newTime] is below 1
+		 * @throws IllegalArgumentException when [value] is not above zero
 		 */
 		@JvmStatic
-		fun setDefaultTime(newTime: Int) {
-			require(newTime >= 1) { "Duration of a test must be >= 1 s!" }
-			defaultTime = newTime
+		fun setSecondsPerChar(value: Float) {
+			require(value > 0f) { "Seconds per answer character must be > 0!" }
+			secondsPerChar = value
 		}
 
 		/**

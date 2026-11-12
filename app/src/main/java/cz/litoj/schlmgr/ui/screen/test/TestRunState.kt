@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.Dp
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestItemModel
 import cz.litoj.schlmgr.testing.TestTaskModel
+import cz.litoj.schlmgr.ui.component.NumberInput
 import cz.litoj.schlmgr.ui.popup.ContinuePopup
 import cz.litoj.schlmgr.ui.popup.Dialogs
 import cz.litoj.schlmgr.ui.popup.PopupMargin
@@ -138,11 +139,10 @@ object TestRunState {
 		// window would otherwise run a second engine beside the first
 		if (walking === host) return
 		walking = host
-		// an empty or below-1 field falls back to the setting of the engine
+		// an empty field falls back to the setting of the engine
 		val amount = (TestSetupState.amountText.toIntOrNull() ?: 0)
 			.takeIf { it >= 1 } ?: TestEngine.amount
-		val timeSec = (TestSetupState.timeText.toIntOrNull() ?: 0)
-			.takeIf { it >= 1 } ?: TestEngine.getDefaultTime()
+		val perChar = NumberInput.amount(TestSetupState.timeText) ?: TestEngine.getSecondsPerChar()
 		host.scope.launch(Dispatchers.IO) {
 			// the picked sources are container chains, with the root first.
 			// - the selected item comes last.
@@ -172,7 +172,7 @@ object TestRunState {
 					}
 					true
 				},
-				timeSec,
+				perChar,
 				src,
 			)
 			val models = newTest.getTestSrc().map { TestItemModel(it) }

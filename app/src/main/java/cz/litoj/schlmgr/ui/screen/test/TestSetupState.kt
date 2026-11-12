@@ -10,6 +10,8 @@ import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.testing.TestEngine
+import cz.litoj.schlmgr.testing.TestEntry
+import cz.litoj.schlmgr.ui.component.NumberInput
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 
@@ -77,10 +79,13 @@ object TestSetupState {
 	private val sourceWordIds = mutableMapOf<List<DbItem>, Set<Int>>()
 	private val wordSourceCounts = mutableMapOf<Int, Int>()
 
+	/** The deduped pool words, which the total-time caption times out. */
+	private var poolEntries by mutableStateOf<List<TestEntry>>(emptyList())
+
 	var amountText by mutableStateOf(TestEngine.amount.toString())
 		private set
 
-	var timeText by mutableStateOf(TestEngine.getDefaultTime().toString())
+	var timeText by mutableStateOf(TestEngine.getSecondsPerChar().toString())
 		private set
 
 	/**
@@ -94,8 +99,9 @@ object TestSetupState {
 		amountText = text.filter(Char::isDigit)
 	}
 
+	/** An empty or unusable field falls back to the engine setting at the start. */
 	fun setTime(text: String) {
-		timeText = text.filter(Char::isDigit)
+		timeText = NumberInput.decimal(text)
 	}
 
 	fun setReverse(on: Boolean) {
@@ -107,11 +113,12 @@ object TestSetupState {
 	fun reset() {
 		_list.clear()
 		poolCount = 0
+		poolEntries = emptyList()
 		_sourceCounts.clear()
 		sourceWordIds.clear()
 		wordSourceCounts.clear()
 		amountText = TestEngine.amount.toString()
-		timeText = TestEngine.getDefaultTime().toString()
+		timeText = TestEngine.getSecondsPerChar().toString()
 		reverseTest = TestEngine.isReversed
 	}
 
@@ -125,12 +132,17 @@ object TestSetupState {
 		_sourceCounts.clear()
 		sourceWordIds.clear()
 		wordSourceCounts.clear()
+		val seen = HashSet<Int>()
+		val pool = ArrayList<TestEntry>()
 		_list.forEach { chain ->
-			val ids = TestEngine.convertAll(listOf(chain), childrenLookup).mapTo(HashSet()) { it.word.id }
+			val entries = TestEngine.convertAll(listOf(chain), childrenLookup)
+			val ids = entries.mapTo(HashSet()) { it.word.id }
 			sourceWordIds[chain] = ids
 			_sourceCounts[chain] = ids.size
 			ids.forEach { id -> wordSourceCounts[id] = (wordSourceCounts[id] ?: 0) + 1 }
+			entries.forEach { if (seen.add(it.word.id)) pool.add(it) }
 		}
+		poolEntries = pool
 		poolCount = wordSourceCounts.size
 	}
 
@@ -142,21 +154,16 @@ object TestSetupState {
 	internal var childrenLookup: (Int) -> List<DbItem> = ItemRepository::children
 
 	/**
-	 * The inputs of the total-time caption, where empty fields take the defaults.
+	 * The inputs of the total-time caption, where an empty field takes the setting.
 	 * - the count clamps to the pool, since the run asks no more than that.
 	 */
-	class TimeTotal(val perWord: Int, val count: Int, private val variantTotal: Int?) {
-		val total: Int get() = variantTotal ?: perWord * count
-	}
+	class TimeTotal(val perChar: Float, val count: Int, val total: Int)
 
 	fun timeTotal(): TimeTotal {
-		val perWord = (timeText.toIntOrNull() ?: 0).takeIf { it >= 1 } ?: TestEngine.getDefaultTime()
+		val perChar = NumberInput.amount(timeText) ?: TestEngine.getSecondsPerChar()
 		val amount = (amountText.toIntOrNull() ?: 0).takeIf { it >= 1 } ?: TestEngine.amount
 		val count = if (poolCount > 0) minOf(amount, poolCount) else amount
-		val variantTotal = if (TestEngine.requireAllVariants)
-			TestEngine.timeForVariants(perWord, TestEngine.convertAll(sourceSnapshot(), childrenLookup).take(count))
-		else null
-		return TimeTotal(perWord, count, variantTotal)
+		return TimeTotal(perChar, count, TestEngine.testTime(perChar, poolEntries.take(count)))
 	}
 
 	/**
