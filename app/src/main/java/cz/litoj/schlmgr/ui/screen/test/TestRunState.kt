@@ -228,7 +228,7 @@ object TestRunState {
 				if (correct) success++
 				tim.correct = correct
 				// the results show what was typed, not the grading assignment
-				tim.answer = typedByOwner[tim].orEmpty().joinToString("/")
+				tim.answers = typedByOwner[tim].orEmpty()
 				// the engine wrote the counter updates of the answer itself.
 				// so re-read for the results
 				tim.refreshStats()

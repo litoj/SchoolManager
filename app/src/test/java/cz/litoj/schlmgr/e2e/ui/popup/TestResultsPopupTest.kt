@@ -79,7 +79,7 @@ class TestResultsPopupTest {
 	private fun assertDefaultRow() {
 		rule.onNodeWithText("bread\nroll").assertExists()
 		rule.onNodeWithText("Correct: chleba").assertExists()
-		rule.onNodeWithText("Your answer: a").assertExists()
+		rule.onNodeWithText("Your answer: ", substring = true).assertExists()
 	}
 
 	@Test
@@ -97,7 +97,7 @@ class TestResultsPopupTest {
 
 		rule.onNodeWithText("chleba").assertExists()
 		rule.onNodeWithText("Correct: bread\nroll").assertExists()
-		rule.onNodeWithText("Your answer: a").assertExists()
+		rule.onNodeWithText("Your answer: ", substring = true).assertExists()
 	}
 
 	@Test
@@ -152,6 +152,35 @@ class TestResultsPopupTest {
 
 		rule.onNodeWithText("Correct: laufen/rennen").assertExists()
 		rule.onNodeWithText("Your answer: laufen").assertExists()
+	}
+
+	@Test
+	fun `a wrong answer inserts the missing letter from its nearest variant`() {
+		val subject = ItemRepository.createSubject("B", null)
+		val chapter = ItemRepository.createChapter(subject.id, "c1", null)
+		val word = ItemRepository.createWord(
+			chapter.id, "laufen/rennen", null, listOf("run" to null))
+		val model = TestItemModel(TestEntry(word, listOf(word)))
+		model.answer = "renen"
+
+		show(TestResultsPopup(listOf(model), 0f))
+
+		rule.onNodeWithText("Your answer: rennen").assertExists()
+		rule.onNodeWithText("Correct: laufen/rennen").assertExists()
+	}
+
+	@Test
+	fun `the stored variant pattern is not a comparison target`() {
+		val subject = ItemRepository.createSubject("B", null)
+		val chapter = ItemRepository.createChapter(subject.id, "c1", null)
+		val word = ItemRepository.createWord(chapter.id, "a/b", null, listOf("letter" to null))
+		val model = TestItemModel(TestEntry(word, listOf(word)))
+		model.answer = "ab"
+
+		show(TestResultsPopup(listOf(model), 0f))
+
+		rule.onNodeWithText("Your answer: ab").assertExists()
+		rule.onNodeWithText("Your answer: a/b").assertDoesNotExist()
 	}
 
 	@Test

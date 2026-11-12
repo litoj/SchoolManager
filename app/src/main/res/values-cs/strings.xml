@@ -240,7 +240,8 @@
     <string name="help_test_results_how">Výsledky se otevřou po stisknutí Hotovo nebo po vypršení času.
         \nNadpis je skóre. Každé testované slovíčko, i s variantami, se hodnotí jednou.
         \nSynonymum má vlastní bod.
-        \nVelký text je zadání, pod ním správná odpověď a vaše odpověď.
+        \nVelký text je zadání, pod ním je vaše barevně označená odpověď.
+        \nZelená písmena jsou správně, šedá doplňují chybějící znaky a červená jsou navíc. Po chybné odpovědi následuje celá správná odpověď.
         \nČíslo s × udává, kolikrát bylo slovíčko testováno.
         \nNa konci řádku je počet úspěšných z celkového počtu a všechny počty zahrnují tento test.
         \nZnovu spustí nový test se stejnými zdroji.</string>

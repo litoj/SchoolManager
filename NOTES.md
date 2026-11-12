@@ -200,7 +200,8 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A tested word scores once regardless of variants, while different words score separately.
 - Grading matches name variants and linked translations, then counters go up the plain-parent chain.
 - Only the first line of the tested word's description shows in a prompt.
-- Results round the rate, pair wrong answers with the expected one and offer a retake.
+- Results round the rate, mark answer edits against the nearest expanded variant and offer a retake.
+- The marked answer precedes the complete expected answer, with green matches, gray missing letters and red extra letters.
 - A correct variant answer still labels the full variant word.
 - Result positions follow item order, with lifetime passed/total only at the trailing edge.
 
@@ -268,3 +269,4 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The abort label and the dialog keyboard handoff pass 878 behavior tests and debug lint.
 - Repair and wording matrices run as unit tests, the popup keeps only the measured marker.
 - Walkthrough screenshots live in `docs/scenario-walkthrough`.
+- Colored answer diffs compare only expanded variants and pass 907 behavior tests and debug lint.

@@ -15,7 +15,14 @@ class TestItemModel(val entry: TestEntry) {
 
 	var correct = false
 
-	var answer = ""
+	/** Raw field values stay separate, so result marking never treats their separator as typed text. */
+	var answers: List<String> = emptyList()
+
+	var answer: String
+		get() = answers.joinToString("/")
+		set(value) {
+			answers = listOf(value)
+		}
 
 	/**
 	 * The row of the tested word, replaced by [refreshStats] after grading.

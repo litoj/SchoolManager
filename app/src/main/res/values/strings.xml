@@ -253,7 +253,8 @@
     <string name="help_test_results_how">The report opens when you press Done or the time runs out.
         \nThe title is the score. Every row is one tested word, including words with variants.
         \nA synonym counts separately.
-        \nThe large text is the prompt, below it the correct answer and yours.
+        \nThe large text is the prompt, with your marked answer below it.
+        \nGreen letters match, gray letters fill omissions and red letters are extra. The complete correct answer follows a mismatch.
         \nThe number with × counts how often the word was tested.
         \nThe right end shows passed over tested, and all counts include this test.
         \nRetake runs a new test on the same sources.</string>

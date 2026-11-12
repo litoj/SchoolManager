@@ -72,10 +72,10 @@ class TestResultsPopupNoAnswerTest {
 	}
 
 	@Test
-	fun `a typed answer keeps its own text`() {
+	fun `a typed answer includes its text and the missing letter`() {
 		showResult("hause")
 
-		rule.onNodeWithText("Your answer: hause").assertExists()
+		rule.onNodeWithText("Your answer: haouse").assertExists()
 		rule.onNodeWithText("Your answer: (no answer)").assertDoesNotExist()
 	}
 }
