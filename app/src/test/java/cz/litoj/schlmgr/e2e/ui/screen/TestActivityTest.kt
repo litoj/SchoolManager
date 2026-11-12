@@ -68,7 +68,7 @@ class TestActivityTest {
 	fun `a launched run shows only the first description line`() {
 		awaitRun()
 
-		rule.onNodeWithText("house info").assertExists()
+		rule.onNodeWithText("dům info").assertExists()
 		rule.onNodeWithText("more info").assertDoesNotExist()
 	}
 
@@ -146,7 +146,7 @@ class TestActivityTest {
 		ItemRepository.ensureRoot()
 		val a = ItemRepository.createSubject("A", null)
 		val c1 = ItemRepository.createChapter(a.id, "c1", null)
-		ItemRepository.createWord(c1.id, "house", "house info\nmore info", listOf("dům" to null))
+		ItemRepository.createWord(c1.id, "house", "house info", listOf("dům" to "dům info\nmore info"))
 		val word = ItemRepository.children(c1.id).single()
 		wordId = word.id
 		val row = ItemRow(word, c1.id, 1)

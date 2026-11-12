@@ -22,11 +22,38 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestTaskModel
 import cz.litoj.schlmgr.ui.screen.test.TestRunState
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import kotlinx.coroutines.launch
+
+/** The side the run shows: the word reversed, its translations by default. */
+internal fun promptItems(word: DbItem, translations: List<DbItem>): List<DbItem> =
+	if (TestEngine.isReversed) listOf(word) else translations
+
+/**
+ * The prompt of one row, parsed like the explorer rows.
+ * - every shown name carries its own description, the hidden answer never describes itself.
+ */
+@Composable
+internal fun PromptLines(items: List<DbItem>, modifier: Modifier = Modifier) {
+	val color = colorResource(R.color.colorPrimaryFg)
+	Column(modifier) {
+		items.forEach { shown ->
+			Text(
+				ItemRow.nameParser(shown.name),
+				style = TextStyle(fontSize = 17.sp, color = color),
+			)
+			val description = shown.description.substringBefore('\n').trim()
+			if (description.isNotEmpty()) Text(
+				description,
+				style = TextStyle(fontSize = 13.sp, color = color),
+			)
+		}
+	}
+}
 
 /** One shared prompt and the answer fields that must all differ. */
 @Composable
@@ -38,24 +65,14 @@ internal fun SharedPromptRow(
 ) {
 	Column(Modifier.fillMaxWidth()) {
 		Column(Modifier.fillMaxWidth().padding(5.dp)) {
-			val prompt = if (TestEngine.isReversed) ItemRow.nameParser(task.members[0].word.name)
-			else task.members[0].translations.joinToString("\n") { ItemRow.nameParser(it.name) }
+			val shown = task.members.first()
 			Row(verticalAlignment = Alignment.CenterVertically) {
-				Text(
-					prompt,
-					Modifier.weight(1f),
-					style = TextStyle(fontSize = 17.sp, color = colorResource(R.color.colorPrimaryFg)),
-				)
+				PromptLines(promptItems(shown.word, shown.translations), Modifier.weight(1f))
 				Text(
 					pluralStringResource(R.plurals.test_synonyms, task.answerFields.size, task.answerFields.size),
 					style = TextStyle(fontSize = 13.sp, color = colorResource(R.color.colorPrimaryFg)),
 				)
 			}
-			val description = task.members[0].word.description.substringBefore('\n').trim()
-			if (description.isNotEmpty()) Text(
-				description,
-				style = TextStyle(fontSize = 13.sp, color = colorResource(R.color.colorPrimaryFg)),
-			)
 			// a required variant can repeat across two words, so only the ordinary block asks for different texts
 			if (!TestEngine.requireAllVariants) Text(
 				stringResource(R.string.test_answers_different),

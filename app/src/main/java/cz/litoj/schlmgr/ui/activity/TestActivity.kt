@@ -55,8 +55,9 @@ import kotlinx.coroutines.launch
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.component.AnswerField
 import cz.litoj.schlmgr.ui.component.HairlineDivider
+import cz.litoj.schlmgr.ui.component.PromptLines
 import cz.litoj.schlmgr.ui.component.SharedPromptRow
-import cz.litoj.schlmgr.ui.viewmodel.ItemRow
+import cz.litoj.schlmgr.ui.component.promptItems
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestItemModel
 import cz.litoj.schlmgr.testing.TestTaskModel
@@ -263,23 +264,8 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 		listState: LazyListState, setPendingAnswer: (Int) -> Unit,
 	) {
 		Column(Modifier.fillMaxWidth()) {
-			// the translations prompt by default, the word itself in the reversed direction.
-			// both are parsed like the explorer rows.
 			Column(Modifier.fillMaxWidth().padding(5.dp)) {
-				val prompt = if (TestEngine.isReversed) ItemRow.nameParser(item.word.name)
-				else item.translations.joinToString("\n") { ItemRow.nameParser(it.name) }
-				Text(
-					prompt,
-					style = TextStyle(
-						fontSize = 17.sp,
-						color = colorResource(R.color.colorPrimaryFg),
-					),
-				)
-				val description = item.word.description.substringBefore('\n').trim()
-				if (description.isNotEmpty()) Text(
-					description,
-					style = TextStyle(fontSize = 13.sp, color = colorResource(R.color.colorPrimaryFg)),
-				)
+				PromptLines(promptItems(item.word, item.translations))
 				// the asked side names itself: the word in the default direction, a translation reversed
 				AnswerField(
 					index,

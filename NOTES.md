@@ -200,9 +200,10 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A word's time is 5 seconds plus its answer characters times the seconds per character.
 - A tested word scores once regardless of variants, while different words score separately.
 - Grading matches name variants and linked translations, then counters go up the plain-parent chain.
-- Only the first line of the tested word's description shows in a prompt.
 - Global grading removes each configured answer literal from both sides.
 - Ignorable literals use one settings field per value with a trailing empty field.
+- A prompt describes the shown side, never the hidden answer.
+- Each shown name carries its own description, only its first line.
 - Results round the rate, mark answer edits against the nearest expanded variant and offer a retake.
 - The marked answer precedes the complete expected answer, with green matches, gray missing letters and red extra letters.
 - The expected-answer label uses the normal answer color, while its value stays faded.
@@ -278,3 +279,4 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Colored answer diffs compare only expanded variants and pass 907 behavior tests and debug lint.
 - Seconds per character and its stored-format migration pass 907 behavior tests and debug lint.
 - Ignorable literal fields chain Enter and pass 907 behavior tests and debug lint.
+- Prompts describe the shown side, each name with its own description, with 909 behavior tests and debug lint green.
