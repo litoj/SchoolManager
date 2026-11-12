@@ -111,6 +111,7 @@ What does not:
 | On-device SAF import re-verification | Not done after the perf round |
 | Scroll stutter on the physical phone | Emulator clean. Recipe: `adb shell dumpsys gfxinfo cz.litoj.schlmgr reset`, fling `\W/` results, `adb shell dumpsys gfxinfo cz.litoj.schlmgr` |
 | Main-path pins missing against the testing standard | Governed by the meaningfulness rule, no gap list kept |
+| Sibling slide, New button and row flip against the phone animation setting | Open decision, only the list reveal obeys it |
 
 ## Code review mode
 
