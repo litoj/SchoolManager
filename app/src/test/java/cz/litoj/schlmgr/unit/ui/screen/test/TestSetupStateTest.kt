@@ -392,14 +392,14 @@ class TestSetupStateTest {
 			val plain = DbItem(id = 1, name = "plain", description = "", type = ItemKind.WORD)
 			TestSetupState.addPicked(listOf(TestSetupState.seedOf(ItemRow(plain, null, 1))))
 			TestSetupState.setTime("2")
-			assertEquals(15, TestSetupState.timeTotal().total)
+			assertEquals(15, TestSetupState.timeSeconds())
 
 			TestSetupState.reset()
 			val variant = DbItem(id = 2, name = "/I/You smile.", description = "", type = ItemKind.WORD)
 			TestSetupState.addPicked(listOf(TestSetupState.seedOf(ItemRow(variant, null, 1))))
 			TestSetupState.setTime("2")
 			// 5 plus 26 characters over three fields: 31 times 1.5 squared
-			assertEquals(70, TestSetupState.timeTotal().total)
+			assertEquals(70, TestSetupState.timeSeconds())
 		} finally {
 			TestEngine.applyRequireAllVariants(false)
 		}

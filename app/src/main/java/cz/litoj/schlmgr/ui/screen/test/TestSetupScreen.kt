@@ -129,7 +129,7 @@ private fun TestSetupContent(viewModel: TestSetupViewModel, modifier: Modifier =
 				viewModel::setTime,
 				{ viewModel.restoreTime(); keyboard?.hide() },
 				// the caption times the whole run, the field holds one character's share
-				caption = stringResource(R.string.test_total_time, TestSetupState.timeTotal().total),
+				caption = stringResource(R.string.test_total_time, TestSetupState.timeSeconds()),
 				keyboardType = KeyboardType.Decimal,
 			)
 			HairlineDivider()

@@ -154,16 +154,14 @@ object TestSetupState {
 	internal var childrenLookup: (Int) -> List<DbItem> = ItemRepository::children
 
 	/**
-	 * The inputs of the total-time caption, where an empty field takes the setting.
+	 * The seconds of the total-time caption, where an empty field takes the setting.
 	 * - the count clamps to the pool, since the run asks no more than that.
 	 */
-	class TimeTotal(val perChar: Float, val count: Int, val total: Int)
-
-	fun timeTotal(): TimeTotal {
+	fun timeSeconds(): Int {
 		val perChar = NumberInput.amount(timeText) ?: TestEngine.getSecondsPerChar()
 		val amount = (amountText.toIntOrNull() ?: 0).takeIf { it >= 1 } ?: TestEngine.amount
 		val count = if (poolCount > 0) minOf(amount, poolCount) else amount
-		return TimeTotal(perChar, count, TestEngine.testTime(perChar, poolEntries.take(count)))
+		return TestEngine.testTime(perChar, poolEntries.take(count))
 	}
 
 	/**
