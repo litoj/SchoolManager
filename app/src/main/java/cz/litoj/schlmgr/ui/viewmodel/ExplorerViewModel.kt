@@ -418,6 +418,15 @@ abstract class ExplorerViewModel<R>(
 		list.flipAllToMajority()
 	}
 
+	/**
+	 * The long-press starts a selection and keeps one, so the same press can drag it.
+	 * - an armed paste owns the bottom, so its list refuses the press.
+	 */
+	open fun onItemLongClick(item: ItemRow?) {
+		val row = item ?: return
+		if (!pasteArmed() && !row.selected) setSelected(row, true)
+	}
+
 	private inner class SelectionHost : Selection.Host {
 		override val models get() = list.items()
 		override fun remap() = list.remap()

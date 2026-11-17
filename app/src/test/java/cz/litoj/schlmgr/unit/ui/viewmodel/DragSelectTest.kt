@@ -2,6 +2,7 @@ package cz.litoj.schlmgr.unit.ui.viewmodel
 
 import cz.litoj.schlmgr.support.wordVm
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
+import cz.litoj.schlmgr.ui.viewmodel.selectedRows
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -59,5 +60,17 @@ class DragSelectTest {
 		vm.endRangeSelect()
 		vm.setRangeSelected(1, 1)
 		assertEquals(listOf(false, true, true, true, false), selected(vm.items()))
+	}
+
+	@Test
+	fun `every selected row joins the move in shown order`() {
+		val selected = listOf(true, false, true, false, true)
+
+		assertEquals(listOf(0, 2, 4), selectedRows(selected, 2))
+	}
+
+	@Test
+	fun `an unselected anchor moves alone without a selection`() {
+		assertEquals(listOf(2), selectedRows(listOf(false, false, false), 2))
 	}
 }

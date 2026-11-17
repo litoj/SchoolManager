@@ -31,9 +31,9 @@ import kotlin.math.abs
 
 /**
  * What a long-press followed by a drag does on the explorer list.
- * - a selected list, the picker included, selects the dragged-over range.
- * - a plain browsing list inside a container reorders.
- * - anything else ignores the drag.
+ * - an unselected row selects the range the drag covers.
+ * - a selected row moves every selected row where the list has an order.
+ * - none sits before the press claims its mode.
  */
 internal enum class ListDragMode { None, Select, Reorder }
 
@@ -41,23 +41,24 @@ internal data class RowGeometry(val index: Int, val offset: Int, val size: Int)
 
 /**
  * The long-press-and-drag handler of the list.
- * - a select drag covers the range, reorder moves the pressed row, none consumes.
+ * - a select drag covers the range, reorder gathers every selected row, none consumes.
  * - a reorder swaps only past the middle of the target row, so a held finger cannot undo a swap.
  * - the mode is snapshotted at the long-press, and events in the Initial pass use edge auto-scroll.
  * - a structural list change mid-drag invalidates the claimed row indexes, so the drop never fires.
  * - the content step keys the claim, so a selection remap or a drag reorder keeps the indexes.
- * - a reorder round trip ends back at its own slot and never drops.
+ * - a reorder round trip keeps its order and never drops.
  */
 @Composable
 internal fun Modifier.rememberListDragModifier(
 	listState: LazyListState,
 	contentStep: Int,
 	pending: LongPressDragHandler,
+	selectedOf: (Int) -> List<Int>,
 	onSelectRange: (Int, Int) -> Unit,
 	onSelectEnd: () -> Unit,
 	onGestureEnd: () -> Unit,
-	onReorderStart: (Int, Float) -> Unit,
-	onReorderStep: (Int, Float, Int?) -> Unit,
+	onReorderStart: (Int, Offset) -> Unit,
+	onReorderStep: (Int, Offset, Int?) -> Unit,
 	onReorderDrop: (Int, Int?) -> Unit,
 ): Modifier {
 	val currentSelect by rememberUpdatedState(onSelectRange)
@@ -66,6 +67,7 @@ internal fun Modifier.rememberListDragModifier(
 	val currentStart by rememberUpdatedState(onReorderStart)
 	val currentReorderStep by rememberUpdatedState(onReorderStep)
 	val currentDrop by rememberUpdatedState(onReorderDrop)
+	val currentSelected by rememberUpdatedState(selectedOf)
 	// a moved step against the claim means the list changed structurally during the drag
 	val currentStep by rememberUpdatedState(contentStep)
 	val scope = rememberCoroutineScope()
@@ -81,14 +83,16 @@ internal fun Modifier.rememberListDragModifier(
 			var dragIndex = -1
 			// the claimed slot, which measures the net move of the drag
 			var anchorIndex = -1
+			// every selected row the press gathers and moves as one run
+			var dragRows = emptyList<Int>()
 			var reported = false
 			// the content step the drag indexes belong to.
 			// a mismatch stops every step and the drop
 			var claimedStep = -1
-			// where the drop would land, null for the anchor slot or none
+			// where the drop would land, null before a step
 			var pendingTarget: Int? = null
 			// shared with the auto-scroll loop, so the access stays atomic.
-			val pointerY = AtomicReference(down.position.y)
+			val pointer = AtomicReference(down.position)
 			var autoScroll: Job? = null
 
 			fun stillValid() = claimedStep == currentStep
@@ -101,12 +105,12 @@ internal fun Modifier.rememberListDragModifier(
 				}
 			}
 
-			fun stepReorder(y: Float) {
+			fun stepReorder(position: Offset) {
 				if (!stillValid()) return
-				// the list stays put until the drop, so the insert slot measures against the anchor
-				pendingTarget = insertIndex(listState, anchorIndex, y)
+				// the list stays put until the drop, so the insert slot counts the unselected rows
+				pendingTarget = insertIndex(listState, dragRows, position.y)
 				reported = true
-				currentReorderStep(anchorIndex, y, pendingTarget)
+				currentReorderStep(anchorIndex, position, pendingTarget)
 			}
 
 			while (true) {
@@ -114,7 +118,7 @@ internal fun Modifier.rememberListDragModifier(
 				// another finger carries no change for the tracked one, so skip it.
 				val change = event.changes.firstOrNull { it.id == down.id } ?: continue
 				if (!change.pressed) break
-				pointerY.set(change.position.y)
+				pointer.set(change.position)
 				if (!dragging) {
 					if (pending.isArmed && abs(change.position.y - down.position.y) > slop) {
 						dragging = true
@@ -122,19 +126,21 @@ internal fun Modifier.rememberListDragModifier(
 						mode = claimedMode
 						dragIndex = anchor
 						anchorIndex = anchor
+						dragRows = currentSelected(anchor)
 						claimedStep = currentStep
 						change.consume()
-						if (mode == ListDragMode.Reorder) currentStart(anchorIndex, down.position.y)
+						if (mode == ListDragMode.Reorder) currentStart(anchorIndex, down.position)
 						if (mode != ListDragMode.None) {
 							autoScroll = scope.launch {
 								while (isActive) {
-									val y = pointerY.get()
+									val position = pointer.get()
+									val y = position.y
 									val h = listState.layoutInfo.viewportSize.height.toFloat()
 									val dy = scrollStep(y, h, edge, speed)
 									if (dy != 0f) {
 										listState.scrollBy(dy)
 										// the slots moved under the finger, so step again
-										if (mode == ListDragMode.Reorder) stepReorder(y)
+										if (mode == ListDragMode.Reorder) stepReorder(position)
 										else if (mode == ListDragMode.Select) stepSelect(y)
 									}
 									// scrollBy does not park the coroutine, so wait out the frame.
@@ -147,8 +153,8 @@ internal fun Modifier.rememberListDragModifier(
 				} else {
 					change.consume()
 					when (mode) {
-						ListDragMode.Select -> stepSelect(pointerY.get())
-						ListDragMode.Reorder -> stepReorder(pointerY.get())
+						ListDragMode.Select -> stepSelect(pointer.get().y)
+						ListDragMode.Reorder -> stepReorder(pointer.get())
 						ListDragMode.None -> {}
 					}
 				}
@@ -302,36 +308,28 @@ internal fun indexAtY(
 }
 
 /**
- * The insertion slot of a dragged row at finger [y], counting the other rows the finger passed.
- * - the dropped row lands before the row at that slot of the remaining list.
- * - the rows above the viewport always count, since their middles sit above the finger.
+ * The insertion slot of the moved [selected] rows at finger [y].
+ * - the dropped selection lands before the row at that slot of the remaining list.
+ * - only unselected rows count, since every selected row leaves its slot.
+ * - the rows above the viewport count too.
  * - free of [LazyListState], so it is unit-testable.
  */
-internal fun insertIndex(listState: LazyListState, anchor: Int, y: Float): Int {
+internal fun insertIndex(listState: LazyListState, selected: List<Int>, y: Float): Int {
 	val info = listState.layoutInfo
 	return insertIndexAt(
 		info.visibleItemsInfo.map { RowGeometry(it.index, it.offset, it.size) },
-		anchor,
+		selected,
 		y,
 	)
 }
 
-internal fun insertIndexAt(visible: List<RowGeometry>, anchor: Int, y: Float): Int {
+internal fun insertIndexAt(visible: List<RowGeometry>, selected: List<Int>, y: Float): Int {
 	if (visible.isEmpty()) return 0
+	val moving = selected.toSet()
 	val first = visible.first().index
-	var count = first
-	if (anchor < first) count--
-	// a finger exactly on a middle counts for a downward drag only, so a tie keeps its side
-	val anchorRow = visible.firstOrNull { it.index == anchor }
-	val down = when {
-		anchorRow != null -> y > anchorRow.offset + anchorRow.size / 2f
-		anchor < first -> true
-		else -> false
-	}
+	var count = (0 until first).count { it !in moving }
 	count += visible.count { row ->
-		if (row.index == anchor) return@count false
-		val middle = row.offset + row.size / 2f
-		if (down) middle <= y else middle < y
+		row.index !in moving && row.offset + row.size / 2f <= y
 	}
 	return count
 }

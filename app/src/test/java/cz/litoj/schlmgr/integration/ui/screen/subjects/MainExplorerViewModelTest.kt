@@ -175,7 +175,38 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
-	fun `a long-press on a browse row starts the selection`() {
+	fun `a reorder drag of selected rows moves every one in shown order`() {
+		val (c1, _) = linkedWordsSetup()
+		ItemRepository.createWord(c1, "w3", null, listOf("t3" to null))
+		val model = vmInSet("c1")
+		val rows = model.items()
+		assertEquals(listOf("w1", "w2", "w3"), rows.map { it.item.name })
+		model.setSelected(rows[0], true)
+		model.setSelected(rows[1], true)
+
+		model.moveRow(0, 1)
+
+		assertEquals(listOf("w3", "w1", "w2"), model.items().map { it.item.name })
+	}
+
+	@Test
+	fun `a reorder gathers a non-contiguous selection without leaving a gap`() {
+		val (c1, _) = linkedWordsSetup()
+		ItemRepository.createWord(c1, "w3", null, listOf("t3" to null))
+		ItemRepository.createWord(c1, "w4", null, listOf("t4" to null))
+		ItemRepository.createWord(c1, "w5", null, listOf("t5" to null))
+		val model = vmInSet("c1")
+		val rows = model.items()
+		assertEquals(listOf("w1", "w2", "w3", "w4", "w5"), rows.map { it.item.name })
+		rows.filterIndexed { i, _ -> i % 2 == 0 }.forEach { model.setSelected(it, true) }
+
+		model.moveRow(4, 2)
+
+		assertEquals(listOf("w2", "w4", "w1", "w3", "w5"), model.items().map { it.item.name })
+	}
+
+	@Test
+	fun `a long-press starts the selection and a second press keeps it`() {
 		seed()
 		val model = vmIn("A")
 		val c1 = model.items().single { it.item.name == "c1" }
@@ -184,8 +215,9 @@ class MainExplorerViewModelTest {
 		model.onItemLongClick(c1)
 		assertTrue(c1.selected)
 		assertTrue(model.listState.value.selectionActive)
+		// a selected row keeps its mark, since the same press may move it
 		model.onItemLongClick(c1)
-		assertFalse(c1.selected)
+		assertTrue(c1.selected)
 	}
 
 	@Test

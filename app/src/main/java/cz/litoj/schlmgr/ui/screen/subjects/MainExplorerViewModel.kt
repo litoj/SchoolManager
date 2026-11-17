@@ -294,11 +294,6 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		UserMessages.showNotice(UiNotice.NoteCopied)
 	}
 
-	fun onItemLongClick(item: ItemRow?) {
-		val row = item ?: return
-		if (!pasteArmed) toggleSelect(row)
-	}
-
 	fun onSearchHitClick(ui: ItemUiModel) {
 		val row = ui.payload ?: return
 		if (row.item.type == ItemKind.WORD) {

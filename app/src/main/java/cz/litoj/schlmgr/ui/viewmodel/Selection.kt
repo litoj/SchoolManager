@@ -100,3 +100,11 @@ internal class Selection(private val host: Host) {
 		dragSelect = null
 	}
 }
+
+/**
+ * Every selected row in shown order, which one reorder gathers and moves together.
+ * - an unselected anchor moves alone, since only a selected press starts a reorder.
+ */
+internal fun selectedRows(selected: List<Boolean>, anchor: Int): List<Int> =
+	selected.indices.filter { selected[it] }
+		.ifEmpty { listOf(anchor).filter { it in selected.indices } }

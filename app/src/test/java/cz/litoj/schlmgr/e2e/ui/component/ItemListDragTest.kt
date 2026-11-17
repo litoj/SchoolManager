@@ -34,8 +34,8 @@ import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 
 /**
- * - the dragged row stays an ordinary list row, drawn once under the finger.
- * - a self-drawn copy fails.
+ * - no source row moves during a reorder, while the counted proxy follows the finger.
+ * - an unselected press selects a range, a selected press gathers every selected row.
  * - every assertion reads the rendered rows or the records of the host.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -54,7 +54,7 @@ class ItemListDragTest {
 	/** The state published by the last composition, the way a test reads the republish back. */
 	private var published = ItemListState()
 
-	private fun rows(count: Int): List<ItemUiModel> = List(count) { i ->
+	private fun rows(count: Int, selected: Int? = null): List<ItemUiModel> = List(count) { i ->
 		ItemUiModel(
 			key = "k$i",
 			position = i + 1,
@@ -63,7 +63,7 @@ class ItemListDragTest {
 			kind = RowKind.SUBJECT,
 			ratio = 0,
 			isReference = false,
-			selected = false,
+			selected = i == selected,
 		)
 	}
 
@@ -80,8 +80,8 @@ class ItemListDragTest {
 		translations = List(4) { i -> TranslationLine("tall line ${i + 1}", "") },
 	)
 
-	private fun show(count: Int) {
-		items += rows(count)
+	private fun show(count: Int, selected: Int? = null) {
+		items += rows(count, selected)
 		rule.setContent {
 			Column(Modifier.size(300.dp, 400.dp)) {
 				ItemList(
@@ -93,11 +93,21 @@ class ItemListDragTest {
 		}
 	}
 
-	/** Mirrors the single move the drop reports, like the view model does. */
-	private fun moveRow(from: Int, to: Int) {
+	/** Mirrors the selected-row move the drop reports, like the view model does. */
+	private fun moveRow(from: Int, to: Int): Boolean {
+		if (from !in items.indices) return false
+		val moving = items.indices.filter { items[it].selected }
+			.ifEmpty { listOf(from) }
+			.map { items[it] }
+		val remaining = items - moving.toSet()
+		if (to !in 0..remaining.size) return false
+		val reordered = remaining.toMutableList().apply { addAll(to, moving) }
+		if (reordered.indices.all { reordered[it] === items[it] }) return false
 		steps += from to to
-		items.add(to, items.removeAt(from))
+		items.clear()
+		items.addAll(reordered)
 		for (i in items.indices) items[i] = items[i].copy(position = i + 1)
+		return true
 	}
 
 	private fun row(name: String): DpRect = rule.onNodeWithText(name).getBoundsInRoot()
@@ -133,7 +143,7 @@ class ItemListDragTest {
 	/**
 	 * Long-presses the row named [name], drags it onto [onto] and calls [check]
 	 * while the finger is still down.
-	 * - the check receives the bounds of the dragged row and the y of the finger.
+	 * - the check receives the bounds of the pressed row and the y of the finger.
 	 * - the release ends the drag.
 	 */
 	private fun drag(name: String, onto: String, check: (DpRect, Dp) -> Unit) {
@@ -156,19 +166,18 @@ class ItemListDragTest {
 	}
 
 	/**
-	 * Composes a reorderable list of [count] rows whose long-press starts a
-	 * selection, the production press shape.
-	 * - the press arms the pre-selection drag mode.
-	 * - the republish of the selection must not eat the arm.
+	 * Composes a reorderable list of [count] rows with the pressed row selected.
+	 * - a drag of a selected row is the production reorder shape.
+	 * - the republish of a selection must not eat the arm.
 	 * - the rows live in a state list read by the composition.
-	 * - a toggle or a reorder step thus recomposes a fresh [ItemListState].
+	 * - a reorder step thus recomposes a fresh [ItemListState].
 	 * - the fresh state keeps [ItemListState.contentStep].
 	 * - the arm reset of [ItemList] keys on that step.
-	 * - a bumped step would eat the arm and turn these into reorder tests.
+	 * - a bumped step would eat the arm and turn these into selection tests.
 	 * - each composition records its state in [published].
 	 */
-	private fun showSelecting(count: Int, onDrop: () -> Unit) {
-		items += rows(count)
+	private fun showReorder(count: Int, onDrop: () -> Unit) {
+		items += rows(count, selected = 1)
 		rule.setContent {
 			Column(Modifier.size(300.dp, 400.dp)) {
 				val state = ItemListState(
@@ -181,7 +190,7 @@ class ItemListDragTest {
 					callbacks = ItemListCallbacks(
 						onItemLongClick = { pressed ->
 							val i = items.indexOfFirst { it.key == pressed.key }
-							if (i >= 0) items[i] = items[i].copy(selected = true)
+							if (i >= 0 && !items[i].selected) items[i] = items[i].copy(selected = true)
 						},
 						onReorderMove = ::moveRow,
 						onReorderDrop = onDrop,
@@ -213,49 +222,110 @@ class ItemListDragTest {
 	}
 
 	@Test
-	fun `the dragged row stays one row inside the list, under the finger`() {
-		show(8)
-		val listTop = row("item 1").top
-		drag("item 8", "item 4") { dragged, finger ->
-			assertEquals(1, rule.onAllNodesWithText("item 8").fetchSemanticsNodes().size)
-			assertTrue(
-				"the dragged row must sit under the finger, not above the list:" +
-					" dragged=$dragged finger=$finger steps=$steps",
-				finger >= dragged.top && finger <= dragged.bottom,
-			)
-			assertTrue(
-				"the dragged row must stay inside the list: dragged=$dragged listTop=$listTop",
-				dragged.top >= listTop - 1.dp,
-			)
+	fun `a reorder leaves every row still and moves only its proxy`() {
+		show(8, selected = 7)
+		val start = row("item 8")
+		drag("item 8", "item 4") { _, finger ->
+			assertEquals("the row stays in the list", start, row("item 8"))
+			val proxy = rule.onNodeWithText("1 item").getBoundsInRoot()
+			assertTrue("the proxy sits above the finger", proxy.bottom <= finger)
 		}
 	}
 
 	@Test
-	fun `a reorder from the top row moves it a slot instead of scrolling the list`() {
-		show(8)
+	fun `a reorder from the top row never scrolls the list`() {
+		show(8, selected = 0)
 		val first = row("item 1")
-		val second = row("item 2")
-		drag("item 1", "item 2") { dragged, _ ->
-			assertTrue(
-				"scrolling the list under the row would leave it at the top:" +
-					" dragged=$dragged first=$first second=$second steps=$steps",
-				dragged.top >= first.top + (second.top - first.top) / 2f,
-			)
+		drag("item 1", "item 2") { _, _ ->
+			assertEquals("the source row keeps its place", first, row("item 1"))
+			assertEquals("the proxy names the one item", 1,
+				rule.onAllNodesWithText("1 item").fetchSemanticsNodes().size)
 		}
 		assertEquals("steps=$steps", listOf(0 to 1), steps)
 	}
 
 	/**
+	 * The selection drag.
+	 * - a long-press on an unselected row starts the selection, and the drag covers the range.
+	 * - no row moves and no drop persists.
+	 */
+	@Test
+	fun `a drag from an unselected row selects a range instead of moving`() {
+		val ranges = mutableListOf<Pair<Int, Int>>()
+		var drops = 0
+		items += rows(5)
+		rule.setContent {
+			Column(Modifier.size(300.dp, 400.dp)) {
+				ItemList(
+					state = ItemListState(items = items.toList(), maxPosition = items.size),
+					callbacks = ItemListCallbacks(
+						onItemLongClick = { pressed ->
+							val i = items.indexOfFirst { it.key == pressed.key }
+							if (i >= 0) items[i] = items[i].copy(selected = true)
+						},
+						onSelectRange = { from, to -> ranges += from to to },
+						onReorderMove = ::moveRow,
+						onReorderDrop = { drops++ },
+					),
+					reorderable = true,
+				)
+			}
+		}
+		drag("item 2", "item 4") { _, _ -> }
+
+		assertEquals("the covered range selects", listOf(1 to 3), ranges.distinct())
+		assertTrue("nothing moves: steps=$steps", steps.isEmpty())
+		assertEquals(0, drops)
+	}
+
+	/**
+	 * The multi-row reorder.
+	 * - every selected row moves, including rows with gaps between them.
+	 * - the rows keep their shown order and land as one run.
+	 * - no source row floats, only the counted proxy moves.
+	 */
+	@Test
+	fun `dragging selected rows gathers every one at the target`() {
+		items += rows(6)
+		items[0] = items[0].copy(selected = true)
+		items[2] = items[2].copy(selected = true)
+		items[4] = items[4].copy(selected = true)
+		rule.setContent {
+			Column(Modifier.size(300.dp, 400.dp)) {
+				ItemList(
+					state = ItemListState(items = items.toList(), maxPosition = items.size),
+					callbacks = ItemListCallbacks(onReorderMove = ::moveRow),
+					reorderable = true,
+				)
+			}
+		}
+		val firstTop = row("item 1").top
+		val thirdTop = row("item 3").top
+		drag("item 1", "item 5") { _, _ ->
+			assertEquals("the source rows keep their places", firstTop, row("item 1").top)
+			assertEquals("every source row keeps its place", thirdTop, row("item 3").top)
+			assertEquals("the proxy names the whole selection", 1,
+				rule.onAllNodesWithText("3 items").fetchSemanticsNodes().size)
+		}
+
+		assertEquals("one move lands every selected row: steps=$steps", listOf(0 to 2), steps)
+		assertEquals(
+			listOf("item 2", "item 4", "item 1", "item 3", "item 5", "item 6"),
+			items.map { it.name },
+		)
+	}
+
+	/**
 	 * The production press republishes the list.
 	 * - the long-press arms the drag with the pre-selection mode.
-	 * - it then toggles the selection of the row.
+	 * - it then selects the row, which republishes the list.
 	 * - that remap lands as a new list instance.
 	 * - the arm must survive its own press.
 	 * - a reset that eats it kills both drag modes.
 	 */
 	@Test
 	fun `a long-press that republishes the list still drags`() {
-		items += rows(3)
+		items += rows(3, selected = 0)
 		val state = mutableStateOf(ItemListState(items = items.toList(), maxPosition = items.size))
 		rule.setContent {
 			Column(Modifier.size(300.dp, 400.dp)) {
@@ -281,13 +351,13 @@ class ItemListDragTest {
 
 	/**
 	 * The strip hold.
-	 * - the pressed row shows selected at once, which is the press feedback.
-	 * - the host hides its strip while the finger is down, and shows it on the lift.
+	 * - a reorder press on a selected row hides the strip while the finger is down.
+	 * - the lift shows it again.
 	 */
 	@Test
 	fun `a held press reports the strip hold`() {
 		val holds = mutableListOf<Boolean>()
-		items += rows(3)
+		items += rows(3, selected = 0)
 		rule.setContent {
 			Column(Modifier.size(300.dp, 400.dp)) {
 				ItemList(
@@ -313,6 +383,46 @@ class ItemListDragTest {
 	}
 
 	/**
+	 * The selection press.
+	 * - a long-press on an unselected row never holds the strip, so its actions show at once.
+	 */
+	@Test
+	fun `a selection press lets the strip show at once`() {
+		val holds = mutableListOf<Boolean>()
+		items += rows(3)
+		rule.setContent {
+			Column(Modifier.size(300.dp, 400.dp)) {
+				ItemList(
+					state = ItemListState(items = items.toList(), maxPosition = items.size),
+					callbacks = ItemListCallbacks(
+						onItemLongClick = { pressed ->
+							val i = items.indexOfFirst { it.key == pressed.key }
+							if (i >= 0) items[i] = items[i].copy(selected = true)
+						},
+						onPressHeld = { holds += it },
+					),
+					reorderable = true,
+				)
+			}
+		}
+		val from = row("item 1")
+		val px = with(rule.density) { (from.left + (from.right - from.left) / 2).toPx() }
+		val y = with(rule.density) { (from.top + (from.bottom - from.top) / 2).toPx() }
+		rule.mainClock.autoAdvance = false
+		rule.onRoot().performTouchInput {
+			down(Offset(px, y))
+			advanceEventTime(viewConfiguration.longPressTimeoutMillis + 100)
+		}
+		settle()
+
+		assertTrue("the selection press holds nothing: $holds", holds.isEmpty())
+		assertTrue("the press selected the row at once", items[0].selected)
+		rule.onRoot().performTouchInput { up() }
+		settle()
+		assertEquals("the lift releases the strip", listOf(false), holds)
+	}
+
+	/**
 	 * The round-trip fallback.
 	 * - a reorder drag ending on the slot of the same row matches a long-press.
 	 * - no drop fires, so nothing persists and the selection stands.
@@ -320,7 +430,7 @@ class ItemListDragTest {
 	@Test
 	fun `a round trip back onto the row's own slot keeps the selection`() {
 		var drops = 0
-		showSelecting(8) {
+		showReorder(8) {
 			drops++
 			clearSelection()
 		}
@@ -336,7 +446,7 @@ class ItemListDragTest {
 	@Test
 	fun `a reorder that ends off the row's own slot drops and clears the selection`() {
 		var drops = 0
-		showSelecting(8) {
+		showReorder(8) {
 			drops++
 			clearSelection()
 		}
@@ -357,7 +467,7 @@ class ItemListDragTest {
 	 */
 	@Test
 	fun `a finger held in the top of a tall row does not flip the order back and forth`() {
-		items += rows(4).mapIndexed { i, item -> if (i == 1) tallRow(2) else item }
+		items += rows(4, selected = 0).mapIndexed { i, item -> if (i == 1) tallRow(2) else item }
 		rule.setContent {
 			Column(Modifier.size(300.dp, 400.dp)) {
 				ItemList(

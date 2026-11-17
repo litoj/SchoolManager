@@ -349,14 +349,27 @@ internal class ExplorerList(
 		remap()
 	}
 
-	fun move(from: Int, to: Int) {
-		if (from == to || from !in models.indices || to !in models.indices) return
+	/**
+	 * Moves every selected row to the insert slot [to].
+	 * - [to] counts the remaining rows, as the drag gesture reports it.
+	 * - selected rows keep their shown order and land as one run.
+	 * - false means the order stayed, so the drop persists nothing.
+	 */
+	fun move(from: Int, to: Int): Boolean {
+		if (from !in models.indices) return false
+		val movingRows = selectedRows(models.map { it.selected }, from).map { models[it] }
+		val remainingRows = models - movingRows.toSet()
+		if (to !in 0..remainingRows.size) return false
+		val reordered = remainingRows.toMutableList().apply { addAll(to, movingRows) }
+		if (reordered.indices.all { reordered[it] === models[it] }) return false
 		listMutationGen++
 		// the baseline belongs to the pre-drag order.
 		host.resetDragSelect()
-		models.add(to, models.removeAt(from))
+		models.clear()
+		models.addAll(reordered)
 		models.forEachIndexed { i, row -> row.renumber(i + 1) }
 		remap()
+		return true
 	}
 
 	fun remap(structuralChange: Boolean = false) {

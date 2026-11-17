@@ -4,6 +4,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -12,10 +13,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,20 +29,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
+import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.SystemAnimation
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
@@ -46,6 +53,7 @@ import cz.litoj.schlmgr.ui.viewmodel.ItemListState
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
+import cz.litoj.schlmgr.ui.viewmodel.selectedRows
 import cz.litoj.schlmgr.ui.viewmodel.TranslationLine
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -71,7 +79,8 @@ class ItemListCallbacks(
 	/** The type icon of a row tapped, the host selects the row with it. */
 	val onItemIconClick: (ItemUiModel) -> Unit = {},
 	/**
-	 * A long-press on a row starts or toggles its selection.
+	 * A long-press on a row starts its selection, and a selected row keeps it.
+	 * - the same press may then drag a range or move every selected row.
 	 * - the directory jump of a search hit lives in the more menu.
 	 */
 	val onItemLongClick: (ItemUiModel) -> Unit = {},
@@ -85,18 +94,21 @@ class ItemListCallbacks(
 	val onSelectRange: (Int, Int) -> Unit = { _, _ -> },
 	/** A drag-select ended, so its selection becomes the new baseline. */
 	val onSelectEnd: () -> Unit = {},
-	/** A reorder drag ended onto another row, so the host moves it before the persist. */
-	val onReorderMove: (Int, Int) -> Unit = { _, _ -> },
 	/**
-	 * A reorder drag moved the row and ended, so persist the current row order.
-	 * - a round trip onto the same slot never fires it, and the long-press selection stays.
+	 * A reorder drag ended, so the host moves every selected row to the insert slot.
+	 * - the callback carries the pressed row and the slot among the remaining rows.
+	 * - false means the order stayed, so no persist follows.
+	 */
+	val onReorderMove: (Int, Int) -> Boolean = { _, _ -> false },
+	/**
+	 * A reorder drag changed the order, so persist it and end the selection.
 	 */
 	val onReorderDrop: () -> Unit = {},
 	/** A pull down at the very top of the list, where the host opens its search field. */
 	val onTopPull: () -> Unit = {},
 	/**
-	 * A long-press holds the finger down, so the host hides its action strip until the lift.
-	 * - the row itself shows selected at once, which is the feedback of the press.
+	 * A reorder long-press holds the finger down, so the host hides its strip until the lift.
+	 * - a selection press never holds, so its strip shows at once.
 	 */
 	val onPressHeld: (Boolean) -> Unit = {},
 )
@@ -174,20 +186,13 @@ internal class DoubleTapDetector(private val spanPx: Float, private val windowMs
 }
 
 /**
- * A selected list, the picker or a search-result list drags a selection.
- * - a result list has no container order to change.
- * - a plain reorderable container drags an order, and anything else ignores the drag.
+ * The drag of a long-press: a selected row moves an ordered list, any other row selects.
+ * - a list without an order only ever selects, since its rows have no place to move to.
  */
 internal fun listDragMode(
-	pickerMode: Boolean,
-	selectionActive: Boolean,
-	searchList: Boolean,
 	reorderable: Boolean,
-): ListDragMode = when {
-	pickerMode || selectionActive || searchList -> ListDragMode.Select
-	reorderable -> ListDragMode.Reorder
-	else -> ListDragMode.None
-}
+	pressedSelected: Boolean,
+): ListDragMode = if (reorderable && pressedSelected) ListDragMode.Reorder else ListDragMode.Select
 
 /**
  * One keyed [Item] per row, where the selection is the background of the row.
@@ -197,7 +202,7 @@ fun ItemList(
 	state: ItemListState,
 	callbacks: ItemListCallbacks,
 	modifier: Modifier = Modifier,
-	/** The screen can persist a manual order, so a drag reorders instead of selecting. */
+	/** The screen can persist a manual order, so a drag of a selected row moves it. */
 	reorderable: Boolean = false,
 	/** The list state of the owning screen, kept so it can watch the scroll. */
 	listState: LazyListState = rememberLazyListState(),
@@ -210,34 +215,34 @@ fun ItemList(
 	)
 	val density = LocalDensity.current
 	val pending = remember { LongPressDragHandler() }
-	val dragMode = listDragMode(
-		state.pickerMode,
-		state.selectionActive,
-		state.variant == ExplorerRowVariant.Search,
-		reorderable,
-	)
-	// the drag-over reorder: the pressed row rides the finger, the list waits for the drop
+	// the reorder proxy rides the finger while every row keeps its place
 	var dragOver by remember { mutableStateOf<DragOver?>(null) }
+	var listSize by remember { mutableStateOf(IntSize.Zero) }
 	val dragModifier = Modifier.rememberListDragModifier(
 		listState = listState,
 		contentStep = state.contentStep,
 		pending = pending,
+		selectedOf = { anchor -> selectedRows(state.items.map { it.selected }, anchor) },
 		onSelectRange = callbacks.onSelectRange,
 		onSelectEnd = callbacks.onSelectEnd,
-		onGestureEnd = { callbacks.onPressHeld(false) },
-		onReorderStart = { anchor, pressY ->
-			val top = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == anchor }?.offset ?: 0
-			dragOver = DragOver(anchor, pressY - top, pressY, null)
+		onGestureEnd = {
+			dragOver = null
+			callbacks.onPressHeld(false)
 		},
-		onReorderStep = { anchor, fingerY, target ->
-			dragOver = dragOver?.copy(fingerY = fingerY, target = target) ?: DragOver(anchor, 0f, fingerY, target)
+		onReorderStart = { anchor, press ->
+			val moving = selectedRows(state.items.map { it.selected }, anchor)
+			dragOver = DragOver(moving, press, null)
+		},
+		onReorderStep = { anchor, finger, target ->
+			dragOver = dragOver?.copy(finger = finger, target = target)
+				?: DragOver(
+					selectedRows(state.items.map { it.selected }, anchor), finger, target)
 		},
 		onReorderDrop = { anchor, target ->
 			println("DIAG list drop anchor=$anchor target=$target")
 			dragOver = null
-			// the list moved nothing, so the drop lands the one move and persists it
-			if (target != null && target != anchor) {
-				callbacks.onReorderMove(anchor, target)
+			// the order decides whether the drop persists, so a round trip stays a selection
+			if (target != null && callbacks.onReorderMove(anchor, target)) {
 				callbacks.onReorderDrop()
 			}
 		},
@@ -270,7 +275,7 @@ fun ItemList(
 			}
 		}
 	}
-	Box(modifier) {
+	Box(modifier.onSizeChanged { listSize = it }) {
 	LazyColumn(Modifier.fillMaxSize().then(dragModifier).then(pullModifier).then(tapModifier), state = listState) {
 		itemsIndexed(
 			state.items,
@@ -285,11 +290,13 @@ fun ItemList(
 				// the press acts at once, because a selection starts immediately.
 				// it snapshots the drag mode, which [rememberListDragModifier] then claims.
 				onLongClick = {
+					// a selected row moves the order, any other row starts a range
+					val mode = listDragMode(reorderable, item.selected)
 					// the haptic rides on the long-press of combinedClickable
-					pending.arm(index, dragMode)
-					// the row shows selected at once, the strip waits for the lift
+					pending.arm(index, mode)
+					// the row shows selected at once, and a range press lets the strip follow
 					callbacks.onItemLongClick(item)
-					if (dragMode != ListDragMode.Select) callbacks.onPressHeld(true)
+					if (mode == ListDragMode.Reorder) callbacks.onPressHeld(true)
 				},
 				// the icon selects while a selection runs or the picker shows
 				onIconClick = if (state.selectionActive || state.pickerMode) {
@@ -298,26 +305,12 @@ fun ItemList(
 				descVisible = !state.pickerMode,
 				variant = state.variant,
 				positionWidth = positionWidth,
-				// every row keeps the placement spring, the dragged one included.
+				// every row keeps the placement spring.
 				// - a reorder moves rows between slots and the spring slides them there.
-				// - so the dragged row is seen changing its place in the list.
 				// - the size spring grows the box of a row whose height changed.
 				// - the layout derives the offsets below it from that box.
 				// - no placement animation can move a row entering at the edge.
 				modifier = Modifier
-					// the dragged row floats at the finger over the frozen list
-					.then(
-						dragOver?.takeIf { it.anchor == index }?.let { drag ->
-							Modifier
-								.zIndex(1f)
-								.offset {
-									val top = listState.layoutInfo.visibleItemsInfo
-										.firstOrNull { it.index == index }?.offset ?: 0
-									IntOffset(0, (drag.fingerY - drag.grab - top).roundToInt())
-								}
-								.background(colorResource(R.color.colorPrimaryBg))
-						} ?: Modifier,
-					)
 					// no fade at either end: a row appears and leaves with its content whole,
 					// so a fast scroll never shimmers over the rows it passes
 					.animateItem(fadeInSpec = null, placementSpec = RowPlacementSpec, fadeOutSpec = null)
@@ -336,12 +329,28 @@ fun ItemList(
 			)
 		}
 	}
-	// the drop marker: the row boundary where the dragged row lands on release
 	val drag = dragOver
+	if (drag != null) {
+		val width = with(density) { DragProxyWidth.toPx() }
+		val height = with(density) { DragProxyHeight.toPx() }
+		val gap = with(density) { DragProxyGap.toPx() }
+		DragSelectionProxy(
+			drag.moving.size,
+			Modifier.offset {
+				val x = (drag.finger.x - width / 2)
+					.coerceIn(0f, (listSize.width - width).coerceAtLeast(0f))
+				val y = (drag.finger.y - height - gap)
+					.coerceIn(0f, (listSize.height - height).coerceAtLeast(0f))
+				IntOffset(x.roundToInt(), y.roundToInt())
+			},
+		)
+	}
+	// the drop marker: the row boundary where the moved selection lands on release
 	val target = drag?.target
 	if (drag != null && target != null) {
-		// the slot counts the remaining rows, so the boundary sits before its display row
-		val boundary = if (target < drag.anchor) target else target + 1
+		// the selected rows leave their slots, so the boundary sits at the next remaining row
+		val remaining = state.items.indices.filter { it !in drag.moving }
+		val boundary = remaining.getOrNull(target) ?: state.items.size
 		Box(
 			Modifier
 				// the row position reads in placement, since the layout info must not compose
@@ -364,11 +373,55 @@ fun ItemList(
 }
 
 /**
- * The floating reorder drag: the pressed row rides the finger while the list stays.
- * - [grab] is the press offset inside the row, so the grabbed spot stays under the finger.
- * - [target] is the row boundary the line marks, null before any crossing.
+ * The separate object that rides the finger while every selected row keeps its place.
+ * - stacked sheets tell a multiple selection apart from one row.
+ * - the count names the exact number.
  */
-private data class DragOver(val anchor: Int, val grab: Float, val fingerY: Float, val target: Int?)
+@Composable
+private fun DragSelectionProxy(count: Int, modifier: Modifier = Modifier) {
+	val shape = RoundedCornerShape(4.dp)
+	Box(modifier.width(DragProxyWidth).height(DragProxyHeight)) {
+		repeat(2) { layer ->
+			Box(
+				Modifier
+					.fillMaxSize()
+					.offset(x = (2 * (layer + 1)).dp, y = (-2 * (layer + 1)).dp)
+					.background(ExplorerColors.paletteBackground, shape)
+					.border(1.dp, ExplorerColors.header, shape),
+			)
+		}
+		Box(
+			Modifier
+				.fillMaxSize()
+				.background(ExplorerColors.paletteBackground, shape)
+				.border(2.dp, ExplorerColors.header, shape),
+			contentAlignment = Alignment.Center,
+		) {
+			Text(
+				pluralStringResource(R.plurals.progress_items, count, count),
+				fontSize = 12.sp,
+				color = ExplorerColors.body,
+			)
+		}
+	}
+}
+
+private val DragProxyWidth = 104.dp
+private val DragProxyHeight = 34.dp
+/** Keeps the proxy above the finger, so it covers no row under the touch. */
+private val DragProxyGap = 8.dp
+
+/**
+ * The floating reorder drag: the selected rows move as one while the list stays.
+ * - [moving] holds every selected row in shown order.
+ * - [finger] places the proxy, which alone moves during the drag.
+ * - [target] is the boundary among the remaining rows, null before a step.
+ */
+private data class DragOver(
+	val moving: List<Int>,
+	val finger: Offset,
+	val target: Int?,
+)
 
 /**
  * Reveals the last row of the list whenever [ItemListState.scrollToBottom] asks.

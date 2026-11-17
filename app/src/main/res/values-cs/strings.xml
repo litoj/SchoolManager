@@ -248,7 +248,9 @@
     <string name="help_select_delete">Smaže vybrané položky po potvrzení.</string>
     <string name="help_select_edit">Upravit otevře jedinou vybranou položku. OK uloží změny.</string>
     <string name="help_select_how">Dlouhý stisk prvního řádku spustí výběr. Klepnutí na ikonu typu řádek přepne, dokud výběr trvá.
-        \nTažením přes řádky vyberete rozsah. Zaškrtnutí vpravo nahoře vybere vše nebo výběr ukončí. Ukončí ho i zpět.</string>
+        \nTažením z nevybraného řádku vyberete rozsah.
+        \nTažením vybraného řádku ho přesunete tam, kde má seznam pořadí.
+        \nZaškrtnutí vpravo nahoře vybere vše nebo výběr ukončí. Ukončí ho i zpět.</string>
     <string name="help_select_move">Vyjmout vezme vybrané řádky a zobrazí vkládací lištu. Otevřete cíl a stiskněte Vložit.
         \nPřesun přežije přepnutí kapitoly.</string>
     <string name="help_test">Testy</string>

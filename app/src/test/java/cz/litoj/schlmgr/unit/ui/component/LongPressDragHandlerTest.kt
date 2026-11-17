@@ -12,7 +12,7 @@ import org.junit.Test
 /**
  * - a claim takes it exactly once with the mode snapshotted by the press.
  * - a reset drops it, so no stale press leaks into the next gesture.
- * - a search-result list always drags a selection, never an order.
+ * - an unselected row drags a selection, a selected row moves where an order exists.
  */
 class LongPressDragHandlerTest {
 
@@ -58,27 +58,15 @@ class LongPressDragHandlerTest {
 	}
 
 	@Test
-	fun `a search-result list drags a selection, never an order`() {
-		assertEquals(
-			ListDragMode.Select,
-			listDragMode(pickerMode = false, selectionActive = false, searchList = true, reorderable = false),
-		)
-		// a reorderable container behind the results changes nothing, the list is a result list
-		assertEquals(
-			ListDragMode.Select,
-			listDragMode(pickerMode = false, selectionActive = false, searchList = true, reorderable = true),
-		)
+	fun `an unordered list drags a selection, never an order`() {
+		assertEquals(ListDragMode.Select, listDragMode(reorderable = false, pressedSelected = true))
 	}
 
 	@Test
-	fun `the drag follows the selection, the picker and the reorder flag`() {
+	fun `only a selected row in an ordered list moves`() {
 		assertEquals(ListDragMode.Select,
-			listDragMode(pickerMode = true, selectionActive = false, searchList = false, reorderable = true))
-		assertEquals(ListDragMode.Select,
-			listDragMode(pickerMode = false, selectionActive = true, searchList = false, reorderable = true))
+			listDragMode(reorderable = true, pressedSelected = false))
 		assertEquals(ListDragMode.Reorder,
-			listDragMode(pickerMode = false, selectionActive = false, searchList = false, reorderable = true))
-		assertEquals(ListDragMode.None,
-			listDragMode(pickerMode = false, selectionActive = false, searchList = false, reorderable = false))
+			listDragMode(reorderable = true, pressedSelected = true))
 	}
 }

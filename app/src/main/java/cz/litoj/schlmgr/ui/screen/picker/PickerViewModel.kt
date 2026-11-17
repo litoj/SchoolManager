@@ -107,8 +107,4 @@ class PickerViewModel(
 		}
 		onChange()
 	}
-
-	fun onItemLongClick(row: ItemRow?) {
-		toggleSelect(row)
-	}
 }
