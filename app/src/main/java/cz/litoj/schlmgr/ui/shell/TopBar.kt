@@ -159,7 +159,10 @@ fun RowScope.TopBarIconButton(
 	}
 }
 
-/** Direct actions fill measured slots, while More opens only with hidden actions. */
+/**
+ * Direct actions fill measured slots, while More opens with the rest.
+ * - only a direct icon fills a slot, so a text row or a menu-only glyph stays in the menu.
+ */
 @Composable
 fun RowScope.TopBarActions(
 	entries: List<MenuEntry>,
@@ -173,8 +176,15 @@ fun RowScope.TopBarActions(
 		reservedWidth = TopBarSizes.reserved(pinned),
 		slotWidth = TopBarSizes.action,
 	)
-	entries.take(layout.direct).forEach { entry -> TopBarEntryAction(entry, onPick) }
-	if (layout.showMore) TopBarMoreButton(entries.drop(layout.direct), stringResource(R.string.more), onPick)
+	val direct = entries.indices.filter { entries[it].icon != 0 }.take(layout.direct)
+	direct.forEach { TopBarEntryAction(entries[it], onPick) }
+	if (layout.showMore || entries.any { it.icon == 0 }) {
+		TopBarMoreButton(
+			entries.filterIndexed { index, _ -> index !in direct },
+			stringResource(R.string.more),
+			onPick,
+		)
+	}
 }
 
 @Composable

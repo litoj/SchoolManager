@@ -98,7 +98,7 @@ fun SchlMgrApp(
 						}
 						// a press on the open explorer itself returns to the subjects list
 						if (destination == Destination.SUBJECTS && route == Destination.SUBJECTS.name) {
-							subjectsViewModel.resetToRoot()
+							subjectsViewModel.goToRoot()
 							return@AppDrawer
 						}
 						// the flat-siblings rule applies to the start destination.

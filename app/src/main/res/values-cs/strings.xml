@@ -353,7 +353,7 @@
     <string name="setts_place_search">lišta hledání</string>
     <string name="setts_place_more">menu více</string>
     <string name="setts_act_test">Spustí test z vybraných řádků</string>
-    <string name="setts_act_cut">Přenese řádky do jiné složky ve stejné sadě</string>
+    <string name="setts_act_cut">Přenese řádky do jiné složky</string>
     <string name="setts_act_edit">Otevře jediný vybraný řádek k úpravám</string>
     <string name="setts_act_delete">Smaže vybrané řádky</string>
     <string name="setts_act_reference">Přidá řádky jako odkazy do jiné složky</string>

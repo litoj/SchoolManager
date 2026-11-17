@@ -1,8 +1,10 @@
 package cz.litoj.schlmgr.integration.ui.screen.subjects
 
+import android.os.Looper
 import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.app.UiNotice
+import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.FlipResolution
@@ -25,12 +27,16 @@ import cz.litoj.schlmgr.ui.viewmodel.SelectionAction
 import cz.litoj.schlmgr.ui.viewmodel.SettingsState
 import cz.litoj.schlmgr.ui.viewmodel.TranslationValue
 import cz.litoj.schlmgr.ui.viewmodel.toUi
+import java.util.concurrent.Executors
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.After
@@ -44,6 +50,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
@@ -90,11 +97,35 @@ class MainExplorerViewModelTest {
 		return model
 	}
 
+	/** Opens one folder of set A, the list the paste rows are cut from. */
+	private fun vmInSet(folder: String): MainExplorerViewModel {
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == folder })
+		return model
+	}
+
+	/** Runs the io work queued so far, then the screen posts it made. */
+	private fun settle(io: CoroutineDispatcher) {
+		runBlocking { withContext(io) { } }
+		shadowOf(Looper.getMainLooper()).idle()
+	}
+
 	private fun seed(): Pair<Int, Int> {
 		val a = ItemRepository.createSubject("A", null)
 		val b = ItemRepository.createSubject("B", null)
 		ItemRepository.createChapter(a.id, "c1", null, 0)
 		return a.id to b.id
+	}
+
+	/** Two folders, where one word sits in both and one only in the first. */
+	private fun linkedWordsSetup(): Pair<Int, Int> {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		val c2 = ItemRepository.createChapter(aId, "c2", null, 1)
+		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
+		val shared = ItemRepository.createWord(c1.id, "w2", null, listOf("t2" to null))
+		ItemRepository.reference(shared.id, c2.id)
+		return c1.id to c2.id
 	}
 
 	/** Builds a shown search list without an engine run, so the behaviours start there. */
@@ -372,18 +403,206 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
-	fun `a reset from the drawer returns the explorer to the root`() {
+	fun `the drawer press walks the back ladder straight to the root`() {
 		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "w", null, listOf("t" to null))
 		val model = vmIn("A")
 		model.onItemClick(model.items().single { it.item.name == "c1" })
+		model.setSelected(model.items().single(), true)
 		assertEquals(listOf("A", "c1"), model.history.path.map { it.name })
 
-		model.resetToRoot()
+		model.goToRoot()
 
+		assertEquals("one press clears the selection too", 0, model.selectionCount())
 		assertTrue("the path drops back to the root", model.history.path.isEmpty())
 		assertTrue("the breadcrumbs clear", model.state.value.breadcrumbs.isEmpty())
 		// the root list loads, with both subjects
 		assertEquals(listOf("A", "B"), model.items().map { it.item.name })
+	}
+
+	@Test
+	fun `the drawer press keeps an armed paste alive`() {
+		seed()
+		val model = vmIn("A")
+		model.setSelected(model.items().single { it.item.name == "c1" }, true)
+		model.move(false)
+
+		model.goToRoot()
+
+		assertTrue("the armed paste rode along", model.pasteArmed)
+		assertTrue(model.history.path.isEmpty())
+		// the root opens no container, so the paste has no target there
+		assertEquals(R.string.fail_paste_target, model.pasteBlockedReason)
+	}
+
+	@Test
+	fun `a paste into the armed rows content blocks the button`() {
+		val (aId, _) = seed()
+		val model = vmIn("A")
+		model.setSelected(model.items().single { it.item.name == "c1" }, true)
+		model.move(false)
+		assertEquals("the open list already holds the cut row",
+			R.string.fail_paste_present, model.pasteBlockedReason)
+
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+
+		assertEquals(R.string.fail_paste_inside, model.pasteBlockedReason)
+
+		model.onBackRequested()
+		assertEquals("the walk back out holds the row again",
+			R.string.fail_paste_present, model.pasteBlockedReason)
+	}
+
+	@Test
+	fun `a paste to a folder of the open set runs the button`() {
+		val (aId, _) = seed()
+		ItemRepository.createChapter(aId, "c2", null, 1)
+		val model = vmIn("A")
+		model.setSelected(model.items().single { it.item.name == "c1" }, true)
+		model.move(false)
+
+		model.onItemClick(model.items().single { it.item.name == "c2" })
+
+		assertEquals("the sibling folder takes the row", 0, model.pasteBlockedReason)
+	}
+
+	@Test
+	fun `a batch the target only partly holds runs the button`() {
+		linkedWordsSetup()
+		val model = vmInSet("c1")
+		model.setSelected(model.items().single { it.item.name == "w1" }, true)
+		model.setSelected(model.items().single { it.item.name == "w2" }, true)
+		model.move(false)
+		assertEquals("the open list holds both rows",
+			R.string.fail_paste_present, model.pasteBlockedReason)
+
+		model.onBackRequested()
+		model.onItemClick(model.items().single { it.item.name == "c2" })
+
+		assertEquals("one row still has to move", 0, model.pasteBlockedReason)
+	}
+
+	@Test
+	fun `doPaste reports the rows the target already holds`() {
+		val (_, c2Id) = linkedWordsSetup()
+		val model = vmInSet("c1")
+		model.setSelected(model.items().single { it.item.name == "w1" }, true)
+		model.setSelected(model.items().single { it.item.name == "w2" }, true)
+		model.move(false)
+		model.onBackRequested()
+		model.onItemClick(model.items().single { it.item.name == "c2" })
+
+		runBlocking {
+			val notice = async(start = CoroutineStart.UNDISPATCHED) {
+				GlobalDependencies.messages.first()
+			}
+			model.doPaste()
+			withTimeout(1_000) {
+				assertEquals(
+					GlobalDependencies.UiMessage.Notice(UiNotice.PasteAlreadyPresent), notice.await())
+			}
+		}
+
+		assertEquals("the new row moved and the linked one stayed",
+			listOf("w1", "w2"), ItemRepository.children(c2Id).map { it.name }.sorted())
+	}
+
+	@Test
+	fun `the paste facts name every refusal`() {
+		val (c1Id, c2Id) = linkedWordsSetup()
+		val foreign = ItemRepository.createSubject("C", null)
+		val stranger = ItemRepository.createChapter(foreign.id, "c9", null, 0)
+		val linked = ItemRepository.children(c2Id).single()
+
+		val rows = listOf(c1Id, c2Id, stranger.id, linked.id)
+		val facts = ItemRepository.pasteFacts(rows, c2Id)
+
+		assertFalse("a sibling folder reaches nothing", facts[0].inside || facts[0].present)
+		assertTrue("a folder counts as its own content", facts[1].inside)
+		assertTrue("the foreign row belongs to another set", facts[2].otherSet)
+		assertTrue("the linked word already sits in the folder", facts[3].present)
+		assertFalse("the rows of one set stay in it", facts[0].otherSet || facts[1].otherSet)
+	}
+
+	@Test
+	fun `the block read answers on its own thread`() {
+		val io = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+		try {
+			seed()
+			val model = MainExplorerViewModel(NavigationHistory(), io)
+			model.clock = { now }
+			settle(io)
+			model.onItemClick(model.items().single { it.item.name == "A" })
+			settle(io)
+			model.setSelected(model.items().single { it.item.name == "c1" }, true)
+			model.move(false)
+			settle(io)
+			assertEquals("the open list already holds the cut row",
+				R.string.fail_paste_present, model.pasteBlockedReason)
+
+			model.onItemClick(model.items().single { it.item.name == "c1" })
+			settle(io)
+			assertEquals(R.string.fail_paste_inside, model.pasteBlockedReason)
+
+			model.goToRoot()
+			assertEquals("the root answers without a read",
+				R.string.fail_paste_target, model.pasteBlockedReason)
+			// the walk of the left container is cancelled, so it adds no answer
+			settle(io)
+			assertEquals(R.string.fail_paste_target, model.pasteBlockedReason)
+		} finally {
+			io.close()
+		}
+	}
+
+	@Test
+	fun `an armed reference of a linked row blocks the button`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
+		val model = vmInSet("c1")
+
+		model.setSelected(model.items().single { it.item.name == "w1" }, true)
+		model.move(true)
+
+		assertEquals("the list already links the word",
+			R.string.fail_paste_present, model.pasteBlockedReason)
+	}
+
+	@Test
+	fun `an armed move blocks in another set`() {
+		val (aId, bId) = seed()
+		val model = vmIn("A")
+		model.setSelected(model.items().single { it.item.name == "c1" }, true)
+		model.move(false)
+		model.onBackRequested()
+		model.onItemClick(model.items().single { it.item.id == bId })
+
+		assertEquals(R.string.fail_paste_other_subject, model.pasteBlockedReason)
+	}
+
+	@Test
+	fun `an armed reference stays enabled across sets`() {
+		val (aId, bId) = seed()
+		val model = vmIn("A")
+		model.setSelected(model.items().single { it.item.name == "c1" }, true)
+		model.move(true)
+		model.onBackRequested()
+		model.onItemClick(model.items().single { it.item.id == bId })
+
+		assertEquals("a reference may cross sets", 0, model.pasteBlockedReason)
+	}
+
+	@Test
+	fun `a cut subject stays enabled across sets`() {
+		val (aId, bId) = seed()
+		val model = vm()
+		model.setSelected(model.items().single { it.item.id == bId }, true)
+		model.move(false)
+		model.onItemClick(model.items().single { it.item.id == aId })
+
+		assertEquals("the cut subject merges across sets", 0, model.pasteBlockedReason)
 	}
 
 	@Test
@@ -737,6 +956,31 @@ class MainExplorerViewModelTest {
 			}
 		}
 		assertFalse("the refused paste disarmed anyway", model.pasteArmed)
+	}
+
+	@Test
+	fun `doPaste refuses a move into the armed rows content and reports it`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		val model = vmIn("A")
+		model.setSelected(model.items().single { it.item.name == "c1" }, true)
+		model.move(false)
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+
+		runBlocking {
+			val notice = async(start = CoroutineStart.UNDISPATCHED) {
+				GlobalDependencies.messages.first()
+			}
+			model.doPaste()
+			withTimeout(1_000) {
+				assertEquals(
+					GlobalDependencies.UiMessage.Notice(UiNotice.PasteInsideItself), notice.await())
+			}
+		}
+
+		assertFalse(model.pasteArmed)
+		assertEquals("the chapter stayed in its set", listOf("c1"), ItemRepository.children(aId).map { it.name })
+		assertTrue("nothing landed inside the armed chapter", ItemRepository.children(c1.id).isEmpty())
 	}
 
 	@Test

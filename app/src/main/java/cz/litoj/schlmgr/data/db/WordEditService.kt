@@ -84,13 +84,15 @@ internal object WordEditService {
 		keptRows: List<Pair<KeptTranslation, DbItem>>, scope: Int, joinedTargets: MutableSet<Int>,
 	): DbItem {
 		val slot = dao.linkPosition(edit.parentId, edit.wordId)
-		val existing = dao.findWordInSubject(scope, edit.name)?.takeIf { it.id != edit.wordId }
+		// the same trim as the rename and add paths, so a padded name still joins
+		val name = edit.name.trim()
+		val existing = dao.findWordInSubject(scope, name)?.takeIf { it.id != edit.wordId }
 		val fork = if (existing != null) {
 			val merged = Descriptions.merge(existing.description, edit.description)
 			if (merged != existing.description) dao.updateById(existing.id, existing.name, merged)
 			existing
 		} else dao.insert(
-			DbItem(name = edit.name, description = edit.description?.trim() ?: "", type = ItemKind.WORD)
+			DbItem(name = name, description = edit.description?.trim() ?: "", type = ItemKind.WORD)
 		).let { dao.get(it.toInt())!! }
 		dao.deleteLink(edit.parentId, edit.wordId)
 		if (dao.linkPosition(edit.parentId, fork.id) == null)

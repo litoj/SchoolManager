@@ -370,7 +370,7 @@
     <string name="setts_place_search">search bar</string>
     <string name="setts_place_more">more menu</string>
     <string name="setts_act_test">Starts a test from the selected rows</string>
-    <string name="setts_act_cut">Moves the rows to another folder in the same set</string>
+    <string name="setts_act_cut">Moves the rows to another folder</string>
     <string name="setts_act_edit">Opens the one selected row for editing</string>
     <string name="setts_act_delete">Deletes the selected rows</string>
     <string name="setts_act_reference">Adds the rows as references to another folder</string>

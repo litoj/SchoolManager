@@ -7,11 +7,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Text
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.TouchInjectionScope
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeDown
@@ -35,14 +38,14 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * - one offered kind commits on the release, wherever the finger ends.
- * - several kinds fan out a palette.
+ * - a drag commits its icon, wherever the finger ends.
+ * - a plain tap fans the palette, whose centre then imports.
  * - a drag onto an icon or a standing tap commits a palette entry.
- * - a plain tap leaves the palette standing for the click on the icon.
  * - the visibility follows the drag gesture, not the list scroll, so it
  *   also hides with nothing to scroll.
  * - a sideways swipe that climbs a little keeps the button.
  * - a reversal inside one gesture resets its travel.
+ * - a hidden button ends a standing palette.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -53,12 +56,15 @@ class NewItemFabTest {
 
 	private val picked = ArrayList<RowKind>()
 
+	private var imports = 0
+
 	private fun setContent(kinds: List<RowKind>) {
 		rule.setContent {
 			NewItemFab(
 				kinds = kinds,
 				visible = true,
 				onPick = { picked.add(it) },
+				onImport = { imports++ },
 				modifier = Modifier.fillMaxSize(),
 			)
 		}
@@ -76,12 +82,64 @@ class NewItemFabTest {
 		fabCenter() + paletteOffset(index, count, with(rule.density) { PaletteRadius.toPx() })
 
 	@Test
-	fun `a single kind commits on a plain tap`() {
+	fun `a single kind opens the palette on a plain tap`() {
 		setContent(listOf(RowKind.SUBJECT))
 
 		rule.onRoot().performTouchInput { click(fabCenter()) }
 
-		assertEquals(listOf(RowKind.SUBJECT), picked)
+		assertTrue("the first tap only opens the palette", picked.isEmpty())
+		assertEquals("the first tap imports nothing", 0, imports)
+		rule.onNodeWithText("Import").assertExists()
+	}
+
+	@Test
+	fun `the standing centre imports on a second tap`() {
+		setContent(listOf(RowKind.CHAPTER, RowKind.WORD, RowKind.NOTE))
+
+		rule.onRoot().performTouchInput { click(fabCenter()) }
+		rule.onRoot().performTouchInput { click(fabCenter()) }
+
+		assertTrue("the centre commits no kind", picked.isEmpty())
+		assertEquals("the centre imports", 1, imports)
+	}
+
+	@Test
+	fun `the standing button becomes the import choice`() {
+		setContent(listOf(RowKind.CHAPTER, RowKind.WORD, RowKind.NOTE))
+
+		rule.onRoot().performTouchInput { click(fabCenter()) }
+
+		rule.onNodeWithContentDescription("New").assertDoesNotExist()
+		rule.onNodeWithText("Import").assertExists()
+	}
+
+	@Test
+	fun `a hidden button drops the standing palette`() {
+		var shown = mutableStateOf(true)
+		rule.setContent {
+			NewItemFab(
+				kinds = listOf(RowKind.CHAPTER, RowKind.WORD, RowKind.NOTE),
+				visible = shown.value,
+				onPick = { picked.add(it) },
+				onImport = { imports++ },
+				modifier = Modifier.fillMaxSize(),
+			)
+		}
+		rule.waitForIdle()
+		rule.onRoot().performTouchInput { click(fabCenter()) }
+
+		rule.runOnIdle { shown.value = false }
+		rule.waitForIdle()
+		rule.runOnIdle { shown.value = true }
+		rule.waitForIdle()
+
+		rule.onNodeWithContentDescription("New").assertExists()
+
+		rule.onRoot().performTouchInput { click(fabCenter()) }
+		rule.waitForIdle()
+
+		assertEquals("the returned button opens the palette again", 0, imports)
+		assertTrue("the returned button commits no kind", picked.isEmpty())
 	}
 
 	@Test

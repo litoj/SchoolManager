@@ -188,4 +188,5 @@ class PickerViewModelTest {
 		assertFalse("the selection belonged to the left list, none carries over",
 			model.items().any { it.selected })
 	}
+
 }

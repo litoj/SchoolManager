@@ -35,10 +35,11 @@ internal class ImportAccumulator {
 	 * - a chapter also lands in the chapter-only index that the reference paths walk.
 	 */
 	fun indexSavedRow(parent: Int, name: String, id: Int, type: ItemKind) {
+		if (type == ItemKind.CHAPTER)
+			chaptersByParent.getOrPut(parent) { HashMap() }.putIfAbsent(name, id)
 		val names = rowsByParent.getOrPut(parent) { HashMap() }
 		if (name in names) return
 		names[name] = id
-		if (type == ItemKind.CHAPTER) chaptersByParent.getOrPut(parent) { HashMap() }[name] = id
 	}
 
 	/**

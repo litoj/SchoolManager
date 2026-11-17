@@ -103,6 +103,9 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 	val armedCount: Int get() = paste.armedCount
 
+	/** Why the open container refuses the armed paste, 0 when it may run. */
+	val pasteBlockedReason: Int get() = paste.blockedReason
+
 	override fun pasteArmed() = pasteArmed
 
 	private inner class PasteHost : SubjectsPaste.Host, SubjectsHost by shared {
@@ -228,14 +231,19 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		onMenuItemClick(menuIdOf(action))
 	}
 
+	/** Every navigation lands here, so the armed paste re-reads its target. */
+	override fun setContent(container: DbItem?, pulseItemId: Int?) {
+		super.setContent(container, pulseItemId)
+		paste.refreshBlock()
+	}
+
 	/**
-	 * The drawer press on the open explorer: back to the subjects list.
-	 * - a running search and an armed paste drop with the position.
+	 * The drawer press on the open explorer: the back ladder straight to the subjects list.
+	 * - the armed paste rides along, only its cancel drops it.
 	 */
-	fun resetToRoot() {
-		if (searching) endSearch()
-		if (pasteArmed) cancelPaste()
+	fun goToRoot() {
 		clearSelection()
+		if (searching) endSearch()
 		history.reset()
 		setContent(null)
 		onChange()

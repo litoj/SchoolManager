@@ -1,6 +1,5 @@
 package cz.litoj.schlmgr.ui.component
 
-import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -47,9 +46,10 @@ private val BarColor @Composable get() = ExplorerColors.header
 private val ForegroundEnabled @Composable get() = ExplorerColors.onHeader
 private val ForegroundDisabled @Composable get() = ExplorerColors.onHeader.copy(alpha = 0.5f)
 
+/** One action of a bottom strip, where an icon of 0 shows the label alone. */
 private class Action(
-	@field:DrawableRes @param:DrawableRes val icon: Int,
-	@field:StringRes @param:StringRes val label: Int,
+	val icon: Int,
+	@param:StringRes val label: Int,
 	val onClick: () -> Unit,
 )
 
@@ -128,11 +128,13 @@ private fun RowScope.OverflowStripButton(entries: List<MenuEntry>, onPick: (Int)
 /**
  * The bottom-strip paste actions of an armed move.
  * - the armed status reads on the top strip, so the bar carries only the two actions.
+ * - [blockedReason] mutes the paste for a target the move refuses, its tap explains.
  */
 @Composable
 fun PasteActionBar(
 	onCancel: () -> Unit,
 	onPaste: () -> Unit,
+	blockedReason: Int,
 	modifier: Modifier = Modifier,
 ) {
 	ActionStrip(modifier) {
@@ -143,7 +145,7 @@ fun PasteActionBar(
 		)
 		ActionButton(
 			Action(R.drawable.ic_paste, R.string.paste, onPaste),
-			0,
+			blockedReason,
 			Modifier.weight(1f),
 		)
 	}
@@ -196,7 +198,7 @@ fun ImportActionBar(
 				Modifier.weight(1f),
 			)
 			ActionButton(
-				Action(R.drawable.ic_import_black, R.string.import_here, onImport),
+				Action(0, R.string.import_here, onImport),
 				blockedReason,
 				Modifier.weight(1f),
 			)
@@ -237,12 +239,14 @@ private fun ActionButton(
 		verticalArrangement = Arrangement.Center,
 	) {
 		// Icons render at the Material standard. No drawable size can change the bar.
-		Image(
-			painterResource(action.icon),
-			contentDescription = null,
-			modifier = Modifier.size(IconSize),
-			colorFilter = ColorFilter.tint(if (enabled) ForegroundEnabled else ForegroundDisabled),
-		)
+		// The slot stays when no glyph is drawn, so one bar never splits its labels.
+		Box(Modifier.size(IconSize), contentAlignment = Alignment.Center) {
+			if (action.icon != 0) Image(
+				painterResource(action.icon),
+				contentDescription = null,
+				colorFilter = ColorFilter.tint(if (enabled) ForegroundEnabled else ForegroundDisabled),
+			)
+		}
 		Spacer(Modifier.height(2.dp))
 		Text(
 			stringResource(action.label),

@@ -167,11 +167,12 @@ class SubjectsMenuTest {
 	}
 
 	@Test
-	fun `both browse menus offer the import action`() {
-		for (kind in listOf(MainExplorerViewModel.MenuKind.ROOT, MainExplorerViewModel.MenuKind.CONTAINER)) {
+	fun `no explorer menu imports from its top bar`() {
+		// the New palette centre is the import door
+		for (kind in MainExplorerViewModel.MenuKind.entries) {
 			val plain = menu(kind, selecting = false)
-			assertTrue("$kind offers the import action",
-				plain.any { it.id == MenuId.IMPORT_FILE })
+			assertFalse("$kind holds no import row", plain.any { it.id == MenuId.IMPORT_FILE })
+			assertTrue("$kind keeps its sort parent", plain.any { it.children.isNotEmpty() })
 		}
 	}
 

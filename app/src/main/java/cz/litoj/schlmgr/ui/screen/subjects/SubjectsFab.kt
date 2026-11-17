@@ -29,6 +29,7 @@ internal fun SubjectsFab(
 			menuKindFor(listState.variant == ExplorerRowVariant.Search, state.breadcrumbs.size)),
 		visible = visibility.shown,
 		onPick = { kind -> viewModel.onMenuItemClick(newMenuIdOf(kind)) },
+		onImport = { viewModel.onMenuItemClick(MenuId.IMPORT_FILE) },
 		modifier = modifier,
 	)
 }

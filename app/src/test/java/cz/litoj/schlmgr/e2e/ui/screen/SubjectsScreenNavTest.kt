@@ -9,13 +9,20 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.room.Room
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
 import cz.litoj.schlmgr.ui.screen.subjects.SubjectsScreen
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -39,6 +46,8 @@ class SubjectsScreenNavTest {
 	val rule = createComposeRule()
 
 	private lateinit var db: ItemDatabase
+	private var subjectId = 0
+	private var chapterId = 0
 
 	@Before
 	fun setUp() {
@@ -49,7 +58,9 @@ class SubjectsScreenNavTest {
 		ItemRepository.ensureRoot()
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
 		val a = ItemRepository.createSubject("A", null)
+		subjectId = a.id
 		val c1 = ItemRepository.createChapter(a.id, "c1", null)
+		chapterId = c1.id
 		ItemRepository.createWord(c1.id, "xyz", null, listOf("t1" to null))
 		ItemRepository.createWord(c1.id, "w2", null, listOf("t2" to null))
 	}
@@ -72,7 +83,11 @@ class SubjectsScreenNavTest {
 
 	/** Long-presses the first word, which shows the selection at once. */
 	private fun selectFirstWord() {
-		rule.onNodeWithText("t1").performTouchInput {
+		selectRow("t1")
+	}
+
+	private fun selectRow(label: String) {
+		rule.onNodeWithText(label).performTouchInput {
 			down(center)
 			advanceEventTime(1_000)
 			up()
@@ -115,5 +130,66 @@ class SubjectsScreenNavTest {
 		rule.onNodeWithTag("top_bar_nav").performClick()
 		rule.waitForIdle()
 		rule.runOnIdle { assertFalse(model.pasteArmed) }
+	}
+
+	@Test
+	fun `a blocked paste keeps its place and refuses the tap`() {
+		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		screen(model)
+		rule.onNodeWithText("A").performClick()
+		rule.waitForIdle()
+		selectRow("c1")
+		rule.onNodeWithText(text(R.string.cut)).performClick()
+		rule.waitForIdle()
+		rule.runOnIdle { assertTrue("the cut armed a move", model.pasteArmed) }
+
+		// the armed row itself is the one container the paste refuses
+		rule.onNodeWithText("c1").performClick()
+		rule.waitForIdle()
+		rule.runOnIdle { assertEquals(R.string.fail_paste_inside, model.pasteBlockedReason) }
+
+		runBlocking {
+			val notice = async(start = CoroutineStart.UNDISPATCHED) {
+				GlobalDependencies.messages.first()
+			}
+			rule.onNodeWithText(text(R.string.paste)).performClick()
+			rule.waitForIdle()
+			withTimeout(1_000) {
+				assertEquals(
+					GlobalDependencies.UiMessage.Notice(
+						UiNotice.ActionUnavailable(R.string.fail_paste_inside)),
+					notice.await())
+			}
+		}
+
+		rule.runOnIdle {
+			assertTrue("the muted paste refused the tap", model.pasteArmed)
+			assertEquals("nothing moved into the armed row",
+				listOf("xyz", "w2"), ItemRepository.children(chapterId).map { it.name })
+		}
+	}
+
+	@Test
+	fun `a cut in its own list waits with its reason`() {
+		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		screen(model)
+		rule.onNodeWithText("A").performClick()
+		rule.waitForIdle()
+		selectRow("c1")
+		rule.onNodeWithText(text(R.string.cut)).performClick()
+		rule.waitForIdle()
+
+		// the open list is where the row already sits, so a paste there would change nothing
+		rule.runOnIdle {
+			assertEquals(R.string.fail_paste_present, model.pasteBlockedReason)
+		}
+
+		rule.onNodeWithText(text(R.string.paste)).performClick()
+		rule.waitForIdle()
+
+		rule.runOnIdle {
+			assertTrue("the no-op paste kept the armed row", model.pasteArmed)
+			assertEquals(listOf("c1"), ItemRepository.children(subjectId).map { it.name })
+		}
 	}
 }

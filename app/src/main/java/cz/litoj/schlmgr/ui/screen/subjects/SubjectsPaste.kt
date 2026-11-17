@@ -1,17 +1,23 @@
 package cz.litoj.schlmgr.ui.screen.subjects
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ROOT_ID
 import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.data.ItemRepository.PasteFacts
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.Placement
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
@@ -43,11 +49,61 @@ internal class SubjectsPaste(
 
 	private var pasteData by mutableStateOf<PasteData?>(null)
 
+	/** The open block read, the newest one only. */
+	private var blockJob: Job? = null
+
 	val armed: Boolean get() = pasteData != null
 
 	private fun armPaste(data: PasteData?) {
 		pasteData = data
 		host.refreshReorderable()
+		refreshBlock()
+	}
+
+	/** Why the open container refuses the armed rows, 0 when the paste may run. */
+	@get:StringRes
+	var blockedReason by mutableIntStateOf(0)
+		private set
+
+	/** Re-reads why the open container refuses the armed rows. */
+	fun refreshBlock() {
+		blockJob?.cancel()
+		blockJob = null
+		val paste = pasteData
+		if (paste == null) {
+			blockedReason = 0
+			return
+		}
+		val target = host.path.lastOrNull()
+		if (target == null) {
+			blockedReason = R.string.fail_paste_target
+			return
+		}
+		// snapshot on main, so the answer can only describe one container and one batch
+		val src = paste.src.map { PasteSrc(it, it.item.id, it.parentId) }
+		blockJob = scope.launch(io) {
+			val facts = ItemRepository.pasteFacts(src.map { it.id }, target.id)
+			// the read costs a graph walk per row, so a superseded one must not answer
+			if (!isActive) return@launch
+			host.postToUi { blockedReason = blockOf(paste.referencing, src, facts) }
+		}
+	}
+
+	/**
+	 * The mute rule for one batch, the first refusal its writes would report.
+	 * - a batch the target already holds would only lose the armed rows.
+	 */
+	private fun blockOf(referencing: Boolean, src: List<PasteSrc>, facts: List<PasteFacts>): Int {
+		var allPresent = true
+		for (index in src.indices) {
+			val oldParent = src[index].oldParent
+			// a reference and a cut subject cross sets on purpose.
+			val staysInSet = !referencing && oldParent != null && oldParent != ROOT_ID
+			if (staysInSet && facts[index].otherSet) return R.string.fail_paste_other_subject
+			if (facts[index].inside) return R.string.fail_paste_inside
+			if (!facts[index].present) allPresent = false
+		}
+		return if (allPresent) R.string.fail_paste_present else 0
 	}
 
 	/** What the armed paste holds, its kind and the rows it carries. */

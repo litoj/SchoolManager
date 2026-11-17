@@ -76,7 +76,6 @@ internal val exportMenu = listOf(
 
 private val browseStatic = listOf(
 	MenuEntry(0, R.string.sort, icon = R.drawable.ic_sort_black, children = sortMenu),
-	MenuEntry(MenuId.IMPORT_FILE, R.string.more_import, icon = R.drawable.ic_import_black),
 )
 
 private val searchStatic = listOf(

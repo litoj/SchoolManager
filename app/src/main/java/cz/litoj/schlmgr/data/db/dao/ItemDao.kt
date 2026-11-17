@@ -257,6 +257,17 @@ abstract class ItemDao {
 	abstract suspend fun subgraph(rootId: Int): List<DbItem>
 
 	/**
+	 * Whether the subgraph of [rootId] holds [itemId], the root itself included.
+	 * - the same walk [subgraph] takes, so a reference link reaches too.
+	 */
+	@Query(
+		"WITH RECURSIVE des(id) AS (SELECT :rootId " +
+			"UNION SELECT l.child_id FROM item_link l INNER JOIN des d ON l.parent_id = d.id) " +
+			"SELECT EXISTS(SELECT 1 FROM des WHERE id = :itemId)"
+	)
+	abstract suspend fun subgraphContains(rootId: Int, itemId: Int): Boolean
+
+	/**
 	 * All links between the rows of [subgraph].
 	 * - every link whose parent lies in the subgraph, since reached rows bring their children.
 	 * - the order is arbitrary.

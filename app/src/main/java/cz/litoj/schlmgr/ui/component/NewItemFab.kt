@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -59,17 +60,19 @@ import kotlin.math.sin
 /**
  * The floating New-action button, bottom right, a rounded square in the title bar colouring.
  * - the screen drives [visible] with the drag gesture, see [fabDragVisibility].
- * - it offers the [kinds] of the open screen.
- * - one offered kind opens its creator when the press releases, by click or drag alike.
- * - several kinds open a circular palette around the button, where a drag or a click commits.
- * - a plain tap leaves the palette standing.
- * - a tap outside the icons, or on the button again, closes it.
+ * - a tap fans the [kinds] of the open screen into a circular palette.
+ * - a drag to an icon or a click on it commits that kind.
+ * - a standing palette turns the button into the Import choice, and its tap imports.
+ * - a tap outside the icons closes the palette.
+ *
+ * @param onImport the import action offered at the centre of a standing palette
  */
 @Composable
 fun NewItemFab(
 	kinds: List<RowKind>,
 	visible: Boolean,
 	onPick: (RowKind) -> Unit,
+	onImport: () -> Unit,
 	modifier: Modifier = Modifier,
 ) {
 	if (kinds.isEmpty()) return
@@ -77,7 +80,8 @@ fun NewItemFab(
 	var center by remember { mutableStateOf(Offset.Zero) }
 	var root by remember { mutableStateOf(Offset.Zero) }
 	var pressed by remember { mutableStateOf(false) }
-	var standing by remember { mutableStateOf(false) }
+	// a hidden button reads as a dismissed palette, so the standing state ends with it
+	var standing by remember(visible) { mutableStateOf(false) }
 	var hovered by remember { mutableIntStateOf(-1) }
 	val radius = with(LocalDensity.current) { PaletteRadius.toPx() }
 	val dragThreshold = with(LocalDensity.current) { DragThreshold.toPx() }
@@ -90,7 +94,7 @@ fun NewItemFab(
 	Box(modifier.onGloballyPositioned { root = it.positionInRoot() }) {
 		// a hidden button must not leave its palette floating.
 		// so the icons follow the visibility of the button
-		if ((pressed || standing) && visible && kinds.size > 1) {
+		if ((pressed || standing) && visible) {
 			if (standing && !pressed) {
 				Box(
 					Modifier.matchParentSize().clickable(
@@ -101,47 +105,40 @@ fun NewItemFab(
 			}
 			kinds.forEachIndexed { i, kind ->
 				val at = center - root + paletteOffset(i, kinds.size, radius)
-				Column(
-					Modifier
-						.offset {
-							IntOffset(
-								(at.x - PaletteLabelWidth.toPx() / 2).roundToInt(),
-								(at.y - PaletteIconSize.toPx() / 2).roundToInt(),
-							)
-						}
-						.width(PaletteLabelWidth)
-						// the labels of the standing palette take plain taps too
-						.then(if (standing && !pressed) {
-							Modifier.clickable(
-								interactionSource = remember { MutableInteractionSource() },
-								indication = null,
-							) { commit(i) }
-						} else Modifier),
-					horizontalAlignment = Alignment.CenterHorizontally,
-				) {
-					Image(
-						painterResource(kind.iconRes),
-						contentDescription = null,
-						modifier = Modifier
-							.size(PaletteIconSize)
-							// the hovered icon carries the header colour, and the rest
-							// a light grey so the type icon stays readable
-							.background(
-								if (i == hovered) ExplorerColors.header else ExplorerColors.subBackground,
-								CircleShape,
-							)
-							.padding(IconPadding),
-					)
-					Text(
-						stringResource(paletteLabel(kind)),
-						Modifier
-							.padding(top = 2.dp)
-							.background(ExplorerColors.subBackground, RoundedCornerShape(3.dp))
-							.padding(horizontal = 3.dp),
-						fontSize = 11.sp,
-						color = ExplorerColors.body,
-					)
-				}
+				PaletteChoice(
+					icon = kind.iconRes,
+					label = paletteLabel(kind),
+					highlighted = i == hovered,
+					modifier = Modifier.offset {
+						IntOffset(
+							(at.x - PaletteLabelWidth.toPx() / 2).roundToInt(),
+							(at.y - PaletteIconSize.toPx() / 2).roundToInt(),
+						)
+					},
+					// the labels of the standing palette take plain taps too
+					onClick = if (standing && !pressed) {
+						{ commit(i) }
+					} else null,
+				)
+			}
+			if (standing) {
+				PaletteChoice(
+					icon = R.drawable.ic_download,
+					label = R.string.more_import,
+					highlighted = false,
+					tint = ExplorerColors.body,
+					modifier = Modifier.offset {
+						IntOffset(
+							(center.x - root.x - PaletteLabelWidth.toPx() / 2).roundToInt(),
+							(center.y - root.y - PaletteIconSize.toPx() / 2).roundToInt(),
+						)
+					},
+					// the label taps like a fan label, while the button keeps drags
+					onClick = {
+						standing = false
+						onImport()
+					},
+				)
 			}
 		}
 		AnimatedVisibility(
@@ -154,8 +151,11 @@ fun NewItemFab(
 				Modifier
 					.padding(FabMargin)
 					.size(FabSize)
-					.shadow(FabElevation, RoundedCornerShape(FabCorner))
-					.background(ExplorerColors.header, RoundedCornerShape(FabCorner))
+					.shadow(if (standing) 0.dp else FabElevation, RoundedCornerShape(FabCorner))
+					.background(
+						if (standing) Color.Transparent else ExplorerColors.header,
+						RoundedCornerShape(FabCorner),
+					)
 					.onGloballyPositioned {
 						center = it.positionInRoot() +
 							Offset(it.size.width / 2f, it.size.height / 2f)
@@ -166,12 +166,6 @@ fun NewItemFab(
 						awaitEachGesture {
 							val down = awaitFirstDown(requireUnconsumed = false)
 							down.consume()
-							if (kinds.size == 1) {
-								// one kind, so the release commits it wherever the finger travelled
-								waitForRelease(down.id)
-								onPick(kinds[0])
-								return@awaitEachGesture
-							}
 							pressed = true
 							hovered = -1
 							var pick = -1
@@ -197,28 +191,74 @@ fun NewItemFab(
 								hovered = -1
 							}
 							if (pick >= 0) commit(pick)
-							// no item was picked, so the palette stays reachable
-							else standing = !standing
+							else if (standing) {
+								// the standing centre is the import choice
+								standing = false
+								onImport()
+							} else standing = true
 						}
 					},
 			) {
-				Image(
-					painterResource(R.drawable.ic_add),
-					contentDescription = stringResource(R.string.fab_new),
-					colorFilter = ColorFilter.tint(ExplorerColors.onHeader),
-					modifier = Modifier.align(Alignment.Center).padding(IconPadding).fillMaxSize(),
-				)
+				if (!standing) {
+					Image(
+						painterResource(R.drawable.ic_add),
+						contentDescription = stringResource(R.string.fab_new),
+						colorFilter = ColorFilter.tint(ExplorerColors.onHeader),
+						modifier = Modifier.align(Alignment.Center).padding(IconPadding).fillMaxSize(),
+					)
+				}
 			}
 		}
 	}
 }
 
-/** Waits for [pointer] to lift, consuming the moves so nothing below scrolls. */
-private suspend fun AwaitPointerEventScope.waitForRelease(pointer: PointerId) {
-	while (true) {
-		val change = nextChange(pointer) ?: continue
-		change.consume()
-		if (!change.pressed) return
+/** One palette choice, the circle and its label in the shared palette style. */
+@Composable
+private fun PaletteChoice(
+	icon: Int,
+	label: Int,
+	highlighted: Boolean,
+	modifier: Modifier = Modifier,
+	tint: Color? = null,
+	onClick: (() -> Unit)? = null,
+) {
+	val interactionSource = remember { MutableInteractionSource() }
+	Column(
+		modifier
+			.width(PaletteLabelWidth)
+			// a standing choice takes plain taps as well as the drag
+			.then(if (onClick != null) {
+				Modifier.clickable(
+					interactionSource = interactionSource,
+					indication = null,
+					onClick = onClick,
+				)
+			} else Modifier),
+		horizontalAlignment = Alignment.CenterHorizontally,
+	) {
+		Image(
+			painterResource(icon),
+			contentDescription = null,
+			colorFilter = tint?.let { ColorFilter.tint(it) },
+			modifier = Modifier
+				.size(PaletteIconSize)
+				// the hovered choice carries the header colour, and the rest
+				// a light grey so the glyph stays readable
+				.background(
+					if (highlighted) ExplorerColors.header else ExplorerColors.subBackground,
+					CircleShape,
+				)
+				.padding(IconPadding),
+		)
+		Text(
+			stringResource(label),
+			Modifier
+				.padding(top = 2.dp)
+				.background(ExplorerColors.subBackground, RoundedCornerShape(3.dp))
+				.padding(horizontal = 3.dp),
+			fontSize = 11.sp,
+			color = ExplorerColors.body,
+		)
 	}
 }
 

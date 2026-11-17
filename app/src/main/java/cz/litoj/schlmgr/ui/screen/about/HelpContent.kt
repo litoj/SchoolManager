@@ -78,8 +78,8 @@ internal val sections = listOf(
 				examples = R.string.help_extra_naming_examples),
 			HelpSection(
 				R.string.help_extra_words_import, R.string.help_extra_words_import_how,
-				paths = listOf(R.array.help_path_import),
-				icon = R.drawable.ic_import_black,
+				paths = listOf(R.array.help_path_import_new, R.array.help_path_import),
+				icon = R.drawable.ic_download,
 			),
 			HelpSection(
 				R.string.help_extra_words_export, R.string.help_extra_words_export_how,

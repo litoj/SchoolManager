@@ -1,11 +1,16 @@
 package cz.litoj.schlmgr.e2e.ui.component
 
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.shell.MenuEntry
@@ -31,15 +36,19 @@ class TopBarActionsTest {
 	val rule = createComposeRule()
 
 	private fun show(count: Int, width: androidx.compose.ui.unit.Dp = 320.dp) {
+		show(List(count) { MenuEntry(it, R.string.search, icon = R.drawable.ic_search) }, width)
+	}
+
+	private fun show(entries: List<MenuEntry>, width: androidx.compose.ui.unit.Dp = 320.dp) {
 		rule.setContent {
-			Row {
-				TopBarActions(
-					entries = List(count) { MenuEntry(it, R.string.search, icon = R.drawable.ic_search) },
-					width = width,
-					onPick = {},
-				)
+			Row(Modifier.height(55.dp)) {
+				TopBarActions(entries = entries, width = width, onPick = {})
 			}
 		}
+	}
+
+	private fun openMore() {
+		rule.onNode(hasContentDescription("More") and hasClickAction()).performClick()
 	}
 
 	@Test
@@ -96,5 +105,30 @@ class TopBarActionsTest {
 		show(0)
 
 		rule.onNodeWithContentDescription("More").assertDoesNotExist()
+	}
+
+	@Test
+	fun `an action without an icon opens the more menu even when it fits`() {
+		show(
+			listOf(
+				MenuEntry(1, R.string.search, icon = R.drawable.ic_search),
+				MenuEntry(2, R.string.more_import),
+			),
+		)
+
+		assertEquals(1, rule.onAllNodesWithContentDescription("Search").fetchSemanticsNodes().size)
+		rule.onNodeWithContentDescription("More").assertExists()
+		openMore()
+		rule.onNodeWithText("Import").assertExists()
+	}
+
+	@Test
+	fun `a lone action without an icon shows no icon button`() {
+		show(listOf(MenuEntry(1, R.string.more_import)))
+
+		rule.onNodeWithContentDescription("Import").assertDoesNotExist()
+		rule.onNodeWithContentDescription("More").assertExists()
+		openMore()
+		rule.onNodeWithText("Import").assertExists()
 	}
 }

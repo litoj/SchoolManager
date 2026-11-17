@@ -555,11 +555,36 @@ object ItemRepository {
 	}
 
 	/**
+	 * What one container would do to one row of a paste batch.
+	 * - [present]: the container already links the row.
+	 * - [inside]: the container sits inside the row content, the row itself included.
+	 * - [otherSet]: the row and the container sit in different subjects.
+	 * - the facts the write guards test, so a preview and a write cannot disagree by rule.
+	 */
+	data class PasteFacts(val present: Boolean, val inside: Boolean, val otherSet: Boolean)
+
+	/**
+	 * The facts of every row in batch order, read in one block.
+	 * - the inside walk follows reference links, like the guards do.
+	 */
+	@JvmStatic
+	fun pasteFacts(childIds: List<Int>, targetId: Int): List<PasteFacts> = query {
+		val dao = it.itemDao()
+		childIds.map { childId ->
+			PasteFacts(
+				present = dao.linkPosition(targetId, childId) != null,
+				inside = dao.subgraphContains(childId, targetId),
+				otherSet = dao.subjectRootOf(childId, ROOT_ID) != dao.subjectRootOf(targetId, ROOT_ID),
+			)
+		}
+	}
+
+	/**
 	 * True when linking the child under the target would close a cycle.
 	 * The target then sits inside the child content, the child itself included.
 	 */
 	private suspend fun closesCycle(dao: ItemDao, childId: Int, targetId: Int): Boolean =
-		dao.subgraph(childId).any { it.id == targetId }
+		dao.subgraphContains(childId, targetId)
 
 	/**
 	 * Places an existing item into another container through a reference link.

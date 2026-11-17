@@ -268,9 +268,11 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 	 * - a pending row writes nothing, and [pendingDescriptions] collects an existing one.
 	 */
 	override suspend fun mergeDescription(row: DbItem, incoming: String?): DbItem {
-		val merged = Descriptions.merge(row.description, incoming)
-		if (merged == row.description) return row
-		val updated = row.copy(description = merged)
+		// a counter merge in this import may own a newer copy than the caller holds
+		val current = rows[row.id] ?: row
+		val merged = Descriptions.merge(current.description, incoming)
+		if (merged == current.description) return current
+		val updated = current.copy(description = merged)
 		rows[updated.id] = updated
 		if (updated.id >= 0) pendingDescriptions[updated.id] = updated
 		return updated

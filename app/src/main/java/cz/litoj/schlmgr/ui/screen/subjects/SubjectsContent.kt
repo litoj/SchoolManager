@@ -104,6 +104,7 @@ internal fun SubjectsContent(
 				viewModel.pasteArmed -> PasteActionBar(
 					onCancel = viewModel::cancelPaste,
 					onPaste = viewModel::doPaste,
+					blockedReason = viewModel.pasteBlockedReason,
 				)
 				// the row shows its selection tint at once, the strip only after the lift
 				listState.selectionActive && !pressHeld -> {

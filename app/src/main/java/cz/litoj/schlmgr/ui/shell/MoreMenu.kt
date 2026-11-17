@@ -27,7 +27,8 @@ import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.component.reportUnavailable
 
 /**
- * @property icon the leading icon of the row, where 0 renders none
+ * @property icon the leading icon of the row, which also makes the action direct in the top bar
+ * @property menuIcon the icon of a More row, where 0 falls back to [icon]
  * @property children a non-empty list opens a second menu level
  * @property selectionAction acts on selected rows, keeping the resource order
  * @property always stays in both menu forms, as the export rows do
@@ -37,12 +38,16 @@ data class MenuEntry(
 	val id: Int,
 	val label: Int,
 	val icon: Int = 0,
+	val menuIcon: Int = 0,
 	val children: List<MenuEntry> = emptyList(),
 	val selectionAction: Boolean = false,
 	val always: Boolean = false,
 	@StringRes val blockedReason: Int = 0,
 ) {
 	val enabled: Boolean get() = blockedReason == 0
+
+	/** The row icon, which a menu-only glyph sets without taking a top-bar slot. */
+	val rowIcon: Int get() = if (menuIcon != 0) menuIcon else icon
 }
 
 /**
@@ -127,14 +132,14 @@ private fun entryColor(entry: MenuEntry): Color =
 
 @Composable
 private fun MenuIcon(entry: MenuEntry) {
-	if (entry.icon != 0) Icon(
-		painterResource(entry.icon),
+	if (entry.rowIcon != 0) Icon(
+		painterResource(entry.rowIcon),
 		contentDescription = null,
 		tint = entryColor(entry),
 	)
 }
 
-private fun MenuEntry.iconSpacing() = if (icon != 0) 12.dp else 0.dp
+private fun MenuEntry.iconSpacing() = if (rowIcon != 0) 12.dp else 0.dp
 
 @Composable
 private fun MenuBackRow(entry: MenuEntry, onClick: () -> Unit) {

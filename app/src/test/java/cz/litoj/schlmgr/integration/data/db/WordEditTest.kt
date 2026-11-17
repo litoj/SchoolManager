@@ -312,6 +312,24 @@ class WordEditTest {
 	}
 
 	@Test
+	fun `a fork of a shared word trims its new name before joining`() {
+		val subject = ItemRepository.createSubject("english", null)
+		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
+		val c2 = ItemRepository.createChapter(subject.id, "c2", null)
+		val cat = ItemRepository.createWord(c1.id, "cat", null, listOf("t1" to null))
+		val dog = sharedWord(c1.id, c2.id, "dog", "a", "b")
+
+		// the shared word loses one translation and takes a padded rename,
+		// so it forks onto cat only when the lookup reads the trimmed name
+		val edited = ItemRepository.editWord(edit(dog.id, c1.id, " cat ",
+			kept = listOf(KeptTranslation(trl(dog.id, "a").id, "a", "")),
+			removed = listOf(trl(dog.id, "b").id)))
+
+		assertEquals("the padded fork joins the existing word", cat.id, edited.id)
+		assertEquals("the stored name carries no padding", "cat", edited.name)
+	}
+
+	@Test
 	fun `a rename-join adopts the more-tested counters`() {
 		val subject = ItemRepository.createSubject("english", null)
 		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
