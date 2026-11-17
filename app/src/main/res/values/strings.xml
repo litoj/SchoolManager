@@ -430,6 +430,7 @@
     <string name="test_total_time">Total time: %1$d s</string>
     <string name="test_sources_header">Sources · one set</string>
     <string name="test_sources_hint">A picked chapter covers its words.</string>
+    <string name="test_clear_sources">Clear list</string>
     <string name="test_start_blocked">Add at least one source</string>
     <plurals name="test_source_words">
         <item quantity="one">%d word</item>

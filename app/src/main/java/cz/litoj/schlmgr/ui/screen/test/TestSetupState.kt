@@ -111,15 +111,21 @@ object TestSetupState {
 	/** A settings change between visits reaches the next test. */
 	@Synchronized
 	fun reset() {
+		clearSources()
+		amountText = TestEngine.amount.toString()
+		timeText = TestEngine.getSecondsPerChar().toString()
+		reverseTest = TestEngine.isReversed
+	}
+
+	/** The Clear list action, which drops every source with its counts and pool. */
+	@Synchronized
+	fun clearSources() {
 		_list.clear()
 		poolCount = 0
 		poolEntries = emptyList()
 		_sourceCounts.clear()
 		sourceWordIds.clear()
 		wordSourceCounts.clear()
-		amountText = TestEngine.amount.toString()
-		timeText = TestEngine.getSecondsPerChar().toString()
-		reverseTest = TestEngine.isReversed
 	}
 
 	/**

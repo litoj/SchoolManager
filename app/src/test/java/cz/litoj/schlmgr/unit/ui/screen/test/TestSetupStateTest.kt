@@ -295,6 +295,29 @@ class TestSetupStateTest {
 	}
 
 	@Test
+	fun `clearSources empties the list, its counts and its pool`() {
+		val subject = item(1, "subject")
+		val chapter = item(2, "chapter")
+		val word = DbItem(id = 3, name = "w", description = "", type = ItemKind.WORD)
+		TestSetupState.childrenLookup = { id ->
+			when (id) {
+				1 -> listOf(chapter)
+				2 -> listOf(word)
+				else -> emptyList()
+			}
+		}
+		pick(listOf(subject, chapter))
+		assertEquals(1, TestSetupState.poolCount)
+		assertEquals(1, TestSetupState.sourceCounts.size)
+
+		TestSetupState.clearSources()
+
+		assertFalse(TestSetupState.hasSources())
+		assertEquals(0, TestSetupState.poolCount)
+		assertTrue(TestSetupState.sourceCounts.isEmpty())
+	}
+
+	@Test
 	fun `restoreSource puts the chain back at its index`() {
 		val subject = item(1, "subject")
 		val first = listOf(subject, item(2))

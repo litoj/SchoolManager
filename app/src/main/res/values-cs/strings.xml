@@ -423,6 +423,7 @@
     <string name="test_total_time">Celkový čas: %1$d s</string>
     <string name="test_sources_header">Zdroje · jedna sada</string>
     <string name="test_sources_hint">Vybraná kapitola zastupuje svá slovíčka.</string>
+    <string name="test_clear_sources">Vymazat seznam</string>
     <string name="test_start_blocked">Přidejte aspoň jeden zdroj</string>
     <plurals name="test_source_words">
         <item quantity="one">%d slovíčko</item>

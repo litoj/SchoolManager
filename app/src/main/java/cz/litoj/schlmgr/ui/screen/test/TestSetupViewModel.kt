@@ -63,6 +63,9 @@ class TestSetupViewModel(
 		}
 	}
 
+	/** The Clear list action of the sources header. */
+	fun clearSources() = TestSetupState.clearSources()
+
 	/**
 	 * The fresh-entry check, run once per entry.
 	 * - a return from the picker, the running test or a Prepare test fill keeps the sources.

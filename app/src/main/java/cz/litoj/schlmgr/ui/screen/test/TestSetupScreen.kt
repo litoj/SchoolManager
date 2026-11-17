@@ -115,6 +115,7 @@ fun TestSetupScreen(
 @Composable
 private fun TestSetupContent(viewModel: TestSetupViewModel, modifier: Modifier = Modifier) {
 	val keyboard = LocalSoftwareKeyboardController.current
+	val hasSources = TestSetupState.hasSources()
 	Box(modifier.fillMaxSize()) {
 		Column(Modifier.fillMaxSize()) {
 			SettingNumberRow(
@@ -135,11 +136,7 @@ private fun TestSetupContent(viewModel: TestSetupViewModel, modifier: Modifier =
 			HairlineDivider()
 			DirectionRow(TestSetupState.reverseTest, viewModel::toggleReverse)
 			HairlineDivider()
-			Text(
-				stringResource(R.string.test_sources_header),
-				Modifier.padding(start = 8.dp, top = 2.dp),
-				style = TextStyle(fontSize = 15.sp, color = DefaultTextColor),
-			)
+			SourcesHeader(hasSources, viewModel::clearSources)
 			SettingCaption(stringResource(R.string.test_sources_hint), Modifier.padding(start = 8.dp))
 			// the shared list is a SnapshotStateList.
 			// so a background-thread change from the picker dedup recomposes this directly
@@ -178,6 +175,30 @@ private fun TestSetupContent(viewModel: TestSetupViewModel, modifier: Modifier =
 		) {
 			Text(stringResource(R.string.start))
 		}
+	}
+}
+
+/** The sources declaration line, whose trailing clear action drops the whole list. */
+@Composable
+private fun SourcesHeader(canClear: Boolean, onClear: () -> Unit) {
+	Row(
+		Modifier
+			.fillMaxWidth()
+			.padding(start = 8.dp, end = 8.dp, top = 2.dp),
+		verticalAlignment = Alignment.CenterVertically,
+	) {
+		Text(
+			stringResource(R.string.test_sources_header),
+			Modifier.weight(1f),
+			style = TextStyle(fontSize = 15.sp, color = DefaultTextColor),
+		)
+		if (canClear) Text(
+			stringResource(R.string.test_clear_sources),
+			Modifier
+				.clickable(onClick = onClear)
+				.padding(horizontal = 8.dp, vertical = 4.dp),
+			style = TextStyle(fontSize = 15.sp, color = colorResource(R.color.colorPrimaryHeader)),
+		)
 	}
 }
 
