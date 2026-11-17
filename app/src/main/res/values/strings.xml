@@ -365,6 +365,11 @@
     <string name="setts_test_variants">Require every name variant</string>
     <string name="setts_test_variants_hint">A word like A/B asks for A and B in separate answer fields. Time multiplies by 1.5 per added variant.</string>
     <string name="setts_test_time">Seconds per character</string>
+    <string name="setts_breadcrumb_height">Breadcrumb height</string>
+    <string name="setts_breadcrumb_height_hint">Compact, normal or spacious. The text and padding match the item rows or the header.</string>
+    <string name="crumb_size_compact">Compact</string>
+    <string name="crumb_size_row">Normal</string>
+    <string name="crumb_size_header">Spacious</string>
     <string name="setts_test_direction">Default answer side</string>
     <string name="setts_test_direction_hint">Which side you answer with.</string>
     <string name="setts_test_ignored">Ignorable answer text</string>

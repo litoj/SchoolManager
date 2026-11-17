@@ -106,7 +106,7 @@ fun Item(
 					Column(
 						Modifier
 							.weight(1f)
-							.padding(start = 3.dp, top = 3.dp),
+							.padding(start = ItemNameStartPadding, top = ItemNameTopPadding),
 					) {
 						if (item.translations.isNotEmpty()) {
 							// a flipped row lists the inner items under the unified score of the row.
@@ -116,9 +116,9 @@ fun Item(
 									Column(Modifier.weight(1f)) {
 										Text(
 											line.name,
-											fontSize = 20.sp,
+											fontSize = ItemNameFont,
 											color = ExplorerColors.body,
-											modifier = Modifier.padding(vertical = 2.dp),
+											modifier = Modifier.padding(vertical = ItemNameVerticalPadding),
 										)
 										if (descVisible && ItemRow.showsDescription(line.description)) {
 											Text(line.description, fontSize = 15.sp, color = ExplorerColors.description)
@@ -132,9 +132,9 @@ fun Item(
 						} else {
 							Text(
 								item.name,
-								fontSize = 20.sp,
+								fontSize = ItemNameFont,
 								color = ExplorerColors.body,
-								modifier = Modifier.padding(vertical = 2.dp),
+								modifier = Modifier.padding(vertical = ItemNameVerticalPadding),
 							)
 							if (descVisible && ItemRow.showsDescription(item.description)) {
 								Text(item.description, fontSize = 15.sp, color = ExplorerColors.description)
@@ -288,6 +288,11 @@ internal fun successRatioArgb(ratio: Int): Int = when {
 internal fun successRatioBackground(item: ItemUiModel): Color = Color(successRatioArgb(item.ratio))
 
 private val CellSidePadding = 2.dp
+
+internal val ItemNameFont = 20.sp
+private val ItemNameStartPadding = 3.dp
+private val ItemNameTopPadding = 3.dp
+private val ItemNameVerticalPadding = 2.dp
 
 private fun tintBandWidth(positionWidth: Dp, iconVisible: Boolean) =
 	positionWidth + CellSidePadding * 2 + if (iconVisible) IconSize else 0.dp

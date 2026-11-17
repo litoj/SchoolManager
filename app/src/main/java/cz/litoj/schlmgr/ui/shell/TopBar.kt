@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.ui.component.HeaderBandHeight
 import cz.litoj.schlmgr.ui.component.IconSize
 import cz.litoj.schlmgr.ui.component.reportUnavailable
 import cz.litoj.schlmgr.ui.viewmodel.ACTION_SLOT_RATIO
@@ -49,6 +50,7 @@ internal object TopBarSizes {
 	val nav = 60.dp
 	val icon = 50.dp
 	val titleMin = 96.dp
+	val titleFont = 20.sp
 	val action = icon * ACTION_SLOT_RATIO
 	private val titleReserved = nav + titleMin
 
@@ -72,7 +74,7 @@ fun TopBar(content: @Composable RowScope.() -> Unit) {
 		Row(
 			Modifier
 				.fillMaxWidth()
-				.height(55.dp)
+				.height(HeaderBandHeight)
 				.background(colorResource(R.color.colorPrimaryHeader)),
 			verticalAlignment = Alignment.CenterVertically,
 			content = content,
@@ -117,7 +119,7 @@ fun RowScope.TopBarTitle(title: String) {
 	) {
 		Text(
 			title,
-			style = TextStyle(fontSize = 20.sp, color = colorResource(R.color.colorOnHeader)),
+			style = TextStyle(fontSize = TopBarSizes.titleFont, color = colorResource(R.color.colorOnHeader)),
 			maxLines = 1,
 			overflow = TextOverflow.Ellipsis,
 		)

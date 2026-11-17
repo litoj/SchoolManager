@@ -16,5 +16,8 @@ import cz.litoj.schlmgr.R
  */
 @Composable
 fun HairlineDivider(modifier: Modifier = Modifier) {
-	Spacer(modifier.fillMaxWidth().height(0.6.dp).background(colorResource(R.color.colorDivider)))
+	Spacer(modifier.fillMaxWidth().height(HairlineThickness).background(colorResource(R.color.colorDivider)))
 }
+
+/** The hairline measured with the plain list row height. */
+internal val HairlineThickness = 0.6.dp

@@ -110,6 +110,12 @@ private fun SettingsList(state: SettingsState, modifier: Modifier = Modifier) {
 			caption = stringResource(R.string.setts_double_tap_ms_hint),
 		)
 		HairlineDivider()
+		SettingChoiceRow(
+			stringResource(R.string.setts_breadcrumb_height),
+			stringResource(state.crumbSize.label), state::cycleCrumbSize,
+			caption = stringResource(R.string.setts_breadcrumb_height_hint),
+		)
+		HairlineDivider()
 		WordSplitRow(state)
 		HairlineDivider()
 		SettingSwitchRow(

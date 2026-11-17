@@ -109,7 +109,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Every host offers `Original order` on the browse lists it sorts itself.
 - The sort menu puts original order first, then descending before ascending, with ▲ and ▼ naming direction.
 - A small up button stays fixed at the right of the breadcrumbs, including before the first crumb.
-- Spacious adds half the extra height to a plain row and horizontal padding to crumb buttons, without growing their font.
+- The breadcrumb presets use fixed heights, with horizontal padding added only in spacious mode.
 - Sibling swipes follow the parent view's sort order, not raw database order.
 - The view-state store lives with the view model, so rotation keeps it and restart drops it.
 - A search round trip restores the same view state.

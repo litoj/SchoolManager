@@ -12,9 +12,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,17 +28,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.search.Criterion
+import cz.litoj.schlmgr.ui.shell.TopBarSizes
 import cz.litoj.schlmgr.ui.search.SearchTag
 import cz.litoj.schlmgr.ui.viewmodel.InfoBar
 
@@ -79,14 +86,19 @@ fun ExplorerTopBar(
 private fun Breadcrumbs(breadcrumbs: List<String>, onClick: (Int) -> Unit, onParentClick: () -> Unit) {
 	val scroll = rememberScrollState()
 	val parentLabel = stringResource(R.string.crumb_parent)
+	val bandHeight = breadcrumbHeight(CrumbSize.current)
 	// keep the newest crumb visible.
 	LaunchedEffect(breadcrumbs) { scroll.animateScrollTo(scroll.maxValue) }
 	Row(
-		Modifier.fillMaxWidth().height(25.dp).background(HeaderGreen),
+		Modifier.fillMaxWidth().height(bandHeight).background(HeaderGreen),
 		verticalAlignment = Alignment.CenterVertically,
 	) {
 		Row(Modifier.weight(1f).horizontalScroll(scroll), verticalAlignment = Alignment.CenterVertically) {
-			CrumbChain(breadcrumbs, CrumbColor, onCrumbClick = onClick)
+			CrumbChain(
+			breadcrumbs, CrumbColor, fontSize = breadcrumbFontSize(CrumbSize.current),
+			horizontalPadding = if (CrumbSize.current == CrumbSize.SPACIOUS) 4.dp else 0.dp,
+			onCrumbClick = onClick,
+		)
 		}
 		// one level up needs no crumb: the parent of the first one is the root itself
 		if (breadcrumbs.isNotEmpty()) Box(
@@ -97,9 +109,30 @@ private fun Breadcrumbs(breadcrumbs: List<String>, onClick: (Int) -> Unit, onPar
 				.semantics(mergeDescendants = true) { contentDescription = parentLabel },
 			contentAlignment = Alignment.Center,
 		) {
-			Text("↶", fontSize = 16.sp, color = CrumbColor, maxLines = 1)
+			Image(
+				Icons.AutoMirrored.Filled.ArrowBack,
+				contentDescription = null,
+				colorFilter = ColorFilter.tint(CrumbColor),
+				modifier = Modifier.size(IconSize).testTag("breadcrumb_parent_icon"),
+			)
 		}
 	}
+}
+
+internal val CompactBreadcrumbHeight = 25.dp
+
+/** Every preset is fixed, so navigation never measures text to lay out the band. */
+internal fun breadcrumbHeight(mode: CrumbSize): Dp = when (mode) {
+	CrumbSize.COMPACT -> CompactBreadcrumbHeight
+	CrumbSize.NORMAL -> 25.dp
+	CrumbSize.SPACIOUS -> 40.dp
+}
+
+/** The text grows padding only in the spacious mode, never the font. */
+internal fun breadcrumbFontSize(mode: CrumbSize): TextUnit = when (mode) {
+	CrumbSize.COMPACT -> 17.sp
+	CrumbSize.NORMAL -> ItemNameFont
+	CrumbSize.SPACIOUS -> TopBarSizes.titleFont
 }
 
 /**
@@ -114,25 +147,30 @@ fun CrumbChain(
 	modifier: Modifier = Modifier,
 	onCrumbClick: ((Int) -> Unit)? = null,
 	fontSize: TextUnit = 17.sp,
+	horizontalPadding: Dp = 0.dp,
 ) {
 	Row(modifier, verticalAlignment = Alignment.CenterVertically) {
 		names.forEachIndexed { index, label ->
-			Text(
-				label,
-				fontSize = fontSize,
-				color = crumbColor,
-				maxLines = 1,
-				modifier = Modifier
+			// the free space and separator belong to the crumb, not only its text
+			Row(
+				Modifier
+					.fillMaxHeight()
 					.then(if (onCrumbClick != null) Modifier.clickable { onCrumbClick(index) } else Modifier)
-					.padding(horizontal = 4.dp),
-			)
-			if (index < names.size - 1) {
-				// the tint carries the palette, a fixed grey fill would read the same in both themes.
-				// the dimmed chevron stays a separator instead of reading as text.
-				Image(
+					.padding(horizontal = horizontalPadding)
+					.testTag("crumb-$index"),
+				verticalAlignment = Alignment.CenterVertically,
+			) {
+				Text(
+					label,
+					fontSize = fontSize,
+					color = crumbColor,
+					maxLines = 1,
+					modifier = Modifier.padding(horizontal = 4.dp),
+				)
+				if (index < names.size - 1) Image(
 					painterResource(R.drawable.ic_bread_crumbs),
 					contentDescription = null,
-					modifier = Modifier.fillMaxHeight(0.5f),
+					modifier = Modifier.padding(start = horizontalPadding).fillMaxHeight(0.5f),
 					colorFilter = ColorFilter.tint(crumbColor.copy(alpha = 0.75f)),
 				)
 			}

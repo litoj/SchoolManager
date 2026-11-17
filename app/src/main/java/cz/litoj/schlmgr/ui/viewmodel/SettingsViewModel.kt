@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import cz.litoj.schlmgr.app.AppSettings
 import cz.litoj.schlmgr.data.wordlist.WordListWriter
+import cz.litoj.schlmgr.ui.component.CrumbSize
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.ui.component.NumberInput
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
@@ -32,6 +33,7 @@ class SettingsState(
 	defaultReverse: Boolean = false,
 	searchDiacritics: Boolean = false,
 	selectionOrder: List<SelectionAction> = ActionConfig.DEFAULT_ORDER,
+	crumbSize: CrumbSize = CrumbSize.current,
 ) {
 	var parse by mutableStateOf(parse)
 		private set
@@ -40,6 +42,8 @@ class SettingsState(
 	var searchDefFlip by mutableStateOf(searchDefFlip)
 		private set
 	var searchShowPath by mutableStateOf(searchShowPath)
+		private set
+	var crumbSize by mutableStateOf(crumbSize)
 		private set
 	var descLinesText by mutableStateOf(descLinesText)
 		private set
@@ -91,6 +95,11 @@ class SettingsState(
 		searchShowPath = !searchShowPath
 		applyRowOptions()
 		AppSettings.set("searchShowPath", searchShowPath)
+	}
+
+	fun cycleCrumbSize() {
+		crumbSize = CrumbSize.next()
+		CrumbSize.select(crumbSize)
 	}
 
 	/** Zero stands for the icon-only display. */
