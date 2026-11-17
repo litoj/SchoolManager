@@ -166,8 +166,10 @@ object TestRunState {
 					mainHandler.post {
 						if (sl > 0) secondsLeft = sl
 						else {
-							host.onTimeUp()
-							submit(host)
+							// a rotation replaced the host that started the countdown
+							val live = this@TestRunState.host ?: return@post
+							live.onTimeUp()
+							submit(live)
 						}
 					}
 					true

@@ -65,11 +65,11 @@ class TestActivityTest {
 	}
 
 	@Test
-	fun `a launched run shows only the first description line`() {
+	fun `a launched run shows the description lines the setting allows`() {
 		awaitRun()
 
-		rule.onNodeWithText("dům info").assertExists()
-		rule.onNodeWithText("more info").assertDoesNotExist()
+		// the default setting allows five lines, so the note shows whole
+		rule.onNodeWithText("dům info\nmore info").assertExists()
 	}
 
 	@Test

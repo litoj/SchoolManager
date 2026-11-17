@@ -12,6 +12,8 @@ import cz.litoj.schlmgr.testing.TestEntry
 import cz.litoj.schlmgr.testing.TestItemModel
 import cz.litoj.schlmgr.testing.TestTaskModel
 import cz.litoj.schlmgr.ui.component.SharedPromptRow
+import cz.litoj.schlmgr.support.setRowOptions
+import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -23,7 +25,7 @@ import org.robolectric.annotation.Config
 
 /**
  * - the prompt describes the shown side, a hidden answer keeps its description to itself.
- * - each shown name carries its own description line, like the explorer row.
+ * - each shown name carries its own description, as many lines as the setting allows.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -33,6 +35,7 @@ class PromptDescriptionTest {
 	val rule = createComposeRule()
 
 	private lateinit var db: ItemDatabase
+	private val descLinesWas = ItemRow.descLines
 
 	@Before
 	fun seed() {
@@ -49,6 +52,7 @@ class PromptDescriptionTest {
 	@After
 	fun tearDown() {
 		TestEngine.applyReversed(false)
+		setRowOptions(descLines = descLinesWas)
 		db.close()
 		ItemRepository.resetForTest()
 	}
@@ -57,7 +61,7 @@ class PromptDescriptionTest {
 		val subject = ItemRepository.createSubject("s", null)
 		val chapter = ItemRepository.createChapter(subject.id, "c", null)
 		val word = ItemRepository.createWord(
-			chapter.id, "Haus", "word note\nword more",
+			chapter.id, "Haus", "word note\nword more\nword extra",
 			listOf("house" to "noun: building", "roof" to "noun: top"),
 		)
 		TestEngine.applyReversed(reversed)
@@ -75,7 +79,7 @@ class PromptDescriptionTest {
 		rule.onNodeWithText("noun: building").assertExists()
 		rule.onNodeWithText("roof").assertExists()
 		rule.onNodeWithText("noun: top").assertExists()
-		rule.onNodeWithText("word note").assertDoesNotExist()
+		rule.onNodeWithText("word note", substring = true).assertDoesNotExist()
 	}
 
 	@Test
@@ -83,8 +87,26 @@ class PromptDescriptionTest {
 		prompt(reversed = true)
 
 		rule.onNodeWithText("Haus").assertExists()
-		rule.onNodeWithText("word note").assertExists()
-		rule.onNodeWithText("word more").assertDoesNotExist()
+		// the shown description is one block of the allowed lines
+		rule.onNodeWithText("word note\nword more\nword extra").assertExists()
 		rule.onNodeWithText("noun: building").assertDoesNotExist()
+	}
+
+	@Test
+	fun `the prompt keeps only the lines the setting allows`() {
+		setRowOptions(descLines = 2)
+		prompt(reversed = true)
+
+		rule.onNodeWithText("word note\nword more").assertExists()
+		rule.onNodeWithText("word extra").assertDoesNotExist()
+	}
+
+	@Test
+	fun `a setting of no lines hides the prompt description`() {
+		setRowOptions(descLines = 0)
+		prompt(reversed = true)
+
+		rule.onNodeWithText("Haus").assertExists()
+		rule.onNodeWithText("word note", substring = true).assertDoesNotExist()
 	}
 }

@@ -46,13 +46,28 @@ internal fun PromptLines(items: List<DbItem>, modifier: Modifier = Modifier) {
 				ItemRow.nameParser(shown.name),
 				style = TextStyle(fontSize = 17.sp, color = color),
 			)
-			val description = shown.description.substringBefore('\n').trim()
+			val description = shownDescription(shown.description)
 			if (description.isNotEmpty()) Text(
 				description,
 				style = TextStyle(fontSize = 13.sp, color = color),
 			)
 		}
 	}
+}
+
+/**
+ * The written lines of a description, as many as [ItemRow.descLines] allows.
+ * - descLines is Compose state, so a settings change reaches a running test.
+ */
+private fun shownDescription(description: String): String {
+	val kept = StringBuilder()
+	var left = ItemRow.descLines
+	for (line in description.lines()) {
+		if (left == 0) break
+		if (line.isNotBlank()) left--
+		kept.appendLine(line)
+	}
+	return kept.toString().trim()
 }
 
 /** One shared prompt and the answer fields that must all differ. */

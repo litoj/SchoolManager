@@ -53,6 +53,45 @@ class AnswerComparisonTest {
 	}
 
 	@Test
+	fun `a run of wrong letters shares one extra and one missing part`() {
+		assertEquals(
+			listOf(AnswerPart("abcd", EXTRA), AnswerPart("wxyz", MISSING)),
+			comparison("abcd", "wxyz").parts,
+		)
+	}
+
+	@Test
+	fun `a wrong run stays together between the matched letters`() {
+		assertEquals(
+			listOf(
+				AnswerPart("th", CORRECT),
+				AnswerPart("ie", EXTRA),
+				AnswerPart("ei", MISSING),
+				AnswerPart("r house", CORRECT),
+			),
+			comparison("thier house", "their house").parts,
+		)
+	}
+
+	@Test
+	fun `a wrong run keeps every extra letter before the missing ones`() {
+		assertEquals(
+			listOf(
+				AnswerPart("Děkuji m", CORRECT),
+				AnswerPart("n", MISSING),
+				AnswerPart("o", CORRECT),
+				AnswerPart("c", EXTRA),
+				AnswerPart("ho", MISSING),
+				AnswerPart("kr", CORRECT),
+				AnswerPart("a", EXTRA),
+				AnswerPart("á", MISSING),
+				AnswerPart("t", CORRECT),
+			),
+			comparison("Děkuji mockrat", "Děkuji mnohokrát").parts,
+		)
+	}
+
+	@Test
 	fun `an empty answer marks the whole target missing`() {
 		assertEquals(
 			AnswerComparison("house", 5, listOf(AnswerPart("house", MISSING))),

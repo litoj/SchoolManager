@@ -114,8 +114,11 @@ object ItemRepository {
 
 	/** One batch read of the prompt sets for all tested words. */
 	@JvmStatic
-	fun translationsForWords(wordIds: Collection<Int>): Map<Int, List<DbItem>> = query {
-		it.wordDao().translationsForWords(wordIds.toList()).groupBy(WordTranslation::wordId) { it.item }
+	fun translationsForWords(wordIds: Collection<Int>): Map<Int, List<DbItem>> = query { db ->
+		// every batch stays inside the host parameter cap, though the visible map merges them
+		wordIds.chunked(SQL_IDS_PER_STATEMENT)
+			.flatMap { batch -> db.wordDao().translationsForWords(batch) }
+			.groupBy(WordTranslation::wordId) { it.item }
 	}
 
 	@JvmStatic

@@ -459,6 +459,39 @@ class TestSetupStateTest {
 	}
 
 	@Test
+	fun `a removed source leaves the pool that times the caption`() {
+		val subject = DbItem(id = 1, name = "subject", description = "", type = ItemKind.CHAPTER)
+		val first = DbItem(id = 2, name = "first", description = "", type = ItemKind.CHAPTER)
+		val second = DbItem(id = 3, name = "second", description = "", type = ItemKind.CHAPTER)
+		val one = DbItem(id = 4, name = "one", description = "", type = ItemKind.WORD)
+		val shared = DbItem(id = 5, name = "shared", description = "", type = ItemKind.WORD)
+		TestSetupState.childrenLookup = { id ->
+			when (id) {
+				1 -> listOf(first, second)
+				2 -> listOf(one, shared)
+				3 -> listOf(shared)
+				else -> emptyList()
+			}
+		}
+		TestSetupState.fillFromSelection(listOf(first, second)
+			.map { ItemRow.ofSearchHit(it, listOf(subject), 1, emptyList()) }
+			.map(TestSetupState::seedOf))
+		TestSetupState.setAmount("1")
+		TestSetupState.setTime("2")
+
+		TestSetupState.removeSource(listOf(subject, first))
+		val afterRemoval = TestSetupState.timeSeconds()
+
+		// the same setup picked fresh holds only the remaining words
+		TestSetupState.reset()
+		TestSetupState.fillFromSelection(listOf(ItemRow.ofSearchHit(second, listOf(subject), 1, emptyList()))
+			.map(TestSetupState::seedOf))
+		TestSetupState.setAmount("1")
+		TestSetupState.setTime("2")
+		assertEquals("the pool drops the removed words", TestSetupState.timeSeconds(), afterRemoval)
+	}
+
+	@Test
 	fun `a direct word removal keeps its copy in a remaining chapter`() {
 		val subject = DbItem(id = 1, name = "subject", description = "", type = ItemKind.CHAPTER)
 		val chapter = DbItem(id = 2, name = "chapter", description = "", type = ItemKind.CHAPTER)

@@ -61,18 +61,36 @@ data class AnswerComparison(
 			return AnswerComparison(
 				target,
 				costs[answer.length][target.length],
-				merge(reversed.asReversed()),
+				group(reversed.asReversed()),
 			)
 		}
 
-		private fun merge(characters: List<AnswerPart>): List<AnswerPart> {
-			val parts = ArrayList<AnswerPart>()
-			for (part in characters) {
-				val previous = parts.lastOrNull()
-				if (previous?.mark == part.mark) {
-					parts[parts.lastIndex] = previous.copy(text = previous.text + part.text)
-				} else parts.add(part)
+		/**
+		 * One wrong run shows as its whole typed part, then its whole correction.
+		 * - a run of substitutions would otherwise alternate letter by letter.
+		 */
+		private fun group(characters: List<AnswerPart>): List<AnswerPart> {
+			val parts = ArrayList<AnswerPart>(characters.size)
+			val extra = StringBuilder()
+			val missing = StringBuilder()
+			fun flushRun() {
+				if (extra.isNotEmpty()) parts.add(AnswerPart(extra.toString(), AnswerMark.EXTRA))
+				if (missing.isNotEmpty()) parts.add(AnswerPart(missing.toString(), AnswerMark.MISSING))
+				extra.setLength(0)
+				missing.setLength(0)
 			}
+			for (part in characters) when (part.mark) {
+				AnswerMark.CORRECT -> {
+					flushRun()
+					val previous = parts.lastOrNull()
+					if (previous?.mark == AnswerMark.CORRECT) {
+						parts[parts.lastIndex] = previous.copy(text = previous.text + part.text)
+					} else parts.add(part)
+				}
+				AnswerMark.EXTRA -> extra.append(part.text)
+				AnswerMark.MISSING -> missing.append(part.text)
+			}
+			flushRun()
 			return parts
 		}
 	}

@@ -237,6 +237,8 @@ object TestSetupState {
 			else wordSourceCounts[id] = remaining
 		}
 		poolCount = wordSourceCounts.size
+		// the pool comes off the cached maps too, since removal never reads the database
+		poolEntries = poolEntries.filter { it.word.id in wordSourceCounts }
 		return index
 	}
 
