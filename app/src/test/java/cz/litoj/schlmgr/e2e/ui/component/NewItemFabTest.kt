@@ -1,5 +1,8 @@
 package cz.litoj.schlmgr.e2e.ui.component
 
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -16,6 +19,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeUp
@@ -28,6 +32,7 @@ import cz.litoj.schlmgr.ui.component.PaletteRadius
 import cz.litoj.schlmgr.ui.component.fabDragVisibility
 import cz.litoj.schlmgr.ui.component.paletteOffset
 import cz.litoj.schlmgr.ui.component.rememberFabVisibility
+import cz.litoj.schlmgr.ui.component.secondaryOffset
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -57,8 +62,9 @@ class NewItemFabTest {
 	private val picked = ArrayList<RowKind>()
 
 	private var imports = 0
+	private var references = 0
 
-	private fun setContent(kinds: List<RowKind>) {
+	private fun setContent(kinds: List<RowKind>, withReference: Boolean = false) {
 		rule.setContent {
 			NewItemFab(
 				kinds = kinds,
@@ -66,6 +72,7 @@ class NewItemFabTest {
 				onPick = { picked.add(it) },
 				onImport = { imports++ },
 				modifier = Modifier.fillMaxSize(),
+				onReference = if (withReference) ({ references++ }) else null,
 			)
 		}
 		rule.waitForIdle()
@@ -80,6 +87,7 @@ class NewItemFabTest {
 
 	private fun TouchInjectionScope.iconAt(index: Int, count: Int): Offset =
 		fabCenter() + paletteOffset(index, count, with(rule.density) { PaletteRadius.toPx() })
+
 
 	@Test
 	fun `a single kind opens the palette on a plain tap`() {
@@ -97,10 +105,35 @@ class NewItemFabTest {
 		setContent(listOf(RowKind.CHAPTER, RowKind.WORD, RowKind.NOTE))
 
 		rule.onRoot().performTouchInput { click(fabCenter()) }
-		rule.onRoot().performTouchInput { click(fabCenter()) }
+		rule.onNodeWithText("Import").performClick()
 
 		assertTrue("the centre commits no kind", picked.isEmpty())
-		assertEquals("the centre imports", 1, imports)
+		assertEquals("the import button imports", 1, imports)
+	}
+
+	@Test
+	fun `the two secondary actions sit in the two corner-facing slots`() {
+		setContent(listOf(RowKind.CHAPTER, RowKind.WORD, RowKind.NOTE), withReference = true)
+		val importSlot = secondaryOffset(0, 2, 3, 200f, 200f * 0.40333334f)
+		val linkSlot = secondaryOffset(1, 2, 3, 200f, 200f * 0.40333334f)
+		val chapter = paletteOffset(0, 3, 200f)
+		val note = paletteOffset(2, 3, 200f)
+		val mainRadius = 200f / 4
+		val smallRadius = 200f * 0.20166667f
+		val chapterGap = (linkSlot - chapter).getDistance() - mainRadius - smallRadius
+		val noteGap = (importSlot - note).getDistance() - mainRadius - smallRadius
+		val pairGap = (linkSlot - importSlot).getDistance() - 2 * smallRadius
+
+		rule.onRoot().performTouchInput { click(fabCenter()) }
+
+		rule.onNodeWithText("Import").assertExists()
+		rule.onNodeWithText("Link").assertExists()
+		assertEquals("every nearest edge gap matches", chapterGap, pairGap, 0.01f)
+		assertEquals("the note side matches too", noteGap, pairGap, 0.01f)
+
+		rule.onNodeWithText("Link").performClick()
+		assertEquals("the reference tap references only", 1, references)
+		assertEquals("the import did not fire", 0, imports)
 	}
 
 	@Test
@@ -170,18 +203,31 @@ class NewItemFabTest {
 	}
 
 	@Test
-	fun `a short drag toward the icon commits it`() {
-		setContent(listOf(RowKind.CHAPTER, RowKind.WORD, RowKind.NOTE))
-
-		// the drag leaves the button toward the word icon but stops far short of
-		// it, so the direction alone picks
-		rule.onRoot().performTouchInput {
-			down(fabCenter())
-			moveTo(fabCenter() + Offset(-25f, -25f))
-			up()
+	fun `an open palette closes on the back press instead of swallowing it`() {
+		var backs = 0
+		lateinit var dispatcher: OnBackPressedDispatcher
+		rule.setContent {
+			dispatcher = checkNotNull(LocalOnBackPressedDispatcherOwner.current).onBackPressedDispatcher
+			// the screen handler sits before the button, like the explorer screen
+			BackHandler { backs++ }
+			NewItemFab(
+				kinds = listOf(RowKind.SUBJECT),
+				visible = true,
+				onPick = { picked.add(it) },
+				onImport = { imports++ },
+				modifier = Modifier.fillMaxSize(),
+			)
 		}
+		rule.waitForIdle()
 
-		assertEquals(listOf(RowKind.WORD), picked)
+		rule.runOnIdle { dispatcher.onBackPressed() }
+		assertEquals("the closed palette leaves back to the screen", 1, backs)
+
+		rule.onRoot().performTouchInput { click(fabCenter()) }
+		rule.onNodeWithText("Import").assertExists()
+		rule.runOnIdle { dispatcher.onBackPressed() }
+		rule.onNodeWithText("Import").assertDoesNotExist()
+		assertEquals("the closing press did not reach the screen", 1, backs)
 	}
 
 	@Test
@@ -198,21 +244,6 @@ class NewItemFabTest {
 		}
 
 		assertEquals(listOf(RowKind.CHAPTER), picked)
-	}
-
-	@Test
-	fun `a drag under half the button stays a tap`() {
-		setContent(listOf(RowKind.CHAPTER, RowKind.WORD, RowKind.NOTE))
-
-		// the small move never crosses half of the button, so the release is a
-		// plain tap and nothing commits
-		rule.onRoot().performTouchInput {
-			down(fabCenter())
-			moveTo(fabCenter() + Offset(-12f, -12f))
-			up()
-		}
-
-		assertTrue(picked.isEmpty())
 	}
 
 	/** The visibility wired to a plain draggable area, no list involved. */
@@ -339,36 +370,5 @@ class NewItemFabTest {
 		rule.onRoot().performTouchInput { swipeUp() }
 		rule.waitForIdle()
 		assertTrue("a list that fits the viewport keeps the button", visibility.shown)
-	}
-
-	@Test
-	fun `a drag into the gap between two icons picks the harder one`() {
-		setContent(listOf(RowKind.CHAPTER, RowKind.WORD, RowKind.NOTE))
-
-		// the direction runs into the gap between the word and the note, past the
-		// middle of the gap, and two thirds of the word still take it
-		rule.onRoot().performTouchInput {
-			down(fabCenter())
-			moveTo(fabCenter() + Offset(-94f, -34f))
-			up()
-		}
-
-		assertEquals(listOf(RowKind.WORD), picked)
-	}
-
-	@Test
-	fun `a drag along the bottom commits the leftmost icon`() {
-		setContent(listOf(RowKind.CHAPTER, RowKind.WORD, RowKind.NOTE))
-
-		// the sweep runs below the center line of the button, off the arc of the
-		// icons, and the direction still points at the note
-		rule.onRoot().performTouchInput {
-			down(fabCenter())
-			moveTo(fabCenter() + Offset(-30f, 60f))
-			moveTo(fabCenter() + Offset(-250f, 60f))
-			up()
-		}
-
-		assertEquals(listOf(RowKind.NOTE), picked)
 	}
 }

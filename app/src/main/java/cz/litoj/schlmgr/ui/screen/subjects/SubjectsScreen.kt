@@ -56,6 +56,7 @@ fun SubjectsScreen(
 	onExitApp: () -> Unit,
 	launchTarget: MainLaunchTarget? = null,
 	onLaunchHandled: () -> Unit = {},
+	onPickReferences: () -> Unit = {},
 ) {
 	val context = LocalContext.current
 	// the local resources avoid stale cached resources.
@@ -114,6 +115,7 @@ fun SubjectsScreen(
 		viewModel.requests.collect { request ->
 			when (request) {
 				MainExplorerViewModel.Request.OpenTest -> onOpenTest()
+				MainExplorerViewModel.Request.PickReferences -> onPickReferences()
 				MainExplorerViewModel.Request.PickImportFile ->
 					withProgressPermission { importFile() }
 				is MainExplorerViewModel.Request.PickWordExport ->

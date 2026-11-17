@@ -314,6 +314,7 @@
     <string name="palette_chapter">Kapitola</string>
     <string name="palette_word">Slovíčko</string>
     <string name="palette_note">Poznámka</string>
+    <string name="palette_link">Odkaz</string>
     <string name="note_copied">Zkopírováno</string>
     <string name="objects_cancel">Zrušit</string>
     <string name="paste">Vložit</string>

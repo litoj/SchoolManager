@@ -127,6 +127,7 @@ fun SchlMgrApp(
 								viewModel = subjectsViewModel,
 								openDrawer = ::openDrawer,
 								onOpenTest = { navController.navigate(Destination.TEST.name) },
+								onPickReferences = { navController.navigate(PICKER_ROUTE) },
 								onExitApp = { activity?.finish() },
 								launchTarget = launchTarget,
 								onLaunchHandled = onLaunchHandled,
@@ -141,11 +142,16 @@ fun SchlMgrApp(
 							)
 						}
 						composable(PICKER_ROUTE) { entry ->
-							// the picker re-seeds from the explorer on every entry, see [PickerViewModel]
-							val vm: PickerViewModel = viewModel(entry) { PickerViewModel(mainHistory) }
+							// a reference pick links into the captured chapter, otherwise sources feed the test
+							val vm: PickerViewModel = viewModel(entry) {
+								PickerViewModel(mainHistory, referenceTarget = subjectsViewModel.referenceTarget)
+							}
 							PickerScreen(
 								viewModel = vm,
-								onExit = { navController.popBackStack() },
+								onExit = {
+									subjectsViewModel.finishReferencePicker(vm.didReference)
+									navController.popBackStack()
+								},
 							)
 						}
 						composable(Destination.ABOUT.name) { entry ->

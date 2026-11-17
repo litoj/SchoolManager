@@ -12,6 +12,8 @@
            on-header text readable on it. -->
     <color name="colorPrimaryFg">#DDFFFFFF</color>
     <color name="colorPrimaryBg">#FF1E1E1E</color>
+    <!-- The New palette's solid wash here: 0x888888 at 13% over the night background. -->
+    <color name="colorPaletteBackground">#FF2C2C2C</color>
     <color name="colorPrimaryHeader">#FF6EB31F</color>
     <!-- The drawer banner's light end (see values/colors.xml). -->
     <color name="colorHeaderSoft">#FF84BE41</color>

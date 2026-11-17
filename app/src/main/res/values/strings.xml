@@ -327,6 +327,7 @@
     <string name="palette_chapter">Chapter</string>
     <string name="palette_word">Word</string>
     <string name="palette_note">Note</string>
+    <string name="palette_link">Link</string>
     <string name="note_copied">Copied</string>
     <string name="objects_cancel">Cancel</string>
     <string name="paste">Paste</string>

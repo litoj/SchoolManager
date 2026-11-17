@@ -39,6 +39,9 @@
     <color name="colorControlLine">#88888888</color>
     <color name="colorGroupBackground">#55888888</color>
     <color name="colorSubBackground">#22888888</color>
+    <!-- The New palette wears the same grey wash solid, so the list never shows through:
+         0x888888 at 13% over colorPrimaryBg. -->
+    <color name="colorPaletteBackground">#FFEFEFEF</color>
     <!-- The fixed red of destructive actions and required fields.
          Unlike colorFailure, it stays the same in both themes. -->
     <color name="colorDanger">#FE473F</color>

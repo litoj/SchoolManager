@@ -1,5 +1,6 @@
 package cz.litoj.schlmgr.ui.component
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -13,6 +14,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -45,6 +47,8 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,13 +60,14 @@ import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 /**
  * The floating New-action button, bottom right, a rounded square in the title bar colouring.
  * - the screen drives [visible] with the drag gesture, see [fabDragVisibility].
  * - a tap fans the [kinds] of the open screen into a circular palette.
  * - a drag to an icon or a click on it commits that kind.
- * - a standing palette turns the button into the Import choice, and its tap imports.
+ * - a standing palette splits its centre evenly between Import and an optional reference pick.
  * - a tap outside the icons closes the palette.
  *
  * @param onImport the import action offered at the centre of a standing palette
@@ -74,6 +79,7 @@ fun NewItemFab(
 	onPick: (RowKind) -> Unit,
 	onImport: () -> Unit,
 	modifier: Modifier = Modifier,
+	onReference: (() -> Unit)? = null,
 ) {
 	if (kinds.isEmpty()) return
 	// the center of the button in root coordinates, which the palette circles
@@ -84,12 +90,19 @@ fun NewItemFab(
 	var standing by remember(visible) { mutableStateOf(false) }
 	var hovered by remember { mutableIntStateOf(-1) }
 	val radius = with(LocalDensity.current) { PaletteRadius.toPx() }
+	val smallDiameter = with(LocalDensity.current) { SecondaryFabSize.toPx() }
+	val baseTilePx = with(LocalDensity.current) { SecondaryFabBase.toPx() }
+	val importLift = with(LocalDensity.current) { ImportLabelLift.toPx() }
+	val edgeShift = with(LocalDensity.current) { SecondaryEdgeShift.toPx() }
 	val dragThreshold = with(LocalDensity.current) { DragThreshold.toPx() }
 
 	fun commit(index: Int) {
 		standing = false
 		onPick(kinds[index])
 	}
+
+	// the open palette owns the back key and closes instead of letting navigation run under it
+	BackHandler(enabled = standing) { standing = false }
 
 	Box(modifier.onGloballyPositioned { root = it.positionInRoot() }) {
 		// a hidden button must not leave its palette floating.
@@ -119,25 +132,6 @@ fun NewItemFab(
 					onClick = if (standing && !pressed) {
 						{ commit(i) }
 					} else null,
-				)
-			}
-			if (standing) {
-				PaletteChoice(
-					icon = R.drawable.ic_download,
-					label = R.string.more_import,
-					highlighted = false,
-					tint = ExplorerColors.body,
-					modifier = Modifier.offset {
-						IntOffset(
-							(center.x - root.x - PaletteLabelWidth.toPx() / 2).roundToInt(),
-							(center.y - root.y - PaletteIconSize.toPx() / 2).roundToInt(),
-						)
-					},
-					// the label taps like a fan label, while the button keeps drags
-					onClick = {
-						standing = false
-						onImport()
-					},
 				)
 			}
 		}
@@ -192,9 +186,8 @@ fun NewItemFab(
 							}
 							if (pick >= 0) commit(pick)
 							else if (standing) {
-								// the standing centre is the import choice
+								// a centre tap only closes the standing palette
 								standing = false
-								onImport()
 							} else standing = true
 						}
 					},
@@ -209,6 +202,41 @@ fun NewItemFab(
 				}
 			}
 		}
+		if (standing && visible) {
+			val count = 1 + if (onReference != null) 1 else 0
+			fun secondary(index: Int): Modifier {
+				val at = center - root + secondaryOffset(index, count, kinds.size, radius, smallDiameter)
+				// the tile grows upward, so its caption keeps the same baseline
+				val anchorY = smallDiameter - baseTilePx / 2
+				val lift = if (index == 0) importLift else 0f
+				return Modifier.offset {
+					IntOffset(
+						(at.x - edgeShift - PaletteLabelWidth.toPx() / 2).roundToInt(),
+						(at.y - anchorY - lift).roundToInt(),
+					)
+				}
+			}
+			PaletteChoice(
+				icon = R.drawable.ic_download,
+				label = R.string.more_import,
+				highlighted = false,
+				tileSize = SecondaryFabSize,
+				tint = ExplorerColors.body,
+				iconPadding = 2.dp,
+				modifier = secondary(0),
+				onClick = { standing = false; onImport() },
+			)
+			if (onReference != null) PaletteChoice(
+				icon = R.drawable.ic_ref,
+				label = R.string.palette_link,
+				highlighted = false,
+				tileSize = SecondaryFabSize,
+				tint = null,
+				iconPadding = 2.dp,
+				modifier = secondary(1),
+				onClick = { standing = false; onReference() },
+			)
+		}
 	}
 }
 
@@ -219,47 +247,59 @@ private fun PaletteChoice(
 	label: Int,
 	highlighted: Boolean,
 	modifier: Modifier = Modifier,
+	tileSize: Dp = PaletteIconSize,
 	tint: Color? = null,
+	labelWidth: Dp = PaletteLabelWidth,
+	labelFont: TextUnit = 11.sp,
+	iconPadding: Dp? = null,
 	onClick: (() -> Unit)? = null,
 ) {
 	val interactionSource = remember { MutableInteractionSource() }
-	Column(
-		modifier
-			.width(PaletteLabelWidth)
-			// a standing choice takes plain taps as well as the drag
-			.then(if (onClick != null) {
-				Modifier.clickable(
-					interactionSource = interactionSource,
-					indication = null,
-					onClick = onClick,
-				)
-			} else Modifier),
-		horizontalAlignment = Alignment.CenterHorizontally,
-	) {
-		Image(
-			painterResource(icon),
-			contentDescription = null,
-			colorFilter = tint?.let { ColorFilter.tint(it) },
-			modifier = Modifier
-				.size(PaletteIconSize)
-				// the hovered choice carries the header colour, and the rest
-				// a light grey so the glyph stays readable
-				.background(
-					if (highlighted) ExplorerColors.header else ExplorerColors.subBackground,
-					CircleShape,
-				)
-				.padding(IconPadding),
-		)
-		Text(
-			stringResource(label),
-			Modifier
-				.padding(top = 2.dp)
-				.background(ExplorerColors.subBackground, RoundedCornerShape(3.dp))
-				.padding(horizontal = 3.dp),
-			fontSize = 11.sp,
-			color = ExplorerColors.body,
-		)
+	val box = modifier
+		.width(labelWidth)
+		// a standing choice takes plain taps as well as the drag
+		.then(if (onClick != null) {
+			Modifier.clickable(
+				interactionSource = interactionSource,
+				indication = null,
+				onClick = onClick,
+			)
+		} else Modifier)
+	Column(box, horizontalAlignment = Alignment.CenterHorizontally) {
+		PaletteTile(icon, tileSize, highlighted, tint, iconPadding)
+		PaletteLabel(label, Modifier.padding(top = 1.dp), font = labelFont)
 	}
+}
+
+@Composable
+private fun PaletteTile(icon: Int, size: Dp, highlighted: Boolean, tint: Color?, pad: Dp? = null) {
+	Image(
+		painterResource(icon),
+		contentDescription = null,
+		colorFilter = tint?.let { ColorFilter.tint(it) },
+		modifier = Modifier
+			.size(size)
+			// the hovered choice carries the header colour, and the rest
+			// a light grey so the glyph stays readable
+			.background(
+				if (highlighted) ExplorerColors.header else ExplorerColors.paletteBackground,
+				CircleShape,
+			)
+			.padding(pad ?: IconPadding * (size.value / PaletteIconSize.value)),
+	)
+}
+
+@Composable
+private fun PaletteLabel(label: Int, modifier: Modifier, font: TextUnit = 11.sp, maxLines: Int = Int.MAX_VALUE) {
+	Text(
+		stringResource(label),
+		modifier
+			.background(ExplorerColors.paletteBackground, RoundedCornerShape(3.dp))
+			.padding(horizontal = 3.dp),
+		fontSize = font,
+		maxLines = maxLines,
+		color = ExplorerColors.body,
+	)
 }
 
 /** The next change of the tracked pointer, or null while another finger acts. */
@@ -273,8 +313,19 @@ private val PaletteIconSize = FabSize
 private val IconPadding = 10.dp
 /** The palette icons sit one button size off the edge of the button. */
 internal val PaletteRadius = FabSize * 2
+
+/** The secondary actions take two thirds of a primary diameter plus a 7dp lift. */
+private val SecondaryFabBase = FabSize * 2f / 3f
+private val SecondaryFabGrowth = 7.dp
+/** The import caption needs the bottom edge space. */
+private val ImportLabelLift = 12.dp
+/** The same breathing room on the right edge as the caption takes below. */
+private val SecondaryEdgeShift = 12.dp
+internal val SecondaryFabSize = SecondaryFabBase + SecondaryFabGrowth
+
 /** The label under a palette icon, wide enough for the longest kind name. */
 private val PaletteLabelWidth = 72.dp
+/** Room for a full second-label word beside a smaller tile. */
 
 /** The short name under a palette icon. */
 private fun paletteLabel(kind: RowKind): Int = when (kind) {
@@ -379,8 +430,24 @@ internal fun paletteOffset(index: Int, count: Int, radius: Float): Offset {
 	)
 }
 
-/**
- * The hovered palette icon for a drag of dx, dy from the press point.
+/** One base-button spacing from its nearest primary, keeping that primary's label clear. */
+internal fun secondaryOffset(index: Int, count: Int, mainCount: Int, radius: Float, smallDiameter: Float): Offset {
+	val step = if (mainCount > 1) PaletteArc / (mainCount - 1) else PaletteArc / 2
+	val baseGap = 2 * radius * sin(Math.toRadians(step / 2.0)).toFloat()
+	// the extras and a primary keep the same edge gap as two primaries do
+	val mainDiameter = radius / 2
+	val edge = baseGap - mainDiameter
+	val toPrimary = edge + mainDiameter / 2 + smallDiameter / 2
+	val toEachOther = edge + smallDiameter
+	val shift = toEachOther / sqrt(2f)
+	val sum = shift + radius
+	val x = (-sum + sqrt(sum * sum - 2 * (shift * shift + radius * radius - toPrimary * toPrimary))) / 2
+	val link = Offset(x + shift, x)
+	val import = Offset(x, x + shift)
+	return if (index == 0) import else link
+}
+
+/** The hovered palette icon for a drag of dx, dy from the press point.
  * - the icon whose sector the direction falls into.
  * - the corner icons are the easy reaches, so every middle one claims two thirds of the gap.
  * - the space behind the arc splits at its midpoint between the two ends.

@@ -48,6 +48,8 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 		data object PickImportFile : Request
 
+		data object PickReferences : Request
+
 		data class PickWordExport(val fileName: String) : Request
 
 		data class PickJsonExport(val fileName: String) : Request
@@ -72,6 +74,23 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 			val origin: List<DbItem>,
 			val pulseItemId: Int?,
 		) : Request
+	}
+
+	/** The chapter the reference picker writes into, or null for the test-source picker. */
+	var referenceTarget: DbItem? = null
+		private set
+
+	/** Opens the shared picker into the currently open chapter. */
+	fun pickReferences() {
+		referenceTarget = history.path.lastOrNull() ?: return
+		emitRequest(Request.PickReferences)
+	}
+
+	/** Returning from the picker either leaves the list alone or refreshes new links. */
+	fun finishReferencePicker(committed: Boolean) {
+		if (referenceTarget == null) return
+		referenceTarget = null
+		if (committed) setContent(history.path.lastOrNull())
 	}
 
 	/**

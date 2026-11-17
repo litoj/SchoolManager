@@ -597,12 +597,22 @@ object ItemRepository {
 	 * - a cross-subject reference never changes the subject of a home-holding row.
 	 */
 	@JvmStatic
-	fun reference(childId: Int, parentId: Int): Boolean = query {
+	fun reference(childId: Int, parentId: Int): Boolean = referenceAll(listOf(childId), parentId)
+
+	/** Adds every link in one transaction, so no cycle can leave a half-done pick. */
+	@JvmStatic
+	fun referenceAll(childIds: Collection<Int>, parentId: Int): Boolean = query {
 		it.withTransaction {
 			val dao = it.itemDao()
-			if (dao.linkPosition(parentId, childId) != null) return@withTransaction true
-			if (closesCycle(dao, childId, parentId)) return@withTransaction false
-			dao.insertLink(DbLink(parentId, childId, dao.nextPosition(parentId), isReference = true))
+			// a false return marks a successful transaction, so cycles are checked before any insert
+			for (childId in childIds) {
+				if (dao.linkPosition(parentId, childId) == null && closesCycle(dao, childId, parentId))
+					return@withTransaction false
+			}
+			for (childId in childIds) {
+				if (dao.linkPosition(parentId, childId) != null) continue
+				dao.insertLink(DbLink(parentId, childId, dao.nextPosition(parentId), isReference = true))
+			}
 			true
 		}
 	}

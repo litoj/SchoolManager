@@ -46,6 +46,9 @@ object ExplorerColors {
 	/** A light grey wash keeps small floating labels readable over both themes. */
 	val subBackground: Color @Composable get() = colorResource(R.color.colorSubBackground)
 
+	/** The same wash solid, for the New palette, so the list behind never mixes in. */
+	val paletteBackground: Color @Composable get() = colorResource(R.color.colorPaletteBackground)
+
 	/** The red of errors, tuned per theme to stay readable on the background surface. */
 	val failure: Color @Composable get() = colorResource(R.color.colorFailure)
 }

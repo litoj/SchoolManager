@@ -3,6 +3,7 @@ package cz.litoj.schlmgr.ui.screen.picker
 import androidx.lifecycle.viewModelScope
 import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.app.UserMessages
+import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.screen.test.TestSetupState
@@ -18,12 +19,16 @@ import kotlinx.coroutines.withContext
 /**
  * The test-source picker: the explorer core that selects like the subjects screen.
  * - it starts at the position of the main explorer, on a copy it navigates alone.
- * - it adds the confirm to the source list.
- */
+ * - a test pick fills the source list, a reference pick links into its initial chapter. */
 class PickerViewModel(
 	start: NavigationHistory,
 	io: CoroutineDispatcher = Dispatchers.IO,
+	private val referenceTarget: DbItem? = null,
 ) : ExplorerViewModel<PickerViewModel.Request>(NavigationHistory(start), picker = true, io = io) {
+
+	/** True when the pick wrote references, so the source screen refreshes only then. */
+	var didReference = false
+		private set
 
 	sealed interface Request {
 		data object Close : Request
@@ -47,6 +52,18 @@ class PickerViewModel(
 		// - read on the main thread, before the dispatcher switch
 		val picked = items().filter(ItemRow::selected).map(TestSetupState::seedOf)
 		viewModelScope.launch {
+			if (referenceTarget != null) {
+				val accepted = withContext(io) {
+					ItemRepository.referenceAll(picked.map { it.item.id }, referenceTarget.id)
+				}
+				if (!accepted) {
+					UserMessages.showNotice(UiNotice.PasteInsideItself)
+					return@launch
+				}
+				didReference = picked.isNotEmpty()
+				emitRequest(Request.Close)
+				return@launch
+			}
 			val refused = withContext(io) { TestSetupState.addPicked(picked) }
 			if (refused.isNotEmpty()) {
 				UserMessages.showNotice(UiNotice.OneSubjectOnly(TestSetupState.pickedSubject()?.name))

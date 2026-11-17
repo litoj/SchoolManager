@@ -28,6 +28,8 @@ internal fun SubjectsFab(
 		visible = visibility.shown,
 		onPick = { kind -> viewModel.onMenuItemClick(newMenuIdOf(kind)) },
 		onImport = { viewModel.onMenuItemClick(MenuId.IMPORT_FILE) },
+		onReference = if (viewModel.menuKind == ExplorerMenuKind.CONTAINER)
+			viewModel::pickReferences else null,
 		modifier = modifier,
 	)
 }
