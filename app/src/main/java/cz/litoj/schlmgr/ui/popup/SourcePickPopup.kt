@@ -41,15 +41,11 @@ class SourcePickPopup(
 	@Composable
 	override fun Content() {
 		PopupCard {
-			Text(
-				stringResource(R.string.ref_source_pick),
-				Modifier.padding(5.dp),
-				style = TextStyle(fontSize = 20.sp, color = TextColor),
-			)
+			PopupTitle(stringResource(R.string.ref_source_pick))
 			HairlineDivider()
 			Text(
 				stringResource(R.string.ref_source_pick_hint),
-				Modifier.padding(horizontal = 5.dp, vertical = 3.dp),
+				Modifier.padding(horizontal = 20.dp, vertical = 5.dp),
 				style = TextStyle(fontSize = 13.sp, color = TextColor),
 			)
 			HairlineDivider()

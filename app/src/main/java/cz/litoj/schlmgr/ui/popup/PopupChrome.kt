@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -82,20 +83,27 @@ internal fun PopupCard(
 	}
 }
 
+/** One tap slot, the measure every popup row edge is built from. */
+private val TapSlotSize = 50.dp
+
 /**
- * The centered title line of a popup card.
- * - the trailing slot carries icons at the row end.
+ * The centered title band of a popup card.
+ * - the band is a floor, so a long title takes its second line and stays readable.
+ * - the trailing slot takes icons at the row end, one tap slot wide each.
  */
 @Composable
 internal fun PopupTitle(text: String, trailing: (@Composable BoxScope.() -> Unit)? = null) {
 	Box(
 		Modifier
 			.fillMaxWidth()
-			.padding(top = 5.dp)
+			.heightIn(min = TapSlotSize),
+		contentAlignment = Alignment.Center,
 	) {
 		Text(
 			text,
-			Modifier.fillMaxWidth(),
+			Modifier
+				.fillMaxWidth()
+				.padding(horizontal = if (trailing == null) 0.dp else TapSlotSize),
 			style = TextStyle(fontSize = 25.sp, color = TextColor),
 			textAlign = TextAlign.Center,
 		)
@@ -103,19 +111,23 @@ internal fun PopupTitle(text: String, trailing: (@Composable BoxScope.() -> Unit
 	}
 }
 
-/** The help icon of a popup title, which opens the explanation above the popup. */
+/** The help icon of a popup title, on a full tap slot at the row end. */
 @Composable
 internal fun BoxScope.PopupHelpIcon(onClick: () -> Unit) {
-	Icon(
-		painterResource(R.drawable.ic_help),
-		contentDescription = stringResource(R.string.help),
-		tint = TextColor,
-		modifier = Modifier
+	Box(
+		Modifier
 			.align(Alignment.CenterEnd)
-			.padding(end = 10.dp)
-			.size(IconSize)
+			.size(TapSlotSize)
 			.clickable(onClick = onClick),
-	)
+		contentAlignment = Alignment.Center,
+	) {
+		Icon(
+			painterResource(R.drawable.ic_help),
+			contentDescription = stringResource(R.string.help),
+			tint = TextColor,
+			modifier = Modifier.size(IconSize),
+		)
+	}
 }
 
 /** The shared body text style of a popup card. */
@@ -144,10 +156,10 @@ internal fun ColumnScope.PopupScrollBody(text: String) = PopupScrollBody {
 	PopupBodyText(text)
 }
 
-/** The bottom button row of a popup card, one flat bar of the shared height. */
+/** The bottom button row of a popup card, one flat bar as tall as the header band. */
 @Composable
 internal fun PopupButtonRow(content: @Composable RowScope.() -> Unit) {
-	Row(Modifier.fillMaxWidth().height(50.dp), content = content)
+	Row(Modifier.fillMaxWidth().height(TapSlotSize), content = content)
 }
 
 @Composable

@@ -178,7 +178,8 @@ class CreatorPopupEnterTest {
 		rule.waitForIdle()
 
 		// the item name still holds focus, but the deleted row always hands it over first
-		rule.onAllNodesWithContentDescription("Delete")[1].performClick()
+		// the keyboard shrinks the card, so the row can wait below the fold
+		rule.onAllNodesWithContentDescription("Delete")[1].performScrollTo().performClick()
 		rule.waitForIdle()
 
 		rule.onNode(focusedField).performTextInput("!")
@@ -217,7 +218,7 @@ class CreatorPopupEnterTest {
 
 		// twenty rows overflow the middle section, so the end sits below the fold
 		rule.onNodeWithText("t20").assertIsNotDisplayed()
-		rule.onAllNodesWithContentDescription("Delete")[1].performClick()
+		rule.onAllNodesWithContentDescription("Delete")[1].performScrollTo().performClick()
 		rule.waitForIdle()
 
 		assertEquals(19, popup.translations.size)
