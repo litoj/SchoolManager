@@ -345,7 +345,11 @@
     <string name="popup_copy_failed">Copying to the clipboard failed</string>
     <string name="popup_copy_truncated">[the copy was truncated — the text is too long for the clipboard]</string>
     <string name="press_exit">Press again to exit</string>
-    <string name="permission_pending">An action already waits for the permission</string>
+    <string name="notification_permission_allow">Allow</string>
+    <string name="notification_permission_body">Long imports, exports and deletions show their progress in a notification, even while you use another app. Without this permission they still run, but you get no progress bar.</string>
+    <!-- The button follows the system permission dialog, so it names the action, not the permission. -->
+    <string name="notification_permission_later">Not now</string>
+    <string name="notification_permission_title">Progress notifications</string>
     <string name="search">Search</string>
     <string name="select">Select</string>
     <string name="select_all">Select all</string>

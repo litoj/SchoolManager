@@ -160,23 +160,6 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 	private val ctx get() = GlobalDependencies.appContext
 
-	private var pendingAfterPermission: (() -> Unit)? = null
-
-	/** A second request while one waits is refused and reported, so none is lost silently. */
-	fun requestWithPermission(action: () -> Unit): Boolean {
-		if (pendingAfterPermission != null) {
-			UserMessages.showMsg(ctx.getString(R.string.permission_pending), ctx.getString(R.string.permission_pending))
-			return false
-		}
-		pendingAfterPermission = action
-		return true
-	}
-
-	fun runAfterPermission() {
-		pendingAfterPermission?.invoke()
-		pendingAfterPermission = null
-	}
-
 	// starts at the shared position, which survives rotation.
 	init {
 		setContent(history.path.lastOrNull())

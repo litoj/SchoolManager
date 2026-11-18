@@ -332,7 +332,11 @@
     <string name="popup_copy_failed">Kopírování do schránky se nezdařilo</string>
     <string name="popup_copy_truncated">[kopie byla zkrácena — text je pro schránku příliš dlouhý]</string>
     <string name="press_exit">Stiskněte ještě jednou pro ukončení</string>
-    <string name="permission_pending">Akce už čeká na oprávnění</string>
+    <string name="notification_permission_allow">Povolit</string>
+    <string name="notification_permission_body">Dlouhé importy, exporty a mazání ukazují průběh v oznámení, i když používáte jinou aplikaci. Bez tohoto oprávnění proběhnou také, ale bez ukazatele průběhu.</string>
+    <!-- The button follows the system permission dialog, so it names the action, not the permission. -->
+    <string name="notification_permission_later">Teď ne</string>
+    <string name="notification_permission_title">Oznámení průběhu</string>
     <string name="search">Hledat</string>
     <string name="select">Vybrat</string>
     <string name="select_all">Vybrat vše</string>

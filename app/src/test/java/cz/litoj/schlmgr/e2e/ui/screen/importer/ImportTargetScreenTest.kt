@@ -18,7 +18,6 @@ import java.util.concurrent.CountDownLatch
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -56,12 +55,6 @@ class ImportTargetScreenTest {
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
-	}
-
-	/** The import flows drive clicks, so an open permission dialog must not eat them. */
-	private fun grantProgressPermission() {
-		shadowOf(RuntimeEnvironment.getApplication())
-			.grantPermissions(android.Manifest.permission.POST_NOTIFICATIONS)
 	}
 
 	@After
@@ -120,21 +113,7 @@ class ImportTargetScreenTest {
 		RuntimeEnvironment.getApplication().getString(res, *args)
 
 	@Test
-	fun `an ungranted mover asks for the progress permission`() {
-		val model = ImportTargetViewModel(picked(""), Dispatchers.Unconfined) { "list.txt" }
-		rule.setContent { ImportTargetScreen(model, onExit = {}, onDone = {}) }
-		rule.waitForIdle()
-
-		// the bar belongs to the mover, no subjects screen ever asked before it
-		val request = rule.runOnIdle { shadowOf(rule.activity).lastRequestedPermission }
-		assertNotNull("the mover never asked for the progress permission", request)
-		assertTrue(android.Manifest.permission.POST_NOTIFICATIONS
-			in request!!.requestedPermissions)
-	}
-
-	@Test
 	fun `an import lands, turns the bar into Done and opens the single top-level container`() {
-		grantProgressPermission()
 		val words = (1..10).joinToString("") { "w$it;t$it\n" }
 		var donePath: List<Int>? = null
 		val model = mover("Kapitel {\n$words}") { donePath = it }
@@ -164,7 +143,6 @@ class ImportTargetScreenTest {
 
 	@Test
 	fun `a busy import locks the target rows and the cancel`() {
-		grantProgressPermission()
 		ItemRepository.createSubject("A", null)
 		val gate = CountDownLatch(1)
 		val model = ImportTargetViewModel(blocked(gate), Dispatchers.IO) { "list.txt" }
@@ -203,7 +181,6 @@ class ImportTargetScreenTest {
 
 	@Test
 	fun `a failed import keeps the bar, nothing stays busy or imported`() {
-		grantProgressPermission()
 		val model = mover("Haus\n", "Broken.txt")
 
 		rule.onNodeWithText(label(R.string.import_here)).performClick()

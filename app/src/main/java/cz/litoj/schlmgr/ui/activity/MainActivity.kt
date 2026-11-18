@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.mutableStateOf
 import cz.litoj.schlmgr.ui.shell.MainLaunchTarget
+import cz.litoj.schlmgr.ui.shell.NotificationPermissionPrompt
 import cz.litoj.schlmgr.ui.shell.SchlMgrApp
 
 /**
@@ -23,6 +24,7 @@ class MainActivity : ComponentActivity() {
 		launchTarget.value = consumeLaunchTarget(intent)
 		setContent {
 			SchlMgrApp(launchTarget.value) { launchTarget.value = null }
+			NotificationPermissionPrompt()
 		}
 	}
 

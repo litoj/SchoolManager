@@ -15,6 +15,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cz.litoj.schlmgr.ui.popup.DialogHost
 import cz.litoj.schlmgr.ui.screen.importer.ImportTargetScreen
 import cz.litoj.schlmgr.ui.screen.importer.ImportTargetViewModel
+import cz.litoj.schlmgr.ui.shell.NotificationPermissionPrompt
 import cz.litoj.schlmgr.ui.shell.StatusBarBand
 
 /**
@@ -46,6 +47,7 @@ class ImportActivity : ComponentActivity() {
 				StatusBarBand()
 			}
 			DialogHost()
+			NotificationPermissionPrompt()
 		}
 	}
 

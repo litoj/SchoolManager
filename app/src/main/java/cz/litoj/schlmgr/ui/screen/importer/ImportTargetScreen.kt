@@ -1,11 +1,6 @@
 package cz.litoj.schlmgr.ui.screen.importer
 
-import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,16 +8,11 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.component.ActionStripHeight
@@ -58,21 +48,6 @@ fun ImportTargetScreen(
 	val listState by viewModel.listState.collectAsStateWithLifecycle()
 	val target by viewModel.targetState.collectAsStateWithLifecycle()
 	val context = LocalContext.current
-	// the import posts its progress bar, so the mover asks for the permission
-	// before the import can start. A denial only loses the bar.
-	// - the ask runs once, a recreation of a denied mover must not nag
-	var permissionAsked by rememberSaveable { mutableStateOf(false) }
-	val notificationPermission = rememberLauncherForActivityResult(
-		ActivityResultContracts.RequestPermission()) {}
-	LaunchedEffect(Unit) {
-		if (permissionAsked) return@LaunchedEffect
-		if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(
-				context, Manifest.permission.POST_NOTIFICATIONS)
-			!= PackageManager.PERMISSION_GRANTED) {
-			permissionAsked = true
-			notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-		}
-	}
 	val snackbar = messageSnackbarHost()
 	val scrollState = rememberLazyListState()
 	// a busy import keeps the target, so back and cancel cannot change or lose it.
