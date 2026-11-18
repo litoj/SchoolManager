@@ -41,6 +41,8 @@ class BreadcrumbParentTest {
 				info = null,
 				isInfoExpanded = false,
 				onInfoClick = {},
+				onFilterEdit = {},
+				onFilterDrop = {},
 				onParentClick = { parents++ },
 			)
 		}

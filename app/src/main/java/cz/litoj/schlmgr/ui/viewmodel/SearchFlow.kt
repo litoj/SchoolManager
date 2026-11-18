@@ -1,12 +1,12 @@
 package cz.litoj.schlmgr.ui.viewmodel
 
 import cz.litoj.schlmgr.app.AppSettings
-import cz.litoj.schlmgr.app.UiNotice
-import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.ui.search.Criterion
 import cz.litoj.schlmgr.ui.search.SearchEngine
-import cz.litoj.schlmgr.ui.search.SearchFilter
+import cz.litoj.schlmgr.ui.search.SearchQuery
+import cz.litoj.schlmgr.ui.search.SearchTag
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +18,7 @@ import kotlinx.coroutines.withContext
  * - the host owns the list, and this class decides the search effects.
  * - mode writes pass through [Host.setSearchUi].
  * - stacked hop marks live search.
+ * - the marks of the submitted list own the run, and the scope holds until the search ends.
  */
 internal class SearchFlow(
 	private val scope: CoroutineScope,
@@ -29,6 +30,8 @@ internal class SearchFlow(
 	interface Host {
 
 		fun clearSelection()
+
+		fun markedRows(): Set<Int>
 
 		val models: List<ItemRow>
 
@@ -73,7 +76,13 @@ internal class SearchFlow(
 
 	private var lastSearchAnchor: ScrollAnchor? = null
 
-	private var activeFilter: SearchFilter? = null
+	private var criteria: List<Criterion> = emptyList()
+
+	/**
+	 * The rows the session reads, empty for the whole container.
+	 * - a run with no new marks keeps it, so a search never widens itself.
+	 */
+	private var selection: Set<Int> = emptySet()
 
 	var lastSearchInfo: InfoBar? = null
 
@@ -88,7 +97,10 @@ internal class SearchFlow(
 	/**
 	 * The walk streams in batches, and a superseded run never publishes.
 	 */
-	fun submitSearch(q: String) {
+	fun submitSearch(query: SearchQuery) {
+		// the marks own the scope, and the list loses them with its next content
+		val marked = host.markedRows()
+		if (marked.isNotEmpty()) selection = marked
 		host.clearSelection()
 		val path = mutableListOf<DbItem>()
 		path.addAll(history.path)
@@ -96,28 +108,54 @@ internal class SearchFlow(
 		val alreadySearching = history.onSearchHop()
 		run.abort()
 		// the search reads the toggle per run, so a settings change applies to the next one
-		val eng = SearchEngine(q, AppSettings.getBool("searchNoDiacritics", false))
-		activeFilter = if (eng.valid) SearchFilter.parse(q) else null
-		val detail = eng.regexError
-		// the strip only marks the pattern, since the error text is too long for it
-		if (detail != null) UserMessages.showNotice(UiNotice.BadPattern(detail))
+		val eng = SearchEngine(query, AppSettings.getBool("searchNoDiacritics", false))
 		// a live re-run keeps a single stacked hop.
 		if (!alreadySearching) history.hop(null)
 		// a new query starts at the top, unlike a history restore.
 		host.load(ArrayList(), isSearch = true, isPicker = false, anchor = host.scrollAnchor(0, 0))
-		// a new strip starts at zero, and an invalid query never runs.
-		lastSearchInfo = when {
-			eng.valid -> InfoBar.Search(0, activeFilter, done = false)
-			detail != null -> InfoBar.InvalidPattern
-			else -> InfoBar.InvalidSearch
-		}
+		// a new strip starts at zero
+		lastSearchInfo = searchInfo(0, done = false)
 		host.publishSearchInfoCollapsed(lastSearchInfo)
-		if (eng.valid) run.start(eng, path)
+		run.start(eng, path, selection)
 	}
+
+	/** The query a run answers to: the field text and the filters of the dialog. */
+	fun currentQuery() = SearchQuery(query.value, criteria)
+
+	/** [criterion] replaces the one of its tag and runs again. */
+	fun applyFilter(criterion: Criterion) {
+		criteria = currentQuery().with(criterion).criteria
+		runFilters()
+	}
+
+	/** The filter of [tag] is gone, and the search ends with the last one. */
+	fun dropFilter(tag: SearchTag) {
+		val rest = currentQuery().without(tag)
+		criteria = rest.criteria
+		if (rest.isEmpty) endSearch() else runFilters()
+	}
+
+	/** Every filter is gone, and the search ends when the field is empty too. */
+	fun clearFilters() {
+		criteria = emptyList()
+		if (query.value.isBlank()) endSearch() else runFilters()
+	}
+
+	private fun hasFilters() = criteria.isNotEmpty()
+
+	/** A filter change runs at once, typing pauses belong to the field. */
+	private fun runFilters() {
+		searchInput.cancelPending()
+		submitSearch(currentQuery())
+	}
+
+	/** The strip of the live run, its scope naming the rows the run reads. */
+	private fun searchInfo(count: Int, done: Boolean) =
+		InfoBar.Search(count, criteria, done, selection.size)
 
 	private fun appendSearchRows(batch: List<ItemRow>) {
 		host.appendRows(batch)
-		lastSearchInfo = InfoBar.Search(host.models.size, activeFilter, done = false)
+		lastSearchInfo = searchInfo(host.models.size, done = false)
 		host.publishSearchInfo(lastSearchInfo)
 	}
 
@@ -125,7 +163,7 @@ internal class SearchFlow(
 		override fun appendBatch(batch: List<ItemRow>) = appendSearchRows(batch)
 
 		override fun runFinished() {
-			lastSearchInfo = InfoBar.Search(host.models.size, activeFilter, done = true)
+			lastSearchInfo = searchInfo(host.models.size, done = true)
 			host.publishSearchInfo(lastSearchInfo)
 		}
 	}
@@ -138,7 +176,8 @@ internal class SearchFlow(
 		run.abort()
 		lastSearchRows = emptyList()
 		lastSearchAnchor = null
-		activeFilter = null
+		criteria = emptyList()
+		selection = emptySet()
 		history.removeSearchHops()
 		if (reload) host.setContent(history.path.lastOrNull())
 	}
@@ -164,7 +203,7 @@ internal class SearchFlow(
 	fun restoreSearch(): Boolean {
 		// the mode decides, not the variant.
 		val anchor = lastSearchAnchor ?: return false
-		if (host.searchUi() == SearchUi.RESULTS || lastSearchRows.isEmpty() || !history.onSearchHop()) return false
+		if (host.searchUi() == SearchUi.RESULTS || !history.onSearchHop()) return false
 		// a pending browse read must not land over the search strip.
 		host.cancelPendingInfoRead()
 		host.discardSelection(lastSearchRows)
@@ -200,10 +239,16 @@ internal class SearchFlow(
 	}
 
 	private inner class SearchInputHost : SearchInput.Host {
-		override fun runQuery(text: String) = submitSearch(text)
+		override fun runQuery(text: String) = submitSearch(SearchQuery(text, criteria))
 		override fun clearQuery() {
-			if (host.isSearching()) leaveSearchFlow()
+			// a filter alone is still a search, so only an empty query ends it
+			when {
+				criteria.isNotEmpty() -> submitSearch(SearchQuery("", criteria))
+				host.isSearching() -> leaveSearchFlow()
+			}
 		}
+
+		override fun hasFilters() = this@SearchFlow.hasFilters()
 
 		override fun openField() = host.setSearchUi(SearchUi.TYPING)
 		override fun idleField() = host.setSearchUi(SearchUi.RESULTS)

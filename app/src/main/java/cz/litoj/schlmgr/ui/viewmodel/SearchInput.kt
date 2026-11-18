@@ -27,6 +27,9 @@ internal class SearchInput(
 
 		/** The field stays open with its results, only the keyboard left. */
 		fun idleField()
+
+		/** A filter keeps the field open even with an empty text. */
+		fun hasFilters(): Boolean
 	}
 
 	val query = MutableStateFlow("")
@@ -52,7 +55,7 @@ internal class SearchInput(
 	 * - the pending debounce stays, so the written query still runs.
 	 */
 	fun dismiss() {
-		if (query.value.isBlank()) close() else host.idleField()
+		if (query.value.isBlank() && !host.hasFilters()) close() else host.idleField()
 	}
 
 	/** Resets the query, so the next search starts empty. */
@@ -71,7 +74,7 @@ internal class SearchInput(
 		query.value = text
 		debounceJob?.cancel()
 		debounceJob = null
-		if (text.isEmpty()) {
+		if (text.isBlank()) {
 			runningQuery = null
 			host.clearQuery()
 			return
@@ -94,7 +97,7 @@ internal class SearchInput(
 		debounceJob?.cancel()
 		debounceJob = null
 		query.value = text
-		if (text.isEmpty()) {
+		if (text.isBlank()) {
 			runningQuery = null
 			host.clearQuery()
 		} else if (text != runningQuery) {

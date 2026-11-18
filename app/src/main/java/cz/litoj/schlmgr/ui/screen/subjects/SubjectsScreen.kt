@@ -24,7 +24,7 @@ import cz.litoj.schlmgr.ui.popup.CreatorContent
 import cz.litoj.schlmgr.ui.popup.CreatorPopup
 import cz.litoj.schlmgr.ui.popup.FlipConflictPopup
 import cz.litoj.schlmgr.ui.popup.ReferencePopup
-import cz.litoj.schlmgr.ui.popup.SearchFilterPopup
+import cz.litoj.schlmgr.ui.shell.editFilter
 import cz.litoj.schlmgr.ui.popup.SourcePickPopup
 import cz.litoj.schlmgr.ui.shell.ExplorerBackHandler
 import cz.litoj.schlmgr.ui.shell.MainLaunchTarget
@@ -192,11 +192,7 @@ fun SubjectsScreen(
 			if (fieldOpen) TopBarSearchField(
 				query, viewModel::onQueryChange, viewModel::onQuerySubmit, viewModel::dismissSearch,
 				Modifier.weight(1f),
-				onFilter = {
-					SearchFilterPopup(query) { filter ->
-						viewModel.onQuerySubmit(filter?.toQuery() ?: "")
-					}
-				},
+				onFilter = { editFilter(viewModel, null) },
 			)
 			else TopBarTitle(title)
 			TopBarIconButton(
@@ -212,7 +208,7 @@ fun SubjectsScreen(
 				entries = explorerMenu(
 					viewModel.menuKind, selecting = false, listState.singleSelected,
 					ActionConfig.load(), exportBlockedReason,
-					filterActive = (state.info as? InfoBar.Search)?.filter != null,
+					filterActive = (state.info as? InfoBar.Search)?.criteria?.isNotEmpty() == true,
 				),
 				width = this@BoxWithConstraints.maxWidth,
 				pinned = 1,

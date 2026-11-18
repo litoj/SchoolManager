@@ -8,39 +8,14 @@ import cz.litoj.schlmgr.data.db.testedCount
 import java.util.regex.Pattern
 
 /**
- * The pure query parsing and matching engine, with no Views, threads or history.
- * - it matches against a preloaded [SearchIndex], synchronously on the caller thread.
+ * The pure matching engine, with no Views, threads or history.
+ * - it reads a [SearchQuery] the caller built, and matches against a preloaded [SearchIndex].
+ * - a scope limits the rows it reports, so a selection can own a run, see [search].
  * - a superseded run aborts via [abort].
- * - a leading backslash selects structured search: type, value source and op tail.
- * - the type is W, T or C, and the value source D, S, F, N or R.
- * - a number query folds to the strict syntax first, see [strictForm].
- * - see the resolve cases below.
- * - [foldDiacritics] folds the plain text finders, the regex pattern stays as written.
+ * - the typed text and every criterion must hold, so a run answers to all of them.
+ * - [folded] folds the text finders, a pattern stays as written.
  */
-class SearchEngine(query: String, private val foldDiacritics: Boolean = false) {
-
-	private companion object {
-		/** Type, letter, operator and tail, each in any case and spacing. */
-		val OPERATOR_SHAPE = Regex(
-			"""\\\s*([WTC]?)\s*(\p{L}?)\s*([<>=])\s*(.*)""",
-			setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
-		)
-
-		val NUMBER_SOURCES = setOf("", "S", "F", "N", "R")
-	}
-
-	/**
-	 * False when [query] cannot search.
-	 * - a malformed number query leaves [regexError] null.
-	 */
-	var valid = true
-		private set
-
-	/**
-	 * The caller turns this into the user message, since the engine shows nothing.
-	 */
-	var regexError: String? = null
-		private set
+class SearchEngine(query: SearchQuery, private val foldDiacritics: Boolean = false) {
 
 	/** All items already reported, which dedups the emitted results by row id. */
 	private val found = HashSet<Int>()
@@ -51,6 +26,14 @@ class SearchEngine(query: String, private val foldDiacritics: Boolean = false) {
 	 * - [correct] dedups by row id, and the subtree of a shared chapter is walked once.
 	 */
 	private val visited = HashSet<Int>()
+
+	/**
+	 * The rows the run may report, empty for every row of the container.
+	 * - the caller closes it over its seeds, so the walk reads membership only.
+	 */
+	private var scope: Set<Int> = emptySet()
+
+	private fun inScope(item: DbItem) = scope.isEmpty() || item.id in scope
 
 	/**
 	 * The walk abandons itself when the user navigates away or starts a new search.
@@ -70,133 +53,123 @@ class SearchEngine(query: String, private val foldDiacritics: Boolean = false) {
 		fun verify(item: DbItem): Boolean
 	}
 
-	private fun interface SFManipulation {
-		fun value(item: DbItem): Int
-	}
-
 	private fun interface StringFinder {
 		fun verify(str: String): Boolean
 	}
-
-	private var compareText: String = ""
 
 	/** The candidate text under the fold setting, see the toggle in the settings. */
 	private fun folded(text: String): String =
 		if (foldDiacritics) DiacriticFold.of(text) else text
 
-	private val matcher: Correct = parse(query)
+	private val matcher: Correct = allOf(query)
 
-	/** Plain text keeps its spaces, since they are part of the searched name. */
-	private fun parse(query: String): Correct {
-		val trimmed = query.trim()
-		if (!trimmed.startsWith('\\')) return resolve(trimmed)
-		val strict = strictForm(trimmed)
-		if (strict != null) return resolve(strict)
-		valid = false
-		return Correct { _ -> false }
+	/** Every part of the query must hold, so the run answers to all of them. */
+	private fun allOf(query: SearchQuery): Correct {
+		val tests = ArrayList<Correct>()
+		val text = query.text.trim()
+		// the typed text is a name search, the criteria add their own comparisons
+		if (text.isNotEmpty()) tests.add(nameTest(FilterOperator.CONTAINS, text))
+		for (criterion in query.criteria) tests.add(criterionTest(criterion))
+		return Correct { item -> tests.all { it.verify(item) } }
+	}
+
+	private fun criterionTest(criterion: Criterion): Correct {
+		val value = criterion.value
+		return when (criterion.tag) {
+			// a value of another shape compares nothing, the editor pairs them at build
+			SearchTag.TYPE -> if (value is CriterionValue.Kind)
+				Correct { item -> item.type == value.value }
+			else none()
+			SearchTag.NAME -> nameTest(criterion.operator, textOf(value))
+			SearchTag.DESCRIPTION -> descriptionTest(criterion.operator, textOf(value))
+			SearchTag.RATE -> if (value is CriterionValue.Rate) rateTest(criterion.operator, value) else none()
+			SearchTag.TESTED -> if (value is CriterionValue.Times) timesTest(criterion.operator, value) else none()
+		}
+	}
+
+	private fun textOf(value: CriterionValue) = (value as? CriterionValue.Text)?.value ?: ""
+
+	private fun none() = Correct { _ -> false }
+
+	/** A name search reads the row name and the names its variants hide. */
+	private fun nameTest(operator: FilterOperator, value: String): Correct {
+		val finder = stringFinder(operator, value) ?: return none()
+		return nameMatcher(finder)
+	}
+
+	/** A description search skips the rows without one. */
+	private fun descriptionTest(operator: FilterOperator, value: String): Correct {
+		val finder = stringFinder(operator, value) ?: return none()
+		return Correct { item ->
+			val text = item.description.trim()
+			text.isNotEmpty() && finder.verify(text)
+		}
+	}
+
+	/** null for an operator that compares a number or a kind, never text. */
+	private fun stringFinder(operator: FilterOperator, value: String): StringFinder? {
+		// a pattern is the user's own text, so the fold never rewrites it
+		if (operator == FilterOperator.REGEX) return patternFinder(value)
+		return when (operator) {
+			FilterOperator.CONTAINS -> {
+				val text = folded(value.lowercase())
+				StringFinder { name -> folded(name).lowercase().contains(text) }
+			}
+			FilterOperator.CONTAINS_CASE -> {
+				val text = folded(value)
+				StringFinder { name -> folded(name).contains(text) }
+			}
+			FilterOperator.STARTS -> {
+				val text = folded(value)
+				StringFinder { name -> folded(name).startsWith(text) }
+			}
+			FilterOperator.ENDS -> {
+				val text = folded(value)
+				StringFinder { name -> folded(name).endsWith(text) }
+			}
+			else -> null
+		}
+	}
+
+	/** A pattern the editor did not compile matches nothing, so it never widens a run. */
+	private fun patternFinder(pattern: String): StringFinder {
+		val compiled = try {
+			Pattern.compile(pattern)
+		} catch (e: Exception) {
+			return StringFinder { false }
+		}
+		return StringFinder { name -> compiled.matcher(name).matches() }
 	}
 
 	/**
-	 * Folds a number query to the strict syntax.
-	 * - an operator after the markers always makes a number query, text needs the \\ form.
-	 * - other queries pass unchanged, since their markers are case sensitive.
-	 * @return null for a malformed number query
+	 * The rate test of one criterion.
+	 * - an untested rate is -1, below every tested one, and the choice names who joins.
 	 */
-	private fun strictForm(query: String): String? {
-		val shape = OPERATOR_SHAPE.matchEntire(query) ?: return query
-		val (type, value, operator, number) = shape.destructured
-		val count = number.toIntOrNull() ?: return null
-		val source = value.uppercase()
-		return if (source in NUMBER_SOURCES) "\\${type.uppercase()}$source$operator$count" else null
-	}
-
-	private fun resolve(query: String): Correct {
-		var kind: Correct = Correct { _ -> true }
-		var numeric: Correct? = null
-		var sfm: SFManipulation? = null
-		var strCor: StringFinder = StringFinder { name -> folded(name).lowercase().contains(compareText) }
-		var start = 0
-		var searchDescription = false
-
-		fun emptyCompare(): Correct {
-			compareText = ""
-			return nameMatcher(kind, strCor)
+	private fun rateTest(operator: FilterOperator, rate: CriterionValue.Rate): Correct {
+		val test = comparison(operator) ?: return none()
+		return Correct { item ->
+			val percent = item.ratio
+			(rate.untested == UntestedRows.INCLUDE || percent >= 0) && test(percent, rate.percent)
 		}
-
-		// an empty query matches everything, since compareText stays empty
-		if (query.isNotEmpty() && query[start] == '\\' && query.length > 1) {
-			when (query[++start]) { // the type marker first, since a query may target one kind
-				'W' -> kind = Correct { item -> item.type == ItemKind.WORD }
-				'T' -> kind = Correct { item -> item.type == ItemKind.TRANSLATION }
-				'C' -> kind = Correct { item -> item.type == ItemKind.CHAPTER }
-				else -> start-- // no type selection prefix found
-			}
-			if (start + 1 >= query.length) return emptyCompare()
-			when (query[++start]) { // then the value marker, since one query tests one source
-				// d compares the description, so text queries can target it
-				'D' -> searchDescription = true
-				'S' -> sfm = SFManipulation { item -> item.passedTests }
-				'F' -> sfm = SFManipulation { item -> item.failedTests }
-				'N' -> sfm = SFManipulation { item -> item.testedCount }
-				'R' -> sfm = SFManipulation { item -> item.ratio }
-				else -> start-- // the tested value is the name of the object
-			}
-			if (start + 1 >= query.length) return emptyCompare()
-			val count = try {
-				query.substring(start + 2).toInt()
-			} catch (nfe: NumberFormatException) {
-				-10
-			}
-			compareText = query.substring(start + 2)
-			// the operator marker, since text and number tests share one syntax
-			when (query[start + 1]) {
-				// number operations
-				'>' -> numeric = numberCompare(sfm, count) { a, b -> a > b }
-				'<' -> numeric = numberCompare(sfm, count) { a, b -> a < b }
-				'=' -> numeric = numberCompare(sfm, count) { a, b -> a == b }
-				// text operations
-				'r' -> { // r compiles the text, since a pattern may match either field
-					val p: Pattern = try {
-						Pattern.compile(compareText)
-					} catch (e: Exception) {
-						valid = false
-						regexError = e.message
-						return Correct { _ -> false }
-					}
-					strCor = StringFinder { name -> p.matcher(name).matches() }
-				}
-				's' -> strCor = StringFinder { name -> folded(name).startsWith(compareText) }
-				'e' -> strCor = StringFinder { name -> folded(name).endsWith(compareText) }
-				'c' -> strCor = StringFinder { name -> folded(name).contains(compareText) }
-				// must contain the written text, ignores case
-				'\\' -> compareText = compareText.lowercase()
-				else -> compareText = query.lowercase().substring(start + 1)
-			}
-			// the fold leaves the regex pattern alone, it is the user's own text
-			if (query[start + 1] != 'r') compareText = folded(compareText)
-		} else compareText = folded(query.lowercase())
-
-		val finalNumeric = numeric
-		compareText = compareText.trim()
-		return if (finalNumeric != null)
-			Correct { item -> kind.verify(item) && finalNumeric.verify(item) }
-		else if (searchDescription) Correct { item ->
-			if (!kind.verify(item)) return@Correct false
-			val d = item.description.trim()
-			d.isNotEmpty() && strCor.verify(d)
-		}
-		else nameMatcher(kind, strCor)
 	}
 
-	private fun numberCompare(
-		sfm: SFManipulation?, count: Int, test: (Int, Int) -> Boolean,
-	): Correct {
-		val source = sfm ?: SFManipulation { _ -> 0 }
-		return Correct { item -> test(source.value(item), count) }
+	/** The count test of one criterion, where zero is a value of its own. */
+	private fun timesTest(operator: FilterOperator, times: CriterionValue.Times): Correct {
+		val test = comparison(operator) ?: return none()
+		return Correct { item -> test(item.testedCount, times.value) }
 	}
 
-	private fun nameMatcher(kind: Correct, sc: StringFinder): Correct = Correct { item ->
-		if (!kind.verify(item)) return@Correct false
+	/** null for an operator that compares text or a kind, never a number. */
+	private fun comparison(operator: FilterOperator): ((Int, Int) -> Boolean)? = when (operator) {
+		FilterOperator.GREATER -> { a, b -> a > b }
+		FilterOperator.AT_LEAST -> { a, b -> a >= b }
+		FilterOperator.LESS -> { a, b -> a < b }
+		FilterOperator.AT_MOST -> { a, b -> a <= b }
+		FilterOperator.EQUALS -> { a, b -> a == b }
+		else -> null
+	}
+
+	private fun nameMatcher(sc: StringFinder): Correct = Correct { item ->
 		if (sc.verify(item.name.trim())) return@Correct true
 		for (name in WordNames.parseVariants(item.name.trim())) if (sc.verify(name.trim())) return@Correct true
 		false
@@ -215,13 +188,17 @@ class SearchEngine(query: String, private val foldDiacritics: Boolean = false) {
 
 	/**
 	 * @param basePath container chain, root first, opened container last
+	 * @param scope ids the run may report, empty for the whole container
+	 * @param onMatch called once per new match with a copy of path
 	 */
 	fun search(
 		index: SearchIndex,
 		basePath: List<DbItem>,
+		scope: Set<Int> = emptySet(),
 		onMatch: (item: DbItem, path: List<DbItem>, matchedTranslation: Boolean) -> Unit,
 	) {
 		val root = basePath.lastOrNull() ?: return
+		this.scope = scope
 		walk(index, index.childrenOf(root.id), basePath, onMatch)
 	}
 
@@ -241,7 +218,7 @@ class SearchEngine(query: String, private val foldDiacritics: Boolean = false) {
 	) {
 		loop@ for (item in src) {
 			if (!active) return
-			val yes = matcher.verify(item)
+			val yes = inScope(item) && matcher.verify(item)
 			val foundIt = yes && found.add(item.id)
 			if (foundIt) onMatch(item, ArrayList(path), false)
 			when (item.type) {
@@ -252,7 +229,7 @@ class SearchEngine(query: String, private val foldDiacritics: Boolean = false) {
 					list.add(item)
 					walk(index, index.childrenOf(item.id), list, onMatch)
 				}
-				ItemKind.WORD -> if (!yes) {
+				ItemKind.WORD -> if (!yes && inScope(item)) {
 					// a word that missed its own name is retried through its translations.
 					// the WORD is the hit, so its own row and path show
 					if (index.childrenOf(item.id).any { matcher.verify(it) } && found.add(item.id))

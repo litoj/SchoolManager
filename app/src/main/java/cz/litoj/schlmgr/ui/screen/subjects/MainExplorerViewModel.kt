@@ -108,10 +108,6 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 	override fun pasteArmed() = pasteArmed
 
-	// an armed move freezes the whole bar, its own reason wins over the root rule
-	override val searchBlockedReason: Int
-		get() = if (pasteArmed) R.string.unavailable_search_move else super.searchBlockedReason
-
 	private inner class PasteHost : SubjectsPaste.Host, SubjectsHost by shared {
 		override fun selectionCount() = this@MainExplorerViewModel.selectionCount()
 		override fun notifyChanged() = this@MainExplorerViewModel.notifyChanged()
@@ -224,7 +220,7 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		MenuId.EDIT -> { onEditAction(); true }
 		MenuId.DELETE -> { onDeleteAction(); true }
 		MenuId.GOTO -> { onGoToAction(); true }
-		MenuId.CLEAR_FILTER -> { onQuerySubmit(""); true }
+		MenuId.CLEAR_FILTER -> { clearFilters(); true }
 		else -> false
 	}
 

@@ -7,6 +7,8 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import cz.litoj.schlmgr.ui.search.Criterion
+import cz.litoj.schlmgr.ui.search.SearchTag
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerScreenState
 import cz.litoj.schlmgr.ui.viewmodel.ItemListState
 
@@ -21,6 +23,8 @@ fun ExplorerScaffold(
 	listState: ItemListState,
 	onBreadcrumbClick: (Int) -> Unit,
 	onInfoClick: () -> Unit,
+	onFilterEdit: (Criterion) -> Unit,
+	onFilterDrop: (SearchTag) -> Unit,
 	onParentClick: () -> Unit,
 	callbacks: ItemListCallbacks,
 	modifier: Modifier = Modifier,
@@ -49,6 +53,8 @@ fun ExplorerScaffold(
 			info = state.info,
 			isInfoExpanded = state.isInfoExpanded,
 			onInfoClick = onInfoClick,
+			onFilterEdit = onFilterEdit,
+			onFilterDrop = onFilterDrop,
 			onParentClick = onParentClick,
 			statusLine = statusLine,
 		)

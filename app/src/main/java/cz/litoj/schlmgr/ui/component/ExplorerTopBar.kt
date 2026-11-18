@@ -35,7 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.db.ItemKind
-import cz.litoj.schlmgr.ui.search.summary
+import cz.litoj.schlmgr.ui.search.Criterion
+import cz.litoj.schlmgr.ui.search.SearchTag
 import cz.litoj.schlmgr.ui.viewmodel.InfoBar
 
 private val HeaderGreen @Composable get() = ExplorerColors.header
@@ -45,9 +46,11 @@ private val CrumbColor @Composable get() = ExplorerColors.onHeader
 private val InfoColor @Composable get() = ExplorerColors.body
 
 /**
- * The top chrome of the explorer: the breadcrumb strip and the info strip,
+ * The top chrome of the explorer: the filter chips, the breadcrumb strip and the info strip,
  * stacked. Stateless, both hosts drive it from their state.
  * @param statusLine a transient line that replaces the info strip, such as an armed move
+ * @param onFilterEdit a tap on the label of a chip, which opens the editor of that filter
+ * @param onFilterDrop the mark of a chip, which drops that filter
  */
 @Composable
 fun ExplorerTopBar(
@@ -56,11 +59,16 @@ fun ExplorerTopBar(
 	info: InfoBar?,
 	isInfoExpanded: Boolean,
 	onInfoClick: () -> Unit,
+	onFilterEdit: (Criterion) -> Unit,
+	onFilterDrop: (SearchTag) -> Unit,
 	onParentClick: () -> Unit,
 	modifier: Modifier = Modifier,
 	statusLine: String? = null,
 ) {
+	// a run names its filters as chips, so the info strip stays a readout
+	val filters = (info as? InfoBar.Search)?.criteria.orEmpty()
 	Column(modifier.fillMaxWidth()) {
+		if (filters.isNotEmpty()) FilterChips(filters, onFilterEdit, onFilterDrop)
 		Breadcrumbs(breadcrumbs, onBreadcrumbClick, onParentClick)
 		InfoStrip(info, isInfoExpanded, onInfoClick, statusLine)
 		HairlineDivider()
@@ -170,20 +178,16 @@ private fun InfoStrip(
 			(kindCounts(info.kinds) + rate).joinToString(", ") + suffix
 		}
 		is InfoBar.Search -> {
-			val summary = info.filter?.summary()
-			when {
-				!info.done -> if (summary == null) stringResource(R.string.data_search_running)
-				else stringResource(R.string.data_search_filtered_running, summary)
-				info.count == 0 -> if (summary == null) stringResource(R.string.data_search_none)
-				else stringResource(R.string.data_search_filtered_none, summary)
-				summary == null -> stringResource(R.string.data_search_results, info.count)
-				else -> stringResource(R.string.data_search_filtered, summary, info.count)
+			val line = when {
+				!info.done -> stringResource(R.string.data_search_running)
+				info.count == 0 -> stringResource(R.string.data_search_none)
+				else -> stringResource(R.string.data_search_results, info.count)
 			}
+			// the row count the run read, so a limited run never reads as the whole set
+			if (info.selected == 0) line
+			else line + " · " + pluralStringResource(R.plurals.data_search_scope, info.selected, info.selected)
 		}
-		InfoBar.InvalidSearch -> stringResource(R.string.data_search_invalid)
-		InfoBar.InvalidPattern -> stringResource(R.string.data_search_bad_pattern)
 	}
-	val invalid = info == InfoBar.InvalidSearch || info == InfoBar.InvalidPattern
 	// the laid-out line count of the current text. The wrapper Box always gives
 	// the text its full width, so the count is stable whatever the strip height.
 	var lines by remember { mutableIntStateOf(1) }
@@ -209,7 +213,7 @@ private fun InfoStrip(
 		Text(
 			text,
 			fontSize = 15.sp,
-			color = if (invalid) ExplorerColors.failure else InfoColor,
+			color = InfoColor,
 			onTextLayout = { lines = it.lineCount },
 		)
 	}

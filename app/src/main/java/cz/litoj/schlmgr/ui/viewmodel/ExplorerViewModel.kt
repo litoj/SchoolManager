@@ -5,6 +5,9 @@ import androidx.lifecycle.viewModelScope
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ratio
+import cz.litoj.schlmgr.ui.search.Criterion
+import cz.litoj.schlmgr.ui.search.SearchQuery
+import cz.litoj.schlmgr.ui.search.SearchTag
 import cz.litoj.schlmgr.testing.TestEngine
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -274,7 +277,16 @@ abstract class ExplorerViewModel<R>(
 
 	fun onQuerySubmit(text: String) = searchFlow.onSubmit(text)
 
-	fun submitSearch(q: String) = searchFlow.submitSearch(q)
+	fun submitSearch(query: SearchQuery) = searchFlow.submitSearch(query)
+
+	/** The query the filter editor reopens on. */
+	fun searchQuery() = searchFlow.currentQuery()
+
+	fun applyFilter(criterion: Criterion) = searchFlow.applyFilter(criterion)
+
+	fun dropFilter(tag: SearchTag) = searchFlow.dropFilter(tag)
+
+	fun clearFilters() = searchFlow.clearFilters()
 
 	fun endSearch() = searchFlow.endSearch()
 
@@ -284,6 +296,12 @@ abstract class ExplorerViewModel<R>(
 
 	private inner class SearchFlowHost : SearchFlow.Host {
 		override fun clearSelection() = this@ExplorerViewModel.clearSelection()
+
+		// the picker marks are the sources it collects, so its search stays unlimited
+		override fun markedRows(): Set<Int> =
+			if (pickerMode()) emptySet()
+			else list.items().filter { it.selected }.mapTo(LinkedHashSet()) { it.item.id }
+
 		override val models get() = list.items()
 		override fun appendRows(batch: List<ItemRow>) = list.append(batch)
 		override fun removeRows(items: Collection<ItemRow>) = list.removeItems(items)

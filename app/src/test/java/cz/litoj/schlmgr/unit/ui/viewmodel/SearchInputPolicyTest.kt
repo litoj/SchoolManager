@@ -20,11 +20,13 @@ class SearchInputPolicyTest {
 		var opened = 0
 		var closed = 0
 		var idled = 0
+		var filters = false
 		override fun runQuery(text: String) { run.add(text) }
 		override fun clearQuery() { cleared++ }
 		override fun openField() { opened++ }
 		override fun closeField() { closed++ }
 		override fun idleField() { idled++ }
+		override fun hasFilters() = filters
 	}
 
 	@Test
@@ -38,6 +40,21 @@ class SearchInputPolicyTest {
 
 		assertEquals(listOf("ab"), host.run)
 		assertEquals("the cleared query ends the run", 1, host.cleared)
+	}
+
+	@Test
+	fun `blank input clears the run instead of querying whitespace`() = runTest {
+		val host = RecordingHost()
+		val input = SearchInput(CoroutineScope(UnconfinedTestDispatcher(testScheduler)), host)
+
+		input.onTextChange("ab")
+		testScheduler.advanceUntilIdle()
+		input.onTextChange("   ")
+		testScheduler.advanceUntilIdle()
+		input.onSubmit("   ")
+
+		assertEquals("no whitespace query reaches the engine", listOf("ab"), host.run)
+		assertEquals("both blank paths clear it", 2, host.cleared)
 	}
 
 	@Test
@@ -138,6 +155,19 @@ class SearchInputPolicyTest {
 
 		assertEquals(1, host.closed)
 		assertEquals(0, host.idled)
+	}
+
+	@Test
+	fun `a filter keeps the field with an empty query`() = runTest {
+		val host = RecordingHost()
+		host.filters = true
+		val input = SearchInput(CoroutineScope(UnconfinedTestDispatcher(testScheduler)), host)
+
+		input.open()
+		input.dismiss()
+
+		assertEquals("the filter is the search", 1, host.idled)
+		assertEquals(0, host.closed)
 	}
 
 	@Test

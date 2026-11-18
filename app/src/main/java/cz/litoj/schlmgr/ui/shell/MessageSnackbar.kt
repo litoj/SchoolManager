@@ -111,8 +111,6 @@ private fun noticeMessage(ctx: Context, notice: UiNotice): Triple<String, String
 			ctx.getString(R.string.fail_paste_present).let { Triple(it, it, null) }
 		is UiNotice.NoteCopied ->
 			ctx.getString(R.string.note_copied).let { Triple(it, it, null) }
-		is UiNotice.BadPattern ->
-			ctx.getString(R.string.pattern_err, notice.detail).let { Triple(it, it, null) }
 		is UiNotice.FlipBlankName ->
 			ctx.getString(R.string.flip_conflicts_blank).let { Triple(it, it, null) }
 		is UiNotice.ActionUnavailable ->

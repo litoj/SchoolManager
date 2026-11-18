@@ -17,44 +17,54 @@
     <string name="data_rate">"Úspěšnost: %1$d%%"</string>
     <string name="data_untested">Úspěšnost: Netestováno</string>
     <string name="data_search_results">"Výsledků: %1$d"</string>
-    <string name="data_search_filtered">"%1$s · Výsledků: %2$d"</string>
     <string name="data_search_running">Hledám…</string>
-    <string name="data_search_filtered_running">"%1$s · Hledám…"</string>
     <string name="data_search_none">Žádné výsledky. Zkuste filtr nebo jiné slovo.</string>
-    <string name="data_search_filtered_none">"%1$s · Žádné výsledky. Upravte filtr."</string>
-    <string name="data_search_bad_pattern">Neplatný regulární výraz.</string>
-    <string name="data_search_invalid">Neplatné hledání. Použijte filtr nebo zápis \\WR=0.</string>
     <string name="data_selected">"Vybráno: %1$d"</string>
-    <string name="filter_summary">"Filtr: %1$s · %2$s %3$s %4$s"</string>
+    <plurals name="data_search_scope">
+        <item quantity="one">v %1$d vybrané položce</item>
+        <item quantity="few">ve %1$d vybraných položkách</item>
+        <item quantity="many">ve %1$d vybraných položkách</item>
+        <item quantity="other">ve %1$d vybraných položkách</item>
+    </plurals>
     <string name="search_filter">Filtr hledání</string>
-    <string name="search_filter_intro">Zvolte, co hledat a jak. Pole ukáže zapsaný dotaz.</string>
-    <string name="filter_type">Typ</string>
-    <string name="filter_type_any">Vše</string>
-    <string name="filter_type_word">Slovíčka</string>
-    <string name="filter_type_translation">Překlady</string>
-    <string name="filter_type_chapter">Kapitoly</string>
-    <string name="filter_field">Porovnat</string>
-    <string name="filter_field_name">Název</string>
-    <string name="filter_field_description">Popis</string>
-    <string name="filter_field_successes">Úspěchy</string>
-    <string name="filter_field_fails">Neúspěchy</string>
-    <string name="filter_field_tested">Počet testů</string>
-    <string name="filter_field_rate">Úspěšnost</string>
+    <string name="search_filter_intro">Výsledky vyhoví každému filtru, který přidáte.</string>
+    <string name="filter_tag">Filtrovat podle</string>
+    <string name="filter_tag_type">Typ</string>
+    <string name="filter_tag_name">Název</string>
+    <string name="filter_tag_description">Popis</string>
+    <string name="filter_tag_rate">Úspěšnost</string>
+    <string name="filter_tag_tested">Počet testů</string>
+    <string name="filter_tag_rate_hint">Správné odpovědi v procentech ze všech odpovědí.</string>
+    <string name="filter_tag_tested_hint">Všechny odpovědi dohromady, nula znamená bez testu.</string>
+    <string name="filter_kind">Které řádky</string>
+    <string name="filter_kind_word">Slovíčka</string>
+    <string name="filter_kind_translation">Překlady</string>
+    <string name="filter_kind_chapter">Kapitoly</string>
+    <string name="filter_kind_note">Poznámky</string>
+    <string name="filter_untested">Nezkoušené řádky</string>
+    <string name="filter_untested_in">počítají jako nejslabší</string>
+    <string name="filter_untested_out">zůstanou mimo</string>
     <string name="filter_condition">Podmínka</string>
-    <string name="filter_cond_contains">obsahuje</string>
-    <string name="filter_cond_contains_case">obsahuje přesně</string>
-    <string name="filter_cond_starts">začíná na</string>
-    <string name="filter_cond_ends">končí na</string>
-    <string name="filter_cond_regex">odpovídá regexu</string>
-    <string name="filter_cond_greater">je větší než</string>
-    <string name="filter_cond_less">je menší než</string>
-    <string name="filter_cond_equals">rovná se</string>
+    <string name="filter_op_contains">obsahuje</string>
+    <string name="filter_op_contains_case">obsahuje přesně</string>
+    <string name="filter_op_starts">začíná na</string>
+    <string name="filter_op_ends">končí na</string>
+    <string name="filter_op_regex">odpovídá regexu</string>
+    <string name="filter_op_greater">je větší než</string>
+    <string name="filter_op_at_least">je alespoň</string>
+    <string name="filter_op_less">je menší než</string>
+    <string name="filter_op_at_most">je nejvýše</string>
+    <string name="filter_op_equals">rovná se</string>
     <string name="filter_value">Hodnota</string>
     <string name="filter_value_text">Text</string>
     <string name="filter_value_number">Celé číslo</string>
+    <string name="filter_value_missing">Zadejte hodnotu.</string>
     <string name="filter_number_error">Zadejte celé číslo.</string>
     <string name="filter_regex_error">Neplatný regulární výraz.</string>
-    <string name="filter_preview">Dotaz: %1$s</string>
+    <string name="filter_chip">"%1$s %2$s %3$s"</string>
+    <string name="filter_chip_kind">"%1$s: %2$s"</string>
+    <string name="filter_chip_untested_out">kromě nezkoušených</string>
+    <string name="filter_chip_drop">Odebrat filtr</string>
     <string name="filter_clear">Vymazat</string>
     <string name="clear_filter">Vymazat filtr</string>
     <string name="filter_apply">Použít</string>
@@ -228,19 +238,12 @@
     <string name="help_search">Vyhledávání</string>
     <string name="help_search_hint">Hledat v nápovědě</string>
     <string name="help_search_how">Hledání najde názvy a překlady v otevřené sadě.
-        \nIkona filtru sestaví dotaz z popsaných voleb, takže prefixová syntaxe zůstává volitelná.
+        \nIkona filtru přidá filtr, štítky pod hlavičkou pojmenují filtry, se kterými hledání běží.
+        \nKlepnutí na štítek filtr znovu otevře, křížek ho odebere.
+        \nHledání vyhoví textu pole i všem filtrům najednou.
         \nVýsledek hledání slovíčka zobrazuje jeho překlady přímo, přepínač v nastavení to vypne.
+        \nHledání spuštěné s vybranými řádky čte jen tyto řádky a jejich obsah.
         \nPřepínač v nastavení zapne vyhledávání bez diakritiky.</string>
-    <string name="help_search_filter">Filtr</string>
-    <string name="help_search_filter_how">Zvolte typ, co porovnávat a podmínku, pak zadejte hodnotu.
-        \nNáhled ukáže zapsaný dotaz ještě před spuštěním.
-        \nPoužít ho zapíše do pole a spustí hledání.</string>
-    <string name="help_search_advanced">Zapsaný dotaz</string>
-    <string name="help_search_advanced_how">Pole přijímá zapsanou podobu, kterou filtr sestaví.
-        \nRegulární výraz následuje syntaxi Javy.</string>
-    <string name="help_search_advanced_examples" formatted="false">\WR>50\t- slovíčka s úspěšností nad 50%
-        \n\sD\t- názvy začínající na \'D\'
-        \n\WD\hund\t- slovíčka s popisem obsahujícím \'hund\'</string>
     <string name="help_select">Upravování</string>
     <string name="help_select_delete">Smaže vybrané položky po potvrzení.</string>
     <string name="help_select_edit">Upravit otevře jedinou vybranou položku. OK uloží změny.</string>
@@ -317,7 +320,6 @@
     <string name="picker_hint">Dlouhým stiskem řádku nebo klepnutím na ikonu typu vyberte zdroj, pak stiskněte Vybrat.</string>
     <string name="paste_status_references">Odkazy: %1$d</string>
     <string name="paste_status_move">Přesun: %1$d</string>
-    <string name="pattern_err">"Špatná syntax regexu:\n%1$s"</string>
     <string name="popup_copy">Kopírovat</string>
     <string name="popup_copy_failed">Kopírování do schránky se nezdařilo</string>
     <string name="popup_copy_truncated">[kopie byla zkrácena — text je pro schránku příliš dlouhý]</string>
@@ -362,7 +364,7 @@
     <string name="setts_place_search">lišta hledání</string>
     <string name="setts_place_more">menu více</string>
     <string name="setts_act_test">Spustí test z vybraných řádků</string>
-    <string name="setts_act_cut">Přenese řádky do jiné složky</string>
+    <string name="setts_act_cut">Přenese řádky do jiné složky ve stejné sadě</string>
     <string name="setts_act_edit">Otevře jediný vybraný řádek k úpravám</string>
     <string name="setts_act_delete">Smaže vybrané řádky</string>
     <string name="setts_act_reference">Přidá řádky jako odkazy do jiné složky</string>
@@ -444,7 +446,6 @@
     <string name="unavailable_add_source_full">Celá sada už je zdrojem.</string>
     <string name="unavailable_export_empty">Překlady nelze exportovat.</string>
     <string name="unavailable_import_busy">Import právě probíhá.</string>
-    <string name="unavailable_search_move">Nejprve dokončete nebo zrušte přesun.</string>
     <string name="unavailable_search_root">Hledání vyžaduje otevřenou sadu.</string>
     <string name="unavailable_single_row">Vyberte právě jeden řádek.</string>
 </resources>

@@ -15,7 +15,7 @@ import cz.litoj.schlmgr.ui.component.ExplorerScaffold
 import cz.litoj.schlmgr.ui.component.TopBarSearchField
 import cz.litoj.schlmgr.ui.component.ItemListCallbacks
 import cz.litoj.schlmgr.ui.component.PickerActionBar
-import cz.litoj.schlmgr.ui.popup.SearchFilterPopup
+import cz.litoj.schlmgr.ui.shell.editFilter
 import cz.litoj.schlmgr.ui.shell.ExplorerBackHandler
 import cz.litoj.schlmgr.ui.shell.TopBar
 import cz.litoj.schlmgr.ui.shell.TopBarActions
@@ -69,18 +69,14 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 			if (fieldOpen) TopBarSearchField(
 				query, viewModel::onQueryChange, viewModel::onQuerySubmit, viewModel::dismissSearch,
 				Modifier.weight(1f),
-				onFilter = {
-					SearchFilterPopup(query) { filter ->
-						viewModel.onQuerySubmit(filter?.toQuery() ?: "")
-					}
-				},
+				onFilter = { editFilter(viewModel, null) },
 			)
 			else TopBarTitle(stringResource(R.string.test_add))
 			TopBarActions(
 				entries = explorerMenu(
 					viewModel.menuKind, selecting = false, singleSelected = false,
 					ActionConfig.load(),
-					filterActive = (state.info as? InfoBar.Search)?.filter != null,
+					filterActive = (state.info as? InfoBar.Search)?.criteria?.isNotEmpty() == true,
 				),
 				width = this@BoxWithConstraints.maxWidth,
 				pinned = 2,
@@ -119,6 +115,8 @@ private fun PickerContent(viewModel: PickerViewModel, modifier: Modifier = Modif
 		listState = listState,
 		onBreadcrumbClick = viewModel::breadcrumbClick,
 		onInfoClick = viewModel::toggleInfoExpanded,
+		onFilterEdit = { editFilter(viewModel, it) },
+		onFilterDrop = viewModel::dropFilter,
 		onParentClick = { viewModel.onBackRequested() },
 		callbacks = pickerCallbacks(viewModel, listState.selectionActive),
 		modifier = modifier,

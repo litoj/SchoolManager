@@ -58,9 +58,6 @@ internal val sections = listOf(
 		R.string.help_search, intro = R.string.help_search_how, icon = R.drawable.ic_search,
 		children = listOf(
 			HelpSection(R.string.more_go_to, R.string.setts_act_goto, icon = R.drawable.ic_goto),
-			HelpSection(R.string.help_search_filter, R.string.help_search_filter_how),
-			HelpSection(R.string.help_search_advanced, R.string.help_search_advanced_how,
-				examples = R.string.help_search_advanced_examples),
 		),
 	),
 	HelpSection(

@@ -28,6 +28,7 @@ import cz.litoj.schlmgr.ui.component.fabDragVisibility
 import cz.litoj.schlmgr.ui.component.ListEndReveal
 import cz.litoj.schlmgr.ui.component.rememberFabVisibility
 import cz.litoj.schlmgr.ui.popup.MessagePopup
+import cz.litoj.schlmgr.ui.shell.editFilter
 import cz.litoj.schlmgr.ui.viewmodel.ActionConfig
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 import cz.litoj.schlmgr.ui.viewmodel.exportMenu
@@ -83,6 +84,8 @@ internal fun SubjectsContent(
 			listState = listState,
 			onBreadcrumbClick = viewModel::breadcrumbClick,
 			onInfoClick = viewModel::toggleInfoExpanded,
+			onFilterEdit = { editFilter(viewModel, it) },
+			onFilterDrop = viewModel::dropFilter,
 			onParentClick = { viewModel.onBackRequested() },
 			callbacks = callbacks,
 			scrollState = scrollState,

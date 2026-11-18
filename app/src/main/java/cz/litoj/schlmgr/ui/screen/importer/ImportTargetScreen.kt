@@ -33,6 +33,7 @@ import cz.litoj.schlmgr.ui.component.ListEndReveal
 import cz.litoj.schlmgr.ui.popup.InfoPopup
 import cz.litoj.schlmgr.ui.popup.MessagePopup
 import cz.litoj.schlmgr.ui.shell.ExplorerBackHandler
+import cz.litoj.schlmgr.ui.shell.editFilter
 import cz.litoj.schlmgr.ui.shell.TopBar
 import cz.litoj.schlmgr.ui.shell.explorerBack
 import cz.litoj.schlmgr.ui.shell.TopBarIconButton
@@ -108,6 +109,8 @@ fun ImportTargetScreen(
 				listState = listState,
 				onBreadcrumbClick = { if (!target.busy) viewModel.breadcrumbClick(it) },
 				onInfoClick = viewModel::toggleInfoExpanded,
+				onFilterEdit = { editFilter(viewModel, it) },
+				onFilterDrop = viewModel::dropFilter,
 				onParentClick = { if (!target.busy) viewModel.onBackRequested() },
 				callbacks = importCallbacks(viewModel, target.busy),
 				scrollState = scrollState,

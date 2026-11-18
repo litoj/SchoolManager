@@ -34,6 +34,23 @@ class SearchIndex(rows: List<DbItem>, links: List<DbLink>, childLinks: List<DbLi
 		else childrenOf(item.id).filter { it.type == ItemKind.TRANSLATION }
 
 	/**
+	 * The ids of the seeds and of everything below them.
+	 * - the content a scoped run reports, so a marked chapter reaches its words.
+	 * - a seed the index never held counts as its own content.
+	 */
+	fun contentOf(seeds: Collection<Int>): Set<Int> {
+		val reached = HashSet<Int>(seeds.size)
+		val queue = ArrayDeque(seeds)
+		while (queue.isNotEmpty()) {
+			// the mark ends a shared row's walk, so linked rows cannot loop it
+			val id = queue.removeFirst()
+			if (!reached.add(id)) continue
+			children[id]?.forEach { queue.add(it.id) }
+		}
+		return reached
+	}
+
+	/**
 	 * Every link into an item, its whole parent set with the reference flags.
 	 * - the reference facts of a hit row come from these.
 	 * - so building thousands of hit rows costs no per-row database round-trip.

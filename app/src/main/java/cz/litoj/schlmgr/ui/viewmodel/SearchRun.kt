@@ -15,6 +15,7 @@ import kotlinx.coroutines.withContext
 /**
  * One live search run: preload, walk and drain.
  * - a superseded run is [abort]ed first.
+ * - [marked] rows limit a run to their content.
  */
 internal class SearchRun(
 	private val scope: CoroutineScope,
@@ -36,7 +37,7 @@ internal class SearchRun(
 	private var engine: SearchEngine? = null
 	private var job: Job? = null
 
-	fun start(engine: SearchEngine, path: List<DbItem>) {
+	fun start(engine: SearchEngine, path: List<DbItem>, marked: Set<Int> = emptySet()) {
 		this.engine = engine
 		job = scope.launch {
 			// a run always has a root.
@@ -50,11 +51,13 @@ internal class SearchRun(
 			}
 			// the run may have been superseded in preload.
 			if (!engine.isActive) return@launch
+			// the walk reports membership, so the marks close over their content here
+			val inside = if (marked.isEmpty()) marked else index.contentOf(marked)
 			// the producer walks on IO while the consumer appends on main.
 			val rows = Channel<ItemRow>(Channel.UNLIMITED)
 			launch(io) {
 				var position = 0
-				engine.search(index, path) { item, hitPath, matchedTranslation ->
+				engine.search(index, path, inside) { item, hitPath, matchedTranslation ->
 					rows.trySend(ItemRow.ofSearchHit(item, hitPath, ++position, index.linksOf(item.id),
 						index.wordTranslations(item), matchedTranslation,
 						shownPath = hitPath.drop(path.size)))

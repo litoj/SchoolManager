@@ -5,6 +5,7 @@ import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.support.TestExplorerViewModel
 import cz.litoj.schlmgr.support.wordRows
+import cz.litoj.schlmgr.ui.search.SearchQuery
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import org.junit.Assert.assertEquals
@@ -71,7 +72,7 @@ class SearchScrollRestoreTest {
 		vm.onScrollPosition(2, 60)
 		val firstAnchor = vm.listState.value.anchor
 
-		vm.submitSearch("fresh")
+		vm.submitSearch(SearchQuery(text = "fresh"))
 
 		assertEquals(0, vm.listState.value.anchor?.index)
 		assertEquals(0, vm.listState.value.anchor?.offset)

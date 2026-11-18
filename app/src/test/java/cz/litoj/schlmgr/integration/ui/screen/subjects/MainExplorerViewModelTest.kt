@@ -14,6 +14,10 @@ import cz.litoj.schlmgr.data.db.ROOT_ID
 import cz.litoj.schlmgr.support.setRowOptions
 import cz.litoj.schlmgr.support.wordRows
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
+import cz.litoj.schlmgr.ui.search.Criterion
+import cz.litoj.schlmgr.ui.search.CriterionValue
+import cz.litoj.schlmgr.ui.search.FilterOperator
+import cz.litoj.schlmgr.ui.search.SearchTag
 import cz.litoj.schlmgr.ui.viewmodel.MenuId
 import cz.litoj.schlmgr.ui.viewmodel.CreatorResult
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
@@ -117,6 +121,9 @@ class MainExplorerViewModelTest {
 		return a.id to b.id
 	}
 
+	/** A filter no seeded row answers to. */
+	private val notesOnly = Criterion(SearchTag.TYPE, FilterOperator.IS, CriterionValue.Kind(ItemKind.NOTE))
+
 	/** Two folders, where one word sits in both and one only in the first. */
 	private fun linkedWordsSetup(): Pair<Int, Int> {
 		val (aId, _) = seed()
@@ -182,16 +189,18 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
-	fun `the clear filter entry returns the browse list`() {
+	fun `the clear filter entry leaves the typed text searching`() {
 		seed()
 		val model = vmIn("A")
 		model.openSearchField()
 		model.onQuerySubmit("c1")
+		model.applyFilter(notesOnly)
 		assertEquals(ExplorerRowVariant.Search, model.listState.value.variant)
 
 		model.onMenuItemClick(MenuId.CLEAR_FILTER)
 
-		assertEquals(ExplorerRowVariant.Browse, model.listState.value.variant)
+		assertEquals("the text keeps its results", listOf("c1"), model.items().map { it.item.name })
+		assertEquals("the strip names no filter", emptyList<Criterion>(), (model.state.value.info as InfoBar.Search).criteria)
 	}
 
 	@Test
@@ -233,44 +242,61 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
-	fun `a bad regex empties the list like any invalid query`() {
+	fun `a filter replaces the results of the typed text`() {
 		seed()
 		val model = vmIn("A")
 		model.openSearchField()
 		model.onQuerySubmit("c1")
 		assertEquals(1, model.items().size)
 
-		model.onQuerySubmit("\\r[")
+		model.applyFilter(notesOnly)
 
-		assertEquals(InfoBar.InvalidPattern, model.state.value.info)
 		assertTrue("the old results do not stay", model.items().isEmpty())
+		val info = model.state.value.info as InfoBar.Search
+		assertEquals("the strip names the filter", listOf(notesOnly), info.criteria)
 		model.refreshInfo()
-		assertEquals("a count refresh keeps the message",
-			InfoBar.InvalidPattern, model.state.value.info)
+		assertEquals("a count refresh keeps the filter",
+			listOf(notesOnly), (model.state.value.info as InfoBar.Search).criteria)
 	}
 
 	@Test
-	fun `an invalid query fills the strip until a valid one or the end of the search`() {
+	fun `a filter runs without any typed text`() {
 		seed()
 		val model = vmIn("A")
 		model.openSearchField()
-		model.onQuerySubmit("\\WX=0")
 
-		assertEquals(InfoBar.InvalidSearch, model.state.value.info)
-		assertTrue("nothing searched", model.items().isEmpty())
-		model.refreshInfo()
-		assertEquals("a count refresh keeps the message",
-			InfoBar.InvalidSearch, model.state.value.info)
+		model.applyFilter(Criterion(SearchTag.TYPE, FilterOperator.IS, CriterionValue.Kind(ItemKind.CHAPTER)))
 
-		model.onQuerySubmit("c1")
-		assertEquals(1, (model.state.value.info as InfoBar.Search).count)
-
-		model.onQuerySubmit("\\WR=abc")
-		assertEquals(InfoBar.InvalidSearch, model.state.value.info)
-
-		model.onQuerySubmit("")
-		assertTrue("the browse strip is back", model.state.value.info is InfoBar.Children)
 		assertEquals(listOf("c1"), model.items().map { it.item.name })
+	}
+
+	@Test
+	fun `dropping the last filter leaves the typed text`() {
+		seed()
+		val model = vmIn("A")
+		model.openSearchField()
+		model.onQuerySubmit("c1")
+		model.applyFilter(notesOnly)
+		assertTrue(model.items().isEmpty())
+
+		model.dropFilter(SearchTag.TYPE)
+
+		assertEquals(listOf("c1"), model.items().map { it.item.name })
+		assertEquals(emptyList<Criterion>(), (model.state.value.info as InfoBar.Search).criteria)
+	}
+
+	@Test
+	fun `dropping the filter of a textless search ends it`() {
+		seed()
+		val model = vmIn("A")
+		model.openSearchField()
+		model.applyFilter(notesOnly)
+
+		model.dropFilter(SearchTag.TYPE)
+
+		assertTrue("the browse list is back", model.items().isNotEmpty())
+		assertEquals(ExplorerRowVariant.Browse, model.listState.value.variant)
+		assertEquals(SearchUi.OFF, model.state.value.searchUi)
 	}
 
 	@Test
@@ -307,6 +333,29 @@ class MainExplorerViewModelTest {
 			home.id, row.parentId)
 		assertEquals("the hit chain is the open container plus the row",
 			listOf(home.id, row.item.id), row.path!!.map { it.id })
+	}
+
+	@Test
+	fun `an armed move keeps the search available`() {
+		seed()
+		val model = vmIn("A")
+		model.setSelected(model.items().single(), true)
+		model.move(false)
+
+		assertTrue("the cut is armed", model.pasteArmed)
+		assertEquals("an armed move blocks no search", 0, model.searchBlockedReason)
+
+		model.openSearchField()
+		model.onQuerySubmit("c1")
+		assertEquals("the query still returns its hits", listOf("c1"), model.items().map { it.item.name })
+	}
+
+	@Test
+	fun `the subjects root is the list that blocks a search`() {
+		seed()
+		val model = vm()
+
+		assertEquals(R.string.unavailable_search_root, model.searchBlockedReason)
 	}
 
 	@Test

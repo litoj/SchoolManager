@@ -17,44 +17,52 @@
     <string name="data_rate">"Success rate: %1$d%%"</string>
     <string name="data_untested">Success rate: Untested</string>
     <string name="data_search_results">"Results: %1$d"</string>
-    <string name="data_search_filtered">"%1$s · Results: %2$d"</string>
     <string name="data_search_running">Searching…</string>
-    <string name="data_search_filtered_running">"%1$s · Searching…"</string>
     <string name="data_search_none">No results. Try the filter or another word.</string>
-    <string name="data_search_filtered_none">"%1$s · No results. Adjust the filter."</string>
-    <string name="data_search_bad_pattern">Invalid regular expression.</string>
-    <string name="data_search_invalid">Invalid search. Use the filter or write \\WR=0.</string>
     <string name="data_selected">"Selected: %1$d"</string>
-    <string name="filter_summary">"Filter: %1$s · %2$s %3$s %4$s"</string>
+    <plurals name="data_search_scope">
+        <item quantity="one">in %1$d selected item</item>
+        <item quantity="other">in %1$d selected items</item>
+    </plurals>
     <string name="search_filter">Search filter</string>
-    <string name="search_filter_intro">Pick what to search and how. The field shows the written query.</string>
-    <string name="filter_type">Type</string>
-    <string name="filter_type_any">Any type</string>
-    <string name="filter_type_word">Words</string>
-    <string name="filter_type_translation">Translations</string>
-    <string name="filter_type_chapter">Chapters</string>
-    <string name="filter_field">Compare</string>
-    <string name="filter_field_name">Name</string>
-    <string name="filter_field_description">Description</string>
-    <string name="filter_field_successes">Successes</string>
-    <string name="filter_field_fails">Fails</string>
-    <string name="filter_field_tested">Times tested</string>
-    <string name="filter_field_rate">Success rate</string>
+    <string name="search_filter_intro">The results answer to every filter you add.</string>
+    <string name="filter_tag">Filter by</string>
+    <string name="filter_tag_type">Type</string>
+    <string name="filter_tag_name">Name</string>
+    <string name="filter_tag_description">Description</string>
+    <string name="filter_tag_rate">Success rate</string>
+    <string name="filter_tag_tested">Times tested</string>
+    <string name="filter_tag_rate_hint">Right answers as a percent of all answers.</string>
+    <string name="filter_tag_tested_hint">All answers together, zero means no test yet.</string>
+    <string name="filter_kind">Which rows</string>
+    <string name="filter_kind_word">Words</string>
+    <string name="filter_kind_translation">Translations</string>
+    <string name="filter_kind_chapter">Chapters</string>
+    <string name="filter_kind_note">Notes</string>
+    <string name="filter_untested">Untested rows</string>
+    <string name="filter_untested_in">count as the lowest</string>
+    <string name="filter_untested_out">stay out</string>
     <string name="filter_condition">Condition</string>
-    <string name="filter_cond_contains">contains</string>
-    <string name="filter_cond_contains_case">contains, exact case</string>
-    <string name="filter_cond_starts">starts with</string>
-    <string name="filter_cond_ends">ends with</string>
-    <string name="filter_cond_regex">matches regex</string>
-    <string name="filter_cond_greater">is more than</string>
-    <string name="filter_cond_less">is less than</string>
-    <string name="filter_cond_equals">equals</string>
+    <string name="filter_op_contains">contains</string>
+    <string name="filter_op_contains_case">contains, exact case</string>
+    <string name="filter_op_starts">starts with</string>
+    <string name="filter_op_ends">ends with</string>
+    <string name="filter_op_regex">matches regex</string>
+    <string name="filter_op_greater">is more than</string>
+    <string name="filter_op_at_least">is at least</string>
+    <string name="filter_op_less">is less than</string>
+    <string name="filter_op_at_most">is at most</string>
+    <string name="filter_op_equals">equals</string>
     <string name="filter_value">Value</string>
     <string name="filter_value_text">Text</string>
     <string name="filter_value_number">Whole number</string>
+    <string name="filter_value_missing">Enter a value.</string>
     <string name="filter_number_error">Enter a whole number.</string>
     <string name="filter_regex_error">Invalid regular expression.</string>
-    <string name="filter_preview">Query: %1$s</string>
+    <string name="filter_chip">"%1$s %2$s %3$s"</string>
+    <string name="filter_chip_kind">"%1$s: %2$s"</string>
+    <string name="filter_chip_untested_out">except untested</string>
+    <string name="filter_chip_drop">Remove filter</string>
     <string name="filter_clear">Clear</string>
     <string name="clear_filter">Clear filter</string>
     <string name="filter_apply">Apply</string>
@@ -243,19 +251,12 @@
     <string name="help_search">Searching</string>
     <string name="help_search_hint">Search help</string>
     <string name="help_search_how">Search finds names and translations in the open set.
-        \nThe filter icon builds a query from labeled choices, so the prefix syntax stays optional.
+        \nThe filter icon adds a filter, the chips under the header name the ones a search runs with.
+        \nA chip label opens its filter again, its mark drops it.
+        \nA search answers to its text and to every filter together.
         \nA word result shows its translations directly, a settings toggle turns that off.
+        \nA search started while rows are selected reads those rows and their content only.
         \nA settings switch turns on diacritic-insensitive search.</string>
-    <string name="help_search_filter">Filter</string>
-    <string name="help_search_filter_how">Pick the type, what to compare and the condition, then enter a value.
-        \nThe preview shows the written query before it runs.
-        \nApply writes it into the field and starts the search.</string>
-    <string name="help_search_advanced">Written query</string>
-    <string name="help_search_advanced_how">The field accepts the written form the filter builds.
-        \nA regular expression follows Java syntax.</string>
-    <string name="help_search_advanced_examples" formatted="false">\WR>50\t- words with success rate above 50%
-        \n\sD\t- names starting with \'D\'
-        \n\WD\hund\t- words whose description contains \'hund\'</string>
     <string name="help_select">Editing</string>
     <string name="help_select_delete">Deletes the selected items after the confirmation.</string>
     <string name="help_select_edit">Edit opens the single selected item. OK saves the changes.</string>
@@ -332,7 +333,6 @@
     <string name="picker_hint">Long-press a row or tap its type icon to pick it, then Select.</string>
     <string name="paste_status_references">References: %1$d</string>
     <string name="paste_status_move">Move: %1$d</string>
-    <string name="pattern_err">"Invalid regex syntax:\n%1$s"</string>
     <string name="popup_copy">Copy</string>
     <string name="popup_copy_failed">Copying to the clipboard failed</string>
     <string name="popup_copy_truncated">[the copy was truncated — the text is too long for the clipboard]</string>
@@ -377,7 +377,7 @@
     <string name="setts_place_search">search bar</string>
     <string name="setts_place_more">more menu</string>
     <string name="setts_act_test">Starts a test from the selected rows</string>
-    <string name="setts_act_cut">Moves the rows to another folder</string>
+    <string name="setts_act_cut">Moves the rows to another folder in the same set</string>
     <string name="setts_act_edit">Opens the one selected row for editing</string>
     <string name="setts_act_delete">Deletes the selected rows</string>
     <string name="setts_act_reference">Adds the rows as references to another folder</string>
@@ -447,7 +447,6 @@
     <string name="unavailable_add_source_full">The whole set is already a source.</string>
     <string name="unavailable_export_empty">Translations cannot be exported.</string>
     <string name="unavailable_import_busy">The import is running.</string>
-    <string name="unavailable_search_move">Finish or cancel the move first.</string>
     <string name="unavailable_search_root">Search needs an open set.</string>
     <string name="unavailable_single_row">Select exactly one row.</string>
 </resources>

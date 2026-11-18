@@ -25,9 +25,6 @@ sealed interface UiNotice {
 	/** The description of the note reached the clipboard. */
 	data object NoteCopied : UiNotice
 
-	/** A search pattern failed to parse, and [detail] is the report of the regex compiler. */
-	data class BadPattern(val detail: String) : UiNotice
-
 	/** A flip-conflict row was left without a name, but the flip needs one. */
 	data object FlipBlankName : UiNotice
 

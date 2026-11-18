@@ -62,7 +62,7 @@ class PickerViewModel(
 
 	/** The menu rows of the shared door, the sort family answers in the core. */
 	fun onMenuItemClick(itemId: Int): Boolean = when (itemId) {
-		MenuId.CLEAR_FILTER -> { onQuerySubmit(""); true }
+		MenuId.CLEAR_FILTER -> { clearFilters(); true }
 		else -> sortItem(itemId)
 	}
 
