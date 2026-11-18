@@ -96,4 +96,16 @@ class ExportPopupTest {
 			)
 		}
 	}
+
+	@Test
+	fun `the sheet opens again on the format of the last export`() {
+		val first = openSheet()
+		first.toggleFormat()
+		first.pickSave()
+
+		// the next sheet takes its format from the store, so a repeat needs no toggle
+		rule.runOnIdle {
+			assertEquals(ExportFormat.JSON, ExportPopup(saved::add, shared::add).format)
+		}
+	}
 }

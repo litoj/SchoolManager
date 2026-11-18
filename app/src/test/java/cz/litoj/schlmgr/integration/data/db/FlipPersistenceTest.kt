@@ -23,7 +23,7 @@ import org.robolectric.annotation.Config
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
-class ItemFlipTest {
+class FlipPersistenceTest {
 
 	private lateinit var db: ItemDatabase
 

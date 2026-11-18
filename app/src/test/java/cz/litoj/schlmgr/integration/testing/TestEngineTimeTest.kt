@@ -85,11 +85,13 @@ class TestEngineTimeTest {
 	fun `an added required variant costs one and a half times`() {
 		val plain = entries("go" to listOf("jet")).single()
 		val variant = entries("go/run" to listOf("jet")).single()
+		val third = entries("/I/You smile." to listOf("laugh")).single()
 
 		assertEquals("the option is off, so one answer suffices", 11, TestEngine.testTime(1f, listOf(variant)))
 		TestEngine.applyRequireAllVariants(true)
 
 		assertEquals(7, TestEngine.testTime(1f, listOf(plain)))
 		assertEquals("5 plus 6 characters over two fields", 17, TestEngine.testTime(1f, listOf(variant)))
+		assertEquals("three fields multiply by 1.5 squared", 41, TestEngine.testTime(1f, listOf(third)))
 	}
 }

@@ -4,7 +4,9 @@ import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.app.ImportFailureExplanation
 import cz.litoj.schlmgr.data.wordlist.WordListParseException
+import cz.litoj.schlmgr.data.wordlist.WordListPlaceholder
 import cz.litoj.schlmgr.data.wordlist.WordListReader
+import cz.litoj.schlmgr.data.wordlist.WordListRepair
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
@@ -42,9 +44,17 @@ class ImportFailureExplanationTest {
 
 	private fun placeholder(id: Int): String = "<${text(id)}>"
 
-	@Test
-	fun `the location names the file and its line`() {
-		assertTrue(text(R.string.import_error_location, "Broken.txt", 1) in explanation("Haus\n"))
+	/** The line a fix asks for, its open spot shown by the placeholder of its kind. */
+	private fun form(repair: WordListRepair): String {
+		val id = when (repair.placeholder) {
+			WordListPlaceholder.CHAPTER -> R.string.import_placeholder_chapter
+			WordListPlaceholder.TRANSLATION -> R.string.import_placeholder_translation
+			WordListPlaceholder.NOTE -> R.string.import_placeholder_note
+			WordListPlaceholder.VARIANT -> R.string.import_placeholder_variant
+			WordListPlaceholder.WORD -> R.string.import_placeholder_word
+			else -> R.string.import_placeholder_text
+		}
+		return repair.text.replace(WordListRepair.MISSING_TEXT.toString(), placeholder(id))
 	}
 
 	@Test
@@ -62,17 +72,23 @@ class ImportFailureExplanationTest {
 
 	@Test
 	fun `every fix sentence names the line it asks for`() {
-		val note = placeholder(R.string.import_placeholder_note)
-		val translation = placeholder(R.string.import_placeholder_translation)
-		val word = placeholder(R.string.import_placeholder_word)
+		val sentences = mapOf(
+			"Haus\n" to R.string.import_fix_translation_text,
+			"= [description]\n" to R.string.import_fix_note_text,
+			"=named\n" to R.string.import_fix_word_before_translation,
+			"word; [description]\n" to R.string.import_fix_translation_order,
+			"word[description" to R.string.import_fix_description_close,
+			"Chapter {\n" to R.string.import_fix_chapter_close,
+			"}\n" to R.string.import_fix_extra_char,
+		)
 
-		assertTrue(fix(R.string.import_fix_translation_text, "Haus = $translation") in explanation("Haus\n"))
-		assertTrue(fix(R.string.import_fix_note_text, "= $note [description]")
-			in explanation("= [description]\n"))
-		assertTrue(fix(R.string.import_fix_word_before_translation, "$word =named")
-			in explanation("=named\n"))
-		assertTrue(fix(R.string.import_fix_chapter_close, "}") in explanation("Chapter {\n"))
-		assertTrue(fix(R.string.import_fix_description_close, "word[description]") in explanation("word[description"))
+		for ((source, sentence) in sentences) {
+			val error = parseError(source)
+			val body = ImportFailureExplanation.of(error).text
+			// the sentence carries the very line the parser confirmed
+			val named = error.repairs.any { fix(sentence, form(it)) in body }
+			assertTrue("$source offers no line its sentence names: $body", named)
+		}
 	}
 
 	@Test
@@ -80,19 +96,6 @@ class ImportFailureExplanationTest {
 		val other = text(R.string.import_fix_another, text(R.string.import_fix_escaped_separator, "word;translation\\;extra"))
 
 		assertTrue(other in explanation("word;translation;extra\n"))
-	}
-
-	@Test
-	fun `a stray symbol gets its diagnosis, never a deletion`() {
-		val body = explanation("-\n")
-
-		assertTrue(text(R.string.import_hint_symbol_only) in body)
-		assertTrue(text(R.string.import_hint_no_single_fix) in body)
-	}
-
-	@Test
-	fun `an unmatched closer is offered as the mark to remove`() {
-		assertTrue(text(R.string.import_fix_extra_char) in explanation("}\n"))
 	}
 
 	@Test
@@ -110,15 +113,24 @@ class ImportFailureExplanationTest {
 		assertTrue("word;translation;extra" in body)
 		assertTrue(fix(R.string.import_fix_variant_divider, "word;translation\\extra") in body)
 		assertFalse("No raw parser reason belongs in the popup: $body", "Reached end of file" in body)
+
+		// a line with no fix keeps its location and carries its diagnosis instead
+		val stuck = explanation("-\n")
+
+		assertTrue(text(R.string.import_error_location, "Broken.txt", 1) in stuck)
+		assertTrue(text(R.string.import_hint_symbol_only) in stuck)
+		assertTrue(text(R.string.import_hint_no_single_fix) in stuck)
+		assertFalse(fix(R.string.import_fix_extra_char) in stuck)
 	}
 
 	@Test
 	@Config(sdk = [35], qualifiers = "cs")
 	fun `the location and guidance use Czech resources`() {
-		val body = explanation("Haus\n")
+		val error = parseError("Haus\n")
+		val body = ImportFailureExplanation.of(error).text
 
 		assertTrue(text(R.string.import_error_location, "Broken.txt", 1) in body)
-		assertTrue(fix(R.string.import_fix_translation_text, "Haus = ${placeholder(R.string.import_placeholder_translation)}") in body)
+		assertTrue(fix(R.string.import_fix_translation_text, form(error.repairs.first())) in body)
 		assertFalse("line 1" in body)
 	}
 

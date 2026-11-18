@@ -1,9 +1,11 @@
 package cz.litoj.schlmgr.unit.data.wordlist
 
 import cz.litoj.schlmgr.data.wordlist.WordListAutoRepair
+import cz.litoj.schlmgr.data.wordlist.WordListChild
+import cz.litoj.schlmgr.data.wordlist.WordListChapter
+import cz.litoj.schlmgr.data.wordlist.WordListNote
 import cz.litoj.schlmgr.data.wordlist.WordListParseException
-import cz.litoj.schlmgr.data.wordlist.WordListProblem
-import cz.litoj.schlmgr.data.wordlist.WordListRepairKind
+import cz.litoj.schlmgr.data.wordlist.WordListWord
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -12,6 +14,7 @@ import org.junit.Test
 /**
  * - a suggestion changing one character repairs the import buffer on its own.
  * - anything needing more is left to the popup.
+ * - the text of a fix belongs to the parser, see WordListParseFailureTest.
  */
 class WordListAutoRepairTest {
 
@@ -20,42 +23,46 @@ class WordListAutoRepairTest {
 	private fun failure(source: String): WordListParseException =
 		assertThrows(WordListParseException::class.java) { WordListAutoRepair.parse(source, "c") }
 
-	private fun applied(source: String): List<Pair<Int, String>> =
-		repaired(source).fixes.map { it.lineNumber to it.after }
-
-	@Test
-	fun `an unfinished description closes itself`() {
-		val fixed = repaired("word;translation[description\n")
-
-		assertEquals(listOf(1 to "word;translation[description]"),
-			applied("word;translation[description\n"))
-		assertEquals("description", fixed.root.words.single().translations.single().description)
+	/** The tree as prefixed names, the shape the repair left behind. */
+	private fun shape(entries: List<WordListChild>): List<String> = entries.flatMap { entry ->
+		when (entry) {
+			is WordListChapter -> listOf("c:" + entry.name)
+			is WordListNote -> listOf("n:" + entry.name)
+			is WordListWord -> listOf("w:" + entry.name) + entry.translations.map { "t:" + it.name }
+		}
 	}
 
 	@Test
-	fun `an extra separator becomes the divider it offers`() {
-		val fixed = repaired("word;translation;extra\n")
+	fun `a one-character edit is written back`() {
+		val edits = mapOf(
+			"word;translation[description\n" to (1 to listOf("w:word", "t:translation")),
+			"word;translation;extra\n" to (1 to listOf("w:word", "t:translation", "t:extra")),
+			"word;translation;\n" to (1 to listOf("w:word", "t:translation;")),
+			"Chapter {\n-\n" to (2 to listOf("c:Chapter")),
+			"w;t\n}\n" to (2 to listOf("w:w", "t:t")),
+		)
 
-		assertEquals(listOf(1 to "word;translation\\extra"), applied("word;translation;extra\n"))
-		assertEquals(listOf("translation", "extra"),
-			fixed.root.words.single().translations.map { it.name })
+		for ((source, edit) in edits) {
+			val fixed = repaired(source)
+			assertEquals("$source mended another line", listOf(edit.first), fixed.fixes.map { it.lineNumber })
+			assertEquals("$source left another tree", edit.second, shape(fixed.root.entries))
+		}
 	}
 
 	@Test
-	fun `a trailing separator stays as its text when the first offer needs a variant`() {
-		val fixed = repaired("word;translation;\n")
+	fun `anything else is left to the popup`() {
+		val refusals = mapOf(
+			"a fix that needs the text of the user" to listOf("Haus\n"),
+			"an arrow, which is no separator" to listOf("Haus->dům\n", "Haus→dům\n"),
+			"a fix that adds a line of its own" to listOf("Chapter {\n"),
+		)
 
-		assertEquals(listOf(1 to "word;translation\\;"), applied("word;translation;\n"))
-		assertEquals(listOf("translation;"),
-			fixed.root.words.single().translations.map { it.name })
-	}
-
-	@Test
-	fun `a stray symbol closes the chapter around it`() {
-		val fixed = repaired("Chapter {\n-\n")
-
-		assertEquals(listOf(2 to "}"), applied("Chapter {\n-\n"))
-		assertTrue(fixed.root.children.single().entries.isEmpty())
+		for ((name, sources) in refusals) {
+			for (source in sources) {
+				// the parser had offers, the loop wrote none of them back
+				assertTrue("$name reached the buffer", failure(source).repairs.isNotEmpty())
+			}
+		}
 	}
 
 	@Test
@@ -63,47 +70,20 @@ class WordListAutoRepairTest {
 		val source = "word;translation;extra\nnext;t[description\n"
 		val fixed = repaired(source)
 
-		assertEquals(listOf(1 to "word;translation\\extra", 2 to "next;t[description]"),
-			applied(source))
-		assertEquals(listOf("word", "next"), fixed.root.words.map { it.name })
+		assertEquals(listOf(1, 2), fixed.fixes.map { it.lineNumber })
+		assertEquals(listOf("w:word", "t:translation", "t:extra", "w:next", "t:t"),
+			shape(fixed.root.entries))
+		// the report names the line the way the file has it
 		assertEquals("word;translation;extra", fixed.fixes.first().before)
-	}
-
-	@Test
-	fun `a fix that needs the text of the user is never applied`() {
-		val error = failure("Haus\n")
-
-		assertEquals(WordListProblem.INCOMPLETE_ENTRY, error.problem)
-		assertTrue(error.repairs.any { it.kind == WordListRepairKind.TRANSLATION_TEXT })
-	}
-
-	@Test
-	fun `an arrow asks for the separator no character of it is`() {
-		assertEquals(WordListProblem.INCOMPLETE_ENTRY, failure("Haus->dům\n").problem)
-		assertEquals(WordListProblem.INCOMPLETE_ENTRY, failure("Haus→dům\n").problem)
 	}
 
 	@Test
 	fun `a chapter opener gains its brace, the space beside it is no character`() {
 		val fixed = repaired("Chapter\n\tword;translation\n}\n")
 
-		assertEquals(listOf(1 to "Chapter {"), applied("Chapter\n\tword;translation\n}\n"))
-		assertEquals(listOf("word"), fixed.root.children.single().words.map { it.name })
-	}
-
-	@Test
-	fun `an unclosed chapter gains no line from the repair loop`() {
-		val error = failure("Chapter {\n")
-
-		assertEquals(WordListProblem.CHAPTER_END, error.problem)
-	}
-
-	@Test
-	fun `an unmatched closer disappears`() {
-		val fixed = repaired("w;t\n}\n")
-
-		assertEquals(listOf(2 to ""), applied("w;t\n}\n"))
-		assertEquals(listOf("w"), fixed.root.words.map { it.name })
+		assertEquals(listOf(1), fixed.fixes.map { it.lineNumber })
+		assertEquals("the word landed inside the chapter the brace opened",
+			listOf("word"), fixed.root.children.single().words.map { it.name })
 	}
 
 	@Test

@@ -13,9 +13,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * - a search-hit row takes its reference facts from the preloaded parent links.
- * - building the row must touch no database.
+ * - a search-hit row carries the chain of its hit and the given position.
  * - a word hit starts on the search default flip, a missing preload never flips.
+ * - building the row must touch no database.
  */
 class SearchHitRowTest {
 
@@ -31,38 +31,6 @@ class SearchHitRowTest {
 	@After
 	fun restoreSearchDefFlip() {
 		setRowOptions(searchDefFlip = searchDefFlipWas)
-	}
-
-	@Test
-	fun `a referenced hit row with another parent is a reference with a source`() {
-		val row = ItemRow.ofSearchHit(
-			word, listOf(parent), 1,
-			listOf(DbLink(1, 2, isReference = true), DbLink(9, 2)),
-		)
-		assertTrue(row.isReference)
-		assertTrue(row.hasSource)
-	}
-
-	@Test
-	fun `a plain hit row is neither a reference nor a jump`() {
-		val row = ItemRow.ofSearchHit(word, listOf(parent), 1, listOf(DbLink(1, 2)))
-		assertFalse(row.isReference)
-		assertFalse(row.hasSource)
-	}
-
-	@Test
-	fun `a reference without another parent has no jump`() {
-		val row = ItemRow.ofSearchHit(word, listOf(parent), 1, listOf(DbLink(1, 2, isReference = true)))
-		assertTrue(row.isReference)
-		assertFalse(row.hasSource)
-	}
-
-	@Test
-	fun `a non-reference link from another parent is not a reference`() {
-		// the row was found under parent 9, whose link is not a reference
-		val row = ItemRow.ofSearchHit(word, listOf(parent), 1, listOf(DbLink(9, 2)))
-		assertFalse(row.isReference)
-		assertFalse(row.hasSource)
 	}
 
 	@Test

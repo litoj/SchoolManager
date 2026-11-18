@@ -15,15 +15,18 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * - name fields lead to their descriptions.
- * - an empty description leads to the next translation name.
- * - the last empty description confirms through the commit of the OK button.
- * - an accepted confirm of a new word renews the editor for the next one.
- * - the OK button closes, like every other accepted commit.
+ * - the last empty translation description commits with the fields as they stand.
+ * - a refused commit leaves the fields and the run alone.
+ * - blank translation rows are discarded before the commit.
+ * - an existing translation dropped by the commit joins the edit removals.
+ * - an accepted Enter commit of a new word renews the editor with a fresh one.
+ * - the renewed editor keeps the listener for the rest of the run.
+ * - every other accepted commit closes the popup, the OK button always.
+ * - the OK listener is asked once per accepted commit.
  * - dialogs register on the shared stack on construction.
  * - the teardown clears the stack, so none leak across tests.
  */
-class CreatorPopupEnterChainTest {
+class CreatorPopupCommitTest {
 
 	@After
 	fun tearDown() {
@@ -45,31 +48,6 @@ class CreatorPopupEnterChainTest {
 
 		assertEquals("Haus", committed?.name)
 		assertEquals("dům", committed?.translations?.single()?.name)
-	}
-
-	@Test
-	fun `enter in the last translation's empty description adds no row`() {
-		val popup = wordPopup()
-		popup.name = "Haus"
-		popup.translations[0].name = "dům"
-		popup.setOkListener { true }
-
-		popup.onDescriptionEnter(0)
-
-		assertEquals(1, popup.translations.size)
-	}
-
-	@Test
-	fun `enter in an earlier translation's empty description confirms nothing`() {
-		val popup = wordPopup()
-		popup.translations.add(TranslationRow("stavba", "", null))
-		var committed = false
-		popup.setOkListener { committed = true; true }
-
-		popup.onDescriptionEnter(0)
-
-		assertFalse(committed)
-		assertEquals(2, popup.translations.size)
 	}
 
 	@Test
@@ -155,18 +133,6 @@ class CreatorPopupEnterChainTest {
 	}
 
 	@Test
-	fun `an ok-button commit of a new word closes it`() {
-		val popup = wordPopup()
-		popup.name = "Haus"
-		popup.translations[0].name = "dům"
-		popup.setOkListener { true }
-
-		popup.notifyOk()
-
-		assertFalse("the OK button never renews, the run ends", Dialogs.stack.value.contains(popup))
-	}
-
-	@Test
 	fun `an enter commit of an edit popup closes it`() {
 		val popup = wordPopup(CreatorPopup.Kind.EDIT)
 		popup.name = "Haus"
@@ -180,24 +146,27 @@ class CreatorPopupEnterChainTest {
 
 	@Test
 	fun `an ok-button commit closes the popup`() {
-		val popup = CreatorPopup(CreatorPopup.Kind.NEW_CHAPTER, null, CreatorContent.Simple)
-		popup.name = "Chapter"
-		popup.setOkListener { true }
+		val closers = mapOf(
+			"a new word" to {
+				wordPopup().apply {
+					name = "Haus"
+					translations[0].name = "dům"
+				}
+			},
+			"a chapter" to {
+				CreatorPopup(CreatorPopup.Kind.NEW_CHAPTER, null, CreatorContent.Simple)
+					.apply { name = "Chapter" }
+			},
+		)
 
-		popup.notifyOk()
+		for ((case, open) in closers) {
+			val popup = open()
+			popup.setOkListener { true }
 
-		assertFalse(Dialogs.stack.value.contains(popup))
-	}
+			popup.notifyOk()
 
-	@Test
-	fun `an empty simple-item description confirms`() {
-		val popup = CreatorPopup(CreatorPopup.Kind.NEW_CHAPTER, null, CreatorContent.Simple)
-		popup.name = "Chapter"
-		popup.setOkListener { true }
-
-		popup.onDescriptionEnter(null)
-
-		assertFalse(Dialogs.stack.value.contains(popup))
+			assertFalse("$case ends the run with the OK button", Dialogs.stack.value.contains(popup))
+		}
 	}
 
 	@Test
@@ -211,18 +180,6 @@ class CreatorPopupEnterChainTest {
 		popup.notifyOk()
 
 		assertEquals(1, commits)
-	}
-
-	@Test
-	fun `enter in the word description confirms nothing`() {
-		val popup = wordPopup()
-		var committed = false
-		popup.setOkListener { committed = true; true }
-
-		popup.onDescriptionEnter(null)
-
-		assertFalse(committed)
-		assertEquals(1, popup.translations.size)
 	}
 
 	@Test

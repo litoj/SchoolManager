@@ -7,6 +7,7 @@ import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.testing.TestEngine
+import cz.litoj.schlmgr.testing.TestEntry
 import cz.litoj.schlmgr.ui.screen.test.TestSetupState
 import cz.litoj.schlmgr.ui.screen.test.TestSetupViewModel
 import cz.litoj.schlmgr.ui.screen.test.toSourceRowUi
@@ -407,25 +408,34 @@ class TestSetupStateTest {
 	}
 
 	@Test
-	fun `the caption time follows the answer length and each required variant`() {
+	fun `the caption time follows the typed multiplier and the picked pool`() {
 		TestSetupState.childrenLookup = { emptyList() }
+		val subject = item(1, "subject")
+		val first = DbItem(id = 2, name = "plain", description = "", type = ItemKind.WORD)
+		val second = DbItem(id = 3, name = "other", description = "", type = ItemKind.WORD)
+		TestSetupState.addPicked(listOf(
+			TestSetupState.seedOf(ItemRow.ofSearchHit(first, listOf(subject), 1, emptyList()))))
 		TestSetupState.setAmount("1")
-		TestEngine.applyRequireAllVariants(true)
-		try {
-			val plain = DbItem(id = 1, name = "plain", description = "", type = ItemKind.WORD)
-			TestSetupState.addPicked(listOf(TestSetupState.seedOf(ItemRow(plain, null, 1))))
-			TestSetupState.setTime("2")
-			assertEquals(15, TestSetupState.timeSeconds())
+		TestSetupState.setTime("2")
+		val one = TestEntry(first, listOf(subject, first))
 
-			TestSetupState.reset()
-			val variant = DbItem(id = 2, name = "/I/You smile.", description = "", type = ItemKind.WORD)
-			TestSetupState.addPicked(listOf(TestSetupState.seedOf(ItemRow(variant, null, 1))))
-			TestSetupState.setTime("2")
-			// 5 plus 26 characters over three fields: 31 times 1.5 squared
-			assertEquals(70, TestSetupState.timeSeconds())
-		} finally {
-			TestEngine.applyRequireAllVariants(false)
-		}
+		// the seconds are the engine's, so the caption only shows the typed multiplier
+		assertEquals("the typed multiplier times the picked word",
+			TestEngine.testTime(2f, listOf(one)), TestSetupState.timeSeconds())
+
+		// an empty field times with the seconds-per-character setting of the engine
+		TestSetupState.setTime("")
+		assertEquals("an empty field falls back to the engine setting",
+			TestEngine.testTime(TestEngine.getSecondsPerChar(), listOf(one)), TestSetupState.timeSeconds())
+
+		// the caption times the pool the picker holds, not only the first pick
+		TestSetupState.addPicked(listOf(
+			TestSetupState.seedOf(ItemRow.ofSearchHit(second, listOf(subject), 2, emptyList()))))
+		TestSetupState.setAmount("2")
+		TestSetupState.setTime("2")
+		assertEquals("the caption times every picked word",
+			TestEngine.testTime(2f, listOf(TestEntry(second, listOf(subject, second)), one)),
+			TestSetupState.timeSeconds())
 	}
 
 	@Test

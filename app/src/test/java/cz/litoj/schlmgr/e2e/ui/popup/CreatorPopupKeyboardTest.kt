@@ -5,7 +5,6 @@ import android.view.inputmethod.InputMethodManager
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
-import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotDisplayed
@@ -43,19 +42,25 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * - name fields lead to their own description fields.
- * - an empty description leads to the next translation name.
- * - the last empty description confirms.
- * - every item opens with the keyboard in the name field, a new one and an edit alike.
- * - the keyboard wish is one shot, so a rebuilt composition raises no new keyboard.
- * - a return of the window focus with a field focused reopens the keyboard.
+ * - every item opens with the keyboard in its name field, a new one and an edit alike.
+ * - the open consumes the keyboard wish, so a rebuilt composition raises no new one.
+ * - a name Enter leads to the item description, whatever the kind.
+ * - an empty description leads to the first or the next translation name.
+ * - a translation name Enter leads to its own description.
+ * - the Enter of the last empty description confirms and renews the editor.
+ * - the Done key of a simple item's empty description commits it.
+ * - a filled description takes a newline instead of the action.
+ * - a field keeps its keyboard options while the user types.
  * - the add button scrolls to the bottom and focuses the new row.
- * - removing a focused translation hands the keyboard to the previous row.
+ * - removing a row hands the keyboard to the previous one.
+ * - a removal asks for the keyboard once its field dies.
  * - a deleted row keeps the rows scroll where it is.
+ * - a return of the window focus with a field focused reopens the keyboard.
+ * - the teardown clears the dialog stack, so none leak across tests.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
-class CreatorPopupEnterTest {
+class CreatorPopupKeyboardTest {
 
 	@get:Rule
 	val rule = createComposeRule()
@@ -68,25 +73,32 @@ class CreatorPopupEnterTest {
 	private fun wordPopup() =
 		CreatorPopup(CreatorPopup.Kind.NEW_WORD, null, CreatorContent.Word(emptyList()))
 
-	@Test
-	fun `a new item opens with the keyboard in the name field`() {
-		val popup = wordPopup()
-		popup.name = "Haus"
+	/** A stored note, the row an edit popup opens on. */
+	private fun editedNote() = ItemRow(
+		DbItem(id = 5, name = "alt", description = "alte Notiz", type = ItemKind.NOTE), null, 1)
+
+	/** One composition per case: the rule takes content once per test. */
+	private fun opensWithNameFocus(popup: CreatorPopup, nameText: String, case: String) {
+		assertTrue("$case holds its keyboard wish until the open", popup.wantsNameFocus)
 		rule.setContent { popup.Content() }
 
-		rule.onNodeWithText("Haus").assertIsFocused()
-		assertTrue(keyboardShown())
+		// the name field holds the stored text of an edit, and the typed one of a new item
+		rule.onNodeWithText(nameText).assertIsFocused()
+		assertTrue("$case opens with the keyboard", keyboardShown())
+		assertFalse("$case loses the wish at the open", popup.wantsNameFocus)
 	}
 
 	@Test
-	fun `an edited item opens with the keyboard in its name field`() {
-		val row = ItemRow(
-			DbItem(id = 5, name = "alt", description = "alte Notiz", type = ItemKind.NOTE), null, 1)
-		val popup = CreatorPopup(CreatorPopup.Kind.EDIT, row, CreatorContent.Simple)
-		rule.setContent { popup.Content() }
+	fun `a new item opens with the keyboard in its name field`() {
+		opensWithNameFocus(wordPopup().apply { name = "Haus" }, "Haus", "a new word")
+	}
 
-		rule.onNodeWithText("alt").assertIsFocused()
-		assertTrue(keyboardShown())
+	@Test
+	fun `an edited item opens with the keyboard in its stored name`() {
+		opensWithNameFocus(
+			CreatorPopup(CreatorPopup.Kind.EDIT, editedNote(), CreatorContent.Simple),
+			"alt", "an edited note",
+		)
 	}
 
 	/** Owns the lifecycle the popup observes, so the test drives the app return by hand. */
@@ -143,48 +155,41 @@ class CreatorPopupEnterTest {
 	private fun addWordLabel(): String =
 		ApplicationProvider.getApplicationContext<Context>().getString(R.string.add_word)
 
-	@Test
-	fun `removing a focused translation hands the keyboard to the previous row`() {
+	/** One composition per case: the rule takes content once per test. */
+	private fun deleteARowHandsOver(focusTheRow: Boolean, case: String) {
 		val popup = wordPopup()
 		popup.name = "Haus"
 		popup.translations[0].name = "dům"
 		popup.translations.add(TranslationRow("stavba", "", null))
 		rule.setContent { popup.Content() }
 		rule.waitForIdle()
+		if (focusTheRow) {
+			rule.onNodeWithText("stavba").performClick()
+			rule.waitForIdle()
+		}
+		assertTrue("$case starts with the keyboard up", keyboardShown())
 
-		// the keyboard sits in the last row's name field
-		rule.onNodeWithText("stavba").performClick()
+		// the cross of the second of the two rows, the keyboard may have pushed it down
+		rule.onAllNodesWithContentDescription("Delete")[1].performScrollTo().performClick()
 		rule.waitForIdle()
-		assertTrue(keyboardShown())
 
-		// the cross of the focused row, the second of the two rows
-		rule.onAllNodesWithContentDescription("Delete")[1].performClick()
-		rule.waitForIdle()
-
-		assertEquals(1, popup.translations.size)
-		// the previous row's name field holds the keyboard, typing reaches it
+		assertEquals("$case leaves one row behind", 1, popup.translations.size)
+		// the previous row's name field holds the keyboard, so typing reaches it
 		rule.onNode(focusedField).performTextInput("!")
-		rule.runOnIdle { assertEquals("dům!", popup.translations[0].name) }
-		assertTrue("the keyboard stayed up", keyboardShown())
+		rule.runOnIdle {
+			assertEquals("$case hands the typing to the previous row", "dům!", popup.translations[0].name)
+		}
+		assertTrue("$case keeps the keyboard up", keyboardShown())
+	}
+
+	@Test
+	fun `removing a focused translation hands the keyboard to the previous row`() {
+		deleteARowHandsOver(focusTheRow = true, case = "a focused row")
 	}
 
 	@Test
 	fun `removing an unfocused translation hands the keyboard to the previous row`() {
-		val popup = wordPopup()
-		popup.name = "Haus"
-		popup.translations[0].name = "dům"
-		popup.translations.add(TranslationRow("stavba", "", null))
-		rule.setContent { popup.Content() }
-		rule.waitForIdle()
-
-		// the item name still holds focus, but the deleted row always hands it over first
-		// the keyboard shrinks the card, so the row can wait below the fold
-		rule.onAllNodesWithContentDescription("Delete")[1].performScrollTo().performClick()
-		rule.waitForIdle()
-
-		rule.onNode(focusedField).performTextInput("!")
-		rule.runOnIdle { assertEquals("dům!", popup.translations[0].name) }
-		assertTrue("the keyboard stayed up", keyboardShown())
+		deleteARowHandsOver(focusTheRow = false, case = "a row nobody was in")
 	}
 
 	@Test
@@ -231,64 +236,46 @@ class CreatorPopupEnterTest {
 		ApplicationProvider.getApplicationContext<Context>()
 			.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
 
-	@Test
-	fun `the open consumes the keyboard wish`() {
-		val popup = wordPopup()
-		popup.name = "Haus"
-		assertTrue(popup.wantsNameFocus)
+	/** One composition per case: the rule takes content once per test. */
+	private fun enterNameMovesToDescription(popup: CreatorPopup, descriptionText: String, case: String) {
+		val nameText = popup.name
+		val rows = popup.translations.size
+		var committed = false
+		popup.setOkListener { committed = true; true }
 		rule.setContent { popup.Content() }
 
-		rule.onNodeWithText("Haus").assertIsFocused()
-		assertFalse(popup.wantsNameFocus)
+		rule.onNodeWithText(nameText).performImeAction()
+
+		rule.runOnIdle {
+			assertFalse("$case never commits on a name Enter", committed)
+			assertEquals("$case gains no row from a name Enter", rows, popup.translations.size)
+		}
+		rule.onNodeWithText(descriptionText).assertIsFocused()
 	}
 
 	@Test
-	fun `enter in a note's name moves the keyboard to the description`() {
+	fun `enter in a note name moves the keyboard to its description`() {
 		val popup = CreatorPopup(CreatorPopup.Kind.NEW_NOTE, null, CreatorContent.Simple)
 		popup.name = "Einkäufe"
 		popup.description = "die Liste"
-		var committed = false
-		popup.setOkListener { committed = true; true }
-		rule.setContent { popup.Content() }
-
-		rule.onNodeWithText("Einkäufe").performImeAction()
-
-		rule.runOnIdle { assertFalse(committed) }
-		rule.onNodeWithText("die Liste").assertIsFocused()
+		enterNameMovesToDescription(popup, "die Liste", "a note")
 	}
 
 	@Test
-	fun `enter in an edited note's name moves the keyboard to the description`() {
-		val row = ItemRow(
-			DbItem(id = 5, name = "alt", description = "alte Notiz", type = ItemKind.NOTE), null, 1)
-		val popup = CreatorPopup(CreatorPopup.Kind.EDIT, row, CreatorContent.Simple)
-		var committed = false
-		popup.setOkListener { committed = true; true }
-		rule.setContent { popup.Content() }
-
-		rule.onNodeWithText("alt").performImeAction()
-
-		rule.runOnIdle { assertFalse(committed) }
-		rule.onNodeWithText("alte Notiz").assertIsFocused()
+	fun `enter in an edited note name moves the keyboard to its description`() {
+		enterNameMovesToDescription(
+			CreatorPopup(CreatorPopup.Kind.EDIT, editedNote(), CreatorContent.Simple),
+			"alte Notiz", "an edited note",
+		)
 	}
 
 	@Test
-	fun `enter in the word name moves the keyboard to its description`() {
+	fun `enter in a word name moves the keyboard to its description`() {
 		val popup = wordPopup()
 		popup.name = "Haus"
 		popup.description = "a noun"
 		popup.translations[0].name = "dům"
-		var committed = false
-		popup.setOkListener { committed = true; true }
-		rule.setContent { popup.Content() }
-
-		rule.onNodeWithText("Haus").performImeAction()
-
-		rule.runOnIdle {
-			assertFalse(committed)
-			assertEquals(1, popup.translations.size)
-		}
-		rule.onNodeWithText("a noun").assertIsFocused()
+		enterNameMovesToDescription(popup, "a noun", "a word")
 	}
 
 	@Test
@@ -302,7 +289,10 @@ class CreatorPopupEnterTest {
 
 		rule.onAllNodes(hasSetTextAction())[1].performImeAction()
 
-		rule.runOnIdle { assertFalse(committed) }
+		rule.runOnIdle {
+			assertFalse(committed)
+			assertEquals("the chain reaches the row that is there already", 1, popup.translations.size)
+		}
 		rule.onNodeWithText("dům").assertIsFocused()
 	}
 
@@ -329,11 +319,33 @@ class CreatorPopupEnterTest {
 		popup.name = "Haus"
 		popup.translations[0].name = "dům"
 		popup.translations.add(TranslationRow("stavba", "", null))
+		var committed = false
+		popup.setOkListener { committed = true; true }
 		rule.setContent { popup.Content() }
 
 		rule.onAllNodes(hasSetTextAction())[3].performImeAction()
 
+		rule.runOnIdle {
+			assertFalse("a row below the focused one is never committed", committed)
+			assertEquals("the chain adds no row", 2, popup.translations.size)
+		}
 		rule.onNodeWithText("stavba").assertIsFocused()
+	}
+
+	@Test
+	fun `enter in an empty simple-item description confirms`() {
+		val popup = CreatorPopup(CreatorPopup.Kind.NEW_CHAPTER, null, CreatorContent.Simple)
+		popup.name = "Chapter"
+		var committed = false
+		popup.setOkListener { committed = true; true }
+		rule.setContent { popup.Content() }
+
+		rule.onAllNodes(hasSetTextAction())[1].performImeAction()
+
+		rule.runOnIdle {
+			assertTrue("the Done action of the empty description commits", committed)
+			assertFalse("the accepted commit closes the popup", Dialogs.stack.value.contains(popup))
+		}
 	}
 
 	@Test
@@ -371,14 +383,6 @@ class CreatorPopupEnterTest {
 		}
 	}
 
-	/** The field holding the keyboard: typing lands where this matcher points. */
-	private val focusedField = SemanticsMatcher("focused field") {
-		it.config.getOrElse(SemanticsProperties.Focused) { false }
-	}
-
-	/** Reads the input manager shadow, since only it sees the keyboard ask. */
-	private fun keyboardShown() = shadowOf(imm()).isSoftInputVisible
-
 	@Test
 	fun `the renewed editor takes typing in its fresh fields`() {
 		val popup = wordPopup()
@@ -399,4 +403,12 @@ class CreatorPopupEnterTest {
 		rule.onNode(focusedField).performTextInput("strom")
 		rule.runOnIdle { assertEquals("strom", popup.translations[0].name) }
 	}
+
+	/** The field holding the keyboard: typing lands where this matcher points. */
+	private val focusedField = SemanticsMatcher("focused field") {
+		it.config.getOrElse(SemanticsProperties.Focused) { false }
+	}
+
+	/** Reads the input manager shadow, since only it sees the keyboard ask. */
+	private fun keyboardShown() = shadowOf(imm()).isSoftInputVisible
 }

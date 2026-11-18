@@ -16,7 +16,6 @@ import cz.litoj.schlmgr.testing.TestTaskModel
 import cz.litoj.schlmgr.ui.component.SharedPromptRow
 import cz.litoj.schlmgr.ui.popup.Dialogs
 import org.junit.After
-import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -78,7 +77,6 @@ class TestActivityGroupTest {
 				SharedPromptRow(task, -1, hashMapOf(), false, rememberLazyListState(), {})
 			}
 
-			assertEquals(3, task.answerFields.size)
 			rule.onAllNodes(hasSetTextAction()).assertCountEquals(3)
 		} finally {
 			TestEngine.applyRequireAllVariants(false)
@@ -91,7 +89,6 @@ class TestActivityGroupTest {
 			SharedPromptRow(task, -1, hashMapOf(), false, rememberLazyListState(), {})
 		}
 
-		assertEquals(2, task.members.size)
 		rule.onAllNodes(hasSetTextAction()).assertCountEquals(2)
 		rule.onAllNodesWithText("pes").assertCountEquals(1)
 	}

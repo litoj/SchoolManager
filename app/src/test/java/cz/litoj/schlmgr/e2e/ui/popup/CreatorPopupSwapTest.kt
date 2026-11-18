@@ -1,7 +1,7 @@
 package cz.litoj.schlmgr.e2e.ui.popup
 
-import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import cz.litoj.schlmgr.ui.popup.CreatorContent
@@ -16,6 +16,11 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
+/**
+ * - the swap exchanges the word with its translations and their descriptions.
+ * - the swap button belongs to a new word, an edit popup never shows it.
+ * - the teardown clears the dialog stack, so none leak across tests.
+ */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class CreatorPopupSwapTest {
@@ -48,11 +53,21 @@ class CreatorPopupSwapTest {
 		}
 	}
 
-	@Test
-	fun `the swap button stays out of an edit popup`() {
-		val popup = CreatorPopup(CreatorPopup.Kind.EDIT, null, CreatorContent.Word(emptyList()))
+	/** One composition per case: the rule takes content once per test. */
+	private fun swapNodes(kind: CreatorPopup.Kind): Int {
+		val popup = CreatorPopup(kind, null, CreatorContent.Word(emptyList()))
 		rule.setContent { popup.Content() }
+		return rule.onAllNodesWithContentDescription("Swap word and translations")
+			.fetchSemanticsNodes().size
+	}
 
-		rule.onNodeWithContentDescription("Swap word and translations").assertDoesNotExist()
+	@Test
+	fun `a new word offers the swap`() {
+		assertEquals("the new word shows its swap", 1, swapNodes(CreatorPopup.Kind.NEW_WORD))
+	}
+
+	@Test
+	fun `an edited word offers no swap`() {
+		assertEquals("the edit hides the swap", 0, swapNodes(CreatorPopup.Kind.EDIT))
 	}
 }

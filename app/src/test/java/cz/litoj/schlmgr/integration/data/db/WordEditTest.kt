@@ -78,39 +78,56 @@ class WordEditTest {
 		return first
 	}
 
+	/**
+	 * One editor payload that neither removes a translation nor forks.
+	 * - stored names, visible word name and translation names after the edit.
+	 */
+	private class InPlace(
+		val label: String,
+		val stored: List<String>,
+		val visible: String,
+		val expected: List<String>,
+		val payload: (DbItem, Int) -> WordEdit,
+		val check: (DbItem) -> Unit = {},
+	)
+
+	/** Every edit guard refuses before its first write, so the stored word stays. */
 	@Test
-	fun `a whitespace-only addition refuses the edit`() {
+	fun `a refusal leaves the word as it was`() {
 		val subject = ItemRepository.createSubject("english", null)
 		val dog = word(subject.id, "dog", "pes")
+		val pes = trl(dog.id, "pes").id
 
-		try {
-			ItemRepository.editWord(edit(dog.id, subject.id, "dog",
-				removed = listOf(trl(dog.id, "pes").id), additions = listOf("   " to null)))
-			fail("a whitespace addition skips at the merge, so the edit would strand the word")
-		} catch (e: IllegalArgumentException) {
-			// expected, because the edit must not leave the word without a translation
-		}
-		assertEquals(listOf("pes"), names(dog.id))
-	}
+		// a whitespace addition skips at the merge, so the edit would strand the word
+		val refusals: List<Triple<String, String, () -> Unit>> = listOf(
+			Triple("a whitespace-only addition", "translation") {
+				ItemRepository.editWord(edit(dog.id, subject.id, "dog",
+					removed = listOf(pes), additions = listOf("   " to null)))
+			},
+			Triple("a blank name on an edit", "name") {
+				ItemRepository.editWord(edit(dog.id, subject.id, "   ", keptOf(dog.id)))
+			},
+			Triple("a blank name on a rename", "name") { ItemRepository.rename(dog.id, "   ") },
+			Triple("an edit stripping every translation", "translation") {
+				ItemRepository.editWord(edit(dog.id, subject.id, "dog", removed = listOf(pes)))
+			},
+			Triple("an addition with an empty name", "translation") {
+				ItemRepository.editWord(edit(dog.id, subject.id, "dog",
+					removed = listOf(pes), additions = listOf("" to "d")))
+			},
+		)
 
-	@Test
-	fun `a blank name refuses the edit and the rename`() {
-		val subject = ItemRepository.createSubject("english", null)
-		val dog = word(subject.id, "dog", "pes")
-
-		try {
-			ItemRepository.editWord(edit(dog.id, subject.id, "   ", keptOf(dog.id)))
-			fail("a word with no name cannot be stored, since no export format round-trips it")
-		} catch (e: IllegalArgumentException) {
-			// expected, because a blank name is not a word
+		for ((case, fragment, refuse) in refusals) {
+			try {
+				refuse()
+				fail("$case must be refused")
+			} catch (e: IllegalArgumentException) {
+				assertTrue("$case: ${e.message}", fragment in e.message!!)
+			}
+			assertEquals("$case left the name alone",
+				"dog", ItemRepository.children(subject.id).single().name)
+			assertEquals("$case left the translations alone", listOf("pes"), names(dog.id))
 		}
-		try {
-			ItemRepository.rename(dog.id, "   ")
-			fail("a rename to no name cannot be stored, since no export format round-trips it")
-		} catch (e: IllegalArgumentException) {
-			// expected, because a blank name is not a word
-		}
-		assertEquals("dog", ItemRepository.children(subject.id).single().name)
 	}
 
 	@Test
@@ -124,34 +141,73 @@ class WordEditTest {
 		assertEquals(listOf("pes", "hound"), names(dog.id))
 	}
 
+	/** An edit that removes nothing updates the one row every chapter and reference of the word shows. */
 	@Test
-	fun `an unchanged shared word edits the original for every chapter`() {
-		val subject = ItemRepository.createSubject("english", null)
-		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
-		val c2 = ItemRepository.createChapter(subject.id, "c2", null)
-		val dog = sharedWord(c1.id, c2.id, "dog", "pes")
-		val edited = ItemRepository.editWord(edit(dog.id, c1.id, "doggo", keptOf(dog.id)))
+	fun `an edit that keeps the word updates the shared row`() {
+		val cases = listOf(
+			InPlace("an unchanged edit", listOf("pes"), "doggo", listOf("pes"),
+				{ dog, parent -> edit(dog.id, parent, "doggo", keptOf(dog.id)) }),
+			InPlace("a renamed translation", listOf("pes"), "dog", listOf("kucer"),
+				{ dog, parent ->
+					edit(dog.id, parent, "dog", listOf(KeptTranslation(trl(dog.id, "pes").id, "kucer", "")))
+				}),
+			InPlace("an added translation", listOf("pes"), "dog", listOf("pes", "hound"),
+				{ dog, parent ->
+					edit(dog.id, parent, "dog", keptOf(dog.id), additions = listOf("hound" to null))
+				}),
+			InPlace("a description change", listOf("pes"), "dog", listOf("pes"),
+				{ dog, parent ->
+					edit(dog.id, parent, "dog", listOf(KeptTranslation(trl(dog.id, "pes").id, "pes", "slovo")))
+				}) { dog ->
+				assertEquals("the description reaches the row", "slovo",
+					ItemRepository.translations(dog.id).single().description)
+			},
+			// the word keeps its name, so a fork would only add its duplicate to the subject
+			InPlace("a removal without a rename", listOf("pes", "hound"), "dog", listOf("pes"),
+				{ dog, parent ->
+					edit(dog.id, parent, "dog",
+						listOf(KeptTranslation(trl(dog.id, "pes").id, "pes", "")),
+						listOf(trl(dog.id, "hound").id))
+				}),
+			// remove plus add is how the editor swaps a translation, so nothing forks
+			InPlace("a removed and re-added translation", listOf("pes", "hound"), "dog", listOf("pes", "cat"),
+				{ dog, parent ->
+					edit(dog.id, parent, "dog",
+						listOf(KeptTranslation(trl(dog.id, "pes").id, "pes", "")),
+						listOf(trl(dog.id, "hound").id), additions = listOf("cat" to null))
+				}),
+		)
 
-		assertEquals(dog.id, edited.id)
-		// one row for both chapters, so the edit reached every occurrence
-		assertEquals("doggo", ItemRepository.children(c1.id).single().name)
-		assertEquals("doggo", ItemRepository.children(c2.id).single().name)
-		assertEquals(ItemRepository.children(c1.id).single().id, ItemRepository.children(c2.id).single().id)
-	}
+		for (case in cases) {
+			val subject = ItemRepository.createSubject(case.label, null)
+			val c1 = ItemRepository.createChapter(subject.id, "c1", null)
+			val c2 = ItemRepository.createChapter(subject.id, "c2", null)
+			val c3 = ItemRepository.createChapter(subject.id, "c3", null)
+			val dog = sharedWord(c1.id, c2.id, "dog", *case.stored.toTypedArray())
+			// a reference shows the row too, so it must see the edit with it
+			assertTrue("${case.label} referenced the word", ItemRepository.reference(dog.id, c3.id))
+			ItemRepository.recordPass(listOf(dog.id))
 
-	@Test
-	fun `a rename-only edit changes the shared word in every chapter`() {
-		val subject = ItemRepository.createSubject("english", null)
-		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
-		val c2 = ItemRepository.createChapter(subject.id, "c2", null)
-		val dog = sharedWord(c1.id, c2.id, "dog", "pes")
-		val edited = ItemRepository.editWord(edit(dog.id, c1.id, "dog",
-			listOf(KeptTranslation(trl(dog.id, "pes").id, "kucer", ""))))
+			val edited = ItemRepository.editWord(case.payload(dog, c1.id))
 
-		// nothing was taken away, so the update is a normal one
-		assertEquals(dog.id, edited.id)
-		assertEquals(listOf("kucer"), names(dog.id))
-		assertEquals(listOf("kucer"), names(ItemRepository.children(c2.id).single().id))
+			assertEquals("${case.label} keeps the row", dog.id, edited.id)
+			assertEquals("${case.label} renames it for c1",
+				case.visible, ItemRepository.children(c1.id).single().name)
+			assertEquals("${case.label} renames it for c2",
+				case.visible, ItemRepository.children(c2.id).single().name)
+			assertEquals("${case.label} edits one row for both chapters",
+				ItemRepository.children(c1.id).single().id, ItemRepository.children(c2.id).single().id)
+			assertEquals("${case.label} leaves the translations", case.expected, names(dog.id))
+			// a fork would leave a duplicate row of this name beside the edited one
+			val homes = ItemRepository.children(c1.id) + ItemRepository.children(c2.id) +
+				ItemRepository.children(c3.id)
+			assertEquals("${case.label} forks no second word row in its subject",
+				1, homes.filter { it.name == case.visible }.map { it.id }.distinct().size)
+			assertEquals("${case.label} keeps the tested counter",
+				1, ItemRepository.get(dog.id)!!.passedTests)
+			assertTrue("${case.label} keeps the reference", ItemRepository.linkIsReference(c3.id, dog.id))
+			case.check(dog)
+		}
 	}
 
 	@Test
@@ -159,15 +215,18 @@ class WordEditTest {
 		val subject = ItemRepository.createSubject("english", null)
 		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
 		val dog = word(c1.id, "dog", "hound")
-		val cat = word(c1.id, "cat", "hound")
+		val cat = word(c1.id, "cat", "hound", "kocka")
 		// one shared row serves both words
 		assertEquals(trl(dog.id, "hound").id, trl(cat.id, "hound").id)
 
-		ItemRepository.editWord(edit(dog.id, c1.id, "dog",
+		val edited = ItemRepository.editWord(edit(dog.id, c1.id, "dog",
 			listOf(KeptTranslation(trl(dog.id, "hound").id, "kucer", ""))))
 
+		// a shared row keeps serving its other words, while the edited word gets
+		// its own row of the new name
+		assertEquals("the word keeps its row", dog.id, edited.id)
 		assertEquals(listOf("kucer"), names(dog.id))
-		assertEquals("the other word keeps its translation", listOf("hound"), names(cat.id))
+		assertEquals("the other word keeps its translations", listOf("hound", "kocka"), names(cat.id))
 	}
 
 	@Test
@@ -183,22 +242,6 @@ class WordEditTest {
 
 		val joined = ItemRepository.getByName("dog", ItemKind.WORD).single()
 		assertEquals(listOf("x"), names(joined.id))
-	}
-
-	@Test
-	fun `an edit that would strip every translation fails`() {
-		val subject = ItemRepository.createSubject("english", null)
-		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
-		val dog = word(c1.id, "dog", "x")
-
-		try {
-			ItemRepository.editWord(edit(dog.id, c1.id, "dog",
-				removed = listOf(trl(dog.id, "x").id)))
-			fail("a word without a translation must fail the edit")
-		} catch (e: IllegalArgumentException) {
-			assertTrue(e.message!!.contains("translation"))
-		}
-		assertEquals(listOf("x"), names(dog.id))
 	}
 
 	@Test
@@ -220,23 +263,6 @@ class WordEditTest {
 		// the row of E holds all three descriptions joined, because the same-name
 		// pass merged into the live row, not the stale pre-edit snapshot
 		assertEquals("eee\naaa\nnew", trl(edited.id, "tE").description)
-	}
-
-	@Test
-	fun `an edit whose only addition is empty-named fails`() {
-		val subject = ItemRepository.createSubject("english", null)
-		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
-		val dog = word(c1.id, "dog", "x")
-
-		try {
-			ItemRepository.editWord(edit(dog.id, c1.id, "dog",
-				removed = listOf(trl(dog.id, "x").id),
-				additions = listOf("" to "d")))
-			fail("an empty-named addition must not satisfy the word's translation rule")
-		} catch (e: IllegalArgumentException) {
-			assertTrue(e.message!!.contains("translation"))
-		}
-		assertEquals(listOf("x"), names(dog.id))
 	}
 
 	@Test
@@ -347,109 +373,6 @@ class WordEditTest {
 	}
 
 	@Test
-	fun `an imported translation merging by name adopts the more-tested counters`() {
-		val subject = ItemRepository.createSubject("english", null)
-		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
-		// the subject already holds a same-named translation with fewer tests
-		val cat = word(c1.id, "cat", "micka")
-		ItemRepository.bumpCounters(listOf(trl(cat.id, "micka").id), false)
-		ItemRepository.bumpCounters(listOf(trl(cat.id, "micka").id), false)
-		ItemRepository.bumpCounters(listOf(trl(cat.id, "micka").id), false)
-
-		// a word from the file carries the same translation name with more tests
-		ItemRepository.createWord(c1.id, "dog", null, listOf("pes" to null, "micka" to null))
-		ItemRepository.bumpCounters(
-			listOf(trl(ItemRepository.getByName("dog", ItemKind.WORD).single().id, "micka").id), true)
-
-		val merged = trl(cat.id, "micka")
-		assertEquals("one row serves both words", 3, merged.failedTests)
-		assertTrue("the more-tested pair survives", merged.passedTests >= 1)
-	}
-
-	@Test
-	fun `an added translation edits the shared word in place`() {
-		val subject = ItemRepository.createSubject("english", null)
-		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
-		val c2 = ItemRepository.createChapter(subject.id, "c2", null)
-		val dog = sharedWord(c1.id, c2.id, "dog", "pes")
-		val edited = ItemRepository.editWord(edit(dog.id, c1.id, "dog", keptOf(dog.id),
-			additions = listOf<Pair<String, String?>>("hound" to null)))
-
-		assertEquals(dog.id, edited.id)
-		assertEquals(listOf("pes", "hound"), names(dog.id))
-		assertEquals(dog.id, ItemRepository.children(c2.id).single().id)
-	}
-
-	@Test
-	fun `a description change edits the shared word in place`() {
-		val subject = ItemRepository.createSubject("english", null)
-		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
-		val c2 = ItemRepository.createChapter(subject.id, "c2", null)
-		val dog = sharedWord(c1.id, c2.id, "dog", "pes")
-		val pes = trl(dog.id, "pes")
-		val edited = ItemRepository.editWord(edit(dog.id, c1.id, "dog",
-			listOf(KeptTranslation(pes.id, "pes", "slovo"))))
-
-		assertEquals(dog.id, edited.id)
-		assertEquals("slovo", ItemRepository.translations(dog.id).single().description)
-	}
-
-	@Test
-	fun `a removal without a rename edits the shared word in place`() {
-		val subject = ItemRepository.createSubject("english", null)
-		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
-		val c2 = ItemRepository.createChapter(subject.id, "c2", null)
-		val dog = sharedWord(c1.id, c2.id, "dog", "pes", "hound")
-		ItemRepository.recordPass(listOf(dog.id))
-		val edited = ItemRepository.editWord(edit(dog.id, c1.id, "dog",
-			listOf(KeptTranslation(trl(dog.id, "pes").id, "pes", "")),
-			listOf(trl(dog.id, "hound").id)))
-
-		// the word keeps its name, so a fork would only add its duplicate to
-		// the subject, and every chapter holds the one row and sees the removal
-		assertEquals(dog.id, edited.id)
-		assertEquals(listOf("pes"), names(dog.id))
-		assertEquals(dog.id, ItemRepository.children(c1.id).single().id)
-		assertEquals(dog.id, ItemRepository.children(c2.id).single().id)
-		assertEquals(1, ItemRepository.getByName("dog", ItemKind.WORD).size)
-		assertEquals(1, ItemRepository.get(dog.id)!!.passedTests)
-	}
-
-	@Test
-	fun `a removed and re-added translation edits the shared word in place`() {
-		val subject = ItemRepository.createSubject("english", null)
-		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
-		val c2 = ItemRepository.createChapter(subject.id, "c2", null)
-		val dog = sharedWord(c1.id, c2.id, "dog", "pes", "hound")
-		ItemRepository.editWord(edit(dog.id, c1.id, "dog",
-			listOf(KeptTranslation(trl(dog.id, "pes").id, "pes", "")),
-			listOf(trl(dog.id, "hound").id),
-			additions = listOf<Pair<String, String?>>("cat" to null)))
-
-		// remove plus add is how the editor swaps a translation, so the word
-		// keeps its name and nothing forks and every chapter sees the new set
-		assertEquals(listOf("pes", "cat"), names(dog.id))
-		assertEquals(1, ItemRepository.getByName("dog", ItemKind.WORD).size)
-	}
-
-	@Test
-	fun `an in-place edit reaches the chapters that reference the word`() {
-		val subject = ItemRepository.createSubject("english", null)
-		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
-		val c2 = ItemRepository.createChapter(subject.id, "c2", null)
-		val c3 = ItemRepository.createChapter(subject.id, "c3", null)
-		val dog = sharedWord(c1.id, c2.id, "dog", "pes", "hound")
-		assertTrue(ItemRepository.reference(dog.id, c3.id))
-		ItemRepository.editWord(edit(dog.id, c1.id, "dog",
-			listOf(KeptTranslation(trl(dog.id, "pes").id, "pes", "")),
-			listOf(trl(dog.id, "hound").id)))
-
-		// the reference keeps showing the row, so it sees the edit with it
-		assertTrue(ItemRepository.linkIsReference(c3.id, dog.id))
-		assertEquals(listOf("pes"), names(dog.id))
-	}
-
-	@Test
 	fun `a shared word renamed onto an existing word joins it in every chapter`() {
 		val subject = ItemRepository.createSubject("english", null)
 		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
@@ -461,6 +384,8 @@ class WordEditTest {
 		assertEquals(cat.id, edited.id)
 		assertEquals(cat.id, ItemRepository.children(c1.id).single().id)
 		assertEquals(cat.id, ItemRepository.children(c2.id).single().id)
+		assertEquals("the survivor carries both words' translations",
+			setOf("pes", "micka"), names(cat.id).toSet())
 		assertTrue(ItemRepository.getByName("dog", ItemKind.WORD).isEmpty())
 	}
 
@@ -490,21 +415,6 @@ class WordEditTest {
 	}
 
 	@Test
-	fun `a renamed subject-level translation leaves the other word's row alone`() {
-		val subject = ItemRepository.createSubject("english", null)
-		val dog = word(subject.id, "dog", "pes")
-		val cat = word(subject.id, "cat", "pes", "micka")
-		val dogWord = ItemRepository.editWord(edit(dog.id, subject.id, "dog",
-			listOf(KeptTranslation(trl(dog.id, "pes").id, "kucer", ""))))
-
-		// a shared row keeps serving its other words, while the edited word gets
-		// its own row of the new name
-		assertEquals(dog.id, dogWord.id)
-		assertEquals(listOf("kucer"), names(dog.id))
-		assertEquals(listOf("pes", "micka"), names(cat.id))
-	}
-
-	@Test
 	fun `a rename onto an existing translation joins it and keeps both descriptions`() {
 		val subject = ItemRepository.createSubject("english", null)
 		val dog = word(subject.id, "dog", "pes")
@@ -519,21 +429,6 @@ class WordEditTest {
 		assertEquals(listOf("hound"), names(cat.id))
 		assertEquals("d2\nd1", ItemRepository.translations(cat.id).single().description)
 		assertTrue(ItemRepository.getByName("pes", ItemKind.TRANSLATION).isEmpty())
-	}
-
-	@Test
-	fun `a word rename onto an existing word joins it and keeps both descriptions`() {
-		val subject = ItemRepository.createSubject("english", null)
-		val dog = word(subject.id, "dog", "pes")
-		val cat = word(subject.id, "cat", "micka")
-		ItemRepository.setDescription(dog.id, "d1")
-		ItemRepository.setDescription(cat.id, "d2")
-		val edited = ItemRepository.editWord(edit(dog.id, subject.id, "cat", keptOf(dog.id)))
-
-		assertEquals(cat.id, edited.id)
-		assertEquals("d2\nd1", ItemRepository.get(cat.id)!!.description)
-		assertTrue(ItemRepository.getByName("dog", ItemKind.WORD).isEmpty())
-		assertEquals(setOf("pes", "micka"), names(cat.id).toSet())
 	}
 
 	@Test

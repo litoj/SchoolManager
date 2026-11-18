@@ -24,7 +24,6 @@ import org.robolectric.annotation.Config
 /**
  * - the title info icon opens the help above the conflict round.
  * - the help shows the round logic and OK closes only the help.
- * - the icon fills the header band, so its tap stays easy.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])

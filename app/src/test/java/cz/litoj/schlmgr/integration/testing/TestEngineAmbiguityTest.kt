@@ -323,18 +323,6 @@ class TestEngineAmbiguityTest {
 	}
 
 	@Test
-	fun `the answer length and each required variant set the time`() {
-		val (_, chapter) = subjectWith("c", listOf("/I/You smile." to listOf("laugh")))
-		assertEquals("five seconds plus 13 characters", 18, TestEngine.testTime(1f, entries(chapter)))
-		TestEngine.applyRequireAllVariants(true)
-		try {
-			assertEquals("three fields multiply by 1.5 squared", 41, TestEngine.testTime(1f, entries(chapter)))
-		} finally {
-			TestEngine.applyRequireAllVariants(false)
-		}
-	}
-
-	@Test
 	fun `independent sides accept any complete cover instead of every combination`() {
 		val (_, chapter) = subjectWith("c", listOf("a/b c/d/e" to listOf("letters")))
 		TestEngine.applyRequireAllVariants(true)

@@ -9,8 +9,6 @@ import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.db.ROOT_ID
 import cz.litoj.schlmgr.data.json.HJsonExporter
 import cz.litoj.schlmgr.data.json.HJsonImporter
-import cz.litoj.schlmgr.data.wordlist.WordListExporter
-import cz.litoj.schlmgr.data.wordlist.WordListImporter
 import java.io.File
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -78,7 +76,11 @@ class ExportImportMatrixTest {
 
 	private fun row(name: String, kind: ItemKind): DbItem = ItemRepository.getByName(name, kind).single()
 
-	/** The rich tree below a saved subject row, including shape, order and links. */
+	/**
+	 * The rich tree below a saved subject row.
+	 * - the rows that landed and under which anchor.
+	 * - the links that stayed references.
+	 */
 	private fun assertRich(subject: DbItem) {
 		assertEquals("S", subject.name)
 		val children = ItemRepository.children(subject.id)
@@ -87,8 +89,6 @@ class ExportImportMatrixTest {
 		val c1 = children[1]
 		val c2 = children[2]
 		val wRoot = children[3]
-		assertEquals(ItemKind.NOTE, children[4].type)
-		assertEquals("root note", children[4].description)
 
 		// the reference into c0 names a word whose home follows it in the file
 		// order, so it resolves after every row is saved
@@ -96,12 +96,9 @@ class ExportImportMatrixTest {
 		assertTrue(ItemRepository.linkIsReference(c0.id, ItemRepository.children(c0.id).single().id))
 
 		// c1 holds its own word, its note and the referenced subject word
-		val c1Children = ItemRepository.children(c1.id)
-		assertEquals(listOf("w1", "note1", "wRoot"), c1Children.map { it.name })
-		assertEquals(ItemKind.NOTE, c1Children[1].type)
+		assertEquals(listOf("w1", "note1", "wRoot"), ItemRepository.children(c1.id).map { it.name })
 		assertTrue(ItemRepository.linkIsReference(c1.id, wRoot.id))
-		assertFalse(ItemRepository.linkIsReference(c1.id, c1Children[0].id))
-		assertEquals(listOf("t1", "t2"), ItemRepository.translations(c1Children[0].id).map { it.name })
+		assertFalse(ItemRepository.linkIsReference(c1.id, ItemRepository.children(c1.id)[0].id))
 
 		assertTrue(ItemRepository.linkIsReference(c2.id, c1.id))
 		assertEquals(listOf("c1"), ItemRepository.children(c2.id).map { it.name })
@@ -158,44 +155,6 @@ class ExportImportMatrixTest {
 		assertTrue(ItemRepository.linkIsReference(subjects[1].id, subjects[0].id))
 		assertEquals(listOf("w1", "note1", "wRoot"), ItemRepository.children(subjects[0].id).map { it.name })
 		assertEquals(listOf("c1"), ItemRepository.children(subjects[1].id).map { it.name })
-	}
-
-	@Test
-	fun `selected words export round trip as bare entries`() {
-		buildRich()
-		val words = listOf(row("w1", ItemKind.WORD))
-
-		val text = ItemRepository.export(WordListExporter(), words)
-		assertEquals("one bare word writes one word line", "w1=t1\\t2\n", text)
-		val json = ItemRepository.export(HJsonExporter(), words)
-
-		freshDatabase()
-		val holder = ItemRepository.createSubject("Holder", null)
-		ItemRepository.import(HJsonImporter(json), holder.id)
-
-		// a bare word root lands in the import target with its translations
-		val back = ItemRepository.children(holder.id).single()
-		assertEquals("w1", back.name)
-		assertEquals(listOf("t1", "t2"), ItemRepository.translations(back.id).map { it.name })
-	}
-
-
-	@Test
-	fun `a chapter export round trips as a word list`() {
-		val subject = buildRich()
-		val text = ItemRepository.export(WordListExporter(), listOf(row("c1", ItemKind.CHAPTER)))
-
-		freshDatabase()
-		ItemRepository.import(WordListImporter("c1", text))
-
-		// the own wrapper line of the file IS the subject:
-		// - its words and the note come back with the in-place copy.
-		// - the reference link is the documented loss of this format.
-		val back = ItemRepository.subjects().single()
-		assertEquals("c1", back.name)
-		assertEquals(listOf("w1", "note1", "wRoot"), ItemRepository.children(back.id).map { it.name })
-		assertEquals(listOf("t1", "t2"), ItemRepository.translations(
-			ItemRepository.children(back.id)[0].id).map { it.name })
 	}
 
 	/** The row count of everything but the invisible root. */

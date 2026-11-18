@@ -186,18 +186,35 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Offered fixes come from a single-edit search the parser validates against the whole file.
 - The blanked failing line gives the baseline, so a fix never hides an error it caused.
 - Text only the user knows stays a localized placeholder.
-- Each fix reads as a suggestion: the kind of edit, then the line it produces.
-- A fix never removes anything: no line, name or word is ever offered as deleted.
+- Each fix is an instruction: the edit, then the line it produces.
+- A lone diagnosis names the same edit, so neither reads as a question.
+- A fix removes nothing but a closer alone on its line, never a line, name or word.
 - A fix is the whole message, the diagnosis line appears only when no fix survived.
 - One repair kind per edit type, so wording and validated edit can never drift apart.
-- Bare text is incomplete unless an arrow relation or following indented chapter block gives evidence.
+- A suggestion of one character mends the import buffer itself, spaces and tabs aside.
+- The buffer re-parses after every such repair, the auto-repair leaves the picked file alone.
+- A repair needing user text, a second character or another line is left to the popup.
+- The success report counts the repaired lines and lists each one before and after.
+- Bare text is incomplete unless a following indented chapter block gives evidence.
+- A separator-led line without a description is a word line whose word got lost.
+- A note without a description has no word-list line, so the import refuses its export too.
+- No outside editor on the phone takes a foreign content URI for text, so the app edits the file itself.
+- The failure of a held file opens an editor on its failing character, the report above the file.
+- The editor takes the focus on open, so its caret shows and the keyboard comes.
+- The reported line is marked and brought into view, its failing column reached from the left.
+- The file keeps one line per source line, a long line scrolls aside instead of wrapping.
+- The caret of the editor is the text colour of the theme, the mark of the line reads on both palettes.
+- The editor keeps its save at the right edge of the row, where every popup of the app waits for the action.
+- Save writes the same document through the write grant of the pick and imports it again.
+- A document refusing the write keeps the editor, its note and the typed text.
+- A tap aside closes an untouched file only, a typed fix is never thrown away.
 - Unclosed chapters, stray description closings and unfinished escapes fail instead of importing silently.
-- The complete source line uses a monospace block on a contrasting surface.
+- The source block of a failure no editor can open uses a monospace block on a contrasting surface.
 - A `↓` aligns through measured glyph bounds with the exact symbol or missing-character insertion point.
 - Long source lines keep their alignment through horizontal scrolling.
 - An unfinished multiline description points to its opening line.
 - JSON failures retain the original snackbar path.
-- The word-list format supports `=`, `;` and `→` separators.
+- The word-list format separates a word and its translation with `=` or `;`, the arrow divides nothing.
 - A finished import reloads the target and scrolls to its last row.
 
 ### Notifications
@@ -216,7 +233,10 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Several rows in a container use the partial suffix, at the root they use `subjects`.
 - The JSON tree writes bare word and note roots at the top, and the importer accepts them.
 - Export walks pre-order, writes references as paths and keeps path targets outside the export in place.
-- The export result offers Share.
+- The Export row opens one sheet: a format toggle, then Share or Save to file.
+- The sheet opens on the format of the last export.
+- Share writes a cache copy, which the manifest file provider hands to the system sheet at once.
+- The saved file's snackbar still offers Share.
 
 ### Test
 
@@ -270,6 +290,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 ### Dialogs and creators
 
 - A `DialogSpec` stack uses one window per dialog, so dialogs survive rotation.
+- A message dialog of a known file offers Edit in place of Copy and stays open through it.
 - Every dialog title takes one header band, as tall as its button row.
 - The band is a floor, so a long title takes its second line instead of losing text.
 - A header icon holds one square tap slot at the row end, so its tap is not the glyph size.
@@ -282,6 +303,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Creator Enter moves from each name to its description, then empty descriptions advance to the next name or confirm the last field.
 - Description keyboard options stay fixed while typing, so a non-empty Enter can insert a newline without restarting the input session.
 - OK discards blank translation rows, then outlines missing required names red and restores one translation row when none has actual text.
+- A note requires its description, since that field is its body.
 - Required creator hints append a red asterisk while their default text is visible.
 - A new word swaps with its translations through the button beside its name, exchanging escaped-backslash lists both ways.
 - The creator name hint names the created or edited type.
@@ -311,6 +333,15 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The filter dialog and its chips own the filter, so help keeps only the rules they cannot show.
 - The success band explains itself in no control, so help names its landmarks and the results help shows the turn.
 - Literal examples use monospace code blocks apart from the explanation text.
+
+## Test ownership
+
+- One production decision gets one owner test, no matter how many doors reach it.
+- A door list of the same branch becomes one table, the repo idiom of a case map and a loop.
+- The lower layer keeps a rule shared with a UI test, the e2e copy goes.
+- A UI case is one composition, so a UI run cannot be table-driven across compositions.
+- A VisibleForTesting door of production grows its own test beside the real one, so production is driven instead.
+- A pure rule needs no database fixture, a Room-backed unit test means the fixture is wrong.
 
 ## Current
 
@@ -348,6 +379,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The answer diff groups each wrong run.
 - The filter is built, rides as chips and wears its own glyph, with 969 behavior tests and debug lint green.
 - The success rate colours name their landmarks in help and in the results help, with 969 behavior tests and debug lint green.
+- The import fix editor waits for a phone check of its marked line and no-wrap view.
 - A dropdown hangs from its own button through one menu host, with 971 behavior tests and debug lint green.
 - A menu action carries its glyph once and the import fills a bar slot, with 971 behavior tests and debug lint green.
 - Only the subjects root closes the search, with 973 behavior tests and debug lint green.
@@ -372,3 +404,18 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The explorer top bar holds one action set in every mode, with 960 behavior tests and debug lint green.
 - History since 2.3.0 folds follow-ups into their features, with 960 behavior tests and debug lint green.
 - The first launch explains progress notifications for imports, exports and deletions, with 965 behavior tests and debug lint green.
+- The word-list import mends its one-character mistakes itself, with 977 behavior tests and debug lint green.
+- A note needs its description in the creator and in the word-list import, with 985 behavior tests and debug lint green.
+- The arrow leaves the separators and a repair counts one character, with 988 tests and debug lint green.
+- The failure dialog edits its picked file in place and imports it again, with 1005 tests and debug lint green.
+- One export sheet picks the format and its destination, with 1020 tests and debug lint green.
+- Behavior tests hold no looks assertions, marker math and gap math and render folds dropped.
+- Every rule gets one owner test, 1020 tests to 875 with debug lint green.
+
+### Coverage gaps the audit found, waiting for their own pass
+
+- Word list: `MISSING_CHAPTER_NAME`, `CHAPTER_OPEN` and `EXTRA_CHAR` as kinds, `DESCRIBED_TEXT`, 9 of 16 fix sentences, both unencodable writer shapes, a lone CR inside a description, `MAX_CANDIDATES` and `MAX_REPAIRS`.
+- Import: a nameless translation in a JSON file, the two `resolveTargetRow` fallbacks, the too-deep and load-fail guards, the export failure route.
+- Explorer: `pickReferences` and `finishReferencePicker`, `commitForkReferences`, four of the eight sort comparators, `onOtherRowClick` note copy, `armedReferences`, `goToRoot` during a search, the supersede guards of `openSibling`.
+- Row: `flipOnto` without a preload, a translation row flipped to its words, `applyPlacement` and `readPlacement`, `applyFresh` of a deleted item, the `searchShowPath` setting.
+- Creator: the swap for the three other kinds, `itemNameMissing` of a blank variant part, the note arm of `focusFirstMissing`, the resume without focus, the dirty side of the outside-tap dismissal.

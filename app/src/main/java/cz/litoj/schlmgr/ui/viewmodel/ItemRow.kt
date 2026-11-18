@@ -96,10 +96,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		setNew(item, parentId, applyDefFlip)
 	}
 
-	@VisibleForTesting
-	fun setNew(item: DbItem, parentId: Int?) = setNew(item, parentId, true)
-
-	fun setNew(item: DbItem, parentId: Int?, applyDefFlip: Boolean) {
+	private fun setNew(item: DbItem, parentId: Int?, applyDefFlip: Boolean) {
 		this.item = item
 		this.parentId = parentId
 		flipped = false
@@ -110,12 +107,6 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		flipped = if (applyDefFlip) defFlip else false
 		if (flipped) toShow = renderTranslations()
 	}
-
-	/**
-	 * The blocking form. Production callers read the flip content on io and land [applyFlip] on main.
-	 */
-	@VisibleForTesting
-	fun flip() = applyFlip(flipContent())
 
 	private fun flipContent(): List<DbItem> = flipContentOf(item)
 
@@ -167,9 +158,19 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	 * A reference is a fact of the link, not of the item.
 	 * - so the same row renders normal in its home.
 	 */
-	private fun refreshReferenceFacts(parentId: Int?) {
-		isReference = parentId != null && ItemRepository.linkIsReference(parentId, item.id)
-		hasSource = isReference && ItemRepository.parentIds(item.id).any { it != parentId }
+	private fun refreshReferenceFacts(parentId: Int?) = applyReferenceFacts(
+		parentId != null && ItemRepository.linkIsReference(parentId, item.id),
+		{ ItemRepository.parentIds(item.id).any { it != parentId } },
+	)
+
+	/**
+	 * The one rule behind both fact sources, the per-row read and the preloaded links.
+	 * - only a reference can jump, and only when a second container holds the row.
+	 * - [hasOtherParent] stays a lambda, so a plain row never pays for the lookup.
+	 */
+	private fun applyReferenceFacts(isReference: Boolean, hasOtherParent: () -> Boolean) {
+		this.isReference = isReference
+		hasSource = isReference && hasOtherParent()
 	}
 
 	/**
@@ -183,13 +184,6 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		flipped = true
 		toShow = renderTranslations(translations)
 	}
-
-	/**
-	 * The blocking form, while production callers read on io.
-	 * - they land [applyFresh] on main instead.
-	 */
-	@VisibleForTesting
-	fun update() = applyFresh(ItemRepository.get(item.id), flipContent())
 
 	fun applyFresh(fresh: DbItem?, items: List<DbItem>) {
 		if (fresh == null) return
@@ -364,8 +358,10 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		): ItemRow {
 			val row = ItemRow(item, null, position, applyDefFlip = false)
 			row.parentId = parentId
-			row.isReference = parentId != null && links.any { it.parentId == parentId && it.isReference }
-			row.hasSource = row.isReference && links.any { it.parentId != parentId }
+			row.applyReferenceFacts(
+				parentId != null && links.any { it.parentId == parentId && it.isReference },
+				{ links.any { it.parentId != parentId } },
+			)
 			row.preloadFlip(translations)
 			row.applyDefaultFlip(translations, defFlip)
 			return row
@@ -395,8 +391,10 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 			row.path = ArrayList(path)
 			row.shownPath = ArrayList(shownPath)
 			row.parentId = parent
-			row.isReference = links.any { it.parentId == parent && it.isReference }
-			row.hasSource = row.isReference && links.any { it.parentId != parent }
+			row.applyReferenceFacts(
+				links.any { it.parentId == parent && it.isReference },
+				{ links.any { it.parentId != parent } },
+			)
 			if (flipContent != null) {
 				row.preloadFlip(flipContent)
 				// the result shows the counterpart of the matched query

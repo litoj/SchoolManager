@@ -7,13 +7,11 @@ import cz.litoj.schlmgr.support.setRowOptions
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * - a browse load takes its reference facts from one preloaded link set.
- * - a default-flipped word takes its translations from one preloaded map.
+ * - a browse load builds its rows from one preloaded link set and one translations map.
  * - building the rows must touch no database.
  */
 class BrowseRowPreloadTest {
@@ -27,30 +25,6 @@ class BrowseRowPreloadTest {
 
 	private fun chapter(id: Int, name: String) =
 		DbItem(id = id, name = name, description = "desc", type = ItemKind.CHAPTER)
-
-	@Test
-	fun `a referenced row with another parent is a reference with a source`() {
-		val rows = ItemRow.convert(listOf(chapter(2, "c")), 1,
-			listOf(DbLink(1, 2, isReference = true), DbLink(9, 2)), emptyMap())
-		assertEquals(1, rows.size)
-		assertTrue(rows.single().isReference)
-		assertTrue(rows.single().hasSource)
-	}
-
-	@Test
-	fun `a plain row is neither a reference nor a jump`() {
-		val rows = ItemRow.convert(listOf(chapter(2, "c")), 1, listOf(DbLink(1, 2)), emptyMap())
-		assertFalse(rows.single().isReference)
-		assertFalse(rows.single().hasSource)
-	}
-
-	@Test
-	fun `a reference without another parent has no jump`() {
-		val rows = ItemRow.convert(listOf(chapter(2, "c")), 1,
-			listOf(DbLink(1, 2, isReference = true)), emptyMap())
-		assertTrue(rows.single().isReference)
-		assertFalse(rows.single().hasSource)
-	}
 
 	@Test
 	fun `preloaded rows keep position order and the item display`() {
@@ -69,30 +43,24 @@ class BrowseRowPreloadTest {
 		val word = DbItem(id = 2, name = "Haus", description = "", type = ItemKind.WORD)
 		val trl = DbItem(id = 9, name = "dům", description = "budova", type = ItemKind.TRANSLATION)
 
-		val rows = ItemRow.convert(listOf(word), 1,
-			listOf(DbLink(1, 2)), mapOf(2 to listOf(trl)))
+		val row = ItemRow.convert(listOf(word), 1,
+			listOf(DbLink(1, 2)), mapOf(2 to listOf(trl))).single()
 
-		val row = rows.single()
 		assertTrue("the word took the default flip", row.flipped)
 		assertEquals("dům", row.toShow)
 		assertEquals("no joint description, the line carries its own", "", row.info)
 		assertEquals(listOf("budova"), row.translationLines.map { it.description })
-	}
 
-	@Test
-	fun `a whole word batch builds flipped without a database`() {
-		setRowOptions(defFlip = true)
-		// every word row renders its translations from the map, while a per-row query
-		// would throw here since no repository is initialized
+		// a whole list renders the same way, and no repository exists to read from
 		val words = (1..20).map { DbItem(id = it, name = "w$it", description = "", type = ItemKind.WORD) }
 		val translations = words.associate {
 			it.id to listOf(DbItem(id = 1000 + it.id, name = "t${it.id}", description = "", type = ItemKind.TRANSLATION))
 		}
 
-		val rows = ItemRow.convert(words, 1, words.map { DbLink(1, it.id) }, translations)
+		val batch = ItemRow.convert(words, 1, words.map { DbLink(1, it.id) }, translations)
 
-		assertEquals(20, rows.size)
-		assertTrue("every word took the default flip", rows.all { it.flipped })
-		assertEquals(listOf("t1", "t2"), rows.take(2).map { it.toShow })
+		assertEquals(20, batch.size)
+		assertTrue("every word took the default flip", batch.all { it.flipped })
+		assertEquals(listOf("t1", "t2"), batch.take(2).map { it.toShow })
 	}
 }

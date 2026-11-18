@@ -174,26 +174,21 @@ class FileWorkerTest {
 	}
 
 	@Test
-	fun `a tree file whose name resolves to nothing imports as a tree`() {
-		// some providers report no document name, so the empty fallback must not
-		// send the tree JSON to the word-list parser
-		val reloads = importPicked("", { null }, tree)
+	fun `the shape of the document picks the parser, its name never does`() {
+		// some providers report no document name, and others report a json one for
+		// a word list, so the text alone decides
+		val wordList = importPicked("list.hjson", { null }, "Kapitel {\nHaus;home\n}")
 
-		val subjects = ItemRepository.subjects()
-		assertEquals(listOf("A", "B"), subjects.map { it.name })
-		assertEquals(listOf("w1"), ItemRepository.children(subjects[0].id).map { it.name })
-		assertEquals(1, reloads.root)
-	}
-
-	@Test
-	fun `a word list with a json-sounding name imports as a word list`() {
-		val reloads = importPicked("list.hjson", { null }, "Kapitel {\nHaus;home\n}")
-
-		// the shape of the document decides, and the name never does
 		val subject = ItemRepository.subjects().single()
 		assertEquals("Kapitel", subject.name)
 		assertEquals(listOf("Haus"), ItemRepository.children(subject.id).map { it.name })
-		assertEquals(1, reloads.root)
+		assertEquals(1, wordList.root)
+
+		val noName = importPicked("", { null }, tree)
+
+		assertEquals(listOf("Kapitel", "A", "B"), ItemRepository.subjects().map { it.name })
+		assertEquals(listOf("w1"), ItemRepository.children(ItemRepository.subjects()[1].id).map { it.name })
+		assertEquals(1, noName.root)
 	}
 
 	@Test
@@ -210,22 +205,6 @@ class FileWorkerTest {
 		assertEquals(listOf("w1"), ItemRepository.children(a.id).map { it.name })
 		assertEquals(0, reloads.root)
 		assertEquals(1, reloads.current)
-	}
-
-	@Test
-	fun `a tree import twice into the same container adds nothing the second time`() {
-		val deutsch = ItemRepository.createSubject("Deutsch", null)
-		val lektion = ItemRepository.createChapter(deutsch.id, "Lektion 1", null)
-
-		importPicked("tree.hjson", { lektion }, tree)
-		importPicked("tree.hjson", { lektion }, tree)
-
-		// the container merge rule, where a same-named chapter of the same parent joins
-		assertEquals(listOf("A", "B"), ItemRepository.children(lektion.id).map { it.name })
-		val a = ItemRepository.children(lektion.id).first { it.name == "A" }
-		val w1 = ItemRepository.children(a.id).single()
-		// the word and its translation merged into their first rows
-		assertEquals(listOf("t1"), ItemRepository.translations(w1.id).map { it.name })
 	}
 
 	@Test
@@ -332,7 +311,7 @@ class FileWorkerTest {
 		assertFalse(Dialogs.isShowing<MessagePopup>())
 	}
 
-	/** The picked file held for an outside editor, as the pick of the screen would hold it. */
+	/** The picked file held for the editor, as the pick of the screen would hold it. */
 	private fun hold(uri: Uri) = FileGateway.holdForEdit(GlobalDependencies.appContext, uri)
 
 	private fun held(uri: Uri?) =
@@ -385,33 +364,40 @@ class FileWorkerTest {
 	}
 
 	@Test
-	fun `a malformed tree import reports through the original snackbar`() = runBlocking {
+	fun `a malformed tree import reports once and leaves nothing behind`() = runBlocking {
 		Dialogs.clear()
 		val message = async(start = CoroutineStart.UNDISPATCHED) {
 			withTimeout(2_000) { GlobalDependencies.messages.first() }
 		}
 
-		importPicked("tree.hjson", { null }, "{\n  name: \"x\"\n")
-
-		assertTrue((message.await() as GlobalDependencies.UiMessage.Text).text.isNotEmpty())
-		assertFalse(Dialogs.isShowing<MessagePopup>())
-	}
-
-	@Test
-	fun `a malformed tree import leaves nothing behind and reloads nothing`() {
 		val reloads = importPicked("tree.hjson", { null }, "{\n  name: \"x\"\n")
 
+		// the snackbar of the load failure: no popup, no half tree, no reload
+		assertTrue((message.await() as GlobalDependencies.UiMessage.Text).text.isNotEmpty())
+		assertFalse(Dialogs.isShowing<MessagePopup>())
 		assertEquals(0, ItemRepository.subjects().size)
 		assertEquals(0, reloads.root)
 		assertEquals(0, reloads.current)
 	}
 
 	@Test
-	fun `an export with no selection writes nothing`() {
+	fun `an export of no selection writes nothing and opens no sheet`() = runBlocking {
 		val (text, started) = exportPicked(ExportFormat.JSON) { emptyList() }
 
 		assertEquals("", text)
 		assertFalse(started)
+
+		val message = async(start = CoroutineStart.UNDISPATCHED) {
+			withTimeoutOrNull(300) { GlobalDependencies.messages.first() }
+		}
+
+		ExportPipeline(
+			GlobalDependencies.appContext, { it.run() },
+			ExportDestination.Share("Kapitel.txt"), ExportFormat.WORD,
+			{ emptyList() }, {},
+		).start().join()
+
+		assertNull("an empty selection shares nothing", message.await())
 	}
 
 	@Test
@@ -432,26 +418,12 @@ class FileWorkerTest {
 
 		val sent = message.await() as GlobalDependencies.UiMessage.SendFile
 		assertEquals("Kapitel.txt", sent.uri.lastPathSegment)
-		// the splitter is a setting, so the copy is checked by its rows, not its bytes
-		val copied = File(sent.uri.path!!).readText()
-		assertTrue("the copy carries the word", "w1" in copied)
-		assertTrue("the copy carries the translation", "t1" in copied)
 		assertEquals("text/plain", sent.mime)
 		assertTrue(started)
-	}
 
-	@Test
-	fun `a shared export of no selection opens no sheet`() = runBlocking {
-		val message = async(start = CoroutineStart.UNDISPATCHED) {
-			withTimeoutOrNull(300) { GlobalDependencies.messages.first() }
-		}
-
-		ExportPipeline(
-			GlobalDependencies.appContext, { it.run() },
-			ExportDestination.Share("Kapitel.txt"), ExportFormat.WORD,
-			{ emptyList() }, {},
-		).start().join()
-
-		assertNull("an empty selection shares nothing", message.await())
+		// the copy is what the same selection writes into a picked document
+		val copied = File(sent.uri.path!!).readText()
+		val written = exportPicked(ExportFormat.WORD) { ItemRepository.subjects() }.first
+		assertEquals("the sheet receives another text", written, copied)
 	}
 }

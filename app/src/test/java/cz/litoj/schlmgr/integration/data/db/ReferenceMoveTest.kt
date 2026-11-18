@@ -21,9 +21,9 @@ import org.robolectric.annotation.Config
  * - nothing is placed into itself or into its own content.
  * - such a link would close a cycle that the graph walks could not leave.
  * - an item can still move into its own ancestor, a harmless reparent.
- * - the test counters of a linked word follow it through a move.
- * - a move refreshes both the losing and the gaining chain.
- * - a reference never counts, so its tests never enter its stored rate.
+ * - a reference link changes no stored counter, added or severed.
+ * - a move recomputes every chain it touches, a surviving holder keeps its sums.
+ * - a removal deducts from its chain, a surviving holder keeps its sums.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -129,75 +129,73 @@ class ReferenceMoveTest {
 		assertTrue(links.all { it.childId == word.id })
 	}
 
+	/** A reference link only shows content, so no stored counter moves, added or severed. */
 	@Test
-	fun `referencing a word into a chapter changes no stored counters`() {
-		val subject = ItemRepository.createSubject("s", null)
-		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
-		val c2 = ItemRepository.createChapter(subject.id, "c2", null)
-		val word = ItemRepository.createWord(c1.id, "w", null, listOf("t" to (null as String?)))
+	fun `a reference link changes no stored counters`() {
+		val one = ItemRepository.createSubject("one", null)
+		val home = ItemRepository.createChapter(one.id, "home", null)
+		val shown = ItemRepository.createChapter(one.id, "shown", null)
+		val word = ItemRepository.createWord(home.id, "w", null, listOf("t" to (null as String?)))
 		// the answer bumps the word and its chapter path together
-		ItemRepository.bumpCounters(listOf(word.id, c1.id), false)
+		ItemRepository.bumpCounters(listOf(word.id, home.id), false)
 
-		assertTrue(ItemRepository.reference(word.id, c2.id))
+		assertTrue(ItemRepository.reference(word.id, shown.id))
 
-		// the reference shows content and never tests, so c2 keeps its own sums
-		assertEquals(0, ItemRepository.get(c2.id)!!.failedTests)
-		assertEquals(0, ItemRepository.get(c2.id)!!.passedTests)
-		assertEquals(1, ItemRepository.get(c1.id)!!.failedTests)
-	}
+		// the reference shows content and never tests, so its row keeps its own sums
+		assertEquals(0, ItemRepository.get(shown.id)!!.failedTests)
+		assertEquals(0, ItemRepository.get(shown.id)!!.passedTests)
+		assertEquals(1, ItemRepository.get(home.id)!!.failedTests)
 
-	@Test
-	fun `a referencing parent never gains the referenced tests, the root never does`() {
-		val subject = ItemRepository.createSubject("s", null)
-		val c = ItemRepository.createChapter(subject.id, "c", null)
-		// d references c, so the content of c shows in d and its tests never count there
-		val d = ItemRepository.createChapter(subject.id, "d", null)
-		assertTrue(ItemRepository.reference(c.id, d.id))
-		val w1 = ItemRepository.createWord(c.id, "w1", null, listOf("t" to (null as String?)))
-		ItemRepository.bumpCounters(listOf(subject.id, c.id, w1.id), false)
+		// a referencing chapter never gains the tests of the content it only shows
+		val two = ItemRepository.createSubject("two", null)
+		val content = ItemRepository.createChapter(two.id, "content", null)
+		val parent = ItemRepository.createChapter(two.id, "parent", null)
+		assertTrue(ItemRepository.reference(content.id, parent.id))
+		val inner = ItemRepository.createWord(content.id, "w1", null, listOf("t" to (null as String?)))
+		ItemRepository.bumpCounters(listOf(two.id, content.id, inner.id), false)
+		assertEquals(0, ItemRepository.get(parent.id)!!.failedTests)
+		assertEquals(1, ItemRepository.get(two.id)!!.failedTests)
 
-		// d shows w1 through the link but keeps its own empty sums
-		assertEquals(0, ItemRepository.get(d.id)!!.failedTests)
-		assertEquals(1, ItemRepository.get(subject.id)!!.failedTests)
+		// a word joining the shown chapter changes nothing above it either
+		val outside = ItemRepository.createChapter(two.id, "outside", null)
+		val outsideWord = ItemRepository.createWord(outside.id, "w3", null, listOf("t" to (null as String?)))
+		ItemRepository.bumpCounters(listOf(two.id, outside.id, outsideWord.id), true)
+		assertTrue(ItemRepository.reference(outsideWord.id, content.id))
+		assertEquals(0, ItemRepository.get(content.id)!!.passedTests)
+		assertEquals(1, ItemRepository.get(two.id)!!.passedTests)
 
-		// a word joins c through a reference, so no stored sum changes above
-		val outside = ItemRepository.createChapter(subject.id, "outside", null)
-		val w3 = ItemRepository.createWord(outside.id, "w3", null, listOf("t" to (null as String?)))
-		ItemRepository.bumpCounters(listOf(subject.id, outside.id, w3.id), true)
-		assertTrue(ItemRepository.reference(w3.id, c.id))
-		assertEquals(0, ItemRepository.get(c.id)!!.passedTests)
-		assertEquals(1, ItemRepository.get(subject.id)!!.passedTests)
+		// a severed reference never counted, so no stored sum moves
+		val three = ItemRepository.createSubject("three", null)
+		val otherHome = ItemRepository.createChapter(three.id, "home", null)
+		val referrer = ItemRepository.createChapter(three.id, "referrer", null)
+		val shared = ItemRepository.createWord(otherHome.id, "w", null, listOf("t" to (null as String?)))
+		val own = ItemRepository.createWord(referrer.id, "own", null, listOf("t" to (null as String?)))
+		assertTrue(ItemRepository.reference(shared.id, referrer.id))
+		// both chapters carry the tests of their own plain words
+		ItemRepository.bumpCounters(listOf(shared.id, three.id, otherHome.id), false)
+		ItemRepository.bumpCounters(listOf(own.id, three.id, referrer.id), false)
+
+		ItemRepository.remove(shared.id, referrer.id)
+
+		assertEquals(1, ItemRepository.get(otherHome.id)!!.failedTests)
+		assertEquals(1, ItemRepository.get(referrer.id)!!.failedTests)
+		assertEquals(2, ItemRepository.get(three.id)!!.failedTests)
 		// the invisible root row keeps its counters, so the whole-database sum
 		// writes nowhere
 		assertEquals(0, ItemRepository.get(ROOT_ID)!!.failedTests)
 		assertEquals(0, ItemRepository.get(ROOT_ID)!!.passedTests)
 	}
 
+	/** A move recomputes every container of the chains it touched. */
 	@Test
-	fun `moving a word between chapters refreshes both chapters' stored counters`() {
-		val subject = ItemRepository.createSubject("s", null)
-		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
-		val c2 = ItemRepository.createChapter(subject.id, "c2", null)
-		val word = ItemRepository.createWord(c1.id, "w", null, listOf("t" to (null as String?)))
-		ItemRepository.bumpCounters(listOf(word.id, c1.id), false)
-
-		assertEquals(ItemRepository.MoveResult.MOVED, ItemRepository.move(word.id, c1.id, c2.id))
-
-		// the tests of the word left the derivation of the source parent and joined
-		// the one of the target
-		assertEquals(0, ItemRepository.get(c1.id)!!.failedTests)
-		assertEquals(1, ItemRepository.get(c2.id)!!.failedTests)
-	}
-
-	@Test
-	fun `a move refreshes every ancestor above both parents`() {
-		val subject = ItemRepository.createSubject("s", null)
-		val a1 = ItemRepository.createChapter(subject.id, "a1", null)
+	fun `a move refreshes every chain it touches`() {
+		val one = ItemRepository.createSubject("one", null)
+		val a1 = ItemRepository.createChapter(one.id, "a1", null)
 		val a2 = ItemRepository.createChapter(a1.id, "a2", null)
-		val b1 = ItemRepository.createChapter(subject.id, "b1", null)
+		val b1 = ItemRepository.createChapter(one.id, "b1", null)
 		val b2 = ItemRepository.createChapter(b1.id, "b2", null)
 		val word = ItemRepository.createWord(a2.id, "w", null, listOf("t" to (null as String?)))
-		ItemRepository.bumpCounters(listOf(word.id, subject.id, a1.id, a2.id), false)
+		ItemRepository.bumpCounters(listOf(word.id, one.id, a1.id, a2.id), false)
 
 		assertEquals(ItemRepository.MoveResult.MOVED, ItemRepository.move(word.id, a2.id, b2.id))
 
@@ -207,100 +205,76 @@ class ReferenceMoveTest {
 		assertEquals(0, ItemRepository.get(a1.id)!!.failedTests)
 		assertEquals(1, ItemRepository.get(b2.id)!!.failedTests)
 		assertEquals(1, ItemRepository.get(b1.id)!!.failedTests)
-		assertEquals(1, ItemRepository.get(subject.id)!!.failedTests)
-	}
+		assertEquals(1, ItemRepository.get(one.id)!!.failedTests)
 
-	@Test
-	fun `moving a chapter moves its words' counters with it`() {
-		val subject = ItemRepository.createSubject("s", null)
-		val a1 = ItemRepository.createChapter(subject.id, "a1", null)
-		val b1 = ItemRepository.createChapter(subject.id, "b1", null)
-		val inner = ItemRepository.createChapter(a1.id, "inner", null)
-		val word = ItemRepository.createWord(inner.id, "w", null, listOf("t" to (null as String?)))
-		// the answer bumps the word and every container holding it
-		ItemRepository.bumpWordCounters(word.id, true)
+		// the word keeps a second plain holder, so only the chain it really left drops it
+		val two = ItemRepository.createSubject("two", null)
+		val mid = ItemRepository.createChapter(two.id, "mid", null)
+		val from1 = ItemRepository.createChapter(mid.id, "a1", null)
+		val from2 = ItemRepository.createChapter(mid.id, "a2", null)
+		val to1 = ItemRepository.createChapter(two.id, "b1", null)
+		val held = ItemRepository.createWord(from1.id, "w", null, listOf("t" to (null as String?)))
+		ItemRepository.legacyLinkAtEnd(from2.id, held.id)
+		ItemRepository.recomputeCounters(from2.id)
+		ItemRepository.bumpCounters(listOf(held.id, two.id, mid.id, from1.id, from2.id), false)
 
-		assertEquals(ItemRepository.MoveResult.MOVED, ItemRepository.move(inner.id, a1.id, b1.id))
-
-		assertEquals(0, ItemRepository.get(a1.id)!!.passedTests)
-		assertEquals(1, ItemRepository.get(b1.id)!!.passedTests)
-		assertEquals(1, ItemRepository.get(subject.id)!!.passedTests)
-	}
-
-	@Test
-	fun `a shared word's move keeps the surviving holder's sums`() {
-		val subject = ItemRepository.createSubject("s", null)
-		val mid = ItemRepository.createChapter(subject.id, "mid", null)
-		val a1 = ItemRepository.createChapter(mid.id, "a1", null)
-		val a2 = ItemRepository.createChapter(mid.id, "a2", null)
-		val b1 = ItemRepository.createChapter(subject.id, "b1", null)
-		val word = ItemRepository.createWord(a1.id, "w", null, listOf("t" to (null as String?)))
-		// a second plain holder, so the word stays reachable through it
-		ItemRepository.legacyLinkAtEnd(a2.id, word.id)
-		ItemRepository.recomputeCounters(a2.id)
-		ItemRepository.bumpCounters(listOf(word.id, subject.id, mid.id, a1.id, a2.id), false)
-
-		assertEquals(ItemRepository.MoveResult.MOVED, ItemRepository.move(word.id, a1.id, b1.id))
+		assertEquals(ItemRepository.MoveResult.MOVED, ItemRepository.move(held.id, from1.id, to1.id))
 
 		// the word left a1 and joined b1 but never left a2, so a plain delta would
 		// have deducted it from the sums of mid and the subject
-		assertEquals(0, ItemRepository.get(a1.id)!!.failedTests)
-		assertEquals(1, ItemRepository.get(a2.id)!!.failedTests)
+		assertEquals(0, ItemRepository.get(from1.id)!!.failedTests)
+		assertEquals(1, ItemRepository.get(from2.id)!!.failedTests)
 		assertEquals(1, ItemRepository.get(mid.id)!!.failedTests)
-		assertEquals(1, ItemRepository.get(b1.id)!!.failedTests)
-		assertEquals(1, ItemRepository.get(subject.id)!!.failedTests)
+		assertEquals(1, ItemRepository.get(to1.id)!!.failedTests)
+		assertEquals(1, ItemRepository.get(two.id)!!.failedTests)
+
+		// a moved chapter carries the words inside it, and their counters with them
+		val three = ItemRepository.createSubject("three", null)
+		val under = ItemRepository.createChapter(three.id, "a1", null)
+		val onto = ItemRepository.createChapter(three.id, "b1", null)
+		val inner = ItemRepository.createChapter(under.id, "inner", null)
+		val inside = ItemRepository.createWord(inner.id, "w", null, listOf("t" to (null as String?)))
+		// the answer bumps the word and every container holding it
+		ItemRepository.bumpWordCounters(inside.id, true)
+
+		assertEquals(ItemRepository.MoveResult.MOVED, ItemRepository.move(inner.id, under.id, onto.id))
+
+		assertEquals(0, ItemRepository.get(under.id)!!.passedTests)
+		assertEquals(1, ItemRepository.get(onto.id)!!.passedTests)
+		assertEquals(1, ItemRepository.get(three.id)!!.passedTests)
 	}
 
+	/** A removal deducts the gone row's counters from every plain chain above it. */
 	@Test
 	fun `removing a word deducts its counters from the whole chain`() {
-		val subject = ItemRepository.createSubject("s", null)
-		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
+		val one = ItemRepository.createSubject("one", null)
+		val c1 = ItemRepository.createChapter(one.id, "c1", null)
 		val c2 = ItemRepository.createChapter(c1.id, "c2", null)
 		val word = ItemRepository.createWord(c2.id, "w", null, listOf("t" to (null as String?)))
-		ItemRepository.bumpCounters(listOf(word.id, subject.id, c1.id, c2.id), false)
+		// the answer bumps the word and its whole path together
+		ItemRepository.bumpCounters(listOf(word.id, one.id, c1.id, c2.id), false)
+		ItemRepository.bumpCounters(listOf(word.id, one.id, c1.id, c2.id), true)
 
 		ItemRepository.remove(word.id, c2.id)
 
-		assertEquals(0, ItemRepository.get(c2.id)!!.failedTests)
-		assertEquals(0, ItemRepository.get(c1.id)!!.failedTests)
-		assertEquals(0, ItemRepository.get(subject.id)!!.failedTests)
-	}
+		for ((label, id) in listOf("chapter" to c2.id, "its parent" to c1.id, "subject" to one.id)) {
+			assertEquals("$label lost the failed sum", 0, ItemRepository.get(id)!!.failedTests)
+			assertEquals("$label lost the passed sum", 0, ItemRepository.get(id)!!.passedTests)
+		}
 
-	@Test
-	fun `removing a shared word keeps the surviving holder's sums`() {
-		val subject = ItemRepository.createSubject("s", null)
-		val a1 = ItemRepository.createChapter(subject.id, "a1", null)
-		val a2 = ItemRepository.createChapter(subject.id, "a2", null)
-		val word = ItemRepository.createWord(a1.id, "w", null, listOf("t" to (null as String?)))
-		ItemRepository.legacyLinkAtEnd(a2.id, word.id)
+		// the word stays in a2, so no sum above drops it
+		val two = ItemRepository.createSubject("two", null)
+		val a1 = ItemRepository.createChapter(two.id, "a1", null)
+		val a2 = ItemRepository.createChapter(two.id, "a2", null)
+		val held = ItemRepository.createWord(a1.id, "w", null, listOf("t" to (null as String?)))
+		ItemRepository.legacyLinkAtEnd(a2.id, held.id)
 		ItemRepository.recomputeCounters(a2.id)
-		ItemRepository.bumpCounters(listOf(word.id, subject.id, a1.id, a2.id), false)
+		ItemRepository.bumpCounters(listOf(held.id, two.id, a1.id, a2.id), false)
 
-		ItemRepository.remove(word.id, a1.id)
+		ItemRepository.remove(held.id, a1.id)
 
-		// the word left a1 only, because it stays in a2, so no sum above drops it
 		assertEquals(0, ItemRepository.get(a1.id)!!.failedTests)
 		assertEquals(1, ItemRepository.get(a2.id)!!.failedTests)
-		assertEquals(1, ItemRepository.get(subject.id)!!.failedTests)
-	}
-
-	@Test
-	fun `removing a reference changes no stored counters`() {
-		val subject = ItemRepository.createSubject("s", null)
-		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
-		val c2 = ItemRepository.createChapter(subject.id, "c2", null)
-		val word = ItemRepository.createWord(c1.id, "w", null, listOf("t" to (null as String?)))
-		val own = ItemRepository.createWord(c2.id, "own", null, listOf("t" to (null as String?)))
-		assertTrue(ItemRepository.reference(word.id, c2.id))
-		// both chapters carry the tests of their own plain words
-		ItemRepository.bumpCounters(listOf(word.id, subject.id, c1.id), false)
-		ItemRepository.bumpCounters(listOf(own.id, subject.id, c2.id), false)
-
-		ItemRepository.remove(word.id, c2.id)
-
-		// the severed reference never counted, so no stored sum moves
-		assertEquals(1, ItemRepository.get(c1.id)!!.failedTests)
-		assertEquals(1, ItemRepository.get(c2.id)!!.failedTests)
-		assertEquals(2, ItemRepository.get(subject.id)!!.failedTests)
+		assertEquals(1, ItemRepository.get(two.id)!!.failedTests)
 	}
 }

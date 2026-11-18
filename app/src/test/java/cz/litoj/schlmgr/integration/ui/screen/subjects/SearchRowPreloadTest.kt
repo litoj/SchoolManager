@@ -4,14 +4,11 @@ import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
-import cz.litoj.schlmgr.support.setRowOptions
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
-import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import kotlinx.coroutines.Dispatchers
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -21,16 +18,14 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * A search run lands its word hits on the search default flip.
- * - the translations come from the index preload, so the flip reads no database.
+ * A search run hands its word hit the flip content of the index.
+ * - the flip setting itself belongs to unit/ui/viewmodel/SearchHitRowTest.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
-class SearchDefaultFlipTest {
+class SearchRowPreloadTest {
 
 	private lateinit var db: ItemDatabase
-
-	private val searchDefFlipWas = ItemRow.searchDefFlip
 
 	@Before
 	fun setUp() {
@@ -46,10 +41,10 @@ class SearchDefaultFlipTest {
 	fun tearDown() {
 		db.close()
 		ItemRepository.resetForTest()
-		setRowOptions(searchDefFlip = searchDefFlipWas)
 	}
 
-	private fun searched(): MainExplorerViewModel {
+	@Test
+	fun `a search run hands its word hit the preloaded translation`() {
 		val a = ItemRepository.createSubject("A", null)
 		val c = ItemRepository.createChapter(a.id, "c1", null, 0)
 		ItemRepository.createWord(c.id, "w1", null, listOf("t1" to null))
@@ -59,24 +54,8 @@ class SearchDefaultFlipTest {
 		model.onItemClick(model.items().single { it.item.name == "A" })
 		model.openSearchField()
 		model.onQuerySubmit("w1")
-		return model
-	}
-
-	@Test
-	fun `a word hit shows its translations when the search default flip is on`() {
-		val model = searched()
 
 		assertEquals(listOf("t1"), model.items().map { it.toShow })
-		assertTrue("the hit row starts flipped", model.items().single().flipped)
-	}
-
-	@Test
-	fun `a word hit keeps its name when the search default flip is off`() {
-		setRowOptions(searchDefFlip = false)
-
-		val model = searched()
-
-		assertEquals(listOf("w1"), model.items().map { it.toShow })
-		assertFalse("the hit row stays on its name", model.items().single().flipped)
+		assertTrue("the hit row took the preloaded flip", model.items().single().flipped)
 	}
 }

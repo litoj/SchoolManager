@@ -82,84 +82,52 @@ class JsonWordListParseTest {
 	}
 
 	@Test
-	fun `a top-level array becomes several subjects`() {
-		val parsed = JsonWordList.parse(
-			"""
-			[
-			  {
-			    name: One
-			    children: []
-			  }
-			  {
-			    name: Two
-			    children: []
-			  }
-			]
-			""".trimIndent()
+	fun `an optional field left out or null falls back to the default`() {
+		val bodies = mapOf(
+			"left out" to "{\n  name: Bare\n  children: []\n}",
+			"an explicit null" to "{\n  name: Bare\n  children: []\n  desc: null\n}",
 		)
 
-		assertEquals(2, parsed.size)
-		assertEquals("One", (parsed[0] as JsonChapter).name)
-		assertEquals("Two", (parsed[1] as JsonChapter).name)
+		for ((name, body) in bodies) {
+			val subject = JsonWordList.parse(body).single() as JsonChapter
+			assertEquals("$name lost its subject", "Bare", subject.name)
+			assertNull("$name kept a description", subject.description)
+			assertTrue("$name kept an entry", subject.entries.isEmpty())
+		}
 	}
 
 	@Test
-	fun `missing optional fields fall back to the defaults`() {
-		val parsed = JsonWordList.parse("{\n  name: Bare\n  children: []\n}")
-
-		val subject = parsed.single() as JsonChapter
-		assertEquals("Bare", subject.name)
-		assertNull(subject.description)
-		assertTrue(subject.entries.isEmpty())
-	}
-
-	@Test
-	fun `an explicit null optional value is treated as missing`() {
-		val parsed = JsonWordList.parse("{\n  name: Bare\n  children: []\n  desc: null\n}")
-
-		assertNull((parsed.single() as JsonChapter).description)
-	}
-
-	@Test
-	fun `comments and unquoted keys are accepted`() {
-		val parsed = JsonWordList.parse(
-			"""
-			// the leading comment
-			{
-			  /* a block comment */
-			  name: "Commented"
-			  children:
-			  [
-			    {
-			      name: w
-			      translations: []
-			    }
-			  ]
-			}
-			""".trimIndent()
+	fun `comments and unquoted keys parse like plain JSON`() {
+		val documents = mapOf(
+			"comments and unquoted keys" to (
+				"""
+				// the leading comment
+				{
+				  /* a block comment */
+				  name: "Commented"
+				  children:
+				  [
+				    {
+				      name: w
+				      translations: []
+				    }
+				  ]
+				}
+				""".trimIndent() to "Commented"),
+			"plain JSON" to (
+				"{\"name\":\"Plain\",\"children\":[{\"name\":\"w\",\"s\":2,\"translations\":[]}]}" to "Plain"),
 		)
 
-		val subject = parsed.single() as JsonChapter
-		assertEquals("Commented", subject.name)
-		val word = subject.entries.single() as JsonWord
-		assertEquals("w", word.name)
+		for ((name, document) in documents) {
+			val subject = JsonWordList.parse(document.first).single() as JsonChapter
+			assertEquals("$name lost its subject", document.second, subject.name)
+			val word = subject.entries.single() as JsonWord
+			assertEquals("$name lost its word", "w", word.name)
+		}
 	}
 
 	@Test
-	fun `plain JSON is accepted as well`() {
-		val parsed = JsonWordList.parse(
-			"{\"name\":\"Plain\",\"children\":[{\"name\":\"w\",\"s\":2,\"translations\":[]}]}"
-		)
-
-		val subject = parsed.single() as JsonChapter
-		assertEquals("Plain", subject.name)
-		val word = subject.entries.single() as JsonWord
-		assertEquals("w", word.name)
-		assertEquals(2, word.passedTests)
-	}
-
-	@Test
-	fun `a hand-built tree survives the write-parse round trip`() {
+	fun `a hand-built tree of several roots writes and parses back`() {
 		val subject = JsonChapter("Subject", "desc")
 		val note = JsonNote("note", "nd")
 		val word = JsonWord("word", "wd", 3, 4)
@@ -171,10 +139,14 @@ class JsonWordListParseTest {
 		subject.entries.add(word)
 		subject.entries.add(nested)
 		subject.entries.add(JsonRef(listOf("Subject", "nested", "inner")))
+		val bare = JsonWord("Haus", "wd", 1, 2)
+		bare.translations.add(JsonTranslation("dům", null, 0, 0))
 
-		val parsed = JsonWordList.parse(JsonWordList.writeEntries(listOf(subject)))
+		val roots = listOf(subject, bare, JsonNote("root note", "nd"))
+		val parsed = JsonWordList.parse(JsonWordList.writeEntries(roots))
 
-		val subject2 = parsed.single() as JsonChapter
+		assertEquals(3, parsed.size)
+		val subject2 = parsed[0] as JsonChapter
 		assertEquals("Subject", subject2.name)
 		assertEquals("desc", subject2.description)
 		assertEquals(
@@ -199,37 +171,15 @@ class JsonWordListParseTest {
 		assertEquals(9, (nested2.entries.single() as JsonWord).failedTests)
 		val ref2 = subject2.entries[3] as JsonRef
 		assertEquals(listOf("Subject", "nested", "inner"), ref2.path)
-	}
 
-	@Test
-	fun `several chapters write as an array and parse back`() {
-		val a = JsonChapter("A")
-		val b = JsonChapter("B", "bd")
-
-		val parsed = JsonWordList.parse(JsonWordList.writeEntries(listOf(a, b)))
-
-		assertEquals(2, parsed.size)
-		assertEquals("A", (parsed[0] as JsonChapter).name)
-		assertEquals("B", (parsed[1] as JsonChapter).name)
-		assertEquals("bd", (parsed[1] as JsonChapter).description)
-	}
-
-	@Test
-	fun `bare word and note roots write and parse back`() {
-		val word = JsonWord("Haus", "wd", 1, 2)
-		word.translations.add(JsonTranslation("dům", null, 0, 0))
-		val note = JsonNote("note", "nd")
-
-		val single = JsonWordList.parse(JsonWordList.writeEntries(listOf(word)))
-		val several = JsonWordList.parse(JsonWordList.writeEntries(listOf(word, note)))
-
-		val back = single.single() as JsonWord
-		assertEquals("Haus", back.name)
-		assertEquals("wd", back.description)
-		assertEquals(1, back.passedTests)
-		assertEquals(listOf("dům"), back.translations.map { it.name })
-		assertEquals(2, several.size)
-		assertEquals(JsonNote::class, several[1]::class)
+		// a bare root keeps its own kind beside the subject, and alone
+		val bare2 = parsed[1] as JsonWord
+		assertEquals("Haus", bare2.name)
+		assertEquals("wd", bare2.description)
+		assertEquals(1, bare2.passedTests)
+		assertEquals(listOf("dům"), bare2.translations.map { it.name })
+		assertEquals(JsonNote::class, parsed[2]::class)
+		assertEquals("Haus", (JsonWordList.parse(JsonWordList.writeEntries(listOf(bare))).single() as JsonWord).name)
 	}
 
 	@Test

@@ -33,23 +33,6 @@ internal class SubjectsTransfer(
 		fun requestScrollToBottom()
 	}
 
-	/**
-	 * The file name of an export of the selected rows, null when none is writable.
-	 * - see [exportRows] for what a selection may hold.
-	 */
-	private fun exportFileName(format: ExportFormat): String? {
-		val rows = exportRows()
-		if (rows.isEmpty()) return null
-		val open = host.path.lastOrNull()
-		val stem = when {
-			rows.size == 1 -> rows[0].name
-			// a multi selection inside a container is a partial export of it
-			open != null -> open.name + PARTIAL_SUFFIX
-			else -> "subjects"
-		}
-		return stem + format.suffix()
-	}
-
 	/** The sheet where the user picks the format and its destination. */
 	fun openExportSheet() {
 		ExportPopup(::saveFile, ::shareFile)
@@ -57,7 +40,7 @@ internal class SubjectsTransfer(
 
 	/** The save dialog of the format, the picked document receives the rows. */
 	fun saveFile(format: ExportFormat) {
-		val name = exportFileName(format) ?: return
+		val name = exportFileName(format, exportRows(), host.path.lastOrNull()) ?: return
 		host.emitRequest(
 			if (format == ExportFormat.WORD) Request.PickWordExport(name)
 			else Request.PickJsonExport(name)
@@ -66,8 +49,8 @@ internal class SubjectsTransfer(
 
 	/** The cache copy of the format, straight into the share sheet of the system. */
 	fun shareFile(format: ExportFormat) {
-		val name = exportFileName(format) ?: return
 		val selected = exportRows()
+		val name = exportFileName(format, selected, host.path.lastOrNull()) ?: return
 		ExportPipeline(
 			host.ctx, host::postToUi, ExportDestination.Share(name), format,
 			{ selected }, host::clearSelection,
@@ -122,6 +105,21 @@ internal class SubjectsTransfer(
 		ExportPipeline(host.ctx, host::postToUi, ExportDestination.Document(uri), ExportFormat.JSON,
 			{ selected }, host::clearSelection).start()
 	}
+}
+
+/**
+ * The file name of an export of [rows] picked in [container], null when the selection writes nothing.
+ * - a multi selection inside a container is a partial export of it.
+ * - a multi selection of subjects has no container, so the list names itself.
+ */
+internal fun exportFileName(format: ExportFormat, rows: List<DbItem>, container: DbItem?): String? {
+	if (rows.isEmpty()) return null
+	val stem = when {
+		rows.size == 1 -> rows[0].name
+		container != null -> container.name + PARTIAL_SUFFIX
+		else -> "subjects"
+	}
+	return stem + format.suffix()
 }
 
 /** The suffix of a multi selection export of the open container. */

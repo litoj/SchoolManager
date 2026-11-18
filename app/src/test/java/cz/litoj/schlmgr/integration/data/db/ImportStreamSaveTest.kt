@@ -52,6 +52,28 @@ class ImportStreamSaveTest {
 	private fun item(name: String, type: ItemKind, description: String = "") =
 		DbItem(name = name, description = description, type = type)
 
+	/** A chapter whose note carries no name, beside a word the save would accept. */
+	private fun unnamedItem(): List<StreamItem> {
+		val chapter = StreamItem(item("chapter", ItemKind.CHAPTER), null)
+		val word = StreamItem(item("word", ItemKind.WORD), chapter)
+		return listOf(chapter, StreamItem(item("  ", ItemKind.NOTE), chapter), word,
+			StreamItem(item("translation", ItemKind.TRANSLATION), word))
+	}
+
+	/** A chapter holding a word that has no translation at all. */
+	private fun wordWithoutTranslation(): List<StreamItem> {
+		val chapter = StreamItem(item("chapter", ItemKind.CHAPTER), null)
+		return listOf(chapter, StreamItem(item("word", ItemKind.WORD), chapter))
+	}
+
+	/** A word holding a note beside its translation. */
+	private fun childThatIsNoTranslation(): List<StreamItem> {
+		val chapter = StreamItem(item("chapter", ItemKind.CHAPTER), null)
+		val word = StreamItem(item("word", ItemKind.WORD), chapter)
+		return listOf(chapter, word, StreamItem(item("t", ItemKind.TRANSLATION), word),
+			StreamItem(item("n", ItemKind.NOTE), word))
+	}
+
 	@Test
 	fun `a reference holds no name in its parent - the plain child saves as its own row`() {
 		val subject = ItemRepository.createSubject("S", null)
@@ -79,22 +101,27 @@ class ImportStreamSaveTest {
 	}
 
 	@Test
-	fun `a stream with an unnamed item is refused whole`() {
-		val chapter = StreamItem(item("chapter", ItemKind.CHAPTER), null)
-		val word = StreamItem(item("word", ItemKind.WORD), chapter)
-		val translation = StreamItem(item("translation", ItemKind.TRANSLATION), word)
-		try {
-			ItemRepository.import(object : DataImporter {
-				override val items = listOf(
-					chapter, StreamItem(item("  ", ItemKind.NOTE), chapter), word, translation)
-				override val references: List<StreamReference> = emptyList()
-			})
-			fail("an item with no name cannot be stored, since no export format round-trips it")
-		} catch (e: IllegalArgumentException) {
-			// expected, because a blank name is not an item
+	fun `a stream that fails its pre-check rolls the whole import back`() {
+		val refusals = mapOf(
+			"an item without a name" to (unnamedItem() to "without a name"),
+			"a word without a translation" to (wordWithoutTranslation() to "A word without a translation"),
+			"a child that is no translation" to (childThatIsNoTranslation() to "its translations"),
+		)
+
+		for ((name, refusal) in refusals) {
+			val (rows, reason) = refusal
+			try {
+				ItemRepository.import(object : DataImporter {
+					override val items = rows
+					override val references: List<StreamReference> = emptyList()
+				})
+				fail("$name must fail the import")
+			} catch (e: IllegalArgumentException) {
+				assertTrue("$name refused for the wrong reason", e.message!!.contains(reason))
+			}
+			// the pre-check runs before the transaction, so not even the chapter lands
+			assertEquals("$name wrote a subject", emptyList<String>(), ItemRepository.subjects().map { it.name })
 		}
-		// the stream failed whole, so nothing landed
-		assertEquals(emptyList<String>(), ItemRepository.subjects().map { it.name })
 	}
 
 	@Test
@@ -121,41 +148,6 @@ class ImportStreamSaveTest {
 		assertEquals("word description", children[0].description)
 		assertEquals("note description", children[1].description)
 		assertEquals(listOf("translation"), ItemRepository.translations(children[0].id).map { it.name })
-	}
-
-	@Test
-	fun `a word without a translation fails the whole import with nothing written`() {
-		val chapter = StreamItem(item("chapter", ItemKind.CHAPTER), null)
-		val word = StreamItem(item("word", ItemKind.WORD), chapter)
-		try {
-			ItemRepository.import(object : DataImporter {
-				override val items = listOf(chapter, word)
-				override val references: List<StreamReference> = emptyList()
-			})
-			fail("a translation-less word must fail the import")
-		} catch (e: IllegalArgumentException) {
-			assertTrue(e.message!!.contains("word"))
-		}
-		// the transaction rolled back, so not even the chapter landed
-		assertTrue(ItemRepository.subjects().isEmpty())
-	}
-
-	@Test
-	fun `a non-translation child under a word fails the whole import`() {
-		val chapter = StreamItem(item("chapter", ItemKind.CHAPTER), null)
-		val word = StreamItem(item("word", ItemKind.WORD), chapter)
-		val translation = StreamItem(item("t", ItemKind.TRANSLATION), word)
-		val note = StreamItem(item("n", ItemKind.NOTE), word)
-		try {
-			ItemRepository.import(object : DataImporter {
-				override val items = listOf(chapter, word, translation, note)
-				override val references: List<StreamReference> = emptyList()
-			})
-			fail("a note under a word must fail the import")
-		} catch (e: IllegalArgumentException) {
-			assertTrue(e.message!!.contains("translations"))
-		}
-		assertTrue(ItemRepository.subjects().isEmpty())
 	}
 
 	@Test
@@ -206,42 +198,28 @@ class ImportStreamSaveTest {
 	}
 
 	@Test
-	fun `a stream reference to an ancestor of its own parent is skipped`() {
+	fun `a stream reference to its own ancestor or to itself is skipped`() {
 		val subject = ItemRepository.createSubject("s", null)
 		val c = ItemRepository.createChapter(subject.id, "c", null)
 		val d = ItemRepository.createChapter(c.id, "d", null)
 
-		// the stream re-imports the existing tree so the rows merge onto
-		// their real rows, and its reference asks d to link its own ancestor c
+		// the stream re-imports the existing tree so the rows merge onto their real
+		// rows, and its references ask d for its ancestor c and c for itself
 		val root = StreamItem(item("s", ItemKind.CHAPTER), null)
 		val chapterC = StreamItem(item("c", ItemKind.CHAPTER), root)
 		val chapterD = StreamItem(item("d", ItemKind.CHAPTER), chapterC)
 		val result = ItemRepository.import(object : DataImporter {
 			override val items = listOf(root, chapterC, chapterD)
-			override val references = listOf(StreamReference(chapterD, listOf("s"), "c"))
+			override val references = listOf(
+				StreamReference(chapterD, listOf("s"), "c"),
+				StreamReference(chapterC, listOf("s"), "c"),
+			)
 		})
 
 		assertEquals(subject.id, result.topLevel.single().id)
-		// the ancestor reference added no d→c link, since it is no reference
-		// c keeps the subject as its only parent, so the tree stays a tree
+		// neither guard adds a link, so c keeps the subject as its only parent and
+		// the tree stays a tree for the export walk
 		assertFalse(ItemRepository.linkIsReference(d.id, c.id))
-		assertEquals(listOf(subject.id), ItemRepository.parentIds(c.id))
-	}
-
-	@Test
-	fun `a stream reference onto the referencing row itself is skipped`() {
-		val subject = ItemRepository.createSubject("s", null)
-		val c = ItemRepository.createChapter(subject.id, "c", null)
-
-		// the self case, where the reference resolves to d itself, a self-loop the
-		// export walk could never leave
-		val root = StreamItem(item("s", ItemKind.CHAPTER), null)
-		val chapterC = StreamItem(item("c", ItemKind.CHAPTER), root)
-		ItemRepository.import(object : DataImporter {
-			override val items = listOf(root, chapterC)
-			override val references = listOf(StreamReference(chapterC, listOf("s"), "c"))
-		})
-
 		assertFalse(ItemRepository.linkIsReference(c.id, c.id))
 		assertEquals(listOf(subject.id), ItemRepository.parentIds(c.id))
 	}

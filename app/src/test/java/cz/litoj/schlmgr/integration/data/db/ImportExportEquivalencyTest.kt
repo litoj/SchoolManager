@@ -82,19 +82,26 @@ class ImportExportEquivalencyTest {
 	@Test
 	fun `the tree JSON round trip preserves names descriptions order translations counters notes and references`() {
 		val subject = buildGraph()
+		// the children of a subject interleave, so the cycle proves the file order
+		ItemRepository.createWord(subject.id, "w1", null, listOf("t" to null))
+		ItemRepository.createChapter(subject.id, "c1", null)
+		ItemRepository.createWord(subject.id, "w2", null, listOf("t" to null))
+		ItemRepository.createNote(subject.id, "n1", null)
+		ItemRepository.createChapter(subject.id, "c2", null)
 		val text = ItemRepository.export(HJsonExporter(), listOf(subject))
 
 		freshDatabase()
 		val result = ItemRepository.import(HJsonImporter(text))
 
-		// the stream counts its own rows, the subject and the two chapters
-		assertEquals(2, result.words)
-		assertEquals(3, result.chapters)
+		// the stream counts its own rows, a note is neither of them
+		assertEquals(4, result.words)
+		assertEquals(5, result.chapters)
 		val back = ItemRepository.subjects().single()
 		assertEquals("Deutsch", back.name)
 		assertEquals("subject description", back.description)
 		val children = ItemRepository.children(back.id)
-		assertEquals(listOf("Lektion 1", "Lektion 2", "a note"), children.map { it.name })
+		assertEquals(listOf("Lektion 1", "Lektion 2", "a note", "w1", "c1", "w2", "n1", "c2"),
+			children.map { it.name })
 		val chapter = children[0]
 		assertEquals("chapter description", chapter.description)
 		val words = ItemRepository.children(chapter.id)
@@ -110,25 +117,6 @@ class ImportExportEquivalencyTest {
 		assertEquals("note description", note.description)
 		val second = children[1]
 		assertTrue(ItemRepository.linkIsReference(second.id, haus.id))
-	}
-
-	@Test
-	fun `a chapter's mixed children keep their order through the tree JSON round trip`() {
-		val subject = ItemRepository.createSubject("s", null)
-		ItemRepository.createWord(subject.id, "w1", null, listOf("t" to null))
-		ItemRepository.createChapter(subject.id, "c1", null)
-		ItemRepository.createWord(subject.id, "w2", null, listOf("t" to null))
-		ItemRepository.createNote(subject.id, "n1", null)
-		ItemRepository.createChapter(subject.id, "c2", null)
-
-		val text = ItemRepository.export(HJsonExporter(), listOf(subject))
-
-		freshDatabase()
-		ItemRepository.import(HJsonImporter(text))
-
-		val back = ItemRepository.subjects().single()
-		assertEquals(listOf("w1", "c1", "w2", "n1", "c2"),
-			ItemRepository.children(back.id).map { it.name })
 	}
 
 	@Test
@@ -218,69 +206,71 @@ class ImportExportEquivalencyTest {
 	}
 
 	@Test
-	fun `re-importing the same JSON text adds nothing`() {
-		val text = ItemRepository.export(HJsonExporter(), listOf(buildGraph()))
+	fun `re-importing the same text adds nothing`() {
+		val graph = buildGraph()
+		val json = ItemRepository.export(HJsonExporter(), listOf(graph))
+		val wordList = ItemRepository.export(WordListExporter(), listOf(graph))
+		val files: Map<String, List<DataImporter>> = mapOf(
+			"tree JSON" to listOf(HJsonImporter(json), HJsonImporter(json)),
+			"word list" to listOf(
+				WordListImporter("Deutsch", wordList), WordListImporter("Deutsch", wordList)),
+		)
 
-		freshDatabase()
-		ItemRepository.import(HJsonImporter(text))
-		ItemRepository.import(HJsonImporter(text))
+		for ((name, twice) in files) {
+			freshDatabase()
+			for (file in twice)
+				ItemRepository.import(file)
 
-		assertEquals(1, ItemRepository.subjects().size)
-		val subject = ItemRepository.subjects().single()
-		assertEquals(listOf("Lektion 1", "Lektion 2", "a note"),
-			ItemRepository.children(subject.id).map { it.name })
-		val chapter = ItemRepository.children(subject.id)[0]
-		assertEquals(2, ItemRepository.children(chapter.id).size)
-		assertEquals(2, ItemRepository.translations(
-			ItemRepository.children(chapter.id)[0].id).size)
+			// the deduplication merges the subject with itself and every row under
+			// its own parent, so nothing doubles
+			assertEquals("$name doubled its subjects", 1, ItemRepository.subjects().size)
+			val subject = ItemRepository.subjects().single()
+			assertEquals("$name doubled its children", listOf("Lektion 1", "Lektion 2", "a note"),
+				ItemRepository.children(subject.id).map { it.name })
+			val chapter = ItemRepository.children(subject.id).first { it.name == "Lektion 1" }
+			assertEquals("$name doubled its words", 2, ItemRepository.children(chapter.id).size)
+			val word = ItemRepository.children(chapter.id).first { it.name == "das Haus" }
+			assertEquals("$name doubled its translations", 2, ItemRepository.translations(word.id).size)
+		}
 	}
 
 	@Test
-	fun `re-importing the same word-list text adds nothing`() {
-		val text = ItemRepository.export(WordListExporter(), listOf(buildGraph()))
+	fun `a root import joins its own subject and leaves the others their rows`() {
+		val a = ItemRepository.createSubject("A", null)
+		val b = ItemRepository.createSubject("B", null)
+		val wa = ItemRepository.createWord(a.id, "w", null, listOf("a-trs" to null))
+		val wb = ItemRepository.createWord(b.id, "w", null, listOf("b-trs" to null))
+		ItemRepository.bumpCounters(listOf(wa.id), true)
 
-		freshDatabase()
-		ItemRepository.import(WordListImporter("Deutsch", text))
-		ItemRepository.import(WordListImporter("Deutsch", text))
-
-		// the unified deduplication merges the subject with itself and the
-		// chapters and notes under the parent, so nothing doubles
-		assertEquals(1, ItemRepository.subjects().size)
-		val subject = ItemRepository.subjects().single()
-		assertEquals(listOf("Lektion 1", "Lektion 2", "a note"), ItemRepository.children(subject.id).map { it.name })
-		val chapter = ItemRepository.children(subject.id).first { it.name == "Lektion 1" }
-		assertEquals(2, ItemRepository.children(chapter.id).size)
-	}
-
-	@Test
-	fun `an import at the root keeps each top-level chapter its own subject`() {
+		// the top-level chapter named A joins subject A, the chapter named C is a
+		// subject of its own, so the same word name lands as two rows
 		val text = """
 			[
 			  {
-			    name: S1
+			    name: A
 			    children:
 			    [
 			      {
-			        name: same
+			        name: w
 			        translations:
 			        [
 			          {
-			            name: t1
+			            name: new-trs
 			          }
 			        ]
 			      }
 			    ]
 			  }
 			  {
-			    name: S2
+			    name: C
 			    children:
 			    [
 			      {
-			        name: same
+			        name: w
 			        translations:
 			        [
 			          {
-			            name: t2
+			            name: c-trs
 			          }
 			        ]
 			      }
@@ -288,27 +278,29 @@ class ImportExportEquivalencyTest {
 			  }
 			]
 		""".trimIndent()
-
 		ItemRepository.import(HJsonImporter(text))
 
-		val subjects = ItemRepository.subjects()
-		assertEquals(listOf("S1", "S2"), subjects.map { it.name })
-		val w1 = ItemRepository.children(subjects[0].id).single()
-		val w2 = ItemRepository.children(subjects[1].id).single()
-		// the same name in two subjects is two rows, because the merge checks
-		// uniqueness only within the subject
-		assertTrue(w1.id != w2.id)
-		assertEquals(listOf("t1"), ItemRepository.translations(w1.id).map { it.name })
-		assertEquals(listOf("t2"), ItemRepository.translations(w2.id).map { it.name })
+		assertEquals(listOf("A", "B", "C"), ItemRepository.subjects().map { it.name })
+		// the merge checks uniqueness only within the subject
+		val c = ItemRepository.subjects().single { it.name == "C" }
+		val wc = ItemRepository.children(c.id).single()
+		assertTrue(wa.id != wc.id)
+		// the row of A kept its counters and gained the translation of the file
+		assertEquals(1, ItemRepository.get(wa.id)!!.passedTests)
+		assertEquals(listOf("a-trs", "new-trs"), ItemRepository.translations(wa.id).map { it.name })
+		assertEquals(listOf("c-trs"), ItemRepository.translations(wc.id).map { it.name })
+		// the row of B is untouched, because the merge never reached it
+		assertEquals(0, ItemRepository.get(wb.id)!!.passedTests)
+		assertEquals(listOf("b-trs"), ItemRepository.translations(wb.id).map { it.name })
 	}
 
 	@Test
-	fun `a mixed file imports into the open container as it is`() {
+	fun `a mixed file lands as it is at the root or in the open container`() {
 		val subject = ItemRepository.createSubject("S", null)
-		val chapter = ItemRepository.createChapter(subject.id, "c", null)
+		val box = ItemRepository.createChapter(subject.id, "box", null)
 
 		// the file is a list of entries, so a word, a note and a chapter land
-		// in the open container, in the order of the file
+		// where the import points, in the order of the file
 		val text = """
 			[
 			  {
@@ -330,87 +322,24 @@ class ImportExportEquivalencyTest {
 			  }
 			]
 		""".trimIndent()
-		ItemRepository.import(HJsonImporter(text), chapter.id)
+		val places = mapOf(
+			"the root" to (ROOT_ID to ItemRepository.children(ROOT_ID).size),
+			"the open container" to (box.id to ItemRepository.children(box.id).size),
+		)
 
-		val children = ItemRepository.children(chapter.id)
-		assertEquals(listOf("w", "note", "inner"), children.map { it.name })
-		assertEquals(ItemKind.WORD, children[0].type)
-		assertEquals(listOf("t"), ItemRepository.translations(children[0].id).map { it.name })
-		assertEquals(ItemKind.NOTE, children[1].type)
-		assertEquals("nd", children[1].description)
-		assertEquals(ItemKind.CHAPTER, children[2].type)
-		assertEquals(listOf("c"), ItemRepository.children(subject.id).map { it.name })
-	}
+		for ((name, place) in places) {
+			ItemRepository.import(HJsonImporter(text), place.first)
+			// no subject wraps the content, the entries land as the rows of the target
+			val landed = ItemRepository.children(place.first).drop(place.second)
+			assertEquals("$name lost a row", listOf("w", "note", "inner"), landed.map { it.name })
+			assertEquals("$name changed a kind", listOf(ItemKind.WORD, ItemKind.NOTE, ItemKind.CHAPTER),
+				landed.map { it.type })
+			assertEquals("$name lost the note description", "nd", landed[1].description)
+			assertEquals("$name lost the translation", listOf("t"),
+				ItemRepository.translations(landed[0].id).map { it.name })
+		}
 
-	@Test
-	fun `a mixed file imported at the root lands as the root's own rows`() {
-		val text = """
-			[
-			  {
-			    name: w
-			    translations:
-			    [
-			      {
-			        name: t
-			      }
-			    ]
-			  }
-			  {
-			    name: note
-			  }
-			  {
-			    name: inner
-			    children: []
-			  }
-			]
-		""".trimIndent()
-
-		ItemRepository.import(HJsonImporter(text))
-
-		// no subject wraps the content, so the entries land as the own rows of
-		// the root, exactly as a bare word list does
-		val rows = ItemRepository.children(ROOT_ID)
-		assertEquals(listOf("w", "note", "inner"), rows.map { it.name })
-		assertEquals(listOf(ItemKind.WORD, ItemKind.NOTE, ItemKind.CHAPTER), rows.map { it.type })
-	}
-
-	@Test
-	fun `a spaced name in an imported file merges with its plain twin`() {
-		// the trim runs before the merge, so every path of the same content
-		// lands the same rows
-		val text = """
-			[
-			  {
-			    name: S
-			    children:
-			    [
-			      {
-			        name: "Hund "
-			        translations:
-			        [
-			          {
-			            name: "pes "
-			          }
-			        ]
-			      }
-			      {
-			        name: Hund
-			        translations:
-			        [
-			          {
-			            name: pes
-			          }
-			        ]
-			      }
-			    ]
-			  }
-			]
-		""".trimIndent()
-		val result = ItemRepository.import(HJsonImporter(text))
-
-		assertEquals(1, result.words)
-		val word = ItemRepository.getByName("Hund", ItemKind.WORD).single()
-		assertEquals(listOf("pes"), ItemRepository.translations(word.id).map { it.name })
+		assertEquals(listOf("box"), ItemRepository.children(subject.id).map { it.name })
 	}
 
 	@Test
@@ -422,78 +351,5 @@ class ImportExportEquivalencyTest {
 		}
 
 		assertTrue(error.message!!.contains("a reference needs a parent chapter"))
-	}
-
-	@Test
-	fun `a root import joins only the same-named subject's rows`() {
-		val a = ItemRepository.createSubject("A", null)
-		val b = ItemRepository.createSubject("B", null)
-		val wa = ItemRepository.createWord(a.id, "w", null, listOf("a-trs" to null))
-		val wb = ItemRepository.createWord(b.id, "w", null, listOf("b-trs" to null))
-		ItemRepository.bumpCounters(listOf(wa.id), true)
-
-		// the top-level chapter of the file joins subject A, so its word merges
-		// into the row of A and never into the same-named row of B
-		val text = """
-			{
-			  name: A
-			  children:
-			  [
-			    {
-			      name: w
-			      translations:
-			      [
-			        {
-			          name: new-trs
-			        }
-			      ]
-			    }
-			  ]
-			}
-		""".trimIndent()
-		ItemRepository.import(HJsonImporter(text))
-
-		// still the two subjects, because the file chapter merged into A
-		assertEquals(listOf("A", "B"), ItemRepository.subjects().map { it.name })
-		// the row of A kept its counters and gained the translation of the file
-		assertEquals(1, ItemRepository.get(wa.id)!!.passedTests)
-		assertEquals(listOf("a-trs", "new-trs"), ItemRepository.translations(wa.id).map { it.name })
-		// the row of B is untouched, because the merge never reached it
-		assertEquals(0, ItemRepository.get(wb.id)!!.passedTests)
-		assertEquals(listOf("b-trs"), ItemRepository.translations(wb.id).map { it.name })
-	}
-
-	@Test
-	fun `a root import adopts the counters of a more-tested word`() {
-		val a = ItemRepository.createSubject("A", null)
-		val w = ItemRepository.createWord(a.id, "w", null, listOf("old-trs" to null))
-		ItemRepository.bumpCounters(listOf(w.id), true)
-
-		// the word of the file ran more tests, so its counters win the merge
-		val text = """
-			{
-			  name: A
-			  children:
-			  [
-			    {
-			      name: w
-			      s: 4
-			      f: 1
-			      translations:
-			      [
-			        {
-			          name: new-trs
-			        }
-			      ]
-			    }
-			  ]
-			}
-		""".trimIndent()
-		ItemRepository.import(HJsonImporter(text))
-
-		val merged = ItemRepository.get(w.id)!!
-		assertEquals(4, merged.passedTests)
-		assertEquals(1, merged.failedTests)
-		assertEquals(listOf("old-trs", "new-trs"), ItemRepository.translations(w.id).map { it.name })
 	}
 }

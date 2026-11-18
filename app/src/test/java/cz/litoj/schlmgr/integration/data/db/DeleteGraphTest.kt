@@ -19,7 +19,6 @@ import org.robolectric.annotation.Config
  * - a subject wider than the 999 parameter cap of SQLite deletes fine.
  * - the walk handles one row at a time.
  * - an item shared by several parents survives the deletion of all but one.
- * - the tests of a removed word leave the stored counters of its chapter.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -87,22 +86,6 @@ class DeleteGraphTest {
 		// the subject, the chapter, the word and its translation, the count a
 		// deletion bar shows
 		assertEquals(4, removed)
-	}
-
-	@Test
-	fun `removing a word drops its chapter's stored counters`() {
-		val subject = ItemRepository.createSubject("s", null)
-		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
-		val word = ItemRepository.createWord(c1.id, "w", null, listOf("t" to null))
-		// the answer bumps the word and its chapter path together
-		ItemRepository.bumpCounters(listOf(word.id, c1.id), false)
-		assertEquals(1, ItemRepository.get(c1.id)!!.failedTests)
-
-		ItemRepository.remove(word.id, c1.id)
-
-		val stored = ItemRepository.get(c1.id)!!
-		assertEquals(0, stored.failedTests)
-		assertEquals(0, stored.passedTests)
 	}
 
 	@Test

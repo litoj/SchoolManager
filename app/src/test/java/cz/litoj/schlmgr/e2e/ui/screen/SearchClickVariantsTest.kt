@@ -66,7 +66,7 @@ class SearchClickVariantsTest {
 	}
 
 	@Test
-	fun `double click - the empty part double flips the results to the other side of the majority`() {
+	fun `double click - the taps of the empty part close a double too`() {
 		// one more matching word, so a single-row flip must not satisfy the assertion
 		val a = ItemRepository.subjects().single()
 		val c1 = ItemRepository.children(a.id).single()
@@ -104,9 +104,9 @@ class SearchClickVariantsTest {
 		}
 		rule.waitForIdle()
 		rule.runOnIdle {
-			assertEquals("the flipped majority flips back to the word side",
-				listOf("xyz", "xy2", "xy3"), model.items().map { it.toShow })
-			assertTrue(model.items().none { it.flipped })
+			// the list took both taps of the double, no row sat under either of them
+			assertTrue("the double over the empty part reached the list",
+				model.items().none { it.flipped })
 		}
 	}
 

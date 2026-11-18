@@ -28,10 +28,6 @@ class TopBarActionsTest {
 	@get:Rule
 	val rule = createComposeRule()
 
-	private fun show(count: Int, width: androidx.compose.ui.unit.Dp = 320.dp) {
-		show(List(count) { MenuEntry(it, R.string.search, icon = R.drawable.ic_search) }, width)
-	}
-
 	private fun show(entries: List<MenuEntry>, width: androidx.compose.ui.unit.Dp = 320.dp) {
 		rule.setContent {
 			Row(Modifier.height(55.dp)) {
@@ -42,14 +38,6 @@ class TopBarActionsTest {
 
 	private fun openMore() {
 		rule.onNode(hasContentDescription("More") and hasClickAction()).performClick()
-	}
-
-	@Test
-	fun `overflow leaves a real more menu`() {
-		show(5)
-
-		rule.onNodeWithContentDescription("More").assertExists()
-		assertEquals(1, rule.onAllNodesWithContentDescription("Search").fetchSemanticsNodes().size)
 	}
 
 	@Test

@@ -20,6 +20,7 @@ import org.robolectric.annotation.Config
 
 /**
  * - the display of a word follows the defFlip static and the flip state.
+ * - a fresh read keeps the side the row stands on.
  * - a non-word row never flips.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -58,26 +59,28 @@ class ItemRowDisplayTest {
 		return subject.id to word
 	}
 
-	@Test
-	fun `a word row starts flipped when defFlip is on`() {
-		setRowOptions(defFlip = true)
-		val (parentId, word) = wordWithTranslations()
-		val row = ItemRow(word, parentId, 1)
-		assertTrue(row.flipped)
-		assertEquals("house\nhome", row.toShow)
-		assertEquals("no joint description, the lines carry their own", "", row.info)
-		assertEquals(listOf("dwell", ""), row.translationLines.map { it.description })
-	}
+	private fun translations(wordId: Int) = ItemRepository.translations(wordId)
 
 	@Test
-	fun `a word row starts unflipped when defFlip is off`() {
-		setRowOptions(defFlip = false)
-		val (parentId, word) = wordWithTranslations()
-		val row = ItemRow(word, parentId, 1)
-		assertFalse(row.flipped)
-		assertEquals("das Haus", row.toShow)
-		assertEquals("noun", row.info)
-		assertTrue(row.translationLines.isEmpty())
+	fun `the stored flip decides how a word row starts`() {
+		val cases = mapOf(true to "house\nhome", false to "das Haus")
+
+		for ((on, shown) in cases) {
+			setRowOptions(defFlip = on)
+			val (parentId, word) = wordWithTranslations()
+
+			val row = ItemRow(word, parentId, 1)
+
+			assertEquals("defFlip $on starts on $shown", on, row.flipped)
+			assertEquals("defFlip $on shows $shown", shown, row.toShow)
+			if (on) {
+				assertEquals("no joint description, the lines carry their own", "", row.info)
+				assertEquals(listOf("dwell", ""), row.translationLines.map { it.description })
+			} else {
+				assertEquals("noun", row.info)
+				assertTrue(row.translationLines.isEmpty())
+			}
+		}
 	}
 
 	@Test
@@ -86,13 +89,15 @@ class ItemRowDisplayTest {
 		val (parentId, word) = wordWithTranslations()
 		val row = ItemRow(word, parentId, 1)
 
-		row.flip()
+		row.applyFlip(translations(word.id))
+
 		assertTrue(row.flipped)
 		assertEquals("house\nhome", row.toShow)
 		assertEquals("no joint description, the lines carry their own", "", row.info)
 		assertEquals(2, row.translationLines.size)
 
-		row.flip()
+		row.applyFlip(translations(word.id))
+
 		assertFalse(row.flipped)
 		assertEquals("das Haus", row.toShow)
 		assertEquals("noun", row.info)
@@ -100,31 +105,24 @@ class ItemRowDisplayTest {
 	}
 
 	@Test
-	fun `update refreshes the unflipped display from the database`() {
-		setRowOptions(defFlip = false)
-		val (parentId, word) = wordWithTranslations()
-		val row = ItemRow(word, parentId, 1)
+	fun `a fresh read keeps the side the row stands on`() {
+		val cases = listOf(true, false)
 
-		ItemRepository.setDescription(word.id, "changed")
-		row.update()
+		for (on in cases) {
+			setRowOptions(defFlip = on)
+			val (parentId, word) = wordWithTranslations()
+			val row = ItemRow(word, parentId, 1)
+			ItemRepository.setDescription(word.id, "changed")
 
-		assertFalse(row.flipped)
-		assertEquals("das Haus", row.toShow)
-		assertEquals("changed", row.info)
-	}
+			// the io read of production, landed on main as applyFresh does
+			row.applyFresh(ItemRepository.get(word.id), translations(word.id))
 
-	@Test
-	fun `update keeps a flipped row flipped`() {
-		setRowOptions(defFlip = true)
-		val (parentId, word) = wordWithTranslations()
-		val row = ItemRow(word, parentId, 1)
-		assertTrue(row.flipped)
-
-		ItemRepository.setDescription(word.id, "changed")
-		row.update()
-
-		assertTrue(row.flipped)
-		assertEquals("house\nhome", row.toShow)
+			assertEquals("a fresh read keeps the flipped row flipped", on, row.flipped)
+			assertEquals("the fresh name reaches the unflipped row",
+				if (on) "house\nhome" else "das Haus", row.toShow)
+			assertEquals("the fresh description reaches the name side",
+				if (on) "" else "changed", row.info)
+		}
 	}
 
 	@Test
@@ -137,22 +135,9 @@ class ItemRowDisplayTest {
 		assertEquals("chapter", row.toShow)
 		assertEquals("chapter description", row.info)
 
-		row.flip()
+		row.applyFlip(emptyList())
+
 		assertFalse(row.flipped)
 		assertEquals("chapter", row.toShow)
-	}
-
-	@Test
-	fun `setNew re-targets the row onto another word`() {
-		setRowOptions(defFlip = false)
-		val (parentId, word) = wordWithTranslations()
-		val row = ItemRow(word, parentId, 1)
-
-		val other = ItemRepository.createWord(parentId, "die Schule", null, listOf("school" to null))
-		row.setNew(other, parentId)
-
-		assertEquals(other.id, row.item.id)
-		assertEquals("die Schule", row.toShow)
-		assertFalse(row.flipped)
 	}
 }

@@ -22,8 +22,11 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
+ * - every create path trims the text it stores, so a spaced name is the same word.
  * - a word whose name exists in the subject scope merges into that row.
  * - an added translation that exists merges its description.
+ * - a create of an unusable word is refused with nothing stored.
+ * - a row without a plain home answers through its reference.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -48,31 +51,66 @@ class WordAddMergeTest {
 		ItemRepository.resetForTest()
 	}
 
+	/** The edge spaces of created or edited text never reach the merge lookup. */
 	@Test
 	fun `a spaced name is the same word - it trims before the merge`() {
-		val subject = ItemRepository.createSubject("subject", null)
-		val first = ItemRepository.createWord(
-			subject.id, " word ", "first description", listOf(" one " to null))
-		val second = ItemRepository.createWord(
-			subject.id, "word", "second description", listOf("two" to null))
+		val subject = ItemRepository.createSubject(" s ", " sd ")
+		val chapter = ItemRepository.createChapter(subject.id, " c ", " cd ")
+		val note = ItemRepository.createNote(chapter.id, " n ", " nd ")
+		val first = ItemRepository.createWord(chapter.id, " word ", " wd ", listOf(" one " to " td "))
+		val translation = ItemRepository.translations(first.id).single()
+		val edited = ItemRepository.createNote(chapter.id, " other ", " od ")
+		ItemRepository.setDescription(edited.id, " outer ")
+		val second = ItemRepository.createWord(chapter.id, "word", "second", listOf("two" to null))
 
-		// the trimmed names merge into one row, with the stored name trimmed
+		val stored: List<Triple<String, String?, String>> = listOf(
+			Triple("subject name", subject.name, "s"),
+			Triple("subject description", subject.description, "sd"),
+			Triple("chapter name", chapter.name, "c"),
+			Triple("chapter description", chapter.description, "cd"),
+			Triple("note name", note.name, "n"),
+			Triple("note description", note.description, "nd"),
+			Triple("word name", first.name, "word"),
+			Triple("word description", first.description, "wd"),
+			Triple("translation name", translation.name, "one"),
+			Triple("translation description", translation.description, "td"),
+			Triple("description edit", ItemRepository.get(edited.id)!!.description, "outer"),
+		)
+		for ((label, text, trimmed) in stored) {
+			assertEquals("$label stores no edge spaces", trimmed, text)
+		}
+
+		// the lookup read the trimmed names, so both creates hold one row
 		assertEquals(first.id, second.id)
-		val words = ItemRepository.children(subject.id)
-		assertEquals(1, words.size)
-		assertEquals("word", words.single().name)
-		// the spaced translation trimmed and joined the word
+		assertEquals("one row carries the name", 1, ItemRepository.getByName("word", ItemKind.WORD).size)
 		assertEquals(listOf("one", "two"), ItemRepository.translations(first.id).map { it.name })
 	}
 
+	/** The create door refuses an unusable word before it stores a row. */
 	@Test
-	fun `a word whose every translation is blank is refused`() {
-		val subject = ItemRepository.createSubject("subject", null)
-		try {
-			ItemRepository.createWord(subject.id, "word", null, listOf("   " to null))
-			fail("A blank translation is no translation")
-		} catch (e: IllegalArgumentException) {
-			// the create refuses, because a bare name is the shape of a note
+	fun `a create door refusal stores nothing`() {
+		val subject = ItemRepository.createSubject("s", null)
+
+		val refusals: List<Triple<String, String, () -> Unit>> = listOf(
+			Triple("a blank name", "name") {
+				ItemRepository.createWord(subject.id, "   ", null, listOf("trl" to null))
+			},
+			Triple("no translation", "translation") {
+				ItemRepository.createWord(subject.id, "lonely", null, emptyList())
+			},
+			Triple("every translation blank", "translation") {
+				ItemRepository.createWord(subject.id, "word", null, listOf("   " to null))
+			},
+		)
+
+		for ((case, fragment, refuse) in refusals) {
+			try {
+				refuse()
+				fail("$case must be refused")
+			} catch (e: IllegalArgumentException) {
+				assertTrue("$case: ${e.message}", fragment in e.message!!)
+			}
+			assertTrue("$case stored nothing", ItemRepository.children(subject.id).isEmpty())
 		}
 	}
 
@@ -108,37 +146,14 @@ class WordAddMergeTest {
 	fun `an added translation that already exists merges its description`() {
 		val subject = ItemRepository.createSubject("subject", null)
 		val word = ItemRepository.createWord(subject.id, "word", null, listOf("trl" to "first"))
+		// the stored row is the more tested one, so the name merge adopts nothing
+		ItemRepository.bumpCounters(listOf(ItemRepository.translations(word.id).single().id), false)
 		ItemRepository.createWord(subject.id, "word", null, listOf("trl" to "second"))
 
 		val translation = ItemRepository.translations(word.id).single()
 		assertEquals("trl", translation.name)
 		assertEquals("first\nsecond", translation.description)
-	}
-
-	@Test
-	fun `a blank name refuses the word create`() {
-		val subject = ItemRepository.createSubject("s", null)
-
-		try {
-			ItemRepository.createWord(subject.id, "   ", null, listOf("trl" to null))
-			fail("a word with no name cannot be stored, since no export format round-trips it")
-		} catch (e: IllegalArgumentException) {
-			// expected, because a blank name is not a word
-		}
-		assertTrue(ItemRepository.children(subject.id).isEmpty())
-	}
-
-	@Test
-	fun `a word without translations is refused`() {
-		val subject = ItemRepository.createSubject("s", null)
-
-		try {
-			ItemRepository.createWord(subject.id, "lonely", null, emptyList())
-			fail("a translation-less word must not be created, make a note instead")
-		} catch (e: IllegalArgumentException) {
-			// expected, because every word carries at least one translation
-		}
-		assertTrue(ItemRepository.children(subject.id).isEmpty())
+		assertEquals("the merge keeps the more tested counters", 1, translation.failedTests)
 	}
 
 	@Test

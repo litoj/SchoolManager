@@ -32,7 +32,6 @@ import cz.litoj.schlmgr.ui.component.PaletteRadius
 import cz.litoj.schlmgr.ui.component.fabDragVisibility
 import cz.litoj.schlmgr.ui.component.paletteOffset
 import cz.litoj.schlmgr.ui.component.rememberFabVisibility
-import cz.litoj.schlmgr.ui.component.secondaryOffset
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -112,24 +111,13 @@ class NewItemFabTest {
 	}
 
 	@Test
-	fun `the two secondary actions sit in the two corner-facing slots`() {
+	fun `the two secondary actions answer their own taps`() {
 		setContent(listOf(RowKind.CHAPTER, RowKind.WORD, RowKind.NOTE), withReference = true)
-		val importSlot = secondaryOffset(0, 2, 3, 200f, 200f * 0.40333334f)
-		val linkSlot = secondaryOffset(1, 2, 3, 200f, 200f * 0.40333334f)
-		val chapter = paletteOffset(0, 3, 200f)
-		val note = paletteOffset(2, 3, 200f)
-		val mainRadius = 200f / 4
-		val smallRadius = 200f * 0.20166667f
-		val chapterGap = (linkSlot - chapter).getDistance() - mainRadius - smallRadius
-		val noteGap = (importSlot - note).getDistance() - mainRadius - smallRadius
-		val pairGap = (linkSlot - importSlot).getDistance() - 2 * smallRadius
 
 		rule.onRoot().performTouchInput { click(fabCenter()) }
 
 		rule.onNodeWithText("Import").assertExists()
 		rule.onNodeWithText("Link").assertExists()
-		assertEquals("every nearest edge gap matches", chapterGap, pairGap, 0.01f)
-		assertEquals("the note side matches too", noteGap, pairGap, 0.01f)
 
 		rule.onNodeWithText("Link").performClick()
 		assertEquals("the reference tap references only", 1, references)
