@@ -125,12 +125,6 @@ internal class LongPressDragHandler {
 
 	val isArmed: Boolean get() = index >= 0
 
-	/** The armed row, -1 when none waits. */
-	val armedIndex: Int get() = index
-
-	/** The mode snapshotted at the arm. */
-	val armedMode: ListDragMode get() = mode
-
 	fun arm(index: Int, mode: ListDragMode) {
 		this.index = index
 		this.mode = mode
@@ -239,7 +233,6 @@ fun ItemList(
 					selectedRows(state.items.map { it.selected }, anchor), finger, target)
 		},
 		onReorderDrop = { anchor, target ->
-			println("DIAG list drop anchor=$anchor target=$target")
 			dragOver = null
 			// the order decides whether the drop persists, so a round trip stays a selection
 			if (target != null && callbacks.onReorderMove(anchor, target)) {

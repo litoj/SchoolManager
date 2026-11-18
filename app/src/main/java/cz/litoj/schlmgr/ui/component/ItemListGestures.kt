@@ -252,7 +252,6 @@ internal class TopPullAccumulator(private val threshold: Float) {
 	fun scroll(deltaY: Float, canScrollBackward: Boolean, drag: Boolean): Boolean {
 		if (deltaY <= 0f || canScrollBackward) {
 			pulled = 0f
-			fired = false
 			return false
 		}
 		if (fired || !drag) return false

@@ -105,7 +105,6 @@ class WordListChapter(val name: String, var description: String? = null) : WordL
 	val entries = ArrayList<WordListChild>()
 
 	val words: List<WordListWord> get() = entries.filterIsInstance<WordListWord>()
-	val notes: List<WordListNote> get() = entries.filterIsInstance<WordListNote>()
 	val children: List<WordListChapter> get() = entries.filterIsInstance<WordListChapter>()
 }
 

@@ -40,8 +40,8 @@ object CrashReporter {
 			// building the trace can itself fail, but the message alone is still a report
 			val fullMsg = runCatching { boundReport("$t\n${Log.getStackTraceString(e)}") }
 				.getOrElse { "${e.toString()}\n[the trace was lost: ${it.message}]" }
-			val report = GlobalDependencies.appContext.getString(R.string.exception_handler) +
-				(Throwables.getFirstCause(e) ?: e.toString()) + "\n\n$fullMsg"
+			val report = boundReport(GlobalDependencies.appContext.getString(R.string.exception_handler) +
+				(Throwables.getFirstCause(e) ?: e.toString()) + "\n\n$fullMsg")
 			AppSettings.setNow("uncaughtException", report)
 			if (isDebugBuild()) Log.e("Unexpected failure", fullMsg)
 		} catch (_: Throwable) {

@@ -202,14 +202,6 @@ class SearchEngine(query: SearchQuery, private val foldDiacritics: Boolean = fal
 		walk(index, index.childrenOf(root.id), basePath, onMatch)
 	}
 
-	fun search(
-		index: SearchIndex,
-		basePath: List<DbItem>,
-		onMatch: (DbItem, List<DbItem>) -> Unit,
-	) {
-		search(index, basePath) { item, path, _ -> onMatch(item, path) }
-	}
-
 	private fun walk(
 		index: SearchIndex,
 		src: List<DbItem>,

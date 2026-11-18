@@ -73,7 +73,7 @@ class MessageSnackbarTest {
 		undoable("second") { undone += "second" }
 		rule.onNodeWithText("report").assertExists()
 
-		rule.mainClock.advanceTimeBy(SNACKBAR_SHORT_MS)
+		rule.mainClock.advanceTimeBy(SNACKBAR_MS)
 		settle()
 
 		rule.onNodeWithText("Removed: first").assertDoesNotExist()
@@ -123,9 +123,30 @@ class MessageSnackbarTest {
 		rule.onNodeWithText("two").assertDoesNotExist()
 	}
 
+	@Test
+	fun `a message leaves after its short window`() {
+		text("report")
+		rule.onNodeWithText("report").assertExists()
+
+		rule.mainClock.advanceTimeBy(SNACKBAR_MS)
+		settle()
+
+		rule.onNodeWithText("report").assertDoesNotExist()
+	}
+
+	@Test
+	fun `a removal leaves after its short window`() {
+		undoable("first")
+
+		rule.mainClock.advanceTimeBy(SNACKBAR_MS)
+		settle()
+
+		rule.onNodeWithText("Removed: first").assertDoesNotExist()
+	}
+
 	private companion object {
 		const val FRAME_MS = 32L
 		const val FADE_MS = 400L
-		const val SNACKBAR_SHORT_MS = 4_000L
+		const val SNACKBAR_MS = 2_000L
 	}
 }

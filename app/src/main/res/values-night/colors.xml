@@ -6,8 +6,7 @@
          DayNight one), and force dark stays off so it cannot re-tint these
          values on top. Two rules hold the palette together:
          - Every surface keeps its own text entry, so a dark surface never gets
-           dark text: on the green header that is colorOnHeader (dark here), on
-           the grey action strips colorActionText (light, from the light file).
+           dark text: on the green header that is colorOnHeader (dark here).
          - The green header gets brighter here, which is what makes the dark
            on-header text readable on it. -->
     <color name="colorPrimaryFg">#DDFFFFFF</color>
@@ -24,9 +23,6 @@
     <color name="colorOnHeader">#DD000000</color>
     <color name="colorPositionText">#FFFFFFFF</color>
     <color name="colorDescText">#FF7FC63B</color>
-    <!-- A lighter wash than the light palette's: on a dark surface the black
-         one sinks into the list behind the strip. -->
-    <color name="colorActionBar">#88555555</color>
     <!-- The app-bar query field is bare on the header, so its hint follows the
          dark on-header text. -->
     <color name="colorSearchHint">#B3000000</color>

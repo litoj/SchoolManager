@@ -20,13 +20,11 @@ internal object ImportFailureExplanation {
 	}
 
 	/** One sentence per confirmed fix, the most likely first. */
-	private fun fixesOf(error: WordListParseException, ctx: Context): String {
-		if (error.repairs.isEmpty()) return ctx.getString(R.string.import_hint_no_single_fix)
-		return error.repairs.mapIndexed { index, repair ->
+	private fun fixesOf(error: WordListParseException, ctx: Context): String =
+		error.repairs.mapIndexed { index, repair ->
 			val fix = ctx.getString(fixResourceOf(repair.kind), formTextOf(repair, ctx))
 			if (index == 0) fix else ctx.getString(R.string.import_fix_another, fix)
 		}.joinToString("\n")
-	}
 
 	private fun fixResourceOf(kind: WordListRepairKind): Int = when (kind) {
 		WordListRepairKind.EXTRA_CHAR -> R.string.import_fix_extra_char

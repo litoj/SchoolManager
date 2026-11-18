@@ -56,10 +56,9 @@ fun DrawerLayer(
 		// the drawer owns its back press while it is open.
 		// - it sits after the content, so it outranks the back ladder of every screen.
 		// - the press closes the topmost state instead of acting behind the drawer.
-		// - derivedStateOf keeps the raw reads to one flip per drag, not one per frame
-		val open by remember { derivedStateOf { state.isOpen } }
+		// the back gate follows the panel itself, so a closing animation keeps it too
 		val scrimmed by remember { derivedStateOf { state.scrimFraction > 0f } }
-		BackHandler(enabled = open) { state.close() }
+		BackHandler(enabled = scrimmed) { state.close() }
 
 		// the scrim exists only while the panel is out.
 		// a tap anywhere beside the panel closes it, not only the far edge
@@ -104,8 +103,6 @@ class DrawerLayerState internal constructor(
 	private val panelWidth: Float,
 ) {
 	internal val offset = Animatable(-panelWidth)
-
-	val isOpen: Boolean get() = offset.targetValue == 0f
 
 	val scrimFraction: Float get() = offset.value / panelWidth + 1f
 

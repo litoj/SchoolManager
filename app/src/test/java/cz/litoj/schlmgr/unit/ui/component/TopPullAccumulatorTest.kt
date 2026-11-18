@@ -52,6 +52,13 @@ class TopPullAccumulatorTest {
 	}
 
 	@Test
+	fun `a reverse delta after the threshold cannot fire again`() {
+		assertTrue(atTop(threshold))
+		assertFalse(atTop(-10f))
+		assertFalse("still one pull per gesture", atTop(threshold))
+	}
+
+	@Test
 	fun `the next gesture starts from zero`() {
 		assertTrue(atTop(threshold))
 		pull.gestureEnded()
