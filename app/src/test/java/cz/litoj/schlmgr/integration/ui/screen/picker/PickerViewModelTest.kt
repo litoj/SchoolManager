@@ -6,7 +6,9 @@ import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.screen.picker.PickerViewModel
+import cz.litoj.schlmgr.ui.viewmodel.ExplorerMenuKind
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
+import cz.litoj.schlmgr.ui.viewmodel.MenuId
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import cz.litoj.schlmgr.ui.viewmodel.SearchUi
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +26,7 @@ import org.robolectric.annotation.Config
 /**
  * - the picker selects like the subjects screen, no mode of its own.
  * - a search hop stays stacked, so back returns the unselected results.
+ * - its top-bar menu follows the open list, its file doors stay shut.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -189,4 +192,33 @@ class PickerViewModelTest {
 			model.items().any { it.selected })
 	}
 
+	@Test
+	fun `the picker menu follows its own list`() {
+		seed()
+		val model = vm()
+		assertEquals("the seeded root stays a browse root", ExplorerMenuKind.ROOT, model.menuKind)
+
+		model.onItemClick(model.items().single { it.item.name == "A" })
+		assertEquals("a browse folder keeps the folder menu", ExplorerMenuKind.CONTAINER, model.menuKind)
+
+		model.openSearchField()
+		model.onQuerySubmit("c1")
+		assertEquals("a search run keeps the search menu", ExplorerMenuKind.SEARCH, model.menuKind)
+	}
+
+	@Test
+	fun `the picker returns its browse list to the original order`() {
+		val a = ItemRepository.createSubject("A", null)
+		ItemRepository.createChapter(a.id, "b1", null, 0)
+		ItemRepository.createChapter(a.id, "a2", null, 1)
+		val model = vm()
+		model.onItemClick(model.items().single { it.item.name == "A" })
+
+		assertTrue(model.onMenuItemClick(MenuId.SORT_ALPHA_AZ))
+		assertEquals(listOf("a2", "b1"), model.items().map { it.item.name })
+
+		assertTrue("the picker answers its own original order", model.onMenuItemClick(MenuId.SORT_DEFAULT))
+
+		assertEquals(listOf("b1", "a2"), model.items().map { it.item.name })
+	}
 }

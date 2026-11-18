@@ -4,9 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import cz.litoj.schlmgr.ui.component.FabVisibility
 import cz.litoj.schlmgr.ui.component.NewItemFab
-import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
-import cz.litoj.schlmgr.ui.viewmodel.ExplorerScreenState
+import cz.litoj.schlmgr.ui.viewmodel.ExplorerMenuKind
 import cz.litoj.schlmgr.ui.viewmodel.ItemListState
+import cz.litoj.schlmgr.ui.viewmodel.MenuId
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 
 /**
@@ -19,14 +19,12 @@ import cz.litoj.schlmgr.ui.viewmodel.RowKind
 internal fun SubjectsFab(
 	viewModel: MainExplorerViewModel,
 	listState: ItemListState,
-	state: ExplorerScreenState,
 	visibility: FabVisibility,
 	modifier: Modifier = Modifier,
 ) {
 	NewItemFab(
 		kinds = newKinds(
-			listState.selectionActive, viewModel.pasteArmed,
-			menuKindFor(listState.variant == ExplorerRowVariant.Search, state.breadcrumbs.size)),
+			listState.selectionActive, viewModel.pasteArmed, viewModel.menuKind),
 		visible = visibility.shown,
 		onPick = { kind -> viewModel.onMenuItemClick(newMenuIdOf(kind)) },
 		onImport = { viewModel.onMenuItemClick(MenuId.IMPORT_FILE) },
@@ -38,15 +36,15 @@ internal fun SubjectsFab(
 private fun newKinds(
 	selecting: Boolean,
 	pasteArmed: Boolean,
-	kind: MainExplorerViewModel.MenuKind,
+	kind: ExplorerMenuKind,
 ): List<RowKind> {
 	// the strip owns the bottom while a selection or a paste is armed
 	if (selecting || pasteArmed) return emptyList()
 	return when (kind) {
-		MainExplorerViewModel.MenuKind.ROOT -> listOf(RowKind.SUBJECT)
-		MainExplorerViewModel.MenuKind.CONTAINER -> listOf(RowKind.CHAPTER, RowKind.WORD, RowKind.NOTE)
+		ExplorerMenuKind.ROOT -> listOf(RowKind.SUBJECT)
+		ExplorerMenuKind.CONTAINER -> listOf(RowKind.CHAPTER, RowKind.WORD, RowKind.NOTE)
 		// the New actions refuse while searching
-		MainExplorerViewModel.MenuKind.SEARCH -> emptyList()
+		ExplorerMenuKind.SEARCH -> emptyList()
 	}
 }
 

@@ -30,6 +30,8 @@ import cz.litoj.schlmgr.ui.component.rememberFabVisibility
 import cz.litoj.schlmgr.ui.popup.MessagePopup
 import cz.litoj.schlmgr.ui.viewmodel.ActionConfig
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
+import cz.litoj.schlmgr.ui.viewmodel.exportMenu
+import cz.litoj.schlmgr.ui.viewmodel.selectionOverflowMenu
 
 /**
  * The explorer content of the subjects screen.
@@ -81,6 +83,7 @@ internal fun SubjectsContent(
 			listState = listState,
 			onBreadcrumbClick = viewModel::breadcrumbClick,
 			onInfoClick = viewModel::toggleInfoExpanded,
+			onParentClick = { viewModel.onBackRequested() },
 			callbacks = callbacks,
 			scrollState = scrollState,
 			listArea = { SiblingSlideList(state, listState, callbacks, scrollState, Modifier.weight(1f)) },
@@ -130,7 +133,7 @@ internal fun SubjectsContent(
 			}
 		}
 		SubjectsFab(
-			viewModel, listState, state, fabVisibility, Modifier.matchParentSize())
+			viewModel, listState, fabVisibility, Modifier.matchParentSize())
 	}
 }
 

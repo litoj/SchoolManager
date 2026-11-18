@@ -34,8 +34,8 @@ import cz.litoj.schlmgr.ui.shell.TopBarIconButton
 import cz.litoj.schlmgr.ui.shell.TopBarNav
 import cz.litoj.schlmgr.ui.shell.TopBarTitle
 import cz.litoj.schlmgr.ui.shell.headerShadow
-import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
+import cz.litoj.schlmgr.ui.viewmodel.explorerMenu
 import cz.litoj.schlmgr.ui.viewmodel.InfoBar
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 import cz.litoj.schlmgr.ui.viewmodel.SearchUi
@@ -68,16 +68,8 @@ fun SubjectsScreen(
 	// the mode decides the chrome, see [SearchUi].
 	// the field stays through the results, since the query marks what the list shows
 	val fieldOpen = state.searchUi != SearchUi.OFF
-	// a blocked search keeps its button, so the reason shows instead of the place vanishing
-	val searchBlockedReason = when {
-		viewModel.pasteArmed -> R.string.unavailable_search_move
-		state.breadcrumbs.isEmpty() -> R.string.unavailable_search_root
-		else -> 0
-	}
-	// translations alone have no export line, so the export stays and explains
-	val exportBlockedReason =
-		if (viewModel.exportRows().isEmpty()) R.string.unavailable_export_empty else 0
-	val menuKind = menuKindFor(listState.variant == ExplorerRowVariant.Search, state.breadcrumbs.size)
+	val searchBlockedReason = viewModel.searchBlockedReason
+	val exportBlockedReason = viewModel.exportBlockedReason
 
 	// the pickers for the import and export requests.
 	val createWordFile = rememberLauncherForActivityResult(
@@ -217,9 +209,9 @@ fun SubjectsScreen(
 				if (selecting) viewModel.onSelectAllToggle() else viewModel.openSearchField()
 			}
 			if (!selecting) TopBarActions(
-				entries = subjectsMenu(
-					menuKind, selecting = false, listState.singleSelected, ActionConfig.load(),
-					exportBlockedReason,
+				entries = explorerMenu(
+					viewModel.menuKind, selecting = false, listState.singleSelected,
+					ActionConfig.load(), exportBlockedReason,
 					filterActive = (state.info as? InfoBar.Search)?.filter != null,
 				),
 				width = this@BoxWithConstraints.maxWidth,

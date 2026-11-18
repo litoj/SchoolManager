@@ -12,6 +12,7 @@ import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
 import cz.litoj.schlmgr.ui.screen.subjects.SubjectsScreen
 import cz.litoj.schlmgr.ui.viewmodel.CreatorResult
+import cz.litoj.schlmgr.ui.viewmodel.MenuId
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import kotlinx.coroutines.Dispatchers
 import org.junit.After
@@ -89,7 +90,7 @@ class SubjectsSiblingScrollTest {
 		rule.waitForIdle()
 		model.onItemClick(model.items().single { it.item.name == "A" })
 		rule.waitForIdle()
-		model.onMenuItemClick(cz.litoj.schlmgr.ui.screen.subjects.MenuId.SORT_ALPHA_ZA)
+		model.onMenuItemClick(MenuId.SORT_ALPHA_ZA)
 		rule.waitForIdle()
 		assertEquals(listOf("zulu", "mid", "alpha"), model.items().map { it.item.name })
 		return model
@@ -123,7 +124,7 @@ class SubjectsSiblingScrollTest {
 	fun `original order clears the remembered parent sort`() {
 		val model = customSortedModel()
 
-		model.onMenuItemClick(cz.litoj.schlmgr.ui.screen.subjects.MenuId.SORT_DEFAULT)
+		model.onMenuItemClick(MenuId.SORT_DEFAULT)
 
 		assertEquals(listOf("alpha", "zulu", "mid"), model.items().map { it.item.name })
 	}

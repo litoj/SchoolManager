@@ -1,20 +1,52 @@
-package cz.litoj.schlmgr.ui.screen.subjects
+package cz.litoj.schlmgr.ui.viewmodel
 
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.shell.MenuEntry
-import cz.litoj.schlmgr.ui.viewmodel.ActionConfig
-import cz.litoj.schlmgr.ui.viewmodel.SelectionAction
-import cz.litoj.schlmgr.ui.viewmodel.icon
-import cz.litoj.schlmgr.ui.viewmodel.label
 
 /**
- * The menu kind for the shown content.
- * - both browse kinds share the menu, the FAB palette tells them apart.
+ * The menu form of the open list.
+ * - both browse kinds share the menu, the New palette tells them apart.
  */
-fun menuKindFor(searching: Boolean, pathSize: Int): MainExplorerViewModel.MenuKind = when {
-	searching -> MainExplorerViewModel.MenuKind.SEARCH
-	pathSize == 0 -> MainExplorerViewModel.MenuKind.ROOT
-	else -> MainExplorerViewModel.MenuKind.CONTAINER
+enum class ExplorerMenuKind { ROOT, CONTAINER, SEARCH }
+
+/**
+ * More-options leaf ids, one table for every explorer host.
+ * - each host answers the ids its own door offers.
+ */
+object MenuId {
+	const val NEW_SUBJECT = 1
+	const val NEW_CHAPTER = 2
+	const val NEW_WORD = 3
+	const val NEW_NOTE = 4
+	const val IMPORT_FILE = 6
+	const val EXPORT_WORD = 7
+	const val EXPORT_JSON = 8
+	const val FLIP = 9
+	const val REFERENCE = 10
+	const val SORT_ALPHA_AZ = 11
+	const val SORT_ALPHA_ZA = 12
+	const val SORT_SF_01 = 13
+	const val SORT_SF_10 = 14
+	const val SORT_LENGTH_01 = 15
+	const val SORT_LENGTH_10 = 16
+	const val SORT_DEFAULT = 17
+	const val SORT_PRIORITY = 19
+	const val TEST = 20
+	const val CUT = 21
+	const val EDIT = 22
+	const val GOTO = 23
+	const val DELETE = 24
+	const val CLEAR_FILTER = 25
+}
+
+/**
+ * The menu kind of the shown content.
+ * - [ExplorerViewModel.menuKind] reads it from the state, so no host picks a kind by hand.
+ */
+fun menuKindFor(searching: Boolean, pathSize: Int): ExplorerMenuKind = when {
+	searching -> ExplorerMenuKind.SEARCH
+	pathSize == 0 -> ExplorerMenuKind.ROOT
+	else -> ExplorerMenuKind.CONTAINER
 }
 
 /**
@@ -31,7 +63,7 @@ internal fun selectionOverflowMenu(
 	config.overflow(search, direct).map { it.menuEntry(singleSelected, exportBlockedReason) }
 
 /**
- * The more menu of one list kind.
+ * The more menu of one list kind, the one door every explorer host walks through.
  * - the selection actions come from the config overflow, in the picked order.
  * - edit and go-to act on one row, so a wider selection mutes them with a reason.
  * - an export of translations only stays in place with its reason.
@@ -39,8 +71,8 @@ internal fun selectionOverflowMenu(
  * @param exportBlockedReason the reason of an empty writable selection, 0 when it can export
  * @param filterActive whether the search runs a structured filter, which adds its clear row
  */
-fun subjectsMenu(
-	kind: MainExplorerViewModel.MenuKind,
+fun explorerMenu(
+	kind: ExplorerMenuKind,
 	selecting: Boolean,
 	singleSelected: Boolean,
 	config: ActionConfig,
@@ -48,24 +80,25 @@ fun subjectsMenu(
 	filterActive: Boolean = false,
 	direct: Int = 4,
 ): List<MenuEntry> {
-	val search = kind == MainExplorerViewModel.MenuKind.SEARCH
+	val search = kind == ExplorerMenuKind.SEARCH
 	val actions = selectionOverflowMenu(config, search, singleSelected, exportBlockedReason, direct)
 	val clear = if (search && filterActive)
 		listOf(MenuEntry(MenuId.CLEAR_FILTER, R.string.clear_filter, icon = R.drawable.ic_cancel))
 	else emptyList()
-	val menu = if (search) searchStatic + clear + actions else browseStatic + actions
-	return menu.filter { it.always || it.selectionAction == selecting }
+	val menu = if (search) searchStatic + clear + actions
+	else browseRows() + actions
+	return menu.filter { it.selectionAction == selecting }
 }
 
 private val sortMenu = listOf(
-	MenuEntry(MenuId.SORT_ALPHA_AZ, R.string.sort_alpha_AZ),
-	MenuEntry(MenuId.SORT_ALPHA_ZA, R.string.sort_alpha_ZA),
-	MenuEntry(MenuId.SORT_SF_01, R.string.sort_sf_01),
-	MenuEntry(MenuId.SORT_SF_10, R.string.sort_sf_10),
-	MenuEntry(MenuId.SORT_PRIORITY, R.string.sort_priority),
-	MenuEntry(MenuId.SORT_LENGTH_01, R.string.sort_length_01),
-	MenuEntry(MenuId.SORT_LENGTH_10, R.string.sort_length_10),
 	MenuEntry(MenuId.SORT_DEFAULT, R.string.sort_default),
+	MenuEntry(MenuId.SORT_ALPHA_ZA, R.string.sort_alpha_ZA),
+	MenuEntry(MenuId.SORT_ALPHA_AZ, R.string.sort_alpha_AZ),
+	MenuEntry(MenuId.SORT_SF_10, R.string.sort_sf_10),
+	MenuEntry(MenuId.SORT_SF_01, R.string.sort_sf_01),
+	MenuEntry(MenuId.SORT_PRIORITY, R.string.sort_priority),
+	MenuEntry(MenuId.SORT_LENGTH_10, R.string.sort_length_10),
+	MenuEntry(MenuId.SORT_LENGTH_01, R.string.sort_length_01),
 )
 
 /** The export format chooser, shared by the menu parent and the strip slot. */
@@ -74,7 +107,8 @@ internal val exportMenu = listOf(
 	MenuEntry(MenuId.EXPORT_JSON, R.string.more_export_json),
 )
 
-private val browseStatic = listOf(
+/** The browse menu rows, where import belongs to the New palette instead. */
+private fun browseRows(): List<MenuEntry> = listOf(
 	MenuEntry(0, R.string.sort, icon = R.drawable.ic_sort_black, children = sortMenu),
 )
 

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -21,10 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -161,7 +158,7 @@ fun RowScope.TopBarIconButton(
 
 /**
  * Direct actions fill measured slots, while More opens with the rest.
- * - only a direct icon fills a slot, so a text row or a menu-only glyph stays in the menu.
+ * - a row without a glyph stays in the menu, where its text names it.
  */
 @Composable
 fun RowScope.TopBarActions(
@@ -189,16 +186,25 @@ fun RowScope.TopBarActions(
 
 @Composable
 private fun RowScope.TopBarEntryAction(entry: MenuEntry, onPick: (Int) -> Unit) {
-	var submenu by remember { mutableStateOf(false) }
-	TopBarIconButton(
-		icon = entry.icon,
-		contentDescription = stringResource(entry.label),
-		enabled = entry.enabled,
-		blockedReason = entry.blockedReason,
-	) {
-		if (entry.children.isEmpty()) onPick(entry.id) else submenu = true
+	if (entry.children.isEmpty()) {
+		TopBarIconButton(
+			icon = entry.icon,
+			contentDescription = stringResource(entry.label),
+			enabled = entry.enabled,
+			blockedReason = entry.blockedReason,
+		) { onPick(entry.id) }
+		return
 	}
-	if (submenu) MoreMenu(entry.children, onPick) { submenu = false }
+	// the menu hangs from this icon, so it must not sit beside it in the bar row
+	MenuHost(entry.children, onPick) { open ->
+		TopBarIconButton(
+			icon = entry.icon,
+			contentDescription = stringResource(entry.label),
+			enabled = entry.enabled,
+			blockedReason = entry.blockedReason,
+			onClick = open,
+		)
+	}
 }
 
 /**
@@ -211,21 +217,20 @@ fun RowScope.TopBarMoreButton(
 	contentDescription: String,
 	onPick: (Int) -> Unit,
 ) {
-	var open by remember { mutableStateOf(false) }
-	Box(
-		Modifier
-			.width(TopBarSizes.icon)
-			.fillMaxHeight()
-			.clickable { open = true },
-		contentAlignment = Alignment.Center,
-	) {
-		Image(
-			painter = painterResource(R.drawable.ic_more),
-			contentDescription = contentDescription,
-			modifier = Modifier.size(IconSize),
-			colorFilter = ColorFilter.tint(colorResource(R.color.colorOnHeader)),
-		)
-		if (open) MoreMenu(entries, onPick) { open = false }
+	MenuHost(entries, onPick, Modifier.width(TopBarSizes.icon).fillMaxHeight()) { open ->
+		Box(
+			Modifier
+				.fillMaxSize()
+				.clickable { open() },
+			contentAlignment = Alignment.Center,
+		) {
+			Image(
+				painter = painterResource(R.drawable.ic_more),
+				contentDescription = contentDescription,
+				modifier = Modifier.size(IconSize),
+				colorFilter = ColorFilter.tint(colorResource(R.color.colorOnHeader)),
+			)
+		}
 	}
 }
 

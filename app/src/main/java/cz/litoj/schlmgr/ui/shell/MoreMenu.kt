@@ -1,6 +1,7 @@
 package cz.litoj.schlmgr.ui.shell
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.DropdownMenu
 import androidx.compose.material.DropdownMenuItem
@@ -26,28 +27,35 @@ import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.component.reportUnavailable
 
-/**
- * @property icon the leading icon of the row, which also makes the action direct in the top bar
- * @property menuIcon the icon of a More row, where 0 falls back to [icon]
- * @property children a non-empty list opens a second menu level
- * @property selectionAction acts on selected rows, keeping the resource order
- * @property always stays in both menu forms, as the export rows do
- * @property blockedReason the reason a muted row shows on a tap, 0 for an enabled row
- */
+/** One action as data: placement belongs to whoever shows it, the glyph travels with the row. */
 data class MenuEntry(
 	val id: Int,
 	val label: Int,
 	val icon: Int = 0,
-	val menuIcon: Int = 0,
 	val children: List<MenuEntry> = emptyList(),
 	val selectionAction: Boolean = false,
-	val always: Boolean = false,
 	@StringRes val blockedReason: Int = 0,
 ) {
 	val enabled: Boolean get() = blockedReason == 0
+}
 
-	/** The row icon, which a menu-only glyph sets without taking a top-bar slot. */
-	val rowIcon: Int get() = if (menuIcon != 0) menuIcon else icon
+/**
+ * A button and the menu it opens, held in one box.
+ * - a dropdown anchors to its parent layout node, so the menu must share the button's node.
+ * - [button] takes the opener, since only the host knows when a press opens a menu.
+ */
+@Composable
+fun MenuHost(
+	entries: List<MenuEntry>,
+	onPick: (Int) -> Unit,
+	modifier: Modifier = Modifier,
+	button: @Composable (open: () -> Unit) -> Unit,
+) {
+	var open by remember { mutableStateOf(false) }
+	Box(modifier) {
+		button { open = true }
+		if (open) MoreMenu(entries, { open = false; onPick(it) }) { open = false }
+	}
 }
 
 /**
@@ -56,7 +64,7 @@ data class MenuEntry(
  * - the back row returns to the top level, with a single state and no stacked popups.
  */
 @Composable
-fun MoreMenu(entries: List<MenuEntry>, onPick: (Int) -> Unit, onDismiss: () -> Unit) {
+private fun MoreMenu(entries: List<MenuEntry>, onPick: (Int) -> Unit, onDismiss: () -> Unit) {
 	// the M2 dropdown reads MaterialTheme colours, but the app carries no theme.
 	// so supply the two it reads, and the resources resolve the day/night variant
 	MaterialTheme(
@@ -132,14 +140,14 @@ private fun entryColor(entry: MenuEntry): Color =
 
 @Composable
 private fun MenuIcon(entry: MenuEntry) {
-	if (entry.rowIcon != 0) Icon(
-		painterResource(entry.rowIcon),
+	if (entry.icon != 0) Icon(
+		painterResource(entry.icon),
 		contentDescription = null,
 		tint = entryColor(entry),
 	)
 }
 
-private fun MenuEntry.iconSpacing() = if (rowIcon != 0) 12.dp else 0.dp
+private fun MenuEntry.iconSpacing() = if (icon != 0) 12.dp else 0.dp
 
 @Composable
 private fun MenuBackRow(entry: MenuEntry, onClick: () -> Unit) {

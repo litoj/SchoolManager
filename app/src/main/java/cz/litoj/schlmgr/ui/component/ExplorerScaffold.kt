@@ -21,6 +21,7 @@ fun ExplorerScaffold(
 	listState: ItemListState,
 	onBreadcrumbClick: (Int) -> Unit,
 	onInfoClick: () -> Unit,
+	onParentClick: () -> Unit,
 	callbacks: ItemListCallbacks,
 	modifier: Modifier = Modifier,
 	/** The list state of the owning screen, shared so the screen can watch the scroll. */
@@ -48,6 +49,7 @@ fun ExplorerScaffold(
 			info = state.info,
 			isInfoExpanded = state.isInfoExpanded,
 			onInfoClick = onInfoClick,
+			onParentClick = onParentClick,
 			statusLine = statusLine,
 		)
 		listArea()

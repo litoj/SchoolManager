@@ -17,10 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
@@ -32,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.shell.MenuEntry
-import cz.litoj.schlmgr.ui.shell.MoreMenu
+import cz.litoj.schlmgr.ui.shell.MenuHost
 import cz.litoj.schlmgr.ui.viewmodel.ACTION_SLOT_RATIO
 import cz.litoj.schlmgr.ui.viewmodel.ActionConfig
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction
@@ -107,21 +103,17 @@ private fun RowScope.ExportStripButton(
 	entries: List<MenuEntry>,
 	onExport: (Int) -> Unit,
 ) {
-	var open by remember { mutableStateOf(false) }
-	// the box holds the strip share of the slot, since the button loses the row scope
-	Box(Modifier.weight(1f).fillMaxHeight()) {
-		ActionButton(Action(action.icon, action.label) { open = true }, blockedReason, Modifier.fillMaxWidth())
-		if (open) MoreMenu(entries, { open = false; onExport(it) }) { open = false }
+	// the host holds the strip share of the slot, since the button loses the row scope
+	MenuHost(entries, onExport, Modifier.weight(1f).fillMaxHeight()) { open ->
+		ActionButton(Action(action.icon, action.label, open), blockedReason, Modifier.fillMaxWidth())
 	}
 }
 
 /** The More slot, which hosts the overflow actions as a dropdown. */
 @Composable
 private fun RowScope.OverflowStripButton(entries: List<MenuEntry>, onPick: (Int) -> Unit) {
-	var open by remember { mutableStateOf(false) }
-	Box(Modifier.weight(1f).fillMaxHeight()) {
-		ActionButton(Action(R.drawable.ic_more, R.string.more) { open = true }, 0, Modifier.fillMaxWidth())
-		if (open) MoreMenu(entries, { open = false; onPick(it) }) { open = false }
+	MenuHost(entries, onPick, Modifier.weight(1f).fillMaxHeight()) { open ->
+		ActionButton(Action(R.drawable.ic_more, R.string.more, open), 0, Modifier.fillMaxWidth())
 	}
 }
 

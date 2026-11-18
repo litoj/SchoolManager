@@ -24,10 +24,8 @@ import cz.litoj.schlmgr.ui.shell.TopBarNav
 import cz.litoj.schlmgr.ui.shell.TopBarTitle
 import cz.litoj.schlmgr.ui.shell.explorerBack
 import cz.litoj.schlmgr.ui.shell.headerShadow
-import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
-import cz.litoj.schlmgr.ui.screen.subjects.MenuId
-import cz.litoj.schlmgr.ui.screen.subjects.subjectsMenu
 import cz.litoj.schlmgr.ui.viewmodel.ActionConfig
+import cz.litoj.schlmgr.ui.viewmodel.explorerMenu
 import cz.litoj.schlmgr.ui.viewmodel.InfoBar
 import cz.litoj.schlmgr.ui.viewmodel.SearchUi
 
@@ -47,7 +45,7 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 	// chrome derives from the one search mode, see [SearchUi]
 	// the field stays through the results, since the query marks what the list shows
 	val fieldOpen = state.searchUi != SearchUi.OFF
-	val searchVisible = state.breadcrumbs.isNotEmpty()
+	val searchBlockedReason = viewModel.searchBlockedReason
 
 	// the one navigation step of the picker, where confirm or cancel closes it
 	LaunchedEffect(viewModel) {
@@ -79,8 +77,9 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 			)
 			else TopBarTitle(stringResource(R.string.test_add))
 			TopBarActions(
-				entries = subjectsMenu(
-					MainExplorerViewModel.MenuKind.SEARCH, false, false, ActionConfig.load(),
+				entries = explorerMenu(
+					viewModel.menuKind, selecting = false, singleSelected = false,
+					ActionConfig.load(),
 					filterActive = (state.info as? InfoBar.Search)?.filter != null,
 				),
 				width = this@BoxWithConstraints.maxWidth,
@@ -91,8 +90,8 @@ fun PickerScreen(viewModel: PickerViewModel, onExit: () -> Unit) {
 				icon = R.drawable.ic_search,
 				contentDescription = stringResource(R.string.search),
 				visible = !fieldOpen,
-				enabled = searchVisible,
-				blockedReason = if (searchVisible) 0 else R.string.unavailable_search_root,
+				enabled = searchBlockedReason == 0,
+				blockedReason = searchBlockedReason,
 				onClick = viewModel::openSearchField,
 			)
 			TopBarIconButton(
@@ -120,6 +119,7 @@ private fun PickerContent(viewModel: PickerViewModel, modifier: Modifier = Modif
 		listState = listState,
 		onBreadcrumbClick = viewModel::breadcrumbClick,
 		onInfoClick = viewModel::toggleInfoExpanded,
+		onParentClick = { viewModel.onBackRequested() },
 		callbacks = pickerCallbacks(viewModel, listState.selectionActive),
 		modifier = modifier,
 		statusLine = if (listState.selectionActive)

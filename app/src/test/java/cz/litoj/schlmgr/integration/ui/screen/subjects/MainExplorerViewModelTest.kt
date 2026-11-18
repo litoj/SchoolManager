@@ -14,7 +14,7 @@ import cz.litoj.schlmgr.data.db.ROOT_ID
 import cz.litoj.schlmgr.support.setRowOptions
 import cz.litoj.schlmgr.support.wordRows
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
-import cz.litoj.schlmgr.ui.screen.subjects.MenuId
+import cz.litoj.schlmgr.ui.viewmodel.MenuId
 import cz.litoj.schlmgr.ui.viewmodel.CreatorResult
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
@@ -205,6 +205,18 @@ class MainExplorerViewModelTest {
 		assertFalse(model.onMenuItemClick(MenuId.NEW_CHAPTER))
 		assertFalse(model.onMenuItemClick(MenuId.NEW_NOTE))
 		assertFalse(model.onMenuItemClick(MenuId.NEW_SUBJECT))
+	}
+
+	@Test
+	fun `the import door asks for a file`() {
+		seed()
+		val model = vmIn("A")
+
+		// the New centre, the More row and the picker all land on this one door
+		assertTrue(model.onMenuItemClick(MenuId.IMPORT_FILE))
+		val request = runBlocking { withTimeout(100) { model.requests.first() } }
+
+		assertEquals(MainExplorerViewModel.Request.PickImportFile, request)
 	}
 
 	@Test

@@ -28,6 +28,8 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,32 +56,41 @@ fun ExplorerTopBar(
 	info: InfoBar?,
 	isInfoExpanded: Boolean,
 	onInfoClick: () -> Unit,
+	onParentClick: () -> Unit,
 	modifier: Modifier = Modifier,
 	statusLine: String? = null,
 ) {
 	Column(modifier.fillMaxWidth()) {
-		Breadcrumbs(breadcrumbs, onBreadcrumbClick)
+		Breadcrumbs(breadcrumbs, onBreadcrumbClick, onParentClick)
 		InfoStrip(info, isInfoExpanded, onInfoClick, statusLine)
 		HairlineDivider()
 	}
 }
 
 @Composable
-private fun Breadcrumbs(breadcrumbs: List<String>, onClick: (Int) -> Unit) {
+private fun Breadcrumbs(breadcrumbs: List<String>, onClick: (Int) -> Unit, onParentClick: () -> Unit) {
 	val scroll = rememberScrollState()
+	val parentLabel = stringResource(R.string.crumb_parent)
 	// keep the newest crumb visible.
-	// - keyed on the list, not its size.
-	// - a same-length change such as a crumb rename still scrolls the longer crumb into view.
 	LaunchedEffect(breadcrumbs) { scroll.animateScrollTo(scroll.maxValue) }
 	Row(
-		Modifier
-			.fillMaxWidth()
-			.height(25.dp)
-			.background(HeaderGreen)
-			.horizontalScroll(scroll),
+		Modifier.fillMaxWidth().height(25.dp).background(HeaderGreen),
 		verticalAlignment = Alignment.CenterVertically,
 	) {
-		CrumbChain(breadcrumbs, CrumbColor, onCrumbClick = onClick)
+		Row(Modifier.weight(1f).horizontalScroll(scroll), verticalAlignment = Alignment.CenterVertically) {
+			CrumbChain(breadcrumbs, CrumbColor, onCrumbClick = onClick)
+		}
+		// one level up needs no crumb: the parent of the first one is the root itself
+		if (breadcrumbs.isNotEmpty()) Box(
+			Modifier
+				.fillMaxHeight()
+				.clickable(onClick = onParentClick)
+				.padding(horizontal = 10.dp)
+				.semantics(mergeDescendants = true) { contentDescription = parentLabel },
+			contentAlignment = Alignment.Center,
+		) {
+			Text("↶", fontSize = 16.sp, color = CrumbColor, maxLines = 1)
+		}
 	}
 }
 

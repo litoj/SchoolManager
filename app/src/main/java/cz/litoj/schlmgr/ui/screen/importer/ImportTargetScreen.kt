@@ -108,6 +108,7 @@ fun ImportTargetScreen(
 				listState = listState,
 				onBreadcrumbClick = { if (!target.busy) viewModel.breadcrumbClick(it) },
 				onInfoClick = viewModel::toggleInfoExpanded,
+				onParentClick = { if (!target.busy) viewModel.onBackRequested() },
 				callbacks = importCallbacks(viewModel, target.busy),
 				scrollState = scrollState,
 				modifier = Modifier.weight(1f).headerShadow(),

@@ -123,6 +123,19 @@ class TopBarActionsTest {
 	}
 
 	@Test
+	fun `an action with a glyph fills a bar slot and needs no menu`() {
+		show(
+			listOf(
+				MenuEntry(1, R.string.search, icon = R.drawable.ic_search),
+				MenuEntry(2, R.string.more_import, icon = R.drawable.ic_download),
+			),
+		)
+
+		rule.onNodeWithContentDescription("Import").assertExists()
+		rule.onNodeWithContentDescription("More").assertDoesNotExist()
+	}
+
+	@Test
 	fun `a lone action without an icon shows no icon button`() {
 		show(listOf(MenuEntry(1, R.string.more_import)))
 

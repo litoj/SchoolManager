@@ -2,10 +2,10 @@ package cz.litoj.schlmgr.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ratio
 import cz.litoj.schlmgr.testing.TestEngine
-import cz.litoj.schlmgr.ui.screen.subjects.MenuId
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.update
  * The explorer state of one screen.
  * - actions arrive here and delegate the work to [cz.litoj.schlmgr.data.ItemRepository].
  * - the chrome shows the published state.
+ * - it owns what the top bar offers: the menu kind, the file doors and the search door.
  *
  * @param picker trims the rows to plain and keeps the select drag
  * @param io the blocking reads, injectable for tests
@@ -70,6 +71,20 @@ abstract class ExplorerViewModel<R>(
 	val listState: StateFlow<ItemListState> get() = list.listState
 
 	protected val searching get() = list.searching
+
+	/**
+	 * The menu form of the open list, so no host picks a kind by hand.
+	 * - both inputs ride the flows a screen collects, so its bar recomposes with them.
+	 */
+	val menuKind: ExplorerMenuKind get() = menuKindFor(searching, history.path.size)
+
+	/**
+	 * Why the search button cannot open, 0 when it can.
+	 * - the root holds nothing to search, the rule [openSearchField] applies too.
+	 * - a blocked search keeps its button, so the reason shows instead of the place vanishing.
+	 */
+	open val searchBlockedReason: Int
+		get() = if (history.path.isEmpty()) R.string.unavailable_search_root else 0
 
 	companion object {
 		const val SEARCH_DEBOUNCE_MS = 300L
@@ -125,10 +140,21 @@ abstract class ExplorerViewModel<R>(
 		MenuId.SORT_PRIORITY -> { sort(compareByDescending { TestEngine.urgency(it.item) }); true }
 		MenuId.SORT_LENGTH_01 -> { sort(compareBy { it.toShow.length }); true }
 		MenuId.SORT_LENGTH_10 -> { sort(compareBy<ItemRow> { it.toShow.length }.reversed()); true }
+		MenuId.SORT_DEFAULT -> { reloadDefaultOrder(); true }
 		else -> false
 	}
 
 	protected fun clearSortOrder() = list.clearSortOrder()
+
+	/**
+	 * The order a container had before this view sorted it.
+	 * - the remembered sibling order drops, and the reload skips the sort of the view.
+	 */
+	protected fun reloadDefaultOrder() {
+		val container = history.path.lastOrNull()
+		clearSortOrder()
+		loadContent(container, rememberSort = false)
+	}
 
 	/** The sibling order that the parent view displayed, rather than raw database order. */
 	protected fun orderedChildren(parentId: Int): List<DbItem> = list.sortedChildren(parentId)
@@ -231,12 +257,9 @@ abstract class ExplorerViewModel<R>(
 
 	// the policy lives in [SearchFlow].
 
-	/**
-	 * The run walks the open container, since the root offers no search.
-	 * - an armed paste freezes the flow like navigation.
-	 */
+	/** Opens the search field, where [searchBlockedReason] keeps the door shut. */
 	fun openSearchField() {
-		if (history.path.isEmpty() || pasteArmed()) return
+		if (searchBlockedReason != 0) return
 		searchFlow.openField()
 	}
 

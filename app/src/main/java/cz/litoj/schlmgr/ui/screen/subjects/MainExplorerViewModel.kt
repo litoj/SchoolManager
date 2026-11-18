@@ -21,8 +21,10 @@ import cz.litoj.schlmgr.ui.viewmodel.CreatorResult
 import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
 import cz.litoj.schlmgr.ui.screen.test.TestSetupState
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
+import cz.litoj.schlmgr.ui.viewmodel.menuIdOf
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
+import cz.litoj.schlmgr.ui.viewmodel.MenuId
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 import cz.litoj.schlmgr.ui.viewmodel.SiblingSwitch
@@ -72,8 +74,6 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		) : Request
 	}
 
-	enum class MenuKind { ROOT, CONTAINER, SEARCH }
-
 	/**
 	 * The one implementation of the satellite doors, see [SubjectsHost].
 	 * - the adapters below extend it through delegation.
@@ -107,6 +107,10 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 	val pasteBlockedReason: Int get() = paste.blockedReason
 
 	override fun pasteArmed() = pasteArmed
+
+	// an armed move freezes the whole bar, its own reason wins over the root rule
+	override val searchBlockedReason: Int
+		get() = if (pasteArmed) R.string.unavailable_search_move else super.searchBlockedReason
 
 	private inner class PasteHost : SubjectsPaste.Host, SubjectsHost by shared {
 		override fun selectionCount() = this@MainExplorerViewModel.selectionCount()
@@ -204,9 +208,8 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 	fun onMenuItemClick(itemId: Int): Boolean = when (itemId) {
 		MenuId.SORT_ALPHA_AZ, MenuId.SORT_ALPHA_ZA,
 		MenuId.SORT_SF_01, MenuId.SORT_SF_10, MenuId.SORT_PRIORITY,
-		MenuId.SORT_LENGTH_01, MenuId.SORT_LENGTH_10,
+		MenuId.SORT_LENGTH_01, MenuId.SORT_LENGTH_10, MenuId.SORT_DEFAULT,
 		-> sortItem(itemId)
-		MenuId.SORT_DEFAULT -> { reloadDefaultOrder(); true }
 		MenuId.NEW_SUBJECT -> newAction { newSubject() }
 		MenuId.NEW_CHAPTER -> newAction { newChapter() }
 		MenuId.NEW_WORD -> newAction { newWord() }
@@ -253,12 +256,6 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		if (searching) return false
 		action()
 		return true
-	}
-
-	private fun reloadDefaultOrder() {
-		val container = history.path.lastOrNull()
-		clearSortOrder()
-		loadContent(container, rememberSort = false)
 	}
 
 	fun onItemClick(item: ItemRow?) {
@@ -425,6 +422,10 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 	private fun exportJsonFile() = transfer.exportJsonFile()
 
 	internal fun exportRows(): List<DbItem> = transfer.exportRows()
+
+	/** A selection of translations alone has no export line, so the row stays and explains. */
+	val exportBlockedReason: Int
+		get() = if (exportRows().isEmpty()) R.string.unavailable_export_empty else 0
 
 	fun onAnyFilePicked(uri: Uri) = transfer.onAnyFilePicked(uri)
 
