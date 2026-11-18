@@ -13,7 +13,6 @@ class WordListEntry(var name: String, var description: String? = null)
 
 /** The parser state at a failure, kept separate from its localized presentation. */
 enum class WordListProblem {
-	INVALID_SEPARATOR,
 	INCOMPLETE_ENTRY,
 	SYMBOL_ONLY,
 	MISSING_CHAPTER_OPEN,
@@ -45,7 +44,7 @@ enum class WordListPlaceholder {
 
 /** The kind of one-edit fix, which decides the sentence the popup shows. */
 enum class WordListRepairKind {
-	SEPARATOR_SWAP,
+	EXTRA_CHAR,
 	TRANSLATION_TEXT,
 	TRANSLATION_ORDER,
 	NOTE_TEXT,
@@ -65,12 +64,14 @@ enum class WordListRepairKind {
 /**
  * A one-edit fix the parser confirmed against the whole file.
  * - [text] is the line as it should read, [WordListRepair.MISSING_TEXT] marks the open spot.
- * - a blank [text] means the line holds nothing the format accepts.
+ * - a blank [text] empties the line, which is how an unmatched closer leaves it.
  */
 class WordListRepair(
 	val kind: WordListRepairKind,
 	val text: String,
 	val placeholder: WordListPlaceholder?,
+	/** false when the fix adds lines, so [text] is no line to write back */
+	internal val lineScoped: Boolean = true,
 ) {
 	companion object {
 		/** stands for user text, so a suggestion never invents content */
@@ -129,6 +130,7 @@ private class Repair(
 	val text: String,
 	val kind: WordListRepairKind,
 	val placeholder: WordListPlaceholder? = null,
+	val lineScoped: Boolean = true,
 ) {
 	/** marks the spot a probe still found empty */
 	fun withTextAt(failure: ProbeFailure): Repair {
@@ -139,6 +141,7 @@ private class Repair(
 			failure.sourceLine.replaceRange(failure.problemIndex, failure.problemIndex, mark),
 			kind,
 			placeholderOf(failure.problem),
+			lineScoped,
 		)
 	}
 }
@@ -169,7 +172,7 @@ private fun placeholderOf(problem: WordListProblem): WordListPlaceholder? = when
 }
 
 /** Counts line starts as the reader does: CR, LF or a CRLF pair ends one. */
-private fun lineStartOffset(source: String, lineNumber: Int): Int {
+internal fun lineStartOffset(source: String, lineNumber: Int): Int {
 	var start = 0
 	repeat(lineNumber - 1) {
 		while (start < source.length && source[start] != '\n' && source[start] != '\r') start++
@@ -181,7 +184,7 @@ private fun lineStartOffset(source: String, lineNumber: Int): Int {
 /**
  * The word-list text format:
  * - a chapter is a name, an opening brace, its content, then a closing brace.
- * - a word line splits the name from its translation on a semicolon, an equals sign or an arrow.
+ * - a word line splits the name from its translation on a semicolon or an equals sign.
  * - a description follows the text in square brackets.
  * - a separator-led line is a note, a word line without the word.
  */
@@ -236,6 +239,7 @@ class WordListReader private constructor(
 						// a note line unescapes its backslash, since notes carry no
 						// variant syntax to keep raw
 						'\\', '/', '(', ')' -> if (!ctx.inNote) sb.append('\\')
+						// the arrow divides no words any more, its escape stays for old exports
 						';', '=', '→', '[', ']' -> {}
 						else -> {
 							if (ctx.inNote) throw parseError(
@@ -248,7 +252,7 @@ class WordListReader private constructor(
 					}
 					sb.append(next)
 				}
-				';', '=', '→' -> {
+				';', '=' -> {
 					if (firstSeparator == null) firstSeparator = ch
 					// a leading separator opens a note line, since no word precedes it
 					if (!ctx.inNote && ctx.inWords && wordNames.isEmpty() && sb.isEmpty()) {
@@ -464,15 +468,10 @@ class WordListReader private constructor(
 
 	private fun failIncompleteLine(ctx: ParserContext): Nothing {
 		val sourceLine = sourceLineAt(lineStart)
-		val arrow = sourceLine.indexOf("->")
-		val hasArrowRelation = arrow >= 0 &&
-			sourceLine.substring(0, arrow).isNotBlank() &&
-			sourceLine.substring(arrow + 2).isNotBlank()
 		val nextLine = nextNonblankLine()
 		val problem = when {
 			ctx.variantDividers.isNotEmpty() && ctx.variantDividers.size >= ctx.wordNames.size ->
 				WordListProblem.EMPTY_VARIANT
-			hasArrowRelation -> WordListProblem.INVALID_SEPARATOR
 			sourceLine.none { it.isLetterOrDigit() } -> WordListProblem.SYMBOL_ONLY
 			nextLine != null && indentation(nextLine) > indentation(sourceLine) ->
 				WordListProblem.MISSING_CHAPTER_OPEN
@@ -542,7 +541,7 @@ class WordListReader private constructor(
 			failure = probe(fixed.source)
 		}
 		if (failure != null && failure.countsAgainst(lineNumber, baseline)) return null
-		return WordListRepair(fixed.kind, fixed.text, fixed.placeholder)
+		return WordListRepair(fixed.kind, fixed.text, fixed.placeholder, fixed.lineScoped)
 	}
 
 	/**
@@ -578,8 +577,14 @@ class WordListReader private constructor(
 		val separator = (firstSeparator ?: '=').toString()
 		val out = ArrayList<Repair>()
 
-		fun addAt(source: String, text: String, kind: WordListRepairKind, placeholder: WordListPlaceholder? = null) {
-			if (out.size < MAX_CANDIDATES) out += Repair(source, text, kind, placeholder)
+		fun addAt(
+			source: String,
+			text: String,
+			kind: WordListRepairKind,
+			placeholder: WordListPlaceholder? = null,
+			lineScoped: Boolean = true,
+		) {
+			if (out.size < MAX_CANDIDATES) out += Repair(source, text, kind, placeholder, lineScoped)
 		}
 
 		fun add(edited: String, kind: WordListRepairKind, placeholder: WordListPlaceholder? = null) =
@@ -599,9 +604,13 @@ class WordListReader private constructor(
 
 		/** this line opens a chapter, the file gains its closing } */
 		fun openChapter(edited: String, kind: WordListRepairKind, placeholder: WordListPlaceholder? = null) =
-			addAt("${sourceReplacingLine(lineStart, edited)}\n}\n", "$edited\n…\n}", kind, placeholder)
+			addAt("${sourceReplacingLine(lineStart, edited)}\n}\n", "$edited\n…\n}", kind, placeholder, false)
 
-		when (problem) {			WordListProblem.INVALID_SEPARATOR -> replace(at, "->".length, " $separator ", WordListRepairKind.SEPARATOR_SWAP)
+		// a closer on a line of its own closes nothing, so it is the mark to remove
+		val alone = line.trim()
+		if (alone == "]" || alone == "}") replace(at, 1, "", WordListRepairKind.EXTRA_CHAR)
+
+		when (problem) {
 			WordListProblem.MISSING_TRANSLATION ->
 				needsText(at, WordListRepairKind.TRANSLATION_TEXT, WordListPlaceholder.TRANSLATION)
 			WordListProblem.MISSING_NOTE_TEXT -> needsText(at, WordListRepairKind.NOTE_TEXT, WordListPlaceholder.NOTE)
@@ -637,7 +646,7 @@ class WordListReader private constructor(
 				replace(at, 0, "\\", WordListRepairKind.DOUBLED_BACKSLASH)
 			WordListProblem.DESCRIPTION_END -> add("$line]", WordListRepairKind.DESCRIPTION_CLOSE)
 			WordListProblem.DESCRIPTION_CLOSING, WordListProblem.CHAPTER_BRACES, WordListProblem.CHAPTER_DIVIDER -> Unit
-			WordListProblem.CHAPTER_END -> addAt("$src\n}\n", "}", WordListRepairKind.CHAPTER_CLOSE)
+			WordListProblem.CHAPTER_END -> addAt("$src\n}\n", "}", WordListRepairKind.CHAPTER_CLOSE, lineScoped = false)
 		}
 		return out
 	}
@@ -657,7 +666,6 @@ class WordListReader private constructor(
 		val sourceLine = sourceLineAt(lineStart)
 		val endIndex = (characterIndex - lineStart).coerceIn(0, sourceLine.length)
 		val problemIndex = when (problem) {
-			WordListProblem.INVALID_SEPARATOR -> sourceLine.indexOf("->").coerceAtLeast(0)
 			WordListProblem.SYMBOL_ONLY -> sourceLine.indexOfFirst { !it.isWhitespace() }.coerceAtLeast(0)
 			else -> endIndex
 		}
@@ -676,16 +684,21 @@ class WordListReader private constructor(
 /**
  * - top-level items become root items in file order, with no wrapper.
  * - see [DataImporter] for the stream contract.
+ * - single-character mistakes of the file mend themselves, see [WordListAutoRepair].
  */
 class WordListImporter(containerName: String, text: String) : DataImporter {
 	override val items: List<StreamItem>
 	override val references: List<StreamReference> = emptyList()
 
+	/** The lines the import changed, in file order. */
+	val autoFixes: List<WordListAutoFix>
+
 	init {
-		val root = WordListReader.parse(text, containerName)
+		val repaired = WordListAutoRepair.parse(text, containerName)
 		val out = ArrayList<StreamItem>()
-		addEntries(out, root.entries, null)
+		addEntries(out, repaired.root.entries, null)
 		items = out
+		autoFixes = repaired.fixes
 	}
 
 	private fun addEntries(out: MutableList<StreamItem>, entries: List<WordListChild>, parent: StreamItem?) {

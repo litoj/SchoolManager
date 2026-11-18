@@ -3,6 +3,7 @@ package cz.litoj.schlmgr.app
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import cz.litoj.schlmgr.data.wordlist.WordListAutoFix
 import cz.litoj.schlmgr.data.wordlist.WordListParseException
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.popup.MessagePopup
@@ -50,9 +51,26 @@ object UserMessages {
 	fun onParseFail(msg: String) = showMsg(msg, msg)
 
 	@JvmStatic
-	fun onImportSuccess(words: Int, chapters: Int) {
-		val msg = stats(R.string.stat_imported, words, chapters)
-		showMsg(msg, msg)
+	@JvmOverloads
+	fun onImportSuccess(words: Int, chapters: Int, fixes: List<WordListAutoFix> = emptyList()) {
+		val msg = stats(R.string.stat_imported, words, chapters) + autoFixSummary(fixes)
+		showMsg(msg, msg + autoFixDetails(fixes))
+	}
+
+	/** The count of the self-repaired lines, nothing when the file needed no repair. */
+	private fun autoFixSummary(fixes: List<WordListAutoFix>): String {
+		if (fixes.isEmpty()) return ""
+		return "\n" + GlobalDependencies.appContext.resources
+			.getQuantityString(R.plurals.import_fixed_lines, fixes.size, fixes.size)
+	}
+
+	/** Every self-repaired line as it stood and as it landed. */
+	private fun autoFixDetails(fixes: List<WordListAutoFix>): String {
+		if (fixes.isEmpty()) return ""
+		val ctx = GlobalDependencies.appContext
+		return "\n" + fixes.joinToString("\n") {
+			ctx.getString(R.string.import_fixed_line, it.lineNumber, it.before, it.after)
+		}
 	}
 
 	/**

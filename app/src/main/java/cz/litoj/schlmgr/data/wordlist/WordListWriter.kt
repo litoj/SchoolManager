@@ -25,12 +25,12 @@ object WordListWriter {
 		private set
 
 	/**
-	 * - the reader parses only those three.
+	 * - the reader parses only those two.
 	 * - anything else, empty included, keeps the current one.
 	 */
 	@JvmStatic
 	fun setWordTranslationSplitter(splitter: String) {
-		if (splitter != ";" && splitter != "=" && splitter != "→") return
+		if (splitter != ";" && splitter != "=") return
 		wordTranslationSplitter = splitter
 	}
 

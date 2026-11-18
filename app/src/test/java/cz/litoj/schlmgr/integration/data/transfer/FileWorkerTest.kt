@@ -2,6 +2,7 @@ package cz.litoj.schlmgr.integration.data.transfer
 
 import android.net.Uri
 import androidx.room.Room
+import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
@@ -282,6 +283,38 @@ class FileWorkerTest {
 
 		importPicked("Broken.txt", { lektion }, "Haus\n")
 		assertTrue(Dialogs.isShowing<MessagePopup>())
+		Dialogs.clear()
+	}
+
+	@Test
+	fun `a one-character word list mistake mends itself and reports its line`() = runBlocking {
+		Dialogs.clear()
+		val message = async(start = CoroutineStart.UNDISPATCHED) {
+			withTimeout(2_000) { GlobalDependencies.messages.first() }
+		}
+
+		importPicked("list.txt", { null }, "Kapitel {\nHaus;home;extra\n}\n")
+
+		val word = ItemRepository.children(ItemRepository.subjects().single().id).single()
+		assertEquals(listOf("home", "extra"), ItemRepository.translations(word.id).map { it.name })
+
+		val report = message.await() as GlobalDependencies.UiMessage.Text
+		val fixed = RuntimeEnvironment.getApplication().resources
+			.getQuantityString(R.plurals.import_fixed_lines, 1, 1)
+		assertTrue("The report hides the repair: ${report.text}", report.text.contains(fixed))
+		assertTrue("The copy hides the repaired line: ${report.fullText}",
+			report.fullText.contains("Haus;home;extra → Haus;home\\extra"))
+		assertFalse(Dialogs.isShowing<MessagePopup>())
+	}
+
+	@Test
+	fun `an arrow line imports nothing and keeps its instructions`() {
+		Dialogs.clear()
+
+		importPicked("Broken.txt", { null }, "Kapitel {\nHaus->home\n}\n")
+
+		assertTrue(Dialogs.isShowing<MessagePopup>())
+		assertEquals(emptyList<String>(), ItemRepository.subjects().map { it.name })
 		Dialogs.clear()
 	}
 

@@ -65,7 +65,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Rows appear and leave without a fade, so a fast scroll shows no shimmer.
 - A long-press starts selection, with the row type icon toggling each row.
 - A long-press drag on an unselected row selects the range, and a selected row moves where the list has an order.
-- A selected block of adjacent rows moves whole, and its floating overlay keeps every row as it stood.
+- A reorder drag moves every selected row in shown order, while a counted proxy alone follows the finger.
 - A selection press shows the action strip at once, while a reorder press holds it away until the lift.
 - The row type icon toggles a row during a selection or in the picker.
 - The row tap keeps its own meaning.
@@ -82,11 +82,12 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - One menu host holds a button and its dropdown in one box, so a menu opens at its own button.
 - A host that opens no file lists no import row.
 - Settings highlights use the same capacity calculation as the shown strips.
-- The picker pins Select all on the right, with sorting shown directly or collapsed by width.
+- Every explorer pins Select all on the right, with sorting shown directly or collapsed by width.
 - The picker shows the same container info line as the explorer, so no hint line replaces it.
 - A strip label stays centered and ellipsizes when its slot cannot hold the full text.
 - A label with no glyph keeps the glyph slot, so one strip never splits its labels.
 - The top More button hides while a selection runs.
+- The explorer top bar keeps one action set: search, the list menu, then the pinned Select all.
 - Cut applies only to a browse list.
 - The settings editor names the strips that show each action at the current width.
 - Top actions estimate capacity at 1.2 per slot, while titles and search keep 96 dp of intrinsic minimum space.
@@ -185,19 +186,32 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Offered fixes come from a single-edit search the parser validates against the whole file.
 - The blanked failing line gives the baseline, so a fix never hides an error it caused.
 - Text only the user knows stays a localized placeholder.
-- Each fix reads as a suggestion: the kind of edit, then the line it produces.
-- A fix never removes anything: no line, name or word is ever offered as deleted.
+- Each fix is an instruction: the edit, then the line it produces.
+- A lone diagnosis names the same edit, so neither reads as a question.
+- A fix removes nothing but a closer alone on its line, never a line, name or word.
 - A fix is the whole message, the diagnosis line appears only when no fix survived.
 - One repair kind per edit type, so wording and validated edit can never drift apart.
-- Bare text is incomplete unless an arrow relation or following indented chapter block gives evidence.
+- A suggestion of one character mends the import buffer itself, spaces and tabs aside.
+- The buffer re-parses after every such repair, the picked file is never written.
+- A repair needing user text, a second character or another line is left to the popup.
+- The success report counts the repaired lines and lists each one before and after.
+- Bare text is incomplete unless a following indented chapter block gives evidence.
+- A note without a description has no word-list line, so the import refuses its export too.
 - Unclosed chapters, stray description closings and unfinished escapes fail instead of importing silently.
 - The complete source line uses a monospace block on a contrasting surface.
 - A `↓` aligns through measured glyph bounds with the exact symbol or missing-character insertion point.
 - Long source lines keep their alignment through horizontal scrolling.
 - An unfinished multiline description points to its opening line.
 - JSON failures retain the original snackbar path.
-- The word-list format supports `=`, `;` and `→` separators.
+- The word-list format separates a word and its translation with `=` or `;`, the arrow divides nothing.
 - A finished import reloads the target and scrolls to its last row.
+
+### Notifications
+
+- The first start on Android 13 and later explains the progress notifications before Android asks.
+- The explanation names long imports, exports and deletions and says the app works without the permission.
+- A refusal is accepted, so no screen asks again.
+- The prompt appears from both the main start and a shared-file import.
 
 ### Export
 
@@ -357,8 +371,12 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The sources header carries a clear action, with 992 behavior tests and debug lint green.
 - Long-press select and reorder follow the pressed row, with 994 behavior tests and debug lint green.
 - A selection status keeps the container description on the info strip.
-- A selected block drags as one, with its floating overlay keeping every row, its drag tests and debug lint green.
+- Every selected row reorders as one run, while a counted proxy follows the finger, its drag tests and debug lint green.
 - The picker and the explorer share their menu, row tap and scroll paths, with 1001 behavior tests and debug lint green.
 - The larger secondary glyphs and unmoved captions are verified by a rendered 360x640 capture.
 - The e2e suite drops pure layout, wiring and covered pins, with 959 behavior tests and debug lint green.
+- The explorer top bar holds one action set in every mode, with 960 behavior tests and debug lint green.
 - History since 2.3.0 folds follow-ups into their features, with 960 behavior tests and debug lint green.
+- The first launch explains progress notifications for imports, exports and deletions, with 965 behavior tests and debug lint green.
+- The word-list import mends its one-character mistakes itself, with 977 behavior tests and debug lint green.
+- The arrow leaves the separators and a repair counts one character, with 988 tests and debug lint green.

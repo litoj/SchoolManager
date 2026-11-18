@@ -65,7 +65,6 @@ class ImportFailureExplanationTest {
 		val note = placeholder(R.string.import_placeholder_note)
 		val translation = placeholder(R.string.import_placeholder_translation)
 
-		assertTrue(fix(R.string.import_fix_separator_swap, "Haus = dům") in explanation("Haus->dům\n"))
 		assertTrue(fix(R.string.import_fix_translation_text, "Haus = $translation") in explanation("Haus\n"))
 		assertTrue(fix(R.string.import_fix_note_text, "= $note") in explanation("=\n"))
 		assertTrue(fix(R.string.import_fix_chapter_close, "}") in explanation("Chapter {\n"))
@@ -81,10 +80,15 @@ class ImportFailureExplanationTest {
 
 	@Test
 	fun `a stray symbol gets its diagnosis, never a deletion`() {
-		val body = explanation("}\n")
+		val body = explanation("-\n")
 
-		assertTrue(text(R.string.import_hint_chapter_braces) in body)
+		assertTrue(text(R.string.import_hint_symbol_only) in body)
 		assertTrue(text(R.string.import_hint_no_single_fix) in body)
+	}
+
+	@Test
+	fun `an unmatched closer is offered as the mark to remove`() {
+		assertTrue(text(R.string.import_fix_extra_char) in explanation("}\n"))
 	}
 
 	@Test
@@ -96,11 +100,11 @@ class ImportFailureExplanationTest {
 
 	@Test
 	fun `the copied text carries location source and fix`() {
-		val body = explanation("Haus->dům\n")
+		val body = explanation("word;translation;extra\n")
 
 		assertTrue(text(R.string.import_error_location, "Broken.txt", 1) in body)
-		assertTrue("Haus->dům" in body)
-		assertTrue(fix(R.string.import_fix_separator_swap, "Haus = dům") in body)
+		assertTrue("word;translation;extra" in body)
+		assertTrue(fix(R.string.import_fix_variant_divider, "word;translation\\extra") in body)
 		assertFalse("No raw parser reason belongs in the popup: $body", "Reached end of file" in body)
 	}
 

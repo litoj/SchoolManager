@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.annotation.VisibleForTesting
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.data.wordlist.WordListAutoFix
 import cz.litoj.schlmgr.data.wordlist.WordListParseException
 import cz.litoj.schlmgr.data.wordlist.WordListWriter
 import cz.litoj.schlmgr.testing.TestEngine
@@ -114,7 +115,9 @@ object Startup {
 	fun onParseFail(msg: String) = UserMessages.onParseFail(msg)
 
 	@JvmStatic
-	fun onImportSuccess(words: Int, chapters: Int) = UserMessages.onImportSuccess(words, chapters)
+	@JvmOverloads
+	fun onImportSuccess(words: Int, chapters: Int, fixes: List<WordListAutoFix> = emptyList()) =
+		UserMessages.onImportSuccess(words, chapters, fixes)
 
 	/**
 	 * Export result: the word and chapter statistics of what was written, and the display

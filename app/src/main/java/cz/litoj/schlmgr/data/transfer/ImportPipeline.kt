@@ -7,6 +7,7 @@ import cz.litoj.schlmgr.app.FileProgress
 import cz.litoj.schlmgr.app.FileText
 import cz.litoj.schlmgr.app.Startup
 import cz.litoj.schlmgr.data.json.HJsonImporter
+import cz.litoj.schlmgr.data.wordlist.WordListAutoFix
 import cz.litoj.schlmgr.data.wordlist.WordListImporter
 import cz.litoj.schlmgr.data.wordlist.WordListParseException
 import cz.litoj.schlmgr.data.DataImporter
@@ -81,8 +82,8 @@ abstract class FileWorker(
 	): ImportResult =
 		ItemRepository.import(progress.importer(importer), anchorId)
 
-	protected fun notifyImported(result: ImportResult) {
-		Startup.onImportSuccess(result.words, result.chapters)
+	protected fun notifyImported(result: ImportResult, fixes: List<WordListAutoFix> = emptyList()) {
+		Startup.onImportSuccess(result.words, result.chapters, fixes)
 		onImported?.invoke(result)
 	}
 }
@@ -110,9 +111,10 @@ class WordIntoContainerImport(
 		FileGateway.importProgress(appContext, R.string.progress_import, uri).use { progress ->
 			val content = readContent(uri, progress) ?: return
 			// wrapped, since the save loop drives the row phase of the bar
-			val outcome = persist(WordListImporter(fileName.ifEmpty { uri.toString() }, content), progress, anchor)
+			val importer = WordListImporter(fileName.ifEmpty { uri.toString() }, content)
+			val outcome = persist(importer, progress, anchor)
 			post { if (self == null && atRoot()) onRootReload() else onRefreshed() }
-			notifyImported(outcome)
+			notifyImported(outcome, importer.autoFixes)
 		}
 	}
 
@@ -138,9 +140,10 @@ class WordAsSubjectImport(
 		val fileName = FileGateway.displayName(appContext, uri, uri.toString())
 		FileGateway.importProgress(appContext, R.string.progress_import, uri).use { progress ->
 			val content = readContent(uri, progress) ?: return
-			val result = persist(WordListImporter(fileName, content), progress)
+			val importer = WordListImporter(fileName, content)
+			val result = persist(importer, progress)
 			post { onRootReload() }
-			notifyImported(result)
+			notifyImported(result, importer.autoFixes)
 		}
 	}
 

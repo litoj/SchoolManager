@@ -163,6 +163,8 @@ class WordListRoundTripTest {
 		assertEquals("=", WordListWriter.wordTranslationSplitter)
 		WordListWriter.setWordTranslationSplitter("a b")
 		assertEquals("=", WordListWriter.wordTranslationSplitter)
+		WordListWriter.setWordTranslationSplitter("→")
+		assertEquals("=", WordListWriter.wordTranslationSplitter)
 	}
 
 	@Test

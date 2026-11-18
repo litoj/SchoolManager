@@ -32,9 +32,9 @@ class WordListRepairTest {
 	}
 
 	@Test
-	fun `the arrow becomes the separator this file already uses`() {
-		expectFix("Haus->dům\n", "Haus = dům")
-		expectFix("first;ok\nHaus->dům\n", "Haus ; dům")
+	fun `an arrow is text, its line lacks the separator it never was`() {
+		expectFix("Haus->dům\n", "Haus->dům = $mark")
+		expectFix("Haus→dům\n", "Haus→dům = $mark")
 	}
 
 	@Test
@@ -105,7 +105,13 @@ class WordListRepairTest {
 
 	@Test
 	fun `a symbol that is no entry gets no fix, only its diagnosis`() {
-		for (source in listOf("]\n", "}\n", "-\n")) assertTrue("$source offered a fix", failure(source).repairs.isEmpty())
+		assertTrue("- offered a fix", failure("-\n").repairs.isEmpty())
+	}
+
+	@Test
+	fun `an unmatched closer is the one mark a fix removes`() {
+		expectFix("]\n", "")
+		expectFix("}\n", "")
 	}
 
 	@Test
@@ -173,7 +179,6 @@ class WordListRepairTest {
 	@Test
 	fun `every fix names the edit it offers`() {
 		val edits = mapOf(
-			"Haus->dům\n" to WordListRepairKind.SEPARATOR_SWAP,
 			"Haus\n" to WordListRepairKind.TRANSLATION_TEXT,
 			"pes;\n" to WordListRepairKind.TRANSLATION_TEXT,
 			"=\n" to WordListRepairKind.NOTE_TEXT,

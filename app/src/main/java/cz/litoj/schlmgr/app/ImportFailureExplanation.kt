@@ -29,7 +29,7 @@ internal object ImportFailureExplanation {
 	}
 
 	private fun fixResourceOf(kind: WordListRepairKind): Int = when (kind) {
-		WordListRepairKind.SEPARATOR_SWAP -> R.string.import_fix_separator_swap
+		WordListRepairKind.EXTRA_CHAR -> R.string.import_fix_extra_char
 		WordListRepairKind.TRANSLATION_TEXT -> R.string.import_fix_translation_text
 		WordListRepairKind.TRANSLATION_ORDER -> R.string.import_fix_translation_order
 		WordListRepairKind.NOTE_TEXT -> R.string.import_fix_note_text
@@ -64,7 +64,6 @@ internal object ImportFailureExplanation {
 	fun of(error: WordListParseException): Content {
 		val ctx = GlobalDependencies.appContext
 		val hint = when (error.problem) {
-			WordListProblem.INVALID_SEPARATOR -> ctx.getString(R.string.import_hint_invalid_separator)
 			WordListProblem.INCOMPLETE_ENTRY -> ctx.getString(R.string.import_hint_incomplete_entry)
 			WordListProblem.SYMBOL_ONLY -> ctx.getString(R.string.import_hint_symbol_only)
 			WordListProblem.MISSING_CHAPTER_OPEN -> ctx.getString(R.string.import_hint_missing_chapter_open)
