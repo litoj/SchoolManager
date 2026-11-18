@@ -194,7 +194,7 @@ private fun kindCounts(kinds: Map<ItemKind, Int>): List<String> =
 /**
  * The info strip, which reads the laid-out line count so a wrapped description
  * expands too. Counting '\n' would stick it at the 2-line height, hiding the rest.
- * - a [status] replaces the info text, so an armed move owns the line.
+ * - a [status] edits the first line in place, so the properties below it stay.
  */
 @Composable
 private fun InfoStrip(
@@ -205,7 +205,7 @@ private fun InfoStrip(
 ) {
 	// the strip resolves the display text from the semantics, because the resource
 	// formatting belongs here.
-	val text = status ?: when (info) {
+	val infoText = when (info) {
 		null -> ""
 		is InfoBar.Root -> pluralStringResource(R.plurals.stat_subjects, info.count, info.count)
 		is InfoBar.Children -> {
@@ -226,11 +226,14 @@ private fun InfoStrip(
 			else line + " · " + pluralStringResource(R.plurals.data_search_scope, info.selected, info.selected)
 		}
 	}
+	// the content below the count line belongs to the container, so a status never drops it
+	val rest = infoText.substringAfter('\n', "")
+	val text = if (status == null) infoText
+		else status + if (rest.isEmpty()) "" else "\n" + rest
 	// the laid-out line count of the current text. The wrapper Box always gives
 	// the text its full width, so the count is stable whatever the strip height.
 	var lines by remember { mutableIntStateOf(1) }
-	// a status is a single line and never expands
-	val expandable = status == null && lines > 2
+	val expandable = lines > 2
 	val scroll = rememberScrollState()
 	// keep the top visible
 	LaunchedEffect(text) { scroll.scrollTo(0) }
@@ -239,7 +242,6 @@ private fun InfoStrip(
 			.fillMaxWidth()
 			.then(
 				when {
-					status != null -> Modifier.height(18.dp)
 					expandable && isExpanded -> Modifier.heightIn(min = 18.dp)
 					else -> Modifier.height(if (lines == 1) 18.dp else 36.dp)
 				},

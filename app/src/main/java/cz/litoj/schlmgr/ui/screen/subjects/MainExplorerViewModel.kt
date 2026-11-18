@@ -220,27 +220,25 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 	/**
 	 * The New actions refuse during search.
 	 */
-	fun onMenuItemClick(itemId: Int): Boolean = when (itemId) {
-		MenuId.SORT_ALPHA_AZ, MenuId.SORT_ALPHA_ZA,
-		MenuId.SORT_SF_01, MenuId.SORT_SF_10, MenuId.SORT_PRIORITY,
-		MenuId.SORT_LENGTH_01, MenuId.SORT_LENGTH_10, MenuId.SORT_DEFAULT,
-		-> sortItem(itemId)
-		MenuId.NEW_SUBJECT -> newAction { newSubject() }
-		MenuId.NEW_CHAPTER -> newAction { newChapter() }
-		MenuId.NEW_WORD -> newAction { newWord() }
-		MenuId.NEW_NOTE -> newAction { newNote() }
-		MenuId.IMPORT_FILE -> { emitRequest(Request.PickImportFile); true }
-		MenuId.EXPORT_WORD -> { exportWordFile(); true }
-		MenuId.EXPORT_JSON -> { exportJsonFile(); true }
-		MenuId.FLIP -> { flipSelected(); true }
-		MenuId.REFERENCE -> { move(true); true }
-		MenuId.TEST -> { prepareTest(); true }
-		MenuId.CUT -> { move(false); true }
-		MenuId.EDIT -> { onEditAction(); true }
-		MenuId.DELETE -> { onDeleteAction(); true }
-		MenuId.GOTO -> { onGoToAction(); true }
-		MenuId.CLEAR_FILTER -> { clearFilters(); true }
-		else -> false
+	override fun onMenuItemClick(itemId: Int): Boolean {
+		if (super.onMenuItemClick(itemId)) return true
+		return when (itemId) {
+			MenuId.NEW_SUBJECT -> newAction { newSubject() }
+			MenuId.NEW_CHAPTER -> newAction { newChapter() }
+			MenuId.NEW_WORD -> newAction { newWord() }
+			MenuId.NEW_NOTE -> newAction { newNote() }
+			MenuId.IMPORT_FILE -> { emitRequest(Request.PickImportFile); true }
+			MenuId.EXPORT_WORD -> { exportWordFile(); true }
+			MenuId.EXPORT_JSON -> { exportJsonFile(); true }
+			MenuId.FLIP -> { flipSelected(); true }
+			MenuId.REFERENCE -> { move(true); true }
+			MenuId.TEST -> { prepareTest(); true }
+			MenuId.CUT -> { move(false); true }
+			MenuId.EDIT -> { onEditAction(); true }
+			MenuId.DELETE -> { onDeleteAction(); true }
+			MenuId.GOTO -> { onGoToAction(); true }
+			else -> false
+		}
 	}
 
 	/** Runs one strip action, where export opens its own chooser on the strip. */
@@ -273,20 +271,6 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		return true
 	}
 
-	fun onItemClick(item: ItemRow?) {
-		val row = item ?: return
-		when (row.item.type) {
-			ItemKind.WORD -> flipWord(row)
-			ItemKind.CHAPTER -> {
-				clearSelection()
-				history.hop(row.item)
-				setContent(row.item)
-			}
-			ItemKind.NOTE -> copyNote(row)
-			else -> {}
-		}
-	}
-
 	private fun copyNote(item: ItemRow) {
 		val text = item.item.description.ifEmpty { item.item.name }
 		val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -294,23 +278,12 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		UserMessages.showNotice(UiNotice.NoteCopied)
 	}
 
-	fun onSearchHitClick(ui: ItemUiModel) {
-		val row = ui.payload ?: return
-		if (row.item.type == ItemKind.WORD) {
-			flipWord(row)
-			return
+	/** A note copies its text, and an inert search hit ends the run. */
+	override fun onOtherRowClick(row: ItemRow, searchHit: Boolean) {
+		when {
+			row.item.type == ItemKind.NOTE -> copyNote(row)
+			searchHit -> endSearch()
 		}
-		if (row.item.type == ItemKind.NOTE) {
-			copyNote(row)
-			return
-		}
-		if (row.item.type != ItemKind.CHAPTER) {
-			endSearch()
-			return
-		}
-		val path = row.path?.toMutableList() ?: return
-		path.add(row.item)
-		openChain(path)
 	}
 
 	/** The container of the selected hit: one home opens and several pick. */

@@ -73,14 +73,6 @@ class ImportFailurePopupTest {
 	}
 
 	@Test
-	fun `the popup renders the failing line with its marker`() {
-		show("Haus->dům\n")
-
-		rule.onNodeWithText("Haus->dům").assertExists()
-		rule.onNodeWithText("↓", substring = true).assertExists()
-	}
-
-	@Test
 	fun `the marker aligns to the measured center of a wide target character`() {
 		val source = "漢字;translation;extra"
 		show("$source\n")

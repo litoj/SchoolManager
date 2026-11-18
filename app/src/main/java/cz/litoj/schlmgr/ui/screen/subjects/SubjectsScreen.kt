@@ -18,7 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.ui.component.TopBarSearchField
+import cz.litoj.schlmgr.ui.component.ExplorerSearchControls
 import cz.litoj.schlmgr.ui.popup.ContinuePopup
 import cz.litoj.schlmgr.ui.popup.CreatorContent
 import cz.litoj.schlmgr.ui.popup.CreatorPopup
@@ -29,10 +29,7 @@ import cz.litoj.schlmgr.ui.popup.SourcePickPopup
 import cz.litoj.schlmgr.ui.shell.ExplorerBackHandler
 import cz.litoj.schlmgr.ui.shell.MainLaunchTarget
 import cz.litoj.schlmgr.ui.shell.TopBar
-import cz.litoj.schlmgr.ui.shell.TopBarActions
-import cz.litoj.schlmgr.ui.shell.TopBarIconButton
 import cz.litoj.schlmgr.ui.shell.TopBarNav
-import cz.litoj.schlmgr.ui.shell.TopBarTitle
 import cz.litoj.schlmgr.ui.shell.headerShadow
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
 import cz.litoj.schlmgr.ui.viewmodel.explorerMenu
@@ -191,31 +188,25 @@ fun SubjectsScreen(
 					else R.string.menu_label,
 				),
 			)
-			if (fieldOpen) TopBarSearchField(
-				query, viewModel::onQueryChange, viewModel::onQuerySubmit, viewModel::dismissSearch,
-				Modifier.weight(1f),
-				onFilter = { editFilter(viewModel, null) },
-			)
-			else TopBarTitle(title)
-			TopBarIconButton(
-				icon = if (selecting) R.drawable.ic_check_all else R.drawable.ic_search,
-				contentDescription = stringResource(if (selecting) R.string.select_all else R.string.search),
-				visible = !fieldOpen,
-				enabled = selecting || searchBlockedReason == 0,
-				blockedReason = if (selecting) 0 else searchBlockedReason,
-			) {
-				if (selecting) viewModel.onSelectAllToggle() else viewModel.openSearchField()
-			}
-			if (!selecting) TopBarActions(
-				entries = explorerMenu(
-					viewModel.menuKind, selecting = false, listState.singleSelected,
-					ActionConfig.load(), exportBlockedReason,
-					filterActive = (state.info as? InfoBar.Search)?.criteria?.isNotEmpty() == true,
-				),
-				width = this@BoxWithConstraints.maxWidth,
-				pinned = 1,
-				onPick = { viewModel.onMenuItemClick(it) },
-			)
+		ExplorerSearchControls(
+			title = title,
+			query = query,
+			fieldOpen = fieldOpen,
+			searchBlockedReason = searchBlockedReason,
+			entries = explorerMenu(
+				viewModel.menuKind, selecting = false, listState.singleSelected,
+				ActionConfig.load(), exportBlockedReason,
+				filterActive = (state.info as? InfoBar.Search)?.criteria?.isNotEmpty() == true,
+			),
+			width = this@BoxWithConstraints.maxWidth,
+			onOpenSearch = viewModel::openSearchField,
+			onQueryChange = viewModel::onQueryChange,
+			onQuerySubmit = viewModel::onQuerySubmit,
+			onDismissSearch = viewModel::dismissSearch,
+			onFilter = { editFilter(viewModel, null) },
+			onToggleSelectAll = viewModel::onSelectAllToggle,
+			onMenuPick = { viewModel.onMenuItemClick(it) },
+		)
 		}
 		SubjectsContent(viewModel, exportBlockedReason, Modifier.weight(1f).headerShadow())
 		}

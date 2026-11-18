@@ -152,6 +152,8 @@ fun SchlMgrApp(
 									subjectsViewModel.finishReferencePicker(vm.didReference)
 									navController.popBackStack()
 								},
+								title = if (subjectsViewModel.referenceTarget != null)
+									R.string.action_reference else R.string.test_add,
 							)
 						}
 						composable(Destination.ABOUT.name) { entry ->

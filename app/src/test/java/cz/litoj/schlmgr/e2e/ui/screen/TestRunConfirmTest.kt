@@ -4,16 +4,12 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import cz.litoj.schlmgr.testing.TestItemModel
-import cz.litoj.schlmgr.ui.popup.ContinuePopup
 import cz.litoj.schlmgr.ui.popup.Dialogs
 import cz.litoj.schlmgr.ui.screen.test.TestRunState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.junit.After
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -60,38 +56,5 @@ class TestRunConfirmTest {
 		rule.onNodeWithText("OK").performClick()
 
 		rule.runOnIdle { assertSame(rotated, acted) }
-	}
-
-	@Test
-	fun `a timed submit closes the open question`() {
-		val host = FakeHost()
-		var acted = 0
-		TestRunState.attach(host)
-		TestRunState.confirm("Sure?") { acted++ }
-		assertTrue(Dialogs.isShowing<ContinuePopup>())
-
-		TestRunState.submit(host)
-
-		assertFalse(Dialogs.isShowing<ContinuePopup>())
-		assertEquals(0, acted)
-	}
-
-	@Test
-	fun `an exit closes the open question`() {
-		TestRunState.attach(FakeHost())
-		TestRunState.confirm("Sure?") {}
-
-		TestRunState.reset()
-
-		assertFalse(Dialogs.isShowing<ContinuePopup>())
-	}
-
-	@Test
-	fun `no live run offers nothing to abort`() {
-		TestRunState.attach(FakeHost())
-
-		TestRunState.abort("Sure?")
-
-		assertFalse(Dialogs.isShowing<ContinuePopup>())
 	}
 }

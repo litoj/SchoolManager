@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.db.ratio
 import cz.litoj.schlmgr.ui.search.Criterion
 import cz.litoj.schlmgr.ui.search.SearchQuery
@@ -145,6 +146,15 @@ abstract class ExplorerViewModel<R>(
 		MenuId.SORT_LENGTH_10 -> { sort(compareBy<ItemRow> { it.toShow.length }.reversed()); true }
 		MenuId.SORT_DEFAULT -> { reloadDefaultOrder(); true }
 		else -> false
+	}
+
+	/**
+	 * The shared menu door: the sort family and the clear filter.
+	 * - a host answers its own actions first, then falls back here.
+	 */
+	open fun onMenuItemClick(itemId: Int): Boolean = when (itemId) {
+		MenuId.CLEAR_FILTER -> { clearFilters(); true }
+		else -> sortItem(itemId)
 	}
 
 	protected fun clearSortOrder() = list.clearSortOrder()
@@ -417,6 +427,36 @@ abstract class ExplorerViewModel<R>(
 	fun onItemDoubleTap() {
 		list.flipAllToMajority()
 	}
+
+	/**
+	 * A row tap: a word flips and a chapter opens, while a host decides the rest.
+	 * - a searched chapter opens through its own chain, so a deeper one keeps its path.
+	 * - a non-word, non-chapter row reaches [onOtherRowClick].
+	 */
+	open fun onItemClick(item: ItemRow?) {
+		val row = item ?: return
+		when (row.item.type) {
+			ItemKind.WORD -> flipWord(row)
+			ItemKind.CHAPTER -> openRow(row)
+			else -> onOtherRowClick(row, searchHit = row.path != null)
+		}
+	}
+
+	private fun openRow(row: ItemRow) {
+		val path = row.path
+		if (path != null) {
+			val chain = path.toMutableList()
+			chain.add(row.item)
+			openChain(chain)
+			return
+		}
+		clearSelection()
+		history.hop(row.item)
+		setContent(row.item)
+	}
+
+	/** A row tap the base does not own, such as a note or an inert search hit. */
+	protected open fun onOtherRowClick(row: ItemRow, searchHit: Boolean) {}
 
 	/**
 	 * The long-press starts a selection and keeps one, so the same press can drag it.

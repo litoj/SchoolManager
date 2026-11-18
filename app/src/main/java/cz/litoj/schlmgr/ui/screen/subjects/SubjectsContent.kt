@@ -12,7 +12,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -25,7 +24,6 @@ import cz.litoj.schlmgr.ui.component.ItemListCallbacks
 import cz.litoj.schlmgr.ui.component.PasteActionBar
 import cz.litoj.schlmgr.ui.component.SelectionActionBar
 import cz.litoj.schlmgr.ui.component.fabDragVisibility
-import cz.litoj.schlmgr.ui.component.ListEndReveal
 import cz.litoj.schlmgr.ui.component.rememberFabVisibility
 import cz.litoj.schlmgr.ui.popup.MessagePopup
 import cz.litoj.schlmgr.ui.shell.editFilter
@@ -58,17 +56,6 @@ internal fun SubjectsContent(
 	var pressHeld by remember { mutableStateOf(false) }
 	// the New button visibility follows the drag gesture, not the list scroll
 	val fabVisibility = rememberFabVisibility()
-	ListEndReveal(listState, scrollState)
-	// the anchor lands before the slide composes the incoming pane, so it shows in place
-	LaunchedEffect(listState.anchor) {
-		listState.anchor?.let { scrollState.scrollToItem(it.index, it.offset) }
-	}
-	// the list keeps the one live scroll, which every history snapshot captures on leaving
-	LaunchedEffect(scrollState) {
-		snapshotFlow {
-			scrollState.firstVisibleItemIndex to scrollState.firstVisibleItemScrollOffset
-		}.collect { (index, offset) -> viewModel.onScrollPosition(index, offset) }
-	}
 	// a load landing resets the button, an insert or delete keeps it hidden
 	LaunchedEffect(state.contentStep) { fabVisibility.show() }
 	Box(modifier) {
@@ -89,6 +76,7 @@ internal fun SubjectsContent(
 			onParentClick = { viewModel.onBackRequested() },
 			callbacks = callbacks,
 			scrollState = scrollState,
+			onScrollPosition = viewModel::onScrollPosition,
 			listArea = { SiblingSlideList(state, listState, callbacks, scrollState, Modifier.weight(1f)) },
 			// the armed status takes the top line, so the bottom strip holds only its actions
 			statusLine = armedStatus ?: selectionStatus,
@@ -149,7 +137,6 @@ private fun mainCallbacks(
 	ItemListCallbacks(
 		onItemClick = { ui ->
 			if (selectionActive) viewModel.setSelected(ui.payload, !ui.selected)
-			else if (ui.trackPath != null) viewModel.onSearchHitClick(ui)
 			else viewModel.onItemClick(ui.payload)
 		},
 		onItemDoubleTap = viewModel::onItemDoubleTap,

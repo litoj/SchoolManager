@@ -55,13 +55,12 @@ class ImportTargetViewModel(
 		viewModelScope.launch(io) { _targetState.update { it.copy(fileName = nameOf(fileUri)) } }
 	}
 
-	/** Only a container is a destination, so a word or note click does nothing. */
-	fun onItemClick(row: ItemRow?) {
-		val item = row?.item ?: return
-		if (_targetState.value.busy || item.type != ItemKind.CHAPTER) return
-		history.hop(item)
-		setContent(item)
-		onChange()
+	/** Only a container is a destination, so a busy mover or any other row does nothing. */
+	override fun onItemClick(item: ItemRow?) {
+		if (_targetState.value.busy) return
+		val row = item ?: return
+		if (row.item.type != ItemKind.CHAPTER) return
+		super.onItemClick(row)
 	}
 
 	fun importNow() {

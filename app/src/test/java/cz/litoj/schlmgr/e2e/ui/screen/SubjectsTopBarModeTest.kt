@@ -2,8 +2,6 @@ package cz.litoj.schlmgr.e2e.ui.screen
 
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
@@ -13,8 +11,6 @@ import cz.litoj.schlmgr.ui.screen.subjects.SubjectsScreen
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import kotlinx.coroutines.Dispatchers
 import org.junit.After
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -24,12 +20,12 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * - a reference row carries its jump icon wherever it shows, browse included.
- * - the jump opens the home of the row.
+ * The top bar keeps one shape in every mode.
+ * - the list actions never leave it, only the strip under it changes.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
-class SubjectsScreenReferenceTest {
+class SubjectsTopBarModeTest {
 
 	@get:Rule
 	val rule = createComposeRule()
@@ -53,26 +49,23 @@ class SubjectsScreenReferenceTest {
 	}
 
 	@Test
-	fun `a browse reference row jumps to its home`() {
+	fun `the list menu stays while rows are marked`() {
 		val a = ItemRepository.createSubject("A", null)
 		val c1 = ItemRepository.createChapter(a.id, "c1", null)
-		val b = ItemRepository.createSubject("B", null)
-		val w1 = ItemRepository.createWord(b.id, "w1", null, listOf("t1" to null))
-		assertTrue(ItemRepository.reference(w1.id, c1.id))
-
+		ItemRepository.createWord(c1.id, "xyz", null, listOf("t1" to null))
 		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
 		rule.setContent { SubjectsScreen(model, {}, {}, {}) }
 		rule.waitForIdle()
-		rule.onNodeWithText("A").performClick()
+		model.onItemClick(model.items().single { it.item.name == "A" })
 		rule.waitForIdle()
-		rule.onNodeWithText("c1").performClick()
+		rule.onNodeWithContentDescription("Menu").assertExists()
+		rule.onNodeWithContentDescription("Sort by").assertExists()
+
+		model.setSelected(model.items().first(), true)
 		rule.waitForIdle()
 
-		rule.onNodeWithContentDescription("Go to location").performClick()
-		rule.waitForIdle()
-
-		assertEquals("the jump opened the home of the row",
-			listOf("B"), model.history.path.map { it.name })
-		assertEquals(listOf("w1"), model.items().map { it.item.name })
+		// the nav turning into Back proves the mode, and the list menu is still up there
+		rule.onNodeWithContentDescription("Back").assertExists()
+		rule.onNodeWithContentDescription("Sort by").assertExists()
 	}
 }

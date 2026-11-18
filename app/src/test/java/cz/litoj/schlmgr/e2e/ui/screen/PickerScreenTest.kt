@@ -4,7 +4,6 @@ import android.os.Looper
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -21,7 +20,6 @@ import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import java.time.Duration
 import kotlinx.coroutines.Dispatchers
 import org.junit.After
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -69,7 +67,7 @@ class PickerScreenTest {
 
 	private fun text(res: Int): String = RuntimeEnvironment.getApplication().getString(res)
 
-	/** Long-presses a row, which toggles its selection like the explorer long-press. */
+	/** Long-presses a row, which selects it like the explorer long-press. */
 	private fun selectTheRow() {
 		rule.mainClock.autoAdvance = false
 		rule.onNodeWithText("A").performTouchInput {
@@ -92,16 +90,6 @@ class PickerScreenTest {
 		rule.waitForIdle()
 	}
 
-	/** Taps the up arrow, the first slot of the top bar. */
-	private fun tapUpArrow() {
-		rule.onRoot().performTouchInput {
-			val x = with(rule.density) { 30.dp.toPx() }
-			val y = with(rule.density) { 27.5.dp.toPx() }
-			click(Offset(x, y))
-		}
-		rule.waitForIdle()
-	}
-
 	/** Advances the clock by hand, so the long-press fires while the finger is down. */
 	private fun settle() {
 		rule.mainClock.advanceTimeBy(1000)
@@ -110,14 +98,13 @@ class PickerScreenTest {
 	}
 
 	@Test
-	fun `sorting stays directly available in the picker`() {
+	fun `the caller names the pick`() {
 		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		rule.setContent { PickerScreen(model, {}) }
+		rule.setContent { PickerScreen(model, {}, R.string.action_reference) }
 		rule.waitForIdle()
 
-		rule.onNodeWithContentDescription(text(R.string.sort)).performClick()
-		rule.onNodeWithText(text(R.string.sort_alpha_ZA)).performClick()
-		rule.runOnIdle { assertEquals(listOf("B", "A"), model.items().map { it.item.name }) }
+		rule.onNodeWithText(text(R.string.action_reference)).assertExists()
+		rule.onNodeWithText(text(R.string.test_add)).assertDoesNotExist()
 	}
 
 	@Test
@@ -138,32 +125,6 @@ class PickerScreenTest {
 		tapCornerButton()
 		rule.runOnIdle { assertFalse(model.items().any { it.selected }) }
 		rule.onNodeWithText(text(R.string.select)).assertDoesNotExist()
-	}
-
-	@Test
-	fun `the up arrow walks the back chain before it leaves`() {
-		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		var exits = 0
-		rule.setContent { PickerScreen(model, { exits++ }) }
-		rule.waitForIdle()
-
-		selectTheRow()
-		tapUpArrow()
-		rule.runOnIdle {
-			assertFalse("the press cleared the selection", model.items().any { it.selected })
-			assertEquals(0, exits)
-		}
-
-		rule.onNodeWithText("A").performClick()
-		rule.runOnIdle { assertEquals(listOf("A"), model.state.value.breadcrumbs) }
-		tapUpArrow()
-		rule.runOnIdle {
-			assertTrue("the press left the subject", model.history.path.isEmpty())
-			assertEquals(0, exits)
-		}
-
-		tapUpArrow()
-		rule.runOnIdle { assertEquals("one press at the root leaves", 1, exits) }
 	}
 
 	@Test

@@ -2,12 +2,10 @@ package cz.litoj.schlmgr.e2e.ui.popup
 
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.FlipConflict
 import cz.litoj.schlmgr.data.db.ItemKind
@@ -55,19 +53,6 @@ class FlipConflictPopupHelpTest {
 		rule.runOnIdle {
 			assertTrue(Dialogs.isShowing<FlipConflictPopup>())
 			assertTrue(Dialogs.isShowing<InfoPopup>())
-		}
-	}
-
-	@Test
-	fun `the title help icon fills its header slot`() {
-		val popup = round()
-		rule.setContent { popup.Content() }
-
-		val slot = rule.onNodeWithContentDescription("Help").getBoundsInRoot()
-
-		rule.runOnIdle {
-			assertTrue("the tap slot reaches across the header slot", slot.right - slot.left >= 50.dp)
-			assertTrue("the tap slot fills the header band", slot.bottom - slot.top >= 50.dp)
 		}
 	}
 

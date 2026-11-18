@@ -1,9 +1,7 @@
 package cz.litoj.schlmgr.e2e.ui.screen
 
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.room.Room
@@ -23,7 +21,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -46,7 +43,6 @@ class SubjectsScreenNavTest {
 	val rule = createComposeRule()
 
 	private lateinit var db: ItemDatabase
-	private var subjectId = 0
 	private var chapterId = 0
 
 	@Before
@@ -58,7 +54,6 @@ class SubjectsScreenNavTest {
 		ItemRepository.ensureRoot()
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
 		val a = ItemRepository.createSubject("A", null)
-		subjectId = a.id
 		val c1 = ItemRepository.createChapter(a.id, "c1", null)
 		chapterId = c1.id
 		ItemRepository.createWord(c1.id, "xyz", null, listOf("t1" to null))
@@ -74,18 +69,6 @@ class SubjectsScreenNavTest {
 	private fun text(res: Int, vararg args: Any): String =
 		RuntimeEnvironment.getApplication().getString(res, *args)
 
-	private fun openChapter() {
-		rule.onNodeWithText("A").performClick()
-		rule.waitForIdle()
-		rule.onNodeWithText("c1").performClick()
-		rule.waitForIdle()
-	}
-
-	/** Long-presses the first word, which shows the selection at once. */
-	private fun selectFirstWord() {
-		selectRow("t1")
-	}
-
 	private fun selectRow(label: String) {
 		rule.onNodeWithText(label).performTouchInput {
 			down(center)
@@ -98,38 +81,6 @@ class SubjectsScreenNavTest {
 	private fun screen(model: MainExplorerViewModel) {
 		rule.setContent { SubjectsScreen(model, {}, {}, {}) }
 		rule.waitForIdle()
-	}
-
-	@Test
-	fun `the nav arrow clears the selection`() {
-		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		screen(model)
-		openChapter()
-		selectFirstWord()
-		rule.runOnIdle { assertTrue(model.items().any { it.selected }) }
-
-		rule.onNodeWithTag("top_bar_nav").performClick()
-		rule.waitForIdle()
-
-		rule.runOnIdle {
-			assertFalse("the arrow cleared the selection", model.items().any { it.selected })
-		}
-	}
-
-	@Test
-	fun `an armed move reads at the top and the arrow cancels it`() {
-		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		screen(model)
-		openChapter()
-		selectFirstWord()
-		rule.onNodeWithText(text(R.string.cut)).performClick()
-		rule.waitForIdle()
-		rule.runOnIdle { assertTrue("the cut armed a move", model.pasteArmed) }
-
-		// the top arrow cancels the move
-		rule.onNodeWithTag("top_bar_nav").performClick()
-		rule.waitForIdle()
-		rule.runOnIdle { assertFalse(model.pasteArmed) }
 	}
 
 	@Test
@@ -166,30 +117,6 @@ class SubjectsScreenNavTest {
 			assertTrue("the muted paste refused the tap", model.pasteArmed)
 			assertEquals("nothing moved into the armed row",
 				listOf("xyz", "w2"), ItemRepository.children(chapterId).map { it.name })
-		}
-	}
-
-	@Test
-	fun `a cut in its own list waits with its reason`() {
-		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		screen(model)
-		rule.onNodeWithText("A").performClick()
-		rule.waitForIdle()
-		selectRow("c1")
-		rule.onNodeWithText(text(R.string.cut)).performClick()
-		rule.waitForIdle()
-
-		// the open list is where the row already sits, so a paste there would change nothing
-		rule.runOnIdle {
-			assertEquals(R.string.fail_paste_present, model.pasteBlockedReason)
-		}
-
-		rule.onNodeWithText(text(R.string.paste)).performClick()
-		rule.waitForIdle()
-
-		rule.runOnIdle {
-			assertTrue("the no-op paste kept the armed row", model.pasteArmed)
-			assertEquals(listOf("c1"), ItemRepository.children(subjectId).map { it.name })
 		}
 	}
 }

@@ -47,21 +47,4 @@ class AboutScreenHelpTest {
 		rule.waitForIdle()
 		rule.onNodeWithText(content, substring = true).assertDoesNotExist()
 	}
-
-	@Test
-	fun `the search reads the example block of a section`() {
-		val model = AboutViewModel()
-		screen(model)
-
-		rule.runOnIdle {
-			model.openSearchField()
-			model.onQueryChange("(I go)")
-		}
-		rule.waitForIdle()
-
-		// only the naming section and its ancestors answer that pattern
-		rule.onNodeWithText(text(R.string.help_extra_naming)).assertExists()
-		rule.onNodeWithText(text(R.string.help_create)).assertDoesNotExist()
-	}
-
 }

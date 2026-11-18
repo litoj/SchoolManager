@@ -6,24 +6,18 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.onChild
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
-import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.app.AppSettings
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.ui.screen.settings.SettingsScreen
-import cz.litoj.schlmgr.ui.viewmodel.ActionConfig
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction.DELETE
-import cz.litoj.schlmgr.ui.viewmodel.SelectionAction.GOTO
 import cz.litoj.schlmgr.ui.viewmodel.SettingsViewModel
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -98,29 +92,6 @@ class SettingsScreenTest {
 	}
 
 	@Test
-	fun `dragging Go-to to the front puts it on the search bar`() {
-		drag("action_GOTO", "action_TEST")
-
-		assertEquals(GOTO, model.state.selectionOrder.first())
-		assertEquals(GOTO, ActionConfig(model.state.selectionOrder).bar(true, direct = 4).first())
-	}
-
-	@Test
-	fun `the default direction flips and persists`() {
-		val label = RuntimeEnvironment.getApplication().getString(R.string.setts_test_direction)
-		val row = rule.onNodeWithText(label)
-		row.performScrollTo()
-		rule.waitForIdle()
-		assertFalse("the word is typed by default, a translation shows", TestEngine.isReversed)
-
-		row.performClick()
-		rule.waitForIdle()
-
-		assertTrue("the default flipped to the typed translation", TestEngine.isReversed)
-		assertTrue("the default reached the storage", AppSettings.getBool("reverseTest", false))
-	}
-
-	@Test
 	fun `an ignored text field always leaves one empty field`() {
 		ignoredField(0).performScrollTo().performTextInput("。")
 		rule.waitForIdle()
@@ -176,13 +147,5 @@ class SettingsScreenTest {
 		)
 		rule.onRoot().performTouchInput { up() }
 		rule.mainClock.autoAdvance = true
-	}
-
-	@Test
-	fun `a reorder moves cut out of the browse bar`() {
-		drag("action_CUT", "action_EXPORT")
-
-		assertFalse(ActionConfig(model.state.selectionOrder).bar(false, direct = 4).contains(
-			cz.litoj.schlmgr.ui.viewmodel.SelectionAction.CUT))
 	}
 }

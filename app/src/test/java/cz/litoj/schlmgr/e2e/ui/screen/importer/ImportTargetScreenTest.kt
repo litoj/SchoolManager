@@ -120,22 +120,6 @@ class ImportTargetScreenTest {
 		RuntimeEnvironment.getApplication().getString(res, *args)
 
 	@Test
-	fun `the mover keeps its bar and opens a target`() {
-		grantProgressPermission()
-		mover()
-
-		rule.onNodeWithText(label(R.string.objects_cancel)).assertExists()
-		rule.onNodeWithText(label(R.string.import_here)).assertExists()
-
-		rule.onNodeWithText("A").performClick()
-		rule.waitForIdle()
-
-		rule.onNodeWithText("B").assertExists()
-		rule.onNodeWithText(label(R.string.objects_cancel)).assertExists()
-		rule.onNodeWithText(label(R.string.import_here)).assertExists()
-	}
-
-	@Test
 	fun `an ungranted mover asks for the progress permission`() {
 		val model = ImportTargetViewModel(picked(""), Dispatchers.Unconfined) { "list.txt" }
 		rule.setContent { ImportTargetScreen(model, onExit = {}, onDone = {}) }

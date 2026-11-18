@@ -29,7 +29,6 @@ import cz.litoj.schlmgr.ui.component.ActionStripHeight
 import cz.litoj.schlmgr.ui.component.ExplorerScaffold
 import cz.litoj.schlmgr.ui.component.ImportActionBar
 import cz.litoj.schlmgr.ui.component.ItemListCallbacks
-import cz.litoj.schlmgr.ui.component.ListEndReveal
 import cz.litoj.schlmgr.ui.popup.InfoPopup
 import cz.litoj.schlmgr.ui.popup.MessagePopup
 import cz.litoj.schlmgr.ui.shell.ExplorerBackHandler
@@ -76,7 +75,6 @@ fun ImportTargetScreen(
 	}
 	val snackbar = messageSnackbarHost()
 	val scrollState = rememberLazyListState()
-	ListEndReveal(listState, scrollState)
 	// a busy import keeps the target, so back and cancel cannot change or lose it.
 	// the mover rides the explorer back chain, so its exit hint shows too
 	val leave = {
@@ -114,6 +112,7 @@ fun ImportTargetScreen(
 				onParentClick = { if (!target.busy) viewModel.onBackRequested() },
 				callbacks = importCallbacks(viewModel, target.busy),
 				scrollState = scrollState,
+				onScrollPosition = viewModel::onScrollPosition,
 				modifier = Modifier.weight(1f).headerShadow(),
 			) {
 				ImportActionBar(

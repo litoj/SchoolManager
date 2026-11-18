@@ -333,7 +333,6 @@
     <string name="note_copied">Copied</string>
     <string name="objects_cancel">Cancel</string>
     <string name="paste">Paste</string>
-    <string name="picker_hint">Long-press a row or tap its type icon to pick it, then Select.</string>
     <string name="paste_status_references">References: %1$d</string>
     <string name="paste_status_move">Move: %1$d</string>
     <string name="popup_copy">Copy</string>

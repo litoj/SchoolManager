@@ -206,6 +206,52 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
+	fun `a custom parent sort survives opening a child and returning`() {
+		val a = ItemRepository.createSubject("A", null)
+		ItemRepository.createChapter(a.id, "alpha", null)
+		ItemRepository.createChapter(a.id, "zulu", null)
+		ItemRepository.createChapter(a.id, "mid", null)
+		val model = vmIn("A")
+		model.onMenuItemClick(MenuId.SORT_ALPHA_ZA)
+		assertEquals(listOf("zulu", "mid", "alpha"), model.items().map { it.item.name })
+
+		model.onItemClick(model.items().single { it.item.name == "zulu" })
+		assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
+
+		assertEquals(listOf("zulu", "mid", "alpha"), model.items().map { it.item.name })
+	}
+
+	@Test
+	fun `siblings advance and retreat in the custom parent order`() {
+		val a = ItemRepository.createSubject("A", null)
+		ItemRepository.createChapter(a.id, "alpha", null)
+		ItemRepository.createChapter(a.id, "zulu", null)
+		ItemRepository.createChapter(a.id, "mid", null)
+		val model = vmIn("A")
+		model.onMenuItemClick(MenuId.SORT_ALPHA_ZA)
+		model.onItemClick(model.items().single { it.item.name == "zulu" })
+
+		model.openSibling(1)
+		assertEquals("mid", model.history.path.last().name)
+		model.openSibling(-1)
+		assertEquals("zulu", model.history.path.last().name)
+	}
+
+	@Test
+	fun `original order clears the remembered parent sort`() {
+		val a = ItemRepository.createSubject("A", null)
+		ItemRepository.createChapter(a.id, "alpha", null)
+		ItemRepository.createChapter(a.id, "zulu", null)
+		ItemRepository.createChapter(a.id, "mid", null)
+		val model = vmIn("A")
+		model.onMenuItemClick(MenuId.SORT_ALPHA_ZA)
+
+		model.onMenuItemClick(MenuId.SORT_DEFAULT)
+
+		assertEquals(listOf("alpha", "zulu", "mid"), model.items().map { it.item.name })
+	}
+
+	@Test
 	fun `a long-press starts the selection and a second press keeps it`() {
 		seed()
 		val model = vmIn("A")
@@ -1091,7 +1137,7 @@ class MainExplorerViewModelTest {
 		assertEquals("the hit row is the word", ItemKind.WORD, hit.item.type)
 		assertEquals("w1", hit.item.name)
 
-		model.onSearchHitClick(hit.toUi())
+		model.onItemClick(hit)
 
 		assertTrue("the hit flipped to its translations", hit.flipped)
 		assertEquals(listOf("t1"), hit.translationLines.map { it.name })
@@ -1099,7 +1145,7 @@ class MainExplorerViewModelTest {
 		assertEquals(SearchUi.TYPING, model.state.value.searchUi)
 		assertEquals(listOf(hit), model.items())
 
-		model.onSearchHitClick(hit.toUi())
+		model.onItemClick(hit)
 		assertFalse(hit.flipped)
 	}
 
@@ -1120,7 +1166,7 @@ class MainExplorerViewModelTest {
 		val w3 = rows.single { it.item.name == "w3" }
 
 		// the first tap of the double flipped one word, the plain pair rules
-		model.onSearchHitClick(w1.toUi())
+		model.onItemClick(w1)
 		model.onItemDoubleTap()
 
 		assertTrue("the flipped word stays where its tap left it", w1.flipped)
@@ -1138,7 +1184,7 @@ class MainExplorerViewModelTest {
 		model.onQuerySubmit("xx")
 		val w1 = model.items().single { it.item.name == "w1" }
 		val w2 = model.items().single { it.item.name == "w2" }
-		model.onSearchHitClick(w1.toUi())
+		model.onItemClick(w1)
 
 		model.onItemDoubleTap()
 
@@ -1160,8 +1206,8 @@ class MainExplorerViewModelTest {
 		val w2 = rows.single { it.item.name == "w2" }
 		val w3 = rows.single { it.item.name == "w3" }
 
-		model.onSearchHitClick(w1.toUi())
-		model.onSearchHitClick(w2.toUi())
+		model.onItemClick(w1)
+		model.onItemClick(w2)
 
 		assertTrue("the first word kept its flip", w1.flipped)
 		assertTrue("the second word flipped alone", w2.flipped)
@@ -1406,7 +1452,7 @@ class MainExplorerViewModelTest {
 		model.onQuerySubmit("c1")
 		model.setSelected(model.items().single(), true)
 
-		model.onSearchHitClick(model.items().single { it.item.name == "c1" }.toUi())
+		model.onItemClick(model.items().single { it.item.name == "c1" })
 		assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
 		assertEquals(SearchUi.RESULTS, model.state.value.searchUi)
 

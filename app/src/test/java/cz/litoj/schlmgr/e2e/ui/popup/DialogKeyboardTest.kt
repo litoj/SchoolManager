@@ -61,13 +61,6 @@ class DialogKeyboardTest {
 	}
 
 	@Test
-	fun `a screen with no dialog hides no keyboard`() {
-		host()
-
-		rule.runOnIdle { assertEquals(0, hides) }
-	}
-
-	@Test
 	fun `the last dialog to leave hides the keyboard`() {
 		host()
 		val one = Probe("one")

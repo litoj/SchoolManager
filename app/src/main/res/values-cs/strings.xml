@@ -320,7 +320,6 @@
     <string name="note_copied">Zkopírováno</string>
     <string name="objects_cancel">Zrušit</string>
     <string name="paste">Vložit</string>
-    <string name="picker_hint">Dlouhým stiskem řádku nebo klepnutím na ikonu typu vyberte zdroj, pak stiskněte Vybrat.</string>
     <string name="paste_status_references">Odkazy: %1$d</string>
     <string name="paste_status_move">Přesun: %1$d</string>
     <string name="popup_copy">Kopírovat</string>
