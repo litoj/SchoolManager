@@ -9,10 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -23,11 +20,9 @@ import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ratio
 import cz.litoj.schlmgr.data.db.testedCount
 import cz.litoj.schlmgr.testing.AnswerComparison
-import cz.litoj.schlmgr.testing.AnswerMark
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestItemModel
 import cz.litoj.schlmgr.ui.activity.TestActivity
-import cz.litoj.schlmgr.ui.component.ExplorerColors
 import cz.litoj.schlmgr.ui.component.HairlineDivider
 import cz.litoj.schlmgr.ui.component.Item
 import cz.litoj.schlmgr.ui.component.positionColumnWidth
@@ -42,6 +37,7 @@ import cz.litoj.schlmgr.ui.viewmodel.RowKind
  * - the result order replaces the explorer position.
  * - the marked typed answer and labelled expected answer show below the headline.
  * - green marks matches, grey marks missing letters and red marks extra letters.
+ * - the title help icon opens the colored explanation.
  * - passed/total ends the row.
  * - the kind icon drops out, a test only ever holds words.
  *
@@ -85,7 +81,9 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 			ExplorerRowVariant.Browse,
 		)
 		PopupCard {
-			PopupTitle(successText)
+			PopupTitle(successText) {
+				PopupHelpIcon { TestResultsHelpPopup() }
+			}
 			HairlineDivider()
 			LazyColumn(Modifier.weight(1f, fill = false)) {
 				items(rows) { row -> WordResultRow(row, positionWidth) }
@@ -116,17 +114,15 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 			// the labels need string resources, and the model is built outside composition.
 			// this slot also ignores the description limit, so no translation collapses.
 			answer = {
-				AnswerText(row)
-				// a right guess already names the answer, unless variants need the full word
-				if (row.expected.isNotEmpty() && (!row.correct || row.hasVariants)) Text(
-					buildAnnotatedString {
-						append(stringResource(R.string.test_correct, ""))
-						withStyle(SpanStyle(color = ExplorerColors.description)) {
-							append(row.expected)
-						}
-					},
-					style = TextStyle(fontSize = 15.sp, color = ExplorerColors.body),
+				AnswerDiffText(
+					stringResource(R.string.test_your_answer, ""),
+					row.comparisons,
+					row.hasAnswer,
 				)
+				// a right guess already names the answer, unless variants need the full word
+				if (row.expected.isNotEmpty() && (!row.correct || row.hasVariants)) {
+					ExpectedAnswerText(row.expected)
+				}
 			},
 			trailing = {
 				Text(
@@ -134,34 +130,6 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 					style = TextStyle(fontSize = 15.sp, color = colorResource(R.color.colorPrimaryFg)),
 				)
 			},
-		)
-	}
-
-	@Composable
-	private fun AnswerText(row: ResultRow) {
-		val body = ExplorerColors.body
-		val correct = ExplorerColors.header
-		val missing = body.copy(alpha = 0.45f)
-		val extra = ExplorerColors.failure
-		val prefix = stringResource(R.string.test_your_answer, "")
-		val noAnswer = stringResource(R.string.test_no_answer)
-		Text(
-			buildAnnotatedString {
-				append(prefix)
-				if (!row.hasAnswer) withStyle(SpanStyle(color = extra)) { append(noAnswer) }
-				else row.comparisons.forEachIndexed { index, comparison ->
-					if (index > 0) append("/")
-					for (part in comparison.parts) {
-						val color = when (part.mark) {
-							AnswerMark.CORRECT -> correct
-							AnswerMark.MISSING -> missing
-							AnswerMark.EXTRA -> extra
-						}
-						withStyle(SpanStyle(color = color)) { append(part.text) }
-					}
-				}
-			},
-			style = TextStyle(fontSize = 15.sp, color = body),
 		)
 	}
 

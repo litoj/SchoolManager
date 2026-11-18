@@ -14,6 +14,7 @@ class HelpFilterTest {
 		11 to "Chapters are created from the standing palette.",
 		20 to "Words",
 		21 to "Words are created from the floating New button.",
+		22 to "wound: [stem] + ending",
 		30 to "Searching",
 	)
 
@@ -25,13 +26,14 @@ class HelpFilterTest {
 		title: Int,
 		body: Int = 0,
 		pathIds: List<Int> = emptyList(),
+		examples: Int = 0,
 		children: List<HelpSection> = emptyList(),
-	) = HelpSection(title, body, paths = pathIds, children = children)
+	) = HelpSection(title, body, paths = pathIds, examples = examples, children = children)
 
 	private val tree = listOf(
 		section(1, 2, children = listOf(
 			section(10, 11, pathIds = listOf(50)),
-			section(20, 21),
+			section(20, 21, examples = 22),
 		)),
 		section(30),
 	)
@@ -56,6 +58,11 @@ class HelpFilterTest {
 	@Test
 	fun `a query matches case-insensitively`() {
 		assertEquals(setOf(1, 20), visible("WORDS"))
+	}
+
+	@Test
+	fun `an example line match keeps the section and its ancestors`() {
+		assertEquals(setOf(1, 20), visible("[stem]"))
 	}
 
 	@Test

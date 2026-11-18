@@ -27,6 +27,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -74,81 +75,91 @@ fun Item(
 	val pulse = ExplorerColors.pulseRow
 	val background = if (item.selected) ExplorerColors.selectedRow
 	else pulse.copy(alpha = pulse.alpha * pulseAlpha.value)
-	Row(
-		modifier
-			.fillMaxWidth()
-			// the selection rides the background of the row, which paints under the
-			// success-ratio tint of the position cell, so the whole row highlights
-			.background(background)
-			.successRatioBand(item, tintBandWidth(positionWidth, iconVisible))
-			// no ripple: the press feedback is the selection tint and the drag itself
-			.combinedClickable(
-				interactionSource = remember { MutableInteractionSource() },
-				indication = null,
-				onClick = onClick,
-				onLongClick = onLongClick,
-			),
-	) {
-		PositionCell(
-			item,
-			variant,
-			positionWidth,
-			iconVisible,
-			Modifier.align(Alignment.CenterVertically),
-			onIconClick,
-		)
-		// the wrapper column holds the texts and the trailing actions.
-		// so the separator below them spans the part of the row without the success-rate colour.
-		Column(Modifier.weight(1f)) {
-			Row(Modifier.fillMaxWidth()) {
-				Column(
-					Modifier
-						.weight(1f)
-						.padding(start = 3.dp, top = 3.dp),
-				) {
-					if (item.translations.isNotEmpty()) {
-						// a flipped row lists the inner items under the unified score of the row.
-						// each line carries its own description, inline or as the icon.
-						item.translations.forEach { line ->
-							Row(Modifier.fillMaxWidth()) {
-								Column(Modifier.weight(1f)) {
-									Text(
-										line.name,
-										fontSize = 20.sp,
-										color = ExplorerColors.body,
-										modifier = Modifier.padding(vertical = 2.dp),
-									)
-									if (descVisible && ItemRow.showsDescription(line.description)) {
-										Text(line.description, fontSize = 15.sp, color = ExplorerColors.description)
+	Box(modifier) {
+		Row(
+			Modifier
+				.fillMaxWidth()
+				// the selection rides the background of the row, which paints under the
+				// success-ratio tint of the position cell, so the whole row highlights
+				.background(background)
+				.successRatioBand(item, tintBandWidth(positionWidth, iconVisible))
+				// no ripple: the press feedback is the selection tint and the drag itself
+				.combinedClickable(
+					interactionSource = remember { MutableInteractionSource() },
+					indication = null,
+					onClick = onClick,
+					onLongClick = onLongClick,
+				),
+		) {
+			PositionCell(
+				item,
+				variant,
+				positionWidth,
+				iconVisible,
+				Modifier.align(Alignment.CenterVertically),
+				onIconClick,
+			)
+			// the wrapper column holds the texts and the trailing actions.
+			// so the separator below them spans the part of the row without the success-rate colour.
+			Column(Modifier.weight(1f)) {
+				Row(Modifier.fillMaxWidth()) {
+					Column(
+						Modifier
+							.weight(1f)
+							.padding(start = 3.dp, top = 3.dp),
+					) {
+						if (item.translations.isNotEmpty()) {
+							// a flipped row lists the inner items under the unified score of the row.
+							// each line carries its own description, inline or as the icon.
+							item.translations.forEach { line ->
+								Row(Modifier.fillMaxWidth()) {
+									Column(Modifier.weight(1f)) {
+										Text(
+											line.name,
+											fontSize = 20.sp,
+											color = ExplorerColors.body,
+											modifier = Modifier.padding(vertical = 2.dp),
+										)
+										if (descVisible && ItemRow.showsDescription(line.description)) {
+											Text(line.description, fontSize = 15.sp, color = ExplorerColors.description)
+										}
+									}
+									if (line.description.isNotEmpty() && !ItemRow.showsDescription(line.description) && onInnerInfo != null) {
+										ActionSlot { InfoActionIcon { onInnerInfo(line) } }
 									}
 								}
-								if (line.description.isNotEmpty() && !ItemRow.showsDescription(line.description) && onInnerInfo != null) {
-									ActionSlot { InfoActionIcon { onInnerInfo(line) } }
-								}
+							}
+						} else {
+							Text(
+								item.name,
+								fontSize = 20.sp,
+								color = ExplorerColors.body,
+								modifier = Modifier.padding(vertical = 2.dp),
+							)
+							if (descVisible && ItemRow.showsDescription(item.description)) {
+								Text(item.description, fontSize = 15.sp, color = ExplorerColors.description)
 							}
 						}
-					} else {
-						Text(
-							item.name,
-							fontSize = 20.sp,
-							color = ExplorerColors.body,
-							modifier = Modifier.padding(vertical = 2.dp),
-						)
-						if (descVisible && ItemRow.showsDescription(item.description)) {
-							Text(item.description, fontSize = 15.sp, color = ExplorerColors.description)
+						if (ItemRow.searchShowPath && item.trackPath?.isNotEmpty() == true) {
+							ItemTrackPath(item.trackPath)
 						}
+						if (answer != null) answer()
 					}
-					if (ItemRow.searchShowPath && item.trackPath?.isNotEmpty() == true) {
-						ItemTrackPath(item.trackPath)
-					}
-					if (answer != null) answer()
+					if (infoAction != null) ActionSlot { infoAction() }
+					if (trailing != null) Box(Modifier.align(Alignment.CenterVertically)) { trailing() }
+					if (referenceAction != null) ActionSlot { referenceAction() }
 				}
-				if (infoAction != null) ActionSlot { infoAction() }
-				if (trailing != null) Box(Modifier.align(Alignment.CenterVertically)) { trailing() }
-				if (referenceAction != null) ActionSlot { referenceAction() }
+				HairlineDivider()
 			}
-			HairlineDivider()
 		}
+
+		// an untested row keeps no tint, so its bottom line joins across the band
+		if (successRatioArgb(item.ratio) == 0) Box(
+			Modifier
+				.align(if (LocalLayoutDirection.current == LayoutDirection.Ltr)
+					Alignment.BottomStart else Alignment.BottomEnd)
+				.width(tintBandWidth(positionWidth, iconVisible)),
+		) { HairlineDivider() }
 	}
 }
 
@@ -258,11 +269,10 @@ private fun ActionSlot(content: @Composable () -> Unit) {
  * - a red-to-yellow ramp below 50 % and a yellow-to-green ramp above it.
  * - the red side keeps the peak alpha, so worse items carry more visual weight.
  * - the alpha falls toward green, whose higher luminance keeps the band light.
- * - blue for an unrated row, nothing for an empty container.
+ * - an untested row and an empty container stay untinted.
  */
-internal fun successRatioArgb(ratio: Int): Int = when (ratio) {
-	-2 -> 0
-	-1 -> 0x401A6AB8
+internal fun successRatioArgb(ratio: Int): Int = when {
+	ratio < 0 -> 0
 	else -> {
 		// red holds 0x80 through the equal score, green fades to 0x40
 		val alpha = if (ratio < 50) 0x80 else 0x40 + (100 - ratio) * 0x40 / 50

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="action_full_text">Celý Text</string>
-    <string name="action_reference">Zástupci</string>
+    <string name="action_reference">Přidat odkaz</string>
     <string name="action_flip">Překlopit</string>
     <string name="action_sw_success">" zapsáno úspěšně"</string>
     <string name="action_share">Sdílet</string>
-    <string name="action_undo">Zpět</string>
+    <string name="action_undo">Vrátit zpět</string>
     <string name="about_text">Tento program byl vyvinut, aby pomohl lidem se školními předměty, zvláště s cizími jazyky a biologií.\n\nPro další pomoc mě kontaktujte na invisiblemancz@gmail.com</string>
     <string name="add_word">Přidat překlad</string>
     <string name="swap_word">Vyměnit slovíčko a překlady</string>
@@ -58,7 +58,7 @@
     <string name="filter_clear">Vymazat</string>
     <string name="clear_filter">Vymazat filtr</string>
     <string name="filter_apply">Použít</string>
-    <string name="data_desc">Popisek</string>
+    <string name="data_desc">Popis</string>
     <string name="data_name">Název</string>
     <string name="data_name_subject">Název sady</string>
     <string name="data_name_chapter">Název kapitoly</string>
@@ -82,7 +82,7 @@
     <string name="fail_save_src">"během ukládání prvku: "</string>
     <string name="fail_paste_inside">"Položku nelze vložit do ní samotné ani do jejího obsahu."</string>
     <string name="fail_paste_present">"Vkládané položky už jsou v cíli."</string>
-    <string name="fail_paste_target">"Není otevřený žádný kontejner, do kterého by se vkládalo."</string>
+    <string name="fail_paste_target">"Není otevřená žádná složka, kam vložit."</string>
     <string name="fail_paste_other_subject">"Položky nelze přesouvat do jiné sady."</string>
     <string name="fail_kind_file">soubor:</string>
     <string name="fail_type">", typ: "</string>
@@ -177,7 +177,7 @@
     <string name="help">Nápověda</string>
     <string name="help_create">Vytváření položek</string>
     <string name="help_create_ch">Kapitoly</string>
-    <string name="help_create_how">Tlačítko Nový nabízí typy otevřené obrazovky. Klepnutí nechá paletu stát, přetažení vybere hned.
+    <string name="help_create_how">Tlačítko Nový rozloží typy otevřené obrazovky. Přetažení vybere typ hned, klepnutí nechá paletu stát s Importem uprostřed.
         \nTlačítko se při posouvání seznamu dolů schová.
         \nTvůrce má název, popis a u slovíčka také překlady.</string>
     <string name="help_create_mch">Sady</string>
@@ -190,13 +190,18 @@
         \nIkona zrušení vpravo od překladu ho odstraní.</string>
     <string name="help_extra">Další užitečné funkce</string>
     <string name="help_extra_how">Pár funkcí je snadné přehlédnout. Zde jsou.</string>
+    <string name="help_extra_rate">Barvy úspěšnosti</string>
+    <string name="help_extra_rate_how">Pásek vedle každého řádku barví jeho úspěšnost ze všech testů.
+        \nŘádek bez testu zůstává neobarvený, nic správně je červené, půlka žlutá, všechno správně zelené.
+        \nMezi tím se barva míchá, takže každý test ji posune.
+        \nČervené a ještě nezkoušené řádky chtějí ještě procvičit.</string>
     <string name="help_extra_naming">Varianty názvů</string>
     <string name="help_extra_naming_how">Lomítko nabízí dvě varianty názvu, závorky seskupí celou variantu.
         \nSlovíčko i jeho překlady je mohou použít.</string>
     <string name="help_extra_naming_examples">oni/ony jdou = \'oni jdou\', nebo \'ony jdou\'
         \n(Já jdu)/(Ty jdeš). = \'Já jdu.\', nebo \'Ty jdeš.\'</string>
     <string name="help_extra_words_export">Export položek</string>
-    <string name="help_extra_words_export_how">Menu zobrazí Export jen při vybraných řádcích.\nExport zahrne každý vybraný řádek kromě překladů.\nSoubor se slovíčky: kompaktní, bez úspěšnosti a referencí.\nSoubor JSON: úplný, včetně úspěšnosti, poznámek a referencí.</string>
+    <string name="help_extra_words_export_how">Menu zobrazí Export jen při vybraných řádcích.\nExport zahrne každý vybraný řádek kromě překladů.\nSoubor se slovíčky: kompaktní, bez úspěšnosti a odkazů.\nSoubor JSON: úplný, včetně úspěšnosti, poznámek a odkazů.</string>
     <string name="help_extra_words_import">Import položek</string>
     <string name="help_extra_words_import_how">Uvnitř sady se slovíčka importují do ní, na obrazovce sad se vytvoří nová sada.\nChyba uvádí soubor a řádek. Opravte řádek a zvolte soubor znovu.</string>
     <string name="help_import_format">Formát souboru</string>
@@ -223,7 +228,7 @@
         \nPoužít ho zapíše do pole a spustí hledání.</string>
     <string name="help_search_advanced">Zapsaný dotaz</string>
     <string name="help_search_advanced_how">Pole přijímá zapsanou podobu, kterou filtr sestaví.
-        \nRegulérní výraz následuje syntaxi Javy.</string>
+        \nRegulární výraz následuje syntaxi Javy.</string>
     <string name="help_search_advanced_examples" formatted="false">\WR>50\t- slovíčka s úspěšností nad 50%
         \n\sD\t- názvy začínající na \'D\'
         \n\WD\hund\t- slovíčka s popisem obsahujícím \'hund\'</string>
@@ -237,24 +242,27 @@
     <string name="help_test">Testy</string>
     <string name="help_test_how">Test se ptá na slovíčka ze zvolených zdrojů.</string>
     <string name="help_test_results">Výsledky testu</string>
-    <string name="help_test_results_how">Výsledky se otevřou po stisknutí Hotovo nebo po vypršení času.
-        \nNadpis je skóre. Každé testované slovíčko, i s variantami, se hodnotí jednou.
-        \nSynonymum má vlastní bod.
-        \nVelký text je zadání, pod ním je vaše barevně označená odpověď.
-        \nZelená písmena jsou správně, šedá doplňují chybějící znaky a červená jsou navíc. Po chybné odpovědi následuje celá správná odpověď.
-        \nČíslo s × udává, kolikrát bylo slovíčko testováno.
-        \nNa konci řádku je počet úspěšných z celkového počtu a všechny počty zahrnují tento test.
-        \nZnovu spustí nový test se stejnými zdroji.</string>
+    <string name="test_results_help_band">Pásek vlevo barví podle počtu vpravo.
+        \nPůl správně je žlutá, horší červená, lepší zelená.
+        \nTen počítá všechny testy, i tento.</string>
+    <string name="test_results_help_low">často chybuje</string>
+    <string name="test_results_help_mid">půl na půl</string>
+    <string name="test_results_help_high">vždy správně</string>
+    <string name="test_results_help_marks">Zelená písmena sedí, šedá doplňuje vynechaná a červená jsou navíc.</string>
+    <string name="test_results_help_answer">vždy šprávně</string>
+    <string name="test_results_help_target">vždy správně</string>
     <string name="help_test_run">Průběh testu</string>
     <string name="help_test_run_how">Začít potřebuje aspoň jeden zdroj. Každé slovíčko je zadáno jednou v zamíchaném pořadí.
         \nSlovíčka se stejnou sadou překladů sdílí jedno zadání. Opakovaná odpověď uspěje jen jednou.
+        \nKaždé synonymum se hodnotí zvlášť.
         \nOdpočet posledních 30 sekund bliká červeně.
         \nKaždé slovíčko má 5 sekund plus délka odpovědi krát sekundy na znak.
         \nPožadované varianty přidávají jedno odpověďové pole za každou alternativu a čas násobí 1,5krát za každou další variantu.
         \nZadání ukazuje první řádek popisu slovíčka.
-        \nHotovo odešle odpovědi a při chybějících se nejprve zeptá. ZRUŠIT nebo zpět ukončí běh bez hodnocení.</string>
+        \nHotovo odešle odpovědi a při chybějících se nejprve zeptá. ZRUŠIT nebo zpět ukončí běh bez hodnocení.
+        \nHotovo nebo vypršení času otevře výsledky, kde Opakovat spustí nový test se stejnými zdroji.</string>
     <string name="help_test_select">Výběr položek do testu</string>
-    <string name="help_test_select_how">Přidat zdroj otevře prohlížeč. Dlouhým stiskem řádku nebo klepnutím na ikonu typu vyberte zdroj, pak stiskněte Zvolit.
+    <string name="help_test_select_how">Přidat zdroj otevře seznam položek. Dlouhým stiskem řádku nebo klepnutím na ikonu typu vyberte zdroj, pak stiskněte Vybrat.
         \nVšechny zdroje musí patřit jedné sadě.</string>
     <string name="menu_label">Menu</string>
     <string name="menu_about">Nápověda a o aplikaci</string>
@@ -262,27 +270,27 @@
     <string name="menu_settings">Nastavení</string>
     <string name="more">Více</string>
     <string name="more_export">Export</string>
-    <string name="reference_fork">Zástupci, kteří budou odkazovat na nové slovo</string>
-    <string name="reference_fork_hint">Ponechané řádky následují upravené slovo. Křížek ponechá původní.</string>
-    <string name="ref_source_pick">Zvolte zdroj zástupce:</string>
-    <string name="ref_source_pick_hint">Řádek leží ve více kontejnerech. Zvolte ten, který se má otevřít.</string>
+    <string name="reference_fork">Které odkazy převezmou úpravu?</string>
+    <string name="reference_fork_hint">Ponechané odkazy převezmou úpravu. Křížek nechá původní.</string>
+    <string name="ref_source_pick">Vyberte umístění:</string>
+    <string name="ref_source_pick_hint">Řádek je na více místech.</string>
     <string name="more_export_word">Soubor se slovíčky (bez úspěšnosti)</string>
     <string name="more_import">Import</string>
     <string name="import_here">Importovat sem</string>
     <string name="import_file_title">Import %1$s</string>
     <string name="more_export_json">Soubor JSON (včetně úspěšnosti)</string>
     <string name="more_go_to">Přejít na umístění</string>
-    <string name="flip_conflicts_title">Kolidující slova</string>
-    <string name="flip_conflicts_hint">Neupravené řádky zachovají vazby ven. Úprava dá obrácení kopii.</string>
-    <string name="flip_conflicts_ok">Obrátit</string>
-    <string name="flip_conflicts_blank">Každé kolidující slovo potřebuje název</string>
+    <string name="flip_conflicts_title">Kolidující položky</string>
+    <string name="flip_conflicts_hint">Neupravené řádky si nechají vnější vazby. Úprava vytvoří pro překlopení kopii.</string>
+    <string name="flip_conflicts_ok">Překlopit</string>
+    <string name="flip_conflicts_blank">Každá kolidující položka potřebuje název</string>
     <string name="flip_conflicts_help">Každý řádek je slovíčko nebo překlad, který přesahuje výběr.
-        \nSlovíčko se nachází i v kontejnerech mimo výběr, obrácení by je tedy změnilo. Překlad sdílí slovíčka mimo výběr, obrácení by z něj udělalo kopii a sdílení by skončilo.
-        \nNeupravený řádek vztah zachová, takže vše, čeho mimo výběr dosáhne, se přidá k obrácení. Kontrola se po každém kole spustí znovu, neupravené řádky mohou přinést nové.
-        \nUpravený řádek dá obrácení kopii s novým obsahem, mimo výběr zůstane původní.
+        \nSlovíčko se nachází i ve složkách mimo výběr, překlopení by je tedy změnilo. Překlad sdílí slovíčka mimo výběr, překlopení by z něj udělalo kopii a sdílení by skončilo.
+        \nNeupravený řádek vztah zachová, takže vše, čeho mimo výběr dosáhne, se přidá k překlopení. Kontrola se po každém kole spustí znovu, neupravené řádky mohou přinést nové.
+        \nUpravený řádek vytvoří pro překlopení kopii s novým obsahem, mimo výběr zůstane původní.
         \nMezera za názvem je neviditelná úprava: kopie si po oříznutí ponechá stejný název a jen se řádek odpojí.
-        \nKřížek vyřadí slova řádku z obrácení, mimo výběr se nic nezmění.
-        \nŘádek zbývající v seznamu bez názvu potvrzení odmítne. Až se seznam vyprázdní, obrácení proběhne.</string>
+        \nKřížek vyřadí řádek z překlopení, mimo výběr se nic nezmění.
+        \nŘádek zbývající v seznamu bez názvu potvrzení odmítne. Až se seznam vyprázdní, překlopení proběhne.</string>
     <string name="json_export_ext">.hjson</string>
     <string name="json_import_types">application/hjson</string>
     <string name="new_chapter">Nová kapitola</string>
@@ -295,10 +303,10 @@
     <string name="palette_word">Slovíčko</string>
     <string name="palette_note">Poznámka</string>
     <string name="note_copied">Zkopírováno</string>
-    <string name="objects_cancel">Storno</string>
+    <string name="objects_cancel">Zrušit</string>
     <string name="paste">Vložit</string>
-    <string name="picker_hint">Dlouhým stiskem řádku nebo klepnutím na ikonu typu vyberte zdroj, pak stiskněte Zvolit.</string>
-    <string name="paste_status_references">Zástupci: %1$d</string>
+    <string name="picker_hint">Dlouhým stiskem řádku nebo klepnutím na ikonu typu vyberte zdroj, pak stiskněte Vybrat.</string>
+    <string name="paste_status_references">Odkazy: %1$d</string>
     <string name="paste_status_move">Přesun: %1$d</string>
     <string name="pattern_err">"Špatná syntax regexu:\n%1$s"</string>
     <string name="popup_copy">Kopírovat</string>
@@ -307,7 +315,7 @@
     <string name="press_exit">Stiskněte ještě jednou pro ukončení</string>
     <string name="permission_pending">Akce už čeká na oprávnění</string>
     <string name="search">Hledat</string>
-    <string name="select">Zvolit</string>
+    <string name="select">Vybrat</string>
     <string name="select_all">Vybrat vše</string>
     <string name="back">Zpět</string>
     <string name="select_test">Test</string>
@@ -317,7 +325,7 @@
     <string name="setts_him_flipped_search_hint">Výsledek hledání slovíčka se otevře na překladech.</string>
     <string name="setts_search_show_path">Zobrazovat cestu u výsledků hledání</string>
     <string name="setts_search_show_path_hint">Zobrazí cestu složek pod místem spuštění hledání.</string>
-    <string name="setts_him_parse">Zpracovat varianty názvů</string>
+    <string name="setts_him_parse">Rozpoznávat varianty v názvech</string>
     <string name="setts_him_parse_hint">Čte A/B a (A)/(B) jako několik variant názvu.</string>
     <string name="setts_explorer">Průzkumník</string>
     <string name="setts_desc_lines">Řádky náhledu popisu</string>
@@ -325,8 +333,8 @@
     <string name="setts_double_tap_ms">Okno dvojkliku (ms)</string>
     <string name="setts_double_tap_ms_hint">Dva kliky v tomto čase překlopí celý seznam. 0 ho vypne.</string>
     <string name="setts_test_amount">Slovíčka na test</string>
-    <string name="setts_test_clever">Nejprve slabá slovíčka</string>
-    <string name="setts_test_clever_hint">Seřadí test podle priority: slabá a málo testovaná slovíčka první.</string>
+    <string name="setts_test_clever">Upřednostnit slabá slovíčka</string>
+    <string name="setts_test_clever_hint">Začne nejslabšími a nejméně testovanými slovíčky.</string>
     <string name="setts_test_variants">Požadovat všechny varianty názvu</string>
     <string name="setts_test_variants_hint">Slovíčko A/B vyžaduje A i B, každé na vlastním řádku. Čas roste 1,5krát na každou další variantu.</string>
     <string name="setts_test_time">Sekundy na znak</string>
@@ -334,7 +342,7 @@
     <string name="setts_test_direction_hint">Kterou stranou odpovídáte.</string>
     <string name="setts_test_ignored">Ignorovaný text v odpovědích</string>
     <string name="setts_test_ignored_hint">Obsah každého pole se ignoruje, když chybí nebo je navíc, včetně mezer. Další přidáte zápisem do posledního prázdného pole.</string>
-    <string name="setts_word_splitter">Oddělovač slov a překladů</string>
+    <string name="setts_word_splitter">Oddělovač slovíček a překladů</string>
     <string name="setts_word_splitter_hint">Znak mezi slovíčkem a jeho překlady v exportovaných souborech.</string>
     <string name="setts_search_diacritics">Hledat bez diakritiky</string>
     <string name="setts_search_diacritics_hint">Porovná text s diakritikou i bez ní.</string>
@@ -345,22 +353,22 @@
     <string name="setts_place_search">lišta hledání</string>
     <string name="setts_place_more">menu více</string>
     <string name="setts_act_test">Spustí test z vybraných řádků</string>
-    <string name="setts_act_cut">Přenese řádky do jiného kontejneru</string>
+    <string name="setts_act_cut">Přenese řádky do jiné složky ve stejné sadě</string>
     <string name="setts_act_edit">Otevře jediný vybraný řádek k úpravám</string>
     <string name="setts_act_delete">Smaže vybrané řádky</string>
-    <string name="setts_act_reference">Vytvoří z řádků zástupce v kontejneru</string>
+    <string name="setts_act_reference">Přidá řádky jako odkazy do jiné složky</string>
     <string name="setts_act_flip">Prohodí uložené slovíčko a jeho překlady</string>
     <string name="setts_act_export">Exportuje vybrané řádky do souboru</string>
-    <string name="setts_act_goto">Otevře kontejner jediného výsledku hledání</string>
+    <string name="setts_act_goto">Otevře složku jediného výsledku</string>
     <string name="sort">Seřadit podle</string>
     <string name="sort_alpha_AZ">A → Z</string>
     <string name="sort_alpha_ZA">Z → A</string>
     <string name="sort_default">Původní pořadí</string>
     <string name="sort_length_01">Nejkratší název první</string>
     <string name="sort_length_10">Nejdelší název první</string>
-    <string name="sort_sf_01">Nejslabší první</string>
-    <string name="sort_sf_10">Nejsilnější první</string>
-    <string name="sort_priority">Priorita testu</string>
+    <string name="sort_sf_01">Nejnižší úspěšnost první</string>
+    <string name="sort_sf_10">Nejvyšší úspěšnost první</string>
+    <string name="sort_priority">Nejdřív k procvičení</string>
     <string name="start">Začít</string>
     <string name="test_abort">ZRUŠIT</string>
     <string name="test_abort_question">Zrušit tento test? Odpovědi se zahodí a statistiky zůstanou beze změny.</string>
@@ -402,7 +410,7 @@
         <item quantity="many">%d slovíček</item>
         <item quantity="other">%d slovíček</item>
     </plurals>
-    <string name="test_retake">Znovu</string>
+    <string name="test_retake">Opakovat</string>
     <plurals name="test_answered">
         <item quantity="one">%1$d z %2$d vyplněno</item>
         <item quantity="few">%1$d z %2$d vyplněno</item>

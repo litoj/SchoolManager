@@ -116,16 +116,7 @@ class FlipConflictPopup(conflicts: List<FlipConflict>) : DialogSpec {
 		val textColor = colorResource(R.color.colorPrimaryFg)
 		PopupCard {
 			PopupTitle(stringResource(R.string.flip_conflicts_title)) {
-				Icon(
-					painterResource(R.drawable.ic_help),
-					contentDescription = stringResource(R.string.help),
-					tint = textColor,
-					modifier = Modifier
-						.align(Alignment.CenterEnd)
-						.padding(end = 10.dp)
-						.size(IconSize)
-						.clickable { showHelp() }
-				)
+				PopupHelpIcon { showHelp() }
 			}
 			HairlineDivider()
 			Text(

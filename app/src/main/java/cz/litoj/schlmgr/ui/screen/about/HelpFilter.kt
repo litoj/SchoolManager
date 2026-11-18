@@ -33,7 +33,7 @@ object HelpFilter {
 		resolve: (Int) -> String,
 		resolvePath: (Int) -> List<String>,
 	): Boolean {
-		val text = listOf(section.title, section.intro, section.body)
+		val text = listOf(section.title, section.intro, section.body, section.examples)
 			.filter { it != 0 }
 			.any { resolve(it).lowercase().contains(needle) }
 		val path = section.paths.any { id -> resolvePath(id).any { it.lowercase().contains(needle) } }

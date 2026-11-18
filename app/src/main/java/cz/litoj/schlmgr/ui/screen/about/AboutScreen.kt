@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
@@ -153,12 +154,19 @@ private fun Section(
 				tint = if (section.iconTint == Color.Unspecified) DefaultTextColor else section.iconTint,
 			)
 		}
+		// every row toggles, so the chevron carries its open or closed state
+		Icon(
+			painterResource(R.drawable.ic_expand),
+			null,
+			modifier = Modifier.rotate(if (expanded) 90f else 0f),
+			tint = DefaultTextColor,
+		)
 	}
 	if (expanded) {
 		if (section.intro != 0) BodyText(stringResource(section.intro))
 		section.paths.forEach { PathRow(it) }
 		if (section.body != 0) BodyText(stringResource(section.body))
-		section.customIntro?.invoke()
+		if (section.examples != 0) CodeBlock(stringResource(section.examples))
 		section.children
 			.filter { !searching || it.title in visible }
 			.forEach { Section(it, viewModel, searching, visible, level + 1) }

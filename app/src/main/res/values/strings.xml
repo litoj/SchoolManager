@@ -1,6 +1,6 @@
 <resources>
     <string name="action_full_text">Full Text</string>
-    <string name="action_reference">References</string>
+    <string name="action_reference">Add reference</string>
     <string name="action_flip">Flip</string>
     <string name="action_sw_success">" written with success"</string>
     <string name="action_share">Share</string>
@@ -82,7 +82,7 @@
     <string name="fail_save_src">"while saving data of: "</string>
     <string name="fail_paste_inside">"An item cannot be placed inside itself or into its own content."</string>
     <string name="fail_paste_present">"The pasted items are already in the target."</string>
-    <string name="fail_paste_target">"There is no open container to paste into."</string>
+    <string name="fail_paste_target">"No folder is open to paste into."</string>
     <string name="fail_paste_other_subject">"Items cannot be moved into another set."</string>
     <string name="fail_kind_file">file:</string>
     <string name="fail_type">", of type: "</string>
@@ -166,7 +166,7 @@
     <string name="help">Help</string>
     <string name="help_create">Creating items</string>
     <string name="help_create_ch">Chapters</string>
-    <string name="help_create_how">The New button offers the types of the open screen. A tap leaves the palette standing, a drag picks at once.
+    <string name="help_create_how">The New button fans out the types of the open screen. A drag picks a type at once, and a tap leaves the palette standing with Import in the centre.
         \nThe button hides while the list scrolls down.
         \nThe creator fields are name, description and, for a word, its translations.</string>
     <string name="help_create_mch">Sets</string>
@@ -179,6 +179,11 @@
         \nThe cancel icon removes it.</string>
     <string name="help_extra">More useful functions</string>
     <string name="help_extra_how">A few features are easier to miss. Here they are.</string>
+    <string name="help_extra_rate">Success rate colours</string>
+    <string name="help_extra_rate_how">A band beside every row paints its success rate over all its tests.
+        \nA row no test read stays plain, nothing right is red, half right is yellow, all right is green.
+        \nBetween those the colour blends, so each test nudges it.
+        \nRed rows and untested ones still need studying.</string>
     <string name="help_extra_naming">Name variants</string>
     <string name="help_extra_naming_how">A slash offers two name variants, parentheses group a whole variant.
         \nThe word and its translations can use them.</string>
@@ -202,6 +207,10 @@
     <string name="help_no_match">No matching help.</string>
     <string-array name="help_path_import">
         <item>@string/more</item>
+        <item>@string/more_import</item>
+    </string-array>
+    <string-array name="help_path_import_new">
+        <item>+</item>
         <item>@string/more_import</item>
     </string-array>
     <string-array name="help_path_create_chapter">
@@ -228,7 +237,7 @@
     <string name="help_search_hint">Search help</string>
     <string name="help_search_how">Search finds names and translations in the open set.
         \nThe filter icon builds a query from labeled choices, so the prefix syntax stays optional.
-        \nA word hit shows its translations directly, a settings toggle turns that off.
+        \nA word result shows its translations directly, a settings toggle turns that off.
         \nA settings switch turns on diacritic-insensitive search.</string>
     <string name="help_search_filter">Filter</string>
     <string name="help_search_filter_how">Pick the type, what to compare and the condition, then enter a value.
@@ -250,22 +259,25 @@
     <string name="help_test">Tests</string>
     <string name="help_test_how">The test asks for the words of the picked sources.</string>
     <string name="help_test_results">Test results</string>
-    <string name="help_test_results_how">The report opens when you press Done or the time runs out.
-        \nThe title is the score. Every row is one tested word, including words with variants.
-        \nA synonym counts separately.
-        \nThe large text is the prompt, with your marked answer below it.
-        \nGreen letters match, gray letters fill omissions and red letters are extra. The complete correct answer follows a mismatch.
-        \nThe number with × counts how often the word was tested.
-        \nThe right end shows passed over tested, and all counts include this test.
-        \nRetake runs a new test on the same sources.</string>
+    <string name="test_results_help_band">The band on the left matches the count on the right.
+        \nHalf right paints it yellow, a worse score redder, a better one greener.
+        \nIt counts every test, not just this one.</string>
+    <string name="test_results_help_low">often wrong</string>
+    <string name="test_results_help_mid">half right</string>
+    <string name="test_results_help_high">always right</string>
+    <string name="test_results_help_marks">Green letters match, gray fills what you left out, red is extra.</string>
+    <string name="test_results_help_answer">alwayz right</string>
+    <string name="test_results_help_target">always right</string>
     <string name="help_test_run">Test progress</string>
     <string name="help_test_run_how">Start needs at least one source. Each word is asked once in a shuffled order.
         \nWords with the exact same translation set share one prompt. A repeated answer passes only once.
+        \nEvery synonym is graded on its own.
         \nThe countdown blinks red for the last 30 seconds.
         \nEach word gets 5 seconds plus its answer length times the seconds per character.
         \nRequiring name variants adds one answer field per alternative and scales time by 1.5 per added variant.
         \nThe prompt shows the first line of the word\'s description.
-        \nDone submits and asks first when answers are missing. ABORT or Back ends without grading.</string>
+        \nDone submits and asks first when answers are missing. ABORT or Back ends without grading.
+        \nDone or the timeout opens the report, where Retake runs a new test on the same sources.</string>
     <string name="help_test_select">Selecting items for the test</string>
     <string name="help_test_select_how">Add source opens the picker. Long-press a row or tap its type icon to pick it, then Select.
         \nAll sources must belong to one set.</string>
@@ -275,26 +287,26 @@
     <string name="menu_settings">Settings</string>
     <string name="more">More</string>
     <string name="more_export">Export</string>
-    <string name="reference_fork">References that follow the new word</string>
-    <string name="reference_fork_hint">Kept rows follow the edited word. The X keeps the original.</string>
-    <string name="ref_source_pick">Choose the source of the reference:</string>
-    <string name="ref_source_pick_hint">The row lives in more containers. Pick the one to open.</string>
+    <string name="reference_fork">Which references follow the edit?</string>
+    <string name="reference_fork_hint">Kept references take the edit. The X keeps the original.</string>
+    <string name="ref_source_pick">Choose a location:</string>
+    <string name="ref_source_pick_hint">This row is in more places.</string>
     <string name="more_export_word">Word file (no success rates)</string>
     <string name="more_import">Import</string>
     <string name="import_here">Import here</string>
     <string name="import_file_title">Import %1$s</string>
     <string name="more_export_json">JSON file (success rates included)</string>
     <string name="more_go_to">Go to location</string>
-    <string name="flip_conflicts_title">Conflicting words</string>
+    <string name="flip_conflicts_title">Conflicting items</string>
     <string name="flip_conflicts_hint">Untouched rows keep their outside links. Edit a row to give the flip a copy.</string>
     <string name="flip_conflicts_ok">Flip</string>
-    <string name="flip_conflicts_blank">Every conflicting word needs a name</string>
+    <string name="flip_conflicts_blank">Every conflicting item needs a name</string>
     <string name="flip_conflicts_help">Each row is a word or a translation that reaches past the selection.
-        \nA word row lives in containers outside the selection too, so the flip would change them. A translation row is shared with words outside, so the flip would copy it and the sharing would end.
+        \nA word row lives in folders outside the selection too, so the flip would change them. A translation row is shared with words outside, so the flip would copy it and the sharing would end.
         \nAn untouched row keeps the relation, so everything it reaches outside joins the flip. The check runs again after every round, untouched rows can bring new ones.
         \nAn edited row gives the flip a copy with the new contents, the outside keeps the original.
         \nA space behind the name is the invisible edit: the copy keeps the trimmed name and only the row detaches.
-        \nThe cross button drops the words of the row from the flip, nothing changes outside.
+        \nThe cross button drops the row from the flip, nothing changes outside.
         \nA row left in the list without a name refuses the commit. When the list empties, the flip runs.</string>
     <string name="json_export_ext">.hjson</string>
     <string name="json_import_types">application/hjson</string>
@@ -326,11 +338,11 @@
     <string name="select_test">Test</string>
     <string name="setts_him_flipped">Show translations on open</string>
     <string name="setts_him_flipped_hint">A word row opens on its translations.</string>
-    <string name="setts_him_flipped_search">Show translations on search hits</string>
-    <string name="setts_him_flipped_search_hint">A word hit opens on its translations.</string>
+    <string name="setts_him_flipped_search">Show translations on search results</string>
+    <string name="setts_him_flipped_search_hint">A word result opens on its translations.</string>
     <string name="setts_search_show_path">Show path in search results</string>
     <string name="setts_search_show_path_hint">Displays the folder trail below the search start.</string>
-    <string name="setts_him_parse">Parse name variants</string>
+    <string name="setts_him_parse">Read name variants</string>
     <string name="setts_him_parse_hint">Reads A/B and (A)/(B) as several name variants.</string>
     <string name="setts_explorer">Explorer</string>
     <string name="setts_desc_lines">Description preview lines</string>
@@ -338,8 +350,8 @@
     <string name="setts_double_tap_ms">Double-tap window (ms)</string>
     <string name="setts_double_tap_ms_hint">Two taps within this time flip the whole list. 0 turns it off.</string>
     <string name="setts_test_amount">Words per test</string>
-    <string name="setts_test_clever">Pick weak words first</string>
-    <string name="setts_test_clever_hint">Orders the test by priority: weak and rarely tested words first.</string>
+    <string name="setts_test_clever">Prefer weak words</string>
+    <string name="setts_test_clever_hint">Starts with the weakest and least tested words.</string>
     <string name="setts_test_variants">Require every name variant</string>
     <string name="setts_test_variants_hint">A word like A/B asks for A and B in separate answer fields. Time multiplies by 1.5 per added variant.</string>
     <string name="setts_test_time">Seconds per character</string>
@@ -358,22 +370,22 @@
     <string name="setts_place_search">search bar</string>
     <string name="setts_place_more">more menu</string>
     <string name="setts_act_test">Starts a test from the selected rows</string>
-    <string name="setts_act_cut">Takes the rows into another container</string>
+    <string name="setts_act_cut">Moves the rows to another folder in the same set</string>
     <string name="setts_act_edit">Opens the one selected row for editing</string>
     <string name="setts_act_delete">Deletes the selected rows</string>
-    <string name="setts_act_reference">Links the rows as references into a container</string>
+    <string name="setts_act_reference">Adds the rows as references to another folder</string>
     <string name="setts_act_flip">Swaps the stored word and its translations</string>
     <string name="setts_act_export">Exports the selected rows into a file</string>
-    <string name="setts_act_goto">Opens the container of the single hit</string>
+    <string name="setts_act_goto">Opens the folder of the single result</string>
     <string name="sort">Sort by</string>
     <string name="sort_alpha_AZ">A → Z</string>
     <string name="sort_alpha_ZA">Z → A</string>
     <string name="sort_default">Original order</string>
     <string name="sort_length_01">Shortest name first</string>
     <string name="sort_length_10">Longest name first</string>
-    <string name="sort_sf_01">Weakest first</string>
-    <string name="sort_sf_10">Strongest first</string>
-    <string name="sort_priority">Test priority</string>
+    <string name="sort_sf_01">Lowest success rate first</string>
+    <string name="sort_sf_10">Highest success rate first</string>
+    <string name="sort_priority">Needs practice first</string>
     <string name="start">Start</string>
     <string name="test_abort">ABORT</string>
     <string name="test_abort_question">Abort this test? Your answers are dropped and the statistics stay unchanged.</string>

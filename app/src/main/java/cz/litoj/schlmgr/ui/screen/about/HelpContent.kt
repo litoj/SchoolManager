@@ -10,7 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -20,7 +19,7 @@ import cz.litoj.schlmgr.ui.component.DefaultTextColor
 
 /**
  * One collapsible help section.
- * - when expanded it shows the [intro] paragraph, the [paths] rows, the [body] text and the custom intro.
+ * - when expanded it shows the [intro] paragraph, the [paths] rows, the [body] text and the [examples] block.
  * - that runs in this order, where a 0 resource or an empty list hides its field.
  * - [children] follow.
  */
@@ -31,7 +30,7 @@ class HelpSection(
 	val paths: List<Int> = emptyList(),
 	@param:DrawableRes val icon: Int = 0,
 	val iconTint: Color = Color.Unspecified,
-	val customIntro: (@Composable () -> Unit)? = null,
+	@param:StringRes val examples: Int = 0,
 	val children: List<HelpSection> = emptyList(),
 )
 
@@ -60,9 +59,8 @@ internal val sections = listOf(
 		children = listOf(
 			HelpSection(R.string.more_go_to, R.string.setts_act_goto, icon = R.drawable.ic_goto),
 			HelpSection(R.string.help_search_filter, R.string.help_search_filter_how),
-			HelpSection(R.string.help_search_advanced, R.string.help_search_advanced_how, customIntro = {
-				CodeBlock(stringResource(R.string.help_search_advanced_examples))
-			}),
+			HelpSection(R.string.help_search_advanced, R.string.help_search_advanced_how,
+				examples = R.string.help_search_advanced_examples),
 		),
 	),
 	HelpSection(
@@ -70,15 +68,14 @@ internal val sections = listOf(
 		children = listOf(
 			HelpSection(R.string.help_test_select, R.string.help_test_select_how),
 			HelpSection(R.string.help_test_run, R.string.help_test_run_how),
-			HelpSection(R.string.help_test_results, R.string.help_test_results_how),
 		),
 	),
 	HelpSection(
 		R.string.help_extra, intro = R.string.help_extra_how, icon = R.drawable.ic_extra,
 		children = listOf(
-			HelpSection(R.string.help_extra_naming, R.string.help_extra_naming_how, customIntro = {
-				CodeBlock(stringResource(R.string.help_extra_naming_examples))
-			}),
+			HelpSection(R.string.help_extra_rate, R.string.help_extra_rate_how),
+			HelpSection(R.string.help_extra_naming, R.string.help_extra_naming_how,
+				examples = R.string.help_extra_naming_examples),
 			HelpSection(
 				R.string.help_extra_words_import, R.string.help_extra_words_import_how,
 				paths = listOf(R.array.help_path_import),

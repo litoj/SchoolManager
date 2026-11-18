@@ -19,9 +19,9 @@ import org.junit.Test
 class SuccessRatioArgbTest {
 
 	@Test
-	fun `empty and unrated items keep their values`() {
-		assertEquals(0, successRatioArgb(-2)) // empty container: no colour at all
-		assertEquals(0x401A6AB8, successRatioArgb(-1)) // unrated: translucent blue
+	fun `empty and untested rows stay untinted`() {
+		assertEquals(0, successRatioArgb(-2)) // empty container
+		assertEquals(0, successRatioArgb(-1)) // never tested
 	}
 
 	@Test

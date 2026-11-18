@@ -17,10 +17,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -30,6 +32,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -39,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.component.BareTextFieldStyle
+import cz.litoj.schlmgr.ui.component.IconSize
 import cz.litoj.schlmgr.ui.component.WideTextField
 
 val PopupMargin = 30.dp
@@ -96,6 +101,21 @@ internal fun PopupTitle(text: String, trailing: (@Composable BoxScope.() -> Unit
 		)
 		trailing?.invoke(this)
 	}
+}
+
+/** The help icon of a popup title, which opens the explanation above the popup. */
+@Composable
+internal fun BoxScope.PopupHelpIcon(onClick: () -> Unit) {
+	Icon(
+		painterResource(R.drawable.ic_help),
+		contentDescription = stringResource(R.string.help),
+		tint = TextColor,
+		modifier = Modifier
+			.align(Alignment.CenterEnd)
+			.padding(end = 10.dp)
+			.size(IconSize)
+			.clickable(onClick = onClick),
+	)
 }
 
 /** The shared body text style of a popup card. */
