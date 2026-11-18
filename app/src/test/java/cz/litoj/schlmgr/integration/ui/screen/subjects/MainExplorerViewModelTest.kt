@@ -11,8 +11,11 @@ import cz.litoj.schlmgr.data.db.FlipResolution
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.db.ROOT_ID
+import cz.litoj.schlmgr.data.transfer.ExportFormat
 import cz.litoj.schlmgr.support.setRowOptions
 import cz.litoj.schlmgr.support.wordRows
+import cz.litoj.schlmgr.ui.popup.Dialogs
+import cz.litoj.schlmgr.ui.popup.ExportPopup
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
 import cz.litoj.schlmgr.ui.search.Criterion
 import cz.litoj.schlmgr.ui.search.CriterionValue
@@ -80,9 +83,21 @@ class MainExplorerViewModelTest {
 
 	@After
 	fun tearDown() {
+		Dialogs.clear()
 		db.close()
 		ItemRepository.resetForTest()
 		setRowOptions(searchDefFlip = searchDefFlipWas)
+	}
+
+	/** The sheet the export row opens, the door every naming rule passes. */
+	private fun exportSheet(): ExportPopup =
+		Dialogs.stack.value.filterIsInstance<ExportPopup>().single()
+
+	/** The save request of the sheet the export row just opened. */
+	private fun savedAs(model: MainExplorerViewModel): MainExplorerViewModel.Request {
+		model.onMenuItemClick(MenuId.EXPORT)
+		exportSheet().pickSave()
+		return runBlocking { withTimeout(100) { model.requests.first() } }
 	}
 
 	private fun vm(): MainExplorerViewModel {
@@ -1904,7 +1919,8 @@ class MainExplorerViewModelTest {
 		seed()
 		val model = vmIn("A")
 
-		model.onMenuItemClick(MenuId.EXPORT_WORD)
+		model.onMenuItemClick(MenuId.EXPORT)
+		exportSheet().pickSave()
 
 		assertNull("no export without a selection",
 			runBlocking { withTimeoutOrNull(100) { model.requests.firstOrNull() } })
@@ -1918,8 +1934,7 @@ class MainExplorerViewModelTest {
 
 		assertEquals(listOf("c1"), model.exportRows().map { it.name })
 
-		model.onMenuItemClick(MenuId.EXPORT_WORD)
-		val request = runBlocking { withTimeout(100) { model.requests.first() } }
+		val request = savedAs(model)
 		assertEquals("c1.txt", (request as MainExplorerViewModel.Request.PickWordExport).fileName)
 	}
 
@@ -1948,8 +1963,7 @@ class MainExplorerViewModelTest {
 		model.setSelected(model.items().single { it.item.name == "xyz" }, true)
 		model.setSelected(model.items().single { it.item.name == "w2" }, true)
 
-		model.onMenuItemClick(MenuId.EXPORT_WORD)
-		val request = runBlocking { withTimeout(100) { model.requests.first() } }
+		val request = savedAs(model)
 		assertEquals("c1 - partial.txt", (request as MainExplorerViewModel.Request.PickWordExport).fileName)
 	}
 
@@ -1959,8 +1973,7 @@ class MainExplorerViewModelTest {
 		val model = vm()
 		model.setSelected(model.items().single { it.item.name == "A" }, true)
 
-		model.onMenuItemClick(MenuId.EXPORT_WORD)
-		val request = runBlocking { withTimeout(100) { model.requests.first() } }
+		val request = savedAs(model)
 		assertEquals("A.txt", (request as MainExplorerViewModel.Request.PickWordExport).fileName)
 	}
 
@@ -1971,8 +1984,7 @@ class MainExplorerViewModelTest {
 		model.setSelected(model.items().single { it.item.name == "A" }, true)
 		model.setSelected(model.items().single { it.item.name == "B" }, true)
 
-		model.onMenuItemClick(MenuId.EXPORT_WORD)
-		val request = runBlocking { withTimeout(100) { model.requests.first() } }
+		val request = savedAs(model)
 		assertEquals("subjects.txt", (request as MainExplorerViewModel.Request.PickWordExport).fileName)
 	}
 
@@ -1982,9 +1994,30 @@ class MainExplorerViewModelTest {
 		val model = vmIn("A")
 		model.setSelected(model.items().single { it.item.name == "c1" }, true)
 
-		model.onMenuItemClick(MenuId.EXPORT_JSON)
+		model.onMenuItemClick(MenuId.EXPORT)
+		exportSheet().run {
+			toggleFormat()
+			pickSave()
+		}
 		val request = runBlocking { withTimeout(100) { model.requests.first() } }
 		assertEquals("c1", (request as MainExplorerViewModel.Request.PickJsonExport).fileName)
+	}
+
+	@Test
+	fun `the export sheet opens again on the format of the last export`() {
+		seed()
+		val model = vmIn("A")
+		model.setSelected(model.items().single { it.item.name == "c1" }, true)
+
+		model.onMenuItemClick(MenuId.EXPORT)
+		exportSheet().run {
+			toggleFormat()
+			pickSave()
+		}
+		Dialogs.clear()
+
+		model.onMenuItemClick(MenuId.EXPORT)
+		assertEquals(ExportFormat.JSON, exportSheet().format)
 	}
 
 	@Test

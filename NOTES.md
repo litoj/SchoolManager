@@ -233,7 +233,10 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Several rows in a container use the partial suffix, at the root they use `subjects`.
 - The JSON tree writes bare word and note roots at the top, and the importer accepts them.
 - Export walks pre-order, writes references as paths and keeps path targets outside the export in place.
-- The export result offers Share.
+- The Export row opens one sheet: a format toggle, then Share or Save to file.
+- The sheet opens on the format of the last export.
+- Share writes a cache copy, which the manifest file provider hands to the system sheet at once.
+- The saved file's snackbar still offers Share.
 
 ### Test
 
@@ -396,3 +399,4 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The arrow leaves the separators and a repair counts one character, with 988 tests and debug lint green.
 - A note needs its description in the creator and in the word-list import, with 985 behavior tests and debug lint green.
 - The failure dialog edits its picked file in place and imports it again, with 1005 tests and debug lint green.
+- One export sheet picks the format and its destination, with 1020 tests and debug lint green.

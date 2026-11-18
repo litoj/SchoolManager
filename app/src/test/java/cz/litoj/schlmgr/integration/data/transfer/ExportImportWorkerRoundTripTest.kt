@@ -9,6 +9,7 @@ import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.json.HJsonExporter
 import cz.litoj.schlmgr.data.json.HJsonImporter
+import cz.litoj.schlmgr.data.transfer.ExportDestination
 import cz.litoj.schlmgr.data.transfer.ExportFormat
 import cz.litoj.schlmgr.data.transfer.ExportPipeline
 import cz.litoj.schlmgr.data.transfer.FileGateway
@@ -77,7 +78,8 @@ class ExportImportWorkerRoundTripTest {
 		val out = ByteArrayOutputStream()
 		shadowOf(RuntimeEnvironment.getApplication().contentResolver)
 			.registerOutputStream(uri, out)
-		ExportPipeline(GlobalDependencies.appContext, { it.run() }, uri, format, selected) {}
+		ExportPipeline(GlobalDependencies.appContext, { it.run() }, ExportDestination.Document(uri),
+			format, selected) {}
 			.start().join()
 		return String(out.toByteArray(), StandardCharsets.UTF_8)
 	}

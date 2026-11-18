@@ -51,14 +51,12 @@ class ExplorerMenuTest {
 			val selecting = menu(kind, selecting = true)
 			assertTrue(
 				"$kind with a selection offers the export",
-				selecting.any { it.children.isNotEmpty() &&
-					it.children.all { child -> child.id == MenuId.EXPORT_WORD || child.id == MenuId.EXPORT_JSON } },
+				selecting.any { it.id == MenuId.EXPORT },
 			)
 			val plain = menu(kind, selecting = false)
 			assertTrue(
 				"$kind without a selection offers no export",
-				plain.none { it.children.isNotEmpty() &&
-					it.children.any { child -> child.id == MenuId.EXPORT_WORD || child.id == MenuId.EXPORT_JSON } },
+				plain.none { it.id == MenuId.EXPORT },
 			)
 		}
 	}
@@ -122,7 +120,7 @@ class ExplorerMenuTest {
 				kind, selecting = true, singleSelected = true, config = config,
 				exportBlockedReason = R.string.unavailable_export_empty,
 			)
-			val export = selecting.single { it.selectionAction && it.children.isNotEmpty() }
+			val export = selecting.single { it.id == MenuId.EXPORT }
 			assertFalse("$kind mutes the export", export.enabled)
 			assertEquals("$kind states why the export cannot run",
 				R.string.unavailable_export_empty, export.blockedReason)

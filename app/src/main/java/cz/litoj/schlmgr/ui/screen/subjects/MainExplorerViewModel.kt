@@ -228,8 +228,7 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 			MenuId.NEW_WORD -> newAction { newWord() }
 			MenuId.NEW_NOTE -> newAction { newNote() }
 			MenuId.IMPORT_FILE -> { emitRequest(Request.PickImportFile); true }
-			MenuId.EXPORT_WORD -> { exportWordFile(); true }
-			MenuId.EXPORT_JSON -> { exportJsonFile(); true }
+			MenuId.EXPORT -> { transfer.openExportSheet(); true }
 			MenuId.FLIP -> { flipSelected(); true }
 			MenuId.REFERENCE -> { move(true); true }
 			MenuId.TEST -> { prepareTest(); true }
@@ -241,9 +240,8 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		}
 	}
 
-	/** Runs one strip action, where export opens its own chooser on the strip. */
+	/** Runs one strip action, where export opens the sheet of its destinations. */
 	fun onSelectionAction(action: SelectionAction) {
-		if (action == SelectionAction.EXPORT) return
 		onMenuItemClick(menuIdOf(action))
 	}
 
@@ -399,10 +397,6 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		override fun setContent(container: DbItem?) = this@MainExplorerViewModel.setContent(container)
 		override fun requestScrollToBottom() = this@MainExplorerViewModel.requestScrollToBottom()
 	}
-
-	private fun exportWordFile() = transfer.exportWordFile()
-
-	private fun exportJsonFile() = transfer.exportJsonFile()
 
 	internal fun exportRows(): List<DbItem> = transfer.exportRows()
 

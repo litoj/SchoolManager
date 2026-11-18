@@ -3,10 +3,12 @@ package cz.litoj.schlmgr.data.transfer
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.core.content.FileProvider
 import androidx.documentfile.provider.DocumentFile
 import cz.litoj.schlmgr.app.FileProgress
 import cz.litoj.schlmgr.app.FileText
 import cz.litoj.schlmgr.app.Startup
+import java.io.File
 
 /**
  * The import/export document boundary.
@@ -91,4 +93,42 @@ object FileGateway {
 			Startup.onExportSuccess(uri, name, words, chapters, mime)
 		}
 	}
+
+	/**
+	 * The cache copy a share hands over, the older copies gone first.
+	 * - the receiving app stores a name it recognises, and the folder stays one file deep.
+	 */
+	fun shareCopy(ctx: Context, name: String, text: String): Uri {
+		val dir = File(ctx.cacheDir, SHARE_DIR)
+		dir.mkdirs()
+		dir.listFiles()?.forEach { it.delete() }
+		val file = File(dir, shareFileName(name))
+		file.writeText(text)
+		return shareUri(ctx, file)
+	}
+
+	/**
+	 * The door of the shared folder, the manifest file provider behind it.
+	 * - the provider keeps one folder per authority for the whole process, while a test
+	 *   run gets its own folder per method, so only [ShareProviderTest] uses the real door.
+	 */
+	@JvmStatic
+	var shareUri: (Context, File) -> Uri = { ctx, file ->
+		FileProvider.getUriForFile(ctx, ctx.packageName + PROVIDER_SUFFIX, file)
+	}
+
+	/** An item name as a file name: no path character, no endless length. */
+	private fun shareFileName(name: String): String {
+		val safe = buildString(name.length) {
+			for (ch in name) append(
+				if (ch in ILLEGAL_IN_NAME || ch < ' ') '_' else ch
+			)
+		}.trim()
+		return safe.take(MAX_NAME_CHARS).trimEnd()
+	}
 }
+
+private const val SHARE_DIR = "shared"
+private const val PROVIDER_SUFFIX = ".fileprovider"
+private const val MAX_NAME_CHARS = 80
+private val ILLEGAL_IN_NAME = charArrayOf('/', '\\', ':', '*', '?', '"', '<', '>', '|')

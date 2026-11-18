@@ -79,6 +79,7 @@ fun messageSnackbarHost(): SnackbarHostState {
 						if (action == SnackbarResult.ActionPerformed) MessagePopup(text, fullText)
 					}
 					is GlobalDependencies.UiMessage.Undoable -> Unit
+					is GlobalDependencies.UiMessage.SendFile -> shareFile(ctx, msg.uri, msg.mime)
 					is GlobalDependencies.UiMessage.ShareFile -> {
 						val action = snackbar.showSnackbar(
 							msg.text, shareLabel, duration = SnackbarDuration.Indefinite)

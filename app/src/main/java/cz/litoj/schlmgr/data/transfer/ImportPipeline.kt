@@ -208,13 +208,14 @@ class JsonTreeImport(
 
 /**
  * The one shared export path, with the codec as the injected [ExportFormat] strategy.
- * - the word-list and tree-JSON target workers differ only in the format they hand over.
+ * - the word-list and tree-JSON workers differ only in the format they hand over.
+ * - the destination picks between the picked document and the cache copy of a share.
  * - the selected rows are the pick-time snapshot of the caller.
  */
 class ExportPipeline(
 	appContext: Context,
 	postToUi: (Runnable) -> Unit,
-	private val uri: Uri,
+	private val destination: ExportDestination,
 	private val format: ExportFormat,
 	private val selected: () -> List<DbItem>,
 	private val onExportStart: () -> Unit,
@@ -226,14 +227,27 @@ class ExportPipeline(
 		// the callback touches UI state, the selection clear, so it runs on
 		// the main thread like every other follow-up
 		post { onExportStart() }
-		val request = ExportRequest(uri, rows, format)
-		val name = FileGateway.displayName(appContext, request.uri)
+		val name = exportName()
 		FileGateway.titledProgress(appContext, R.string.progress_export, name).use { progress ->
 			// wrapped, since the stream handover targets the bar at the object count
-			val text = ItemRepository.export(progress.exporter(format.exporter()), request.rows)
-			val (words, chapters) = ItemRepository.subgraphStats(request.rows.map { it.id })
-			FileGateway.writeExport(request.uri, name, text, words, chapters, format.mimeType())
+			val text = ItemRepository.export(progress.exporter(format.exporter()), rows)
+			when (destination) {
+				is ExportDestination.Document -> {
+					val (words, chapters) = ItemRepository.subgraphStats(rows.map { it.id })
+					FileGateway.writeExport(destination.uri, name, text, words, chapters, format.mimeType())
+				}
+				// a share reports itself through the sheet, so it needs no statistics
+				is ExportDestination.Share -> Startup.onShareReady(
+					FileGateway.shareCopy(appContext, destination.fileName, text), format.mimeType(),
+				)
+			}
 		}
+	}
+
+	/** The picked document names itself, the share carries the name of its copy. */
+	private fun exportName(): String = when (destination) {
+		is ExportDestination.Document -> FileGateway.displayName(appContext, destination.uri)
+		is ExportDestination.Share -> destination.fileName
 	}
 
 	// the IO failure of the write already reports through FileText, so anything
@@ -248,5 +262,5 @@ class ExportPipeline(
 		Startup.onSaveFail(e, failureName())
 	}
 
-	override fun failureName(): String = uri.toString()
+	override fun failureName(): String = exportName()
 }

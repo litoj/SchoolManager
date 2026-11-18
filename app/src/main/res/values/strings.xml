@@ -301,11 +301,15 @@
     <string name="reference_fork_hint">Kept references take the edit. The X keeps the original.</string>
     <string name="ref_source_pick">Choose a location:</string>
     <string name="ref_source_pick_hint">This row is in more places.</string>
-    <string name="more_export_word">Word file (no success rates)</string>
+    <string name="export_format">Export format</string>
+    <string name="export_value_word">Word file</string>
+    <string name="export_value_json">JSON file</string>
+    <string name="export_note_word">No success rates.</string>
+    <string name="export_note_json">Success rates included.</string>
+    <string name="export_save">Save to file</string>
     <string name="more_import">Import</string>
     <string name="import_here">Import here</string>
     <string name="import_file_title">Import %1$s</string>
-    <string name="more_export_json">JSON file (success rates included)</string>
     <string name="more_go_to">Go to location</string>
     <string name="flip_conflicts_title">Conflicting items</string>
     <string name="flip_conflicts_hint">Untouched rows keep their outside links. Edit a row to give the flip a copy.</string>

@@ -36,6 +36,11 @@ object UserMessages {
 		GlobalDependencies.messages.tryEmit(GlobalDependencies.UiMessage.Undoable(notice, onUndo))
 	}
 
+	/** The sheet of a shared export opens at once, the copy already holds the text. */
+	@JvmStatic
+	fun onShareReady(uri: Uri, mime: String) =
+		GlobalDependencies.messages.tryEmit(GlobalDependencies.UiMessage.SendFile(uri, mime))
+
 	/**
 	 * Word-list parse failure with its own actionable file context.
 	 * - [file] and [source] with a [retry] owner open the editor on the failing spot, and a

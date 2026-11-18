@@ -29,7 +29,6 @@ import cz.litoj.schlmgr.ui.popup.MessagePopup
 import cz.litoj.schlmgr.ui.shell.editFilter
 import cz.litoj.schlmgr.ui.viewmodel.ActionConfig
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
-import cz.litoj.schlmgr.ui.viewmodel.exportMenu
 import cz.litoj.schlmgr.ui.viewmodel.selectionOverflowMenu
 
 /**
@@ -109,8 +108,6 @@ internal fun SubjectsContent(
 						search = searching,
 						singleSelected = listState.singleSelected,
 						onAction = viewModel::onSelectionAction,
-						exportEntries = exportMenu,
-						onExport = viewModel::onMenuItemClick,
 						overflowEntries = { direct ->
 							selectionOverflowMenu(
 								config, searching, listState.singleSelected, exportBlockedReason, direct,

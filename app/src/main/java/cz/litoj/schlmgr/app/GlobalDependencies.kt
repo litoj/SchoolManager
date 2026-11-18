@@ -41,6 +41,9 @@ object GlobalDependencies {
 		/** An export result with a share action on the saved document. */
 		data class ShareFile(val text: String, val uri: Uri, val mime: String) : UiMessage
 
+		/** The share sheet for [uri] at once, the export the user asked to share. */
+		data class SendFile(val uri: Uri, val mime: String) : UiMessage
+
 		/** A notice with an undo action, where a newer one replaces it. */
 		data class Undoable(val notice: UiNotice, val onUndo: () -> Unit) : UiMessage
 	}

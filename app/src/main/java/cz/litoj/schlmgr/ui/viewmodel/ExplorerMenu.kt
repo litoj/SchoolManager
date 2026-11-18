@@ -19,8 +19,7 @@ object MenuId {
 	const val NEW_WORD = 3
 	const val NEW_NOTE = 4
 	const val IMPORT_FILE = 6
-	const val EXPORT_WORD = 7
-	const val EXPORT_JSON = 8
+	const val EXPORT = 7
 	const val FLIP = 9
 	const val REFERENCE = 10
 	const val SORT_ALPHA_AZ = 11
@@ -101,12 +100,6 @@ private val sortMenu = listOf(
 	MenuEntry(MenuId.SORT_LENGTH_01, R.string.sort_length_01),
 )
 
-/** The export format chooser, shared by the menu parent and the strip slot. */
-internal val exportMenu = listOf(
-	MenuEntry(MenuId.EXPORT_WORD, R.string.more_export_word),
-	MenuEntry(MenuId.EXPORT_JSON, R.string.more_export_json),
-)
-
 /** The browse menu rows, where import belongs to the New palette instead. */
 private fun browseRows(): List<MenuEntry> = listOf(
 	MenuEntry(0, R.string.sort, icon = R.drawable.ic_sort_black, children = sortMenu),
@@ -118,28 +111,25 @@ private val searchStatic = listOf(
 		children = sortMenu.filter { it.id != MenuId.SORT_DEFAULT }),
 )
 
-/** One overflowed action as a menu row. */
+/** One overflowed action as a menu row, every action one leaf of its own. */
 private fun SelectionAction.menuEntry(
 	singleSelected: Boolean,
 	exportBlockedReason: Int,
-): MenuEntry =
-	if (this == SelectionAction.EXPORT) MenuEntry(
-		0, R.string.more_export, icon = R.drawable.ic_export_black, children = exportMenu,
-		selectionAction = true, blockedReason = exportBlockedReason,
-	)
-	else MenuEntry(
-		menuIdOf(this),
-		label,
-		icon = icon,
-		selectionAction = true,
-		blockedReason = when (this) {
-			SelectionAction.EDIT, SelectionAction.GOTO ->
-				if (singleSelected) 0 else R.string.unavailable_single_row
-			else -> 0
-		},
-	)
+): MenuEntry = MenuEntry(
+	menuIdOf(this),
+	label,
+	icon = icon,
+	selectionAction = true,
+	blockedReason = when (this) {
+		SelectionAction.EDIT, SelectionAction.GOTO ->
+			if (singleSelected) 0 else R.string.unavailable_single_row
+		// the sheet only fills with a selection that has a line in the format
+		SelectionAction.EXPORT -> exportBlockedReason
+		else -> 0
+	},
+)
 
-/** The more-options leaf id of one action, where the export submenu builds its own parent. */
+/** The more-options leaf id of one action. */
 fun menuIdOf(action: SelectionAction): Int = when (action) {
 	SelectionAction.TEST -> MenuId.TEST
 	SelectionAction.CUT -> MenuId.CUT
@@ -148,5 +138,5 @@ fun menuIdOf(action: SelectionAction): Int = when (action) {
 	SelectionAction.REFERENCE -> MenuId.REFERENCE
 	SelectionAction.FLIP -> MenuId.FLIP
 	SelectionAction.GOTO -> MenuId.GOTO
-	SelectionAction.EXPORT -> MenuId.EXPORT_WORD
+	SelectionAction.EXPORT -> MenuId.EXPORT
 }

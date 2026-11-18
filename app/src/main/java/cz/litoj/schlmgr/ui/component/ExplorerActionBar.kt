@@ -60,8 +60,6 @@ fun SelectionActionBar(
 	search: Boolean,
 	singleSelected: Boolean,
 	onAction: (SelectionAction) -> Unit,
-	exportEntries: List<MenuEntry>,
-	onExport: (Int) -> Unit,
 	overflowEntries: (Int) -> List<MenuEntry>,
 	onOverflow: (Int) -> Unit,
 	modifier: Modifier = Modifier,
@@ -82,9 +80,7 @@ fun SelectionActionBar(
 					SelectionAction.EXPORT -> exportBlockedReason
 					else -> 0
 				}
-				if (action == SelectionAction.EXPORT)
-					ExportStripButton(action, blockedReason, exportEntries, onExport)
-				else ActionButton(
+				ActionButton(
 					Action(action.icon, action.label) { onAction(action) },
 					blockedReason,
 					Modifier.weight(1f),
@@ -92,20 +88,6 @@ fun SelectionActionBar(
 			}
 			if (layout.showMore) OverflowStripButton(overflowEntries(layout.direct), onOverflow)
 		}
-	}
-}
-
-/** The export slot, which hosts its format chooser as a dropdown. */
-@Composable
-private fun RowScope.ExportStripButton(
-	action: SelectionAction,
-	blockedReason: Int,
-	entries: List<MenuEntry>,
-	onExport: (Int) -> Unit,
-) {
-	// the host holds the strip share of the slot, since the button loses the row scope
-	MenuHost(entries, onExport, Modifier.weight(1f).fillMaxHeight()) { open ->
-		ActionButton(Action(action.icon, action.label, open), blockedReason, Modifier.fillMaxWidth())
 	}
 }
 

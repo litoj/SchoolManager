@@ -29,14 +29,25 @@ enum class ExportFormat {
 		WORD -> "text/plain"
 		JSON -> "application/hjson"
 	}
+
+	/** The suffix of a file name of this format, a tree JSON carries none. */
+	fun suffix(): String = when (this) {
+		WORD -> ".txt"
+		JSON -> ""
+	}
 }
 
-data class ExportRequest(
-	val uri: Uri,
-	/** The selected rows of the pick, chapters, words and notes alike. */
-	val rows: List<DbItem>,
-	val format: ExportFormat,
-)
+/**
+ * Where an export lands.
+ * - a document is the picked file, a share the cache copy of the share sheet.
+ */
+sealed interface ExportDestination {
+	/** The picked document, its own name names the report. */
+	data class Document(val uri: Uri) : ExportDestination
+
+	/** The cache copy of a share, [fileName] is the name the receiver sees. */
+	data class Share(val fileName: String) : ExportDestination
+}
 
 /**
  * - it resolves at pick time on the caller thread.

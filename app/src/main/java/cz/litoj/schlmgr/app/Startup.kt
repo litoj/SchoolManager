@@ -106,6 +106,10 @@ object Startup {
 	// outcome reports here, so each forwards to [UserMessages] until that
 	// layer moves
 
+	/** The cache copy of a share, handed to the sheet the user asked for. */
+	@JvmStatic
+	fun onShareReady(uri: Uri, mime: String) = UserMessages.onShareReady(uri, mime)
+
 	/** Word-list parse failure with the picked [file] edited in place, fixed text re-imported. */
 	@JvmStatic
 	fun onWordListParseFail(

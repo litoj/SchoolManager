@@ -4,10 +4,12 @@ import android.content.Context
 import android.net.Uri
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
+import cz.litoj.schlmgr.data.transfer.ExportDestination
 import cz.litoj.schlmgr.data.transfer.ExportFormat
 import cz.litoj.schlmgr.data.transfer.ExportPipeline
 import cz.litoj.schlmgr.data.transfer.ImporterFactory
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel.Request
+import cz.litoj.schlmgr.ui.popup.ExportPopup
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -35,28 +37,41 @@ internal class SubjectsTransfer(
 	 * The file name of an export of the selected rows, null when none is writable.
 	 * - see [exportRows] for what a selection may hold.
 	 */
-	private fun exportFileName(): String? {
+	private fun exportFileName(format: ExportFormat): String? {
 		val rows = exportRows()
 		if (rows.isEmpty()) return null
 		val open = host.path.lastOrNull()
-		return when {
+		val stem = when {
 			rows.size == 1 -> rows[0].name
 			// a multi selection inside a container is a partial export of it
 			open != null -> open.name + PARTIAL_SUFFIX
 			else -> "subjects"
 		}
+		return stem + format.suffix()
 	}
 
-	/** The word-list export of the selected rows. */
-	fun exportWordFile() {
-		val name = exportFileName() ?: return
-		host.emitRequest(Request.PickWordExport(name + ".txt"))
+	/** The sheet where the user picks the format and its destination. */
+	fun openExportSheet() {
+		ExportPopup(::saveFile, ::shareFile)
 	}
 
-	/** The tree-JSON export of the selected rows. */
-	fun exportJsonFile() {
-		val name = exportFileName() ?: return
-		host.emitRequest(Request.PickJsonExport(name))
+	/** The save dialog of the format, the picked document receives the rows. */
+	fun saveFile(format: ExportFormat) {
+		val name = exportFileName(format) ?: return
+		host.emitRequest(
+			if (format == ExportFormat.WORD) Request.PickWordExport(name)
+			else Request.PickJsonExport(name)
+		)
+	}
+
+	/** The cache copy of the format, straight into the share sheet of the system. */
+	fun shareFile(format: ExportFormat) {
+		val name = exportFileName(format) ?: return
+		val selected = exportRows()
+		ExportPipeline(
+			host.ctx, host::postToUi, ExportDestination.Share(name), format,
+			{ selected }, host::clearSelection,
+		).start()
 	}
 
 	/**
@@ -98,12 +113,14 @@ internal class SubjectsTransfer(
 
 	fun onWordTargetPicked(uri: Uri) {
 		val selected = exportRows()
-		ExportPipeline(host.ctx, host::postToUi, uri, ExportFormat.WORD, { selected }, host::clearSelection).start()
+		ExportPipeline(host.ctx, host::postToUi, ExportDestination.Document(uri), ExportFormat.WORD,
+			{ selected }, host::clearSelection).start()
 	}
 
 	fun onJsonTargetPicked(uri: Uri) {
 		val selected = exportRows()
-		ExportPipeline(host.ctx, host::postToUi, uri, ExportFormat.JSON, { selected }, host::clearSelection).start()
+		ExportPipeline(host.ctx, host::postToUi, ExportDestination.Document(uri), ExportFormat.JSON,
+			{ selected }, host::clearSelection).start()
 	}
 }
 

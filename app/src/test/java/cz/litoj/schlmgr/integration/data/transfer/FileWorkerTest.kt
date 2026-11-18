@@ -9,6 +9,7 @@ import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ROOT_ID
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.db.ItemKind
+import cz.litoj.schlmgr.data.transfer.ExportDestination
 import cz.litoj.schlmgr.data.transfer.ExportFormat
 import cz.litoj.schlmgr.data.transfer.ExportPipeline
 import cz.litoj.schlmgr.data.transfer.FileGateway
@@ -17,15 +18,18 @@ import cz.litoj.schlmgr.ui.popup.Dialogs
 import cz.litoj.schlmgr.ui.popup.MessagePopup
 import cz.litoj.schlmgr.ui.popup.WordListFixPopup
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.nio.charset.StandardCharsets
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -54,6 +58,9 @@ class FileWorkerTest {
 
 	private lateinit var db: ItemDatabase
 	private var nextPick = 0
+
+	/** The provider door caches one folder per JVM, so the share tests watch the file. */
+	private val realDoor = FileGateway.shareUri
 
 	/** The document of the last [importPicked], the file a failure offers for Edit. */
 	private var lastPick: Uri? = null
@@ -102,6 +109,7 @@ class FileWorkerTest {
 
 	@After
 	fun tearDown() {
+		FileGateway.shareUri = realDoor
 		db.close()
 		ItemRepository.resetForTest()
 	}
@@ -146,7 +154,8 @@ class FileWorkerTest {
 		val out = ByteArrayOutputStream()
 		shadowOf(RuntimeEnvironment.getApplication().contentResolver).registerOutputStream(uri, out)
 		var started = false
-		ExportPipeline(GlobalDependencies.appContext, { it.run() }, uri, format, selected) { started = true }
+		ExportPipeline(GlobalDependencies.appContext, { it.run() }, ExportDestination.Document(uri),
+			format, selected) { started = true }
 			.start().join()
 		return String(out.toByteArray(), StandardCharsets.UTF_8) to started
 	}
@@ -403,5 +412,46 @@ class FileWorkerTest {
 
 		assertEquals("", text)
 		assertFalse(started)
+	}
+
+	@Test
+	fun `a shared export hands its own copy to the share sheet`() = runBlocking {
+		FileGateway.shareUri = { _, file -> Uri.fromFile(file) }
+		val message = async(start = CoroutineStart.UNDISPATCHED) {
+			withTimeout(2_000) { GlobalDependencies.messages.first() }
+		}
+		val subject = ItemRepository.createSubject("Kapitel", null)
+		ItemRepository.createWord(subject.id, "w1", null, listOf("t1" to null))
+		var started = false
+
+		ExportPipeline(
+			GlobalDependencies.appContext, { it.run() },
+			ExportDestination.Share("Kapitel.txt"), ExportFormat.WORD,
+			{ ItemRepository.subjects() }, { started = true },
+		).start().join()
+
+		val sent = message.await() as GlobalDependencies.UiMessage.SendFile
+		assertEquals("Kapitel.txt", sent.uri.lastPathSegment)
+		// the splitter is a setting, so the copy is checked by its rows, not its bytes
+		val copied = File(sent.uri.path!!).readText()
+		assertTrue("the copy carries the word", "w1" in copied)
+		assertTrue("the copy carries the translation", "t1" in copied)
+		assertEquals("text/plain", sent.mime)
+		assertTrue(started)
+	}
+
+	@Test
+	fun `a shared export of no selection opens no sheet`() = runBlocking {
+		val message = async(start = CoroutineStart.UNDISPATCHED) {
+			withTimeoutOrNull(300) { GlobalDependencies.messages.first() }
+		}
+
+		ExportPipeline(
+			GlobalDependencies.appContext, { it.run() },
+			ExportDestination.Share("Kapitel.txt"), ExportFormat.WORD,
+			{ emptyList() }, {},
+		).start().join()
+
+		assertNull("an empty selection shares nothing", message.await())
 	}
 }
