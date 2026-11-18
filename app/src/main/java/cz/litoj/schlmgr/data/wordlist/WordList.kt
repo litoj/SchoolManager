@@ -20,6 +20,7 @@ enum class WordListProblem {
 	TRANSLATION_BEFORE_DESCRIPTION,
 	EXTRA_SEPARATOR,
 	MISSING_NOTE_TEXT,
+	NOTE_WITHOUT_DESCRIPTION,
 	NOTE_DIVIDER,
 	NOTE_SECOND_SEPARATOR,
 	EMPTY_VARIANT,
@@ -40,6 +41,7 @@ enum class WordListPlaceholder {
 	TRANSLATION,
 	NOTE,
 	VARIANT,
+	WORD,
 }
 
 /** The kind of one-edit fix, which decides the sentence the popup shows. */
@@ -48,6 +50,7 @@ enum class WordListRepairKind {
 	TRANSLATION_TEXT,
 	TRANSLATION_ORDER,
 	NOTE_TEXT,
+	WORD_BEFORE_TRANSLATION,
 	CHAPTER_NAME,
 	CHAPTER_NAMED_BLOCK,
 	CHAPTER_OPEN,
@@ -166,6 +169,7 @@ private class ProbeFailure(
 private fun placeholderOf(problem: WordListProblem): WordListPlaceholder? = when (problem) {
 	WordListProblem.MISSING_TRANSLATION -> WordListPlaceholder.TRANSLATION
 	WordListProblem.MISSING_NOTE_TEXT -> WordListPlaceholder.NOTE
+	WordListProblem.NOTE_WITHOUT_DESCRIPTION -> WordListPlaceholder.WORD
 	WordListProblem.MISSING_CHAPTER_NAME -> WordListPlaceholder.CHAPTER
 	WordListProblem.EMPTY_VARIANT -> WordListPlaceholder.VARIANT
 	else -> null
@@ -187,6 +191,7 @@ internal fun lineStartOffset(source: String, lineNumber: Int): Int {
  * - a word line splits the name from its translation on a semicolon or an equals sign.
  * - a description follows the text in square brackets.
  * - a separator-led line is a note, a word line without the word.
+ * - a note carries its body in a description, an empty one is a word line missing its word.
  */
 class WordListReader private constructor(
 	private val src: String,
@@ -389,9 +394,20 @@ class WordListReader private constructor(
 
 	private fun emitNote(ctx: ParserContext): WordListNote {
 		if (ctx.wordNames.size != 1) throw parseError(WordListProblem.MISSING_NOTE_TEXT)
+		// the body of a note is its description, an empty one is a word line whose word got lost
+		if (ctx.wordDescs[0].isNullOrBlank()) throw parseError(
+			WordListProblem.NOTE_WITHOUT_DESCRIPTION,
+			characterIndex = lineStart + leadingSymbolIndex(),
+		)
 		val note = WordListNote(ctx.wordNames[0], ctx.wordDescs[0])
 		ctx.wordNames.clear(); ctx.wordDescs.clear()
 		return note
+	}
+
+	/** Where the note line starts, the spot its missing word belongs to. */
+	private fun leadingSymbolIndex(): Int {
+		val line = sourceLineAt(lineStart)
+		return line.indexOfFirst { !it.isWhitespace() }.coerceAtLeast(0)
 	}
 
 	private fun flush(ctx: ParserContext) {
@@ -536,7 +552,10 @@ class WordListReader private constructor(
 	private fun repairOf(candidate: Repair, lineNumber: Int, baseline: ProbeFailure?): WordListRepair? {
 		var fixed = candidate
 		var failure = probe(fixed.source)
-		if (failure != null && failure.lineNumber == lineNumber && placeholderOf(failure.problem) != null) {
+		// one fix carries one open spot only, a second one is the work of the user
+		if (failure != null && WordListRepair.MISSING_TEXT !in fixed.text &&
+			failure.lineNumber == lineNumber && placeholderOf(failure.problem) != null
+		) {
 			fixed = fixed.withTextAt(failure)
 			failure = probe(fixed.source)
 		}
@@ -614,6 +633,9 @@ class WordListReader private constructor(
 			WordListProblem.MISSING_TRANSLATION ->
 				needsText(at, WordListRepairKind.TRANSLATION_TEXT, WordListPlaceholder.TRANSLATION)
 			WordListProblem.MISSING_NOTE_TEXT -> needsText(at, WordListRepairKind.NOTE_TEXT, WordListPlaceholder.NOTE)
+			// the note syntax of a line is a word line whose word got lost
+			WordListProblem.NOTE_WITHOUT_DESCRIPTION ->
+				needsText(at, WordListRepairKind.WORD_BEFORE_TRANSLATION, WordListPlaceholder.WORD)
 			WordListProblem.TRANSLATION_BEFORE_DESCRIPTION ->
 				needsText(at, WordListRepairKind.TRANSLATION_ORDER, WordListPlaceholder.TRANSLATION)
 			WordListProblem.MISSING_CHAPTER_NAME -> {

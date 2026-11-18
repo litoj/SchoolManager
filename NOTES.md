@@ -196,6 +196,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A repair needing user text, a second character or another line is left to the popup.
 - The success report counts the repaired lines and lists each one before and after.
 - Bare text is incomplete unless a following indented chapter block gives evidence.
+- A separator-led line without a description is a word line whose word got lost.
 - A note without a description has no word-list line, so the import refuses its export too.
 - Unclosed chapters, stray description closings and unfinished escapes fail instead of importing silently.
 - The complete source line uses a monospace block on a contrasting surface.
@@ -288,6 +289,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Creator Enter moves from each name to its description, then empty descriptions advance to the next name or confirm the last field.
 - Description keyboard options stay fixed while typing, so a non-empty Enter can insert a newline without restarting the input session.
 - OK discards blank translation rows, then outlines missing required names red and restores one translation row when none has actual text.
+- A note requires its description, since that field is its body.
 - Required creator hints append a red asterisk while their default text is visible.
 - A new word swaps with its translations through the button beside its name, exchanging escaped-backslash lists both ways.
 - The creator name hint names the created or edited type.
@@ -380,3 +382,4 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The first launch explains progress notifications for imports, exports and deletions, with 965 behavior tests and debug lint green.
 - The word-list import mends its one-character mistakes itself, with 977 behavior tests and debug lint green.
 - The arrow leaves the separators and a repair counts one character, with 988 tests and debug lint green.
+- A note needs its description in the creator and in the word-list import, with 985 behavior tests and debug lint green.

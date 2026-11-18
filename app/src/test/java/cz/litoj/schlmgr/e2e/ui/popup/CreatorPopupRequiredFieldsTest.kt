@@ -2,13 +2,17 @@ package cz.litoj.schlmgr.e2e.ui.popup
 
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.popup.CreatorContent
 import cz.litoj.schlmgr.ui.popup.CreatorPopup
 import cz.litoj.schlmgr.ui.popup.Dialogs
+import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.TranslationRow
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -92,6 +96,81 @@ class CreatorPopupRequiredFieldsTest {
 
 		rule.onNode(focusedField).performTextInput("dům")
 		rule.runOnIdle { assertEquals("dům", popup.translations[0].name) }
+	}
+
+	@Test
+	fun `ok refuses a note that holds no description`() {
+		val popup = CreatorPopup(CreatorPopup.Kind.NEW_NOTE, null, CreatorContent.Simple)
+		var commits = 0
+		popup.setOkListener { commits++; false }
+		popup.name = "Note"
+		rule.setContent { popup.Content() }
+
+		rule.onNodeWithText("OK").performClick()
+
+		rule.runOnIdle { assertEquals("the note body never commits empty", 0, commits) }
+	}
+
+	@Test
+	fun `a note marks its description required`() {
+		val popup = CreatorPopup(CreatorPopup.Kind.NEW_NOTE, null, CreatorContent.Simple)
+		popup.name = "Note"
+		rule.setContent { popup.Content() }
+
+		rule.onNodeWithText("Description *").assertIsDisplayed()
+	}
+
+	@Test
+	fun `an edited note marks its description required`() {
+		val row = ItemRow(
+			DbItem(id = 5, name = "alt", description = "alte Notiz", type = ItemKind.NOTE), null, 1)
+		val popup = CreatorPopup(CreatorPopup.Kind.EDIT, row, CreatorContent.Simple)
+		rule.setContent { popup.Content() }
+
+		popup.description = ""
+		rule.onNodeWithText("Description *").assertIsDisplayed()
+	}
+
+	@Test
+	fun `ok refuses an edited note whose description was emptied`() {
+		val row = ItemRow(
+			DbItem(id = 5, name = "alt", description = "alte Notiz", type = ItemKind.NOTE), null, 1)
+		val popup = CreatorPopup(CreatorPopup.Kind.EDIT, row, CreatorContent.Simple)
+		var commits = 0
+		popup.setOkListener { commits++; false }
+		popup.description = ""
+		rule.setContent { popup.Content() }
+
+		rule.onNodeWithText("OK").performClick()
+
+		rule.runOnIdle { assertEquals("an emptied note body never commits", 0, commits) }
+	}
+
+	@Test
+	fun `a note with its description commits`() {
+		val popup = CreatorPopup(CreatorPopup.Kind.NEW_NOTE, null, CreatorContent.Simple)
+		var commits = 0
+		popup.setOkListener { commits++; true }
+		popup.name = "Note"
+		popup.description = "the body"
+		rule.setContent { popup.Content() }
+
+		rule.onNodeWithText("OK").performClick()
+
+		rule.runOnIdle { assertEquals(1, commits) }
+	}
+
+	@Test
+	fun `a chapter still commits without a description`() {
+		val popup = CreatorPopup(CreatorPopup.Kind.NEW_CHAPTER, null, CreatorContent.Simple)
+		var commits = 0
+		popup.setOkListener { commits++; true }
+		popup.name = "Chapter"
+		rule.setContent { popup.Content() }
+
+		rule.onNodeWithText("OK").performClick()
+
+		rule.runOnIdle { assertEquals(1, commits) }
 	}
 
 	/** The field holding the keyboard: typing lands where this matcher points. */

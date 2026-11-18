@@ -101,6 +101,7 @@
     <string name="import_hint_extra_separator">Keep one separator and write a backslash before the next translation.</string>
     <string name="import_hint_trailing_separator">Remove this separator or write its translation.</string>
     <string name="import_hint_missing_note_text">Write the note text after this separator.</string>
+    <string name="import_hint_note_without_description">Write the description after this text, or its word before the separator.</string>
     <string name="import_hint_description_without_text">Write the word or translation before this [.</string>
     <string name="import_hint_no_single_fix">Correct the whole line and import the file again.</string>
     <string name="import_fix_another">Or: %s</string>
@@ -108,6 +109,7 @@
     <string name="import_fix_translation_text">Write the word with its translation: %s</string>
     <string name="import_fix_translation_order">Write the translation before its description: %s</string>
     <string name="import_fix_note_text">Write the note with this text: %s</string>
+    <string name="import_fix_word_before_translation">Write the word before this translation: %s</string>
     <string name="import_fix_chapter_name">Name the chapter like this: %s</string>
     <string name="import_fix_chapter_named_block">Keep the content between the chapter braces: %s</string>
     <string name="import_fix_chapter_open">Open a chapter here: %s</string>
@@ -130,6 +132,7 @@
     <string name="import_placeholder_translation">translation</string>
     <string name="import_placeholder_note">note</string>
     <string name="import_placeholder_variant">variant</string>
+    <string name="import_placeholder_word">word</string>
     <plurals name="stat_words">
         <item quantity="one">%1$d word</item>
         <item quantity="other">%1$d words</item>

@@ -64,9 +64,13 @@ class ImportFailureExplanationTest {
 	fun `every fix sentence names the line it asks for`() {
 		val note = placeholder(R.string.import_placeholder_note)
 		val translation = placeholder(R.string.import_placeholder_translation)
+		val word = placeholder(R.string.import_placeholder_word)
 
 		assertTrue(fix(R.string.import_fix_translation_text, "Haus = $translation") in explanation("Haus\n"))
-		assertTrue(fix(R.string.import_fix_note_text, "= $note") in explanation("=\n"))
+		assertTrue(fix(R.string.import_fix_note_text, "= $note [description]")
+			in explanation("= [description]\n"))
+		assertTrue(fix(R.string.import_fix_word_before_translation, "$word =named")
+			in explanation("=named\n"))
 		assertTrue(fix(R.string.import_fix_chapter_close, "}") in explanation("Chapter {\n"))
 		assertTrue(fix(R.string.import_fix_description_close, "word[description]") in explanation("word[description"))
 	}

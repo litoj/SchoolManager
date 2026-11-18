@@ -231,6 +231,10 @@ class CreatorPopup(
 			runCatching { nameFocus.requestFocus() }
 			return
 		}
+		if (descriptionMissing) {
+			runCatching { descriptionFocus.requestFocus() }
+			return
+		}
 		translations.firstOrNull { it.name.isBlank() }?.let { focusTranslation(it.id) }
 	}
 
@@ -242,12 +246,16 @@ class CreatorPopup(
 		okListener = listener
 	}
 
+	/** A note carries its body in the description, so the field is no option there. */
+	private val isNote: Boolean
+		get() = kind == Kind.NEW_NOTE || edited?.item?.type == ItemKind.NOTE
+
 	private val itemNameRes: Int
 		get() = when {
 			kind == Kind.NEW_SUBJECT || edited?.isSubject == true -> R.string.data_name_subject
 			kind == Kind.NEW_CHAPTER || edited?.item?.type == ItemKind.CHAPTER ->
 				R.string.data_name_chapter
-			kind == Kind.NEW_NOTE || edited?.item?.type == ItemKind.NOTE -> R.string.data_name_note
+			isNote -> R.string.data_name_note
 			else -> R.string.data_name_word
 		}
 
@@ -255,6 +263,9 @@ class CreatorPopup(
 		get() = if (content is CreatorContent.Word)
 			WordNames.splitEscaped(name).any { it.isBlank() }
 		else name.isBlank()
+
+	private val descriptionMissing: Boolean
+		get() = isNote && description.isBlank()
 
 	fun result() = CreatorResult(
 		name = name,
@@ -397,6 +408,8 @@ class CreatorPopup(
 					focusRequester = descriptionFocus,
 					onEmptyImeAction = { onDescriptionEnter(null) },
 					imeAction = if (content is CreatorContent.Word) ImeAction.Next else ImeAction.Done,
+					required = isNote,
+					isError = editor.showRequired && descriptionMissing,
 				)
 				// the variable middle holds the type-specific editor.
 				// - it scrolls when it outgrows the window, which the keyboard resizes.
@@ -553,7 +566,9 @@ class CreatorPopup(
 			editor.discardBlankTranslations()
 			if (translations.isEmpty()) translations.add(TranslationRow("", "", null))
 		}
-		if (itemNameMissing || content is CreatorContent.Word && translations.none { it.name.isNotBlank() }) {
+		if (itemNameMissing || descriptionMissing ||
+			content is CreatorContent.Word && translations.none { it.name.isNotBlank() }
+		) {
 			focusFirstMissing()
 			return
 		}

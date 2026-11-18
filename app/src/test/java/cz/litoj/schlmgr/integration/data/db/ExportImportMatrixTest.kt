@@ -69,7 +69,7 @@ class ExportImportMatrixTest {
 		val wRoot = ItemRepository.createWord(subject.id, "wRoot", null, listOf("t" to null))
 		ItemRepository.createNote(subject.id, "noteRoot", "root note")
 		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null, "t2" to null))
-		ItemRepository.createNote(c1.id, "note1", null)
+		ItemRepository.createNote(c1.id, "note1", "c1 note")
 		assertTrue(ItemRepository.reference(wRoot.id, c1.id))
 		assertTrue(ItemRepository.reference(row("w1", ItemKind.WORD).id, c0.id))
 		assertTrue(ItemRepository.reference(c1.id, c2.id))

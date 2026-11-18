@@ -246,7 +246,7 @@ class ExportImportWorkerRoundTripTest {
 		val mathe = ItemRepository.createSubject("Mathe", "subject desc")
 		val c0 = ItemRepository.createChapter(mathe.id, "1. 100", "chapter desc")
 		ItemRepository.createWord(c0.id, "Hund", "noun", listOf("dog" to null))
-		ItemRepository.createNote(mathe.id, "a note", null)
+		ItemRepository.createNote(mathe.id, "a note", "note desc")
 		val deutsch = ItemRepository.createSubject("Deutsch", null)
 		ItemRepository.createWord(deutsch.id, "das Haus", null, listOf("house" to null))
 		val text = exportPicked(ExportFormat.WORD) { ItemRepository.subjects() }

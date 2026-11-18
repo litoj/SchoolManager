@@ -45,19 +45,21 @@ class WordListRepairTest {
 
 	@Test
 	fun `a note gets its text after the separator that opens it`() {
-		expectFix("=\n", "= $mark")
 		expectFix("= [description]\n", "= $mark [description]")
+		// the line misses its text and its body, so no single edit writes it
+		assertTrue("a line of nothing but a separator offered a fix", failure("=\n").repairs.isEmpty())
 	}
 
 	@Test
 	fun `a literal separator in a note keeps itself and gains an escape`() {
-		expectFix("=named=again\n", "=named\\=again")
-		expectFix("=named=\n", "=named\\=")
+		// the escaped line still misses a description, so it reads as a word line
+		expectFix("=named=again\n", "$mark =named\\=again")
+		expectFix("=named=\n", "$mark =named\\=")
 	}
 
 	@Test
 	fun `a backslash in a note doubles`() {
-		expectFix("=note\\oops\n", "=note\\\\oops")
+		expectFix("=note\\oops\n", "$mark =note\\\\oops")
 	}
 
 	@Test
@@ -164,7 +166,7 @@ class WordListRepairTest {
 	fun `a repair names the kind of text it leaves open`() {
 		val kinds = mapOf(
 			"Haus;\n" to WordListPlaceholder.TRANSLATION,
-			"=\n" to WordListPlaceholder.NOTE,
+			"= [description]\n" to WordListPlaceholder.NOTE,
 			"{\n" to WordListPlaceholder.CHAPTER,
 			"word\\ [d]=trl\n" to WordListPlaceholder.VARIANT,
 		)
@@ -181,7 +183,7 @@ class WordListRepairTest {
 		val edits = mapOf(
 			"Haus\n" to WordListRepairKind.TRANSLATION_TEXT,
 			"pes;\n" to WordListRepairKind.TRANSLATION_TEXT,
-			"=\n" to WordListRepairKind.NOTE_TEXT,
+			"= [description]\n" to WordListRepairKind.NOTE_TEXT,
 			"word; [description]\n" to WordListRepairKind.TRANSLATION_ORDER,
 			"word;translation;extra\n" to WordListRepairKind.VARIANT_DIVIDER,
 			"word;translation;\n" to WordListRepairKind.ESCAPED_SEPARATOR,

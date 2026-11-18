@@ -33,6 +33,7 @@ internal object ImportFailureExplanation {
 		WordListRepairKind.TRANSLATION_TEXT -> R.string.import_fix_translation_text
 		WordListRepairKind.TRANSLATION_ORDER -> R.string.import_fix_translation_order
 		WordListRepairKind.NOTE_TEXT -> R.string.import_fix_note_text
+		WordListRepairKind.WORD_BEFORE_TRANSLATION -> R.string.import_fix_word_before_translation
 		WordListRepairKind.CHAPTER_NAME -> R.string.import_fix_chapter_name
 		WordListRepairKind.CHAPTER_NAMED_BLOCK -> R.string.import_fix_chapter_named_block
 		WordListRepairKind.CHAPTER_OPEN -> R.string.import_fix_chapter_open
@@ -53,6 +54,7 @@ internal object ImportFailureExplanation {
 			WordListPlaceholder.TRANSLATION -> R.string.import_placeholder_translation
 			WordListPlaceholder.NOTE -> R.string.import_placeholder_note
 			WordListPlaceholder.VARIANT -> R.string.import_placeholder_variant
+			WordListPlaceholder.WORD -> R.string.import_placeholder_word
 			else -> R.string.import_placeholder_text
 		}
 		return repair.text.replace(
@@ -74,6 +76,7 @@ internal object ImportFailureExplanation {
 					R.string.import_hint_trailing_separator else R.string.import_hint_extra_separator
 			)
 			WordListProblem.MISSING_NOTE_TEXT -> ctx.getString(R.string.import_hint_missing_note_text)
+			WordListProblem.NOTE_WITHOUT_DESCRIPTION -> ctx.getString(R.string.import_hint_note_without_description)
 			WordListProblem.NOTE_DIVIDER -> ctx.getString(R.string.import_hint_note_divider)
 			WordListProblem.NOTE_SECOND_SEPARATOR -> ctx.getString(
 				if (error.sourceLine.substring(error.problemIndex + 1).isBlank())

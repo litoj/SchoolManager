@@ -4,12 +4,16 @@ import cz.litoj.schlmgr.data.StreamItem
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.wordlist.WordListImporter
+import cz.litoj.schlmgr.data.wordlist.WordListNote
 import cz.litoj.schlmgr.data.wordlist.WordListParseException
 import cz.litoj.schlmgr.data.wordlist.WordListProblem
 import cz.litoj.schlmgr.data.wordlist.WordListReader
+import cz.litoj.schlmgr.data.wordlist.WordListRepair
+import cz.litoj.schlmgr.data.wordlist.WordListRepairKind
 import cz.litoj.schlmgr.data.wordlist.WordListWriter
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
@@ -22,6 +26,8 @@ class WordListRoundTripTest {
 
 	/** The splitter must return to its earlier value, because later classes read the default. */
 	private val splitterWas = WordListWriter.wordTranslationSplitter
+
+	private val mark = WordListRepair.MISSING_TEXT.toString()
 
 	@After
 	fun resetSplitter() {
@@ -191,15 +197,34 @@ class WordListRoundTripTest {
 		val subject = b.chapter("subject")
 		b.add(StreamItem(DbItem(name = "note", description = "note description",
 			type = ItemKind.NOTE), subject))
-		b.add(StreamItem(DbItem(name = "plain note", description = "",
+		b.add(StreamItem(DbItem(name = "plain note", description = "plain body",
 			type = ItemKind.NOTE), subject))
-		b.add(StreamItem(DbItem(name = "back\\slash note", description = "",
+		b.add(StreamItem(DbItem(name = "back\\slash note", description = "escaped body",
 			type = ItemKind.NOTE), subject))
 		val back = roundTrip(b)
 		val notes = back.filter { it.item.type == ItemKind.NOTE }
 		assertEquals(listOf("note", "plain note", "back\\slash note"), notes.map { it.item.name })
 		assertEquals("note description", notes[0].item.description)
 		assertEquals("subject", notes[0].parent?.item?.name)
+	}
+
+	@Test
+	fun `a note line without its description is the word line it missed`() {
+		val error = assertThrows(WordListParseException::class.java) {
+			WordListReader.parse("ch {\n=named\n}\n", "c")
+		}
+
+		assertEquals(WordListProblem.NOTE_WITHOUT_DESCRIPTION, error.problem)
+		assertEquals(2, error.lineNumber)
+		assertEquals(WordListRepairKind.WORD_BEFORE_TRANSLATION, error.repairs.single().kind)
+		assertEquals("$mark =named", error.repairs.single().text)
+	}
+
+	@Test
+	fun `the note body of brackets keeps its text`() {
+		val root = WordListReader.parse("ch {\n=named [the body]\n}\n", "c")
+
+		assertEquals("named", (root.children.single().entries.single() as WordListNote).name)
 	}
 
 	@Test
@@ -346,7 +371,7 @@ class WordListRoundTripTest {
 	fun `an interleaved file keeps its line order`() {
 		// words, notes and chapters interleave in the file, so the stream keeps
 		// that order and the link positions of the import match the file
-		val importer = WordListImporter("c", "ch {\nw1;t1\n= n1\nw2;t2\n}\n")
+		val importer = WordListImporter("c", "ch {\nw1;t1\n= n1[the body]\nw2;t2\n}\n")
 		val names = importer.items.map { it.item.type.kindPrefix() + it.item.name }
 		assertEquals(listOf("c:ch", "w:w1", "t:t1", "n:n1", "w:w2", "t:t2"), names)
 	}

@@ -101,6 +101,7 @@
     <string name="import_hint_extra_separator">Ponechte jeden oddělovač a před další překlad napište lomítko.</string>
     <string name="import_hint_trailing_separator">Odeberte tento oddělovač, nebo za něj doplňte překlad.</string>
     <string name="import_hint_missing_note_text">Doplňte text poznámky za tento oddělovač.</string>
+    <string name="import_hint_note_without_description">Napište popis za tento text, nebo jeho slovíčko před oddělovač.</string>
     <string name="import_hint_description_without_text">Doplňte slovíčko nebo překlad před tuto [.</string>
     <string name="import_hint_no_single_fix">Opravte celý řádek a import zopakujte.</string>
     <string name="import_fix_another">Nebo: %s</string>
@@ -108,6 +109,7 @@
     <string name="import_fix_translation_text">Napište slovíčko s překladem: %s</string>
     <string name="import_fix_translation_order">Napište překlad před popis: %s</string>
     <string name="import_fix_note_text">Napište poznámku s tímto textem: %s</string>
+    <string name="import_fix_word_before_translation">Napište slovíčko před tento překlad: %s</string>
     <string name="import_fix_chapter_name">Pojmenujte kapitolu takto: %s</string>
     <string name="import_fix_chapter_named_block">Ponechte obsah mezi závorkami kapitoly: %s</string>
     <string name="import_fix_chapter_open">Otevřete zde kapitolu: %s</string>
@@ -130,6 +132,7 @@
     <string name="import_placeholder_translation">překlad</string>
     <string name="import_placeholder_note">poznámka</string>
     <string name="import_placeholder_variant">varianta</string>
+    <string name="import_placeholder_word">slovíčko</string>
     <plurals name="stat_words">
         <item quantity="one">%1$d slovo</item>
         <item quantity="few">%1$d slova</item>
