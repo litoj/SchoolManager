@@ -7,6 +7,7 @@ import cz.litoj.schlmgr.data.wordlist.WordListPlaceholder
 import cz.litoj.schlmgr.data.wordlist.WordListProblem
 import cz.litoj.schlmgr.data.wordlist.WordListRepair
 import cz.litoj.schlmgr.data.wordlist.WordListRepairKind
+import cz.litoj.schlmgr.data.wordlist.lineStartOffset
 
 /** Builds the localized source context, diagnosis and confirmed fixes for the popup. */
 internal object ImportFailureExplanation {
@@ -60,6 +61,10 @@ internal object ImportFailureExplanation {
 			"<${ctx.getString(placeholder)}>",
 		)
 	}
+
+	/** The offset of the failing character in [source], where the editor opens. */
+	fun caretIn(source: String, error: WordListParseException): Int =
+		(lineStartOffset(source, error.lineNumber) + error.problemIndex).coerceIn(0, source.length)
 
 	fun of(error: WordListParseException): Content {
 		val ctx = GlobalDependencies.appContext

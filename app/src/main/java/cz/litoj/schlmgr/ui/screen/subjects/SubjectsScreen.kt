@@ -1,9 +1,14 @@
 package cz.litoj.schlmgr.ui.screen.subjects
 
 import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -18,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.data.transfer.FileGateway
 import cz.litoj.schlmgr.ui.component.ExplorerSearchControls
 import cz.litoj.schlmgr.ui.popup.ContinuePopup
 import cz.litoj.schlmgr.ui.popup.CreatorContent
@@ -73,9 +79,12 @@ fun SubjectsScreen(
 	val createWordFile = rememberLauncherForActivityResult(
 		ActivityResultContracts.CreateDocument("text/plain"),
 	) { uri -> if (uri != null) viewModel.onWordTargetPicked(uri) }
-	val importAnyFile = rememberLauncherForActivityResult(
-		ActivityResultContracts.OpenDocument(),
-	) { uri -> if (uri != null) viewModel.onAnyFilePicked(uri) }
+	val importAnyFile = rememberLauncherForActivityResult(OpenEditableDocument()) { uri ->
+		if (uri != null) {
+			FileGateway.holdForEdit(context, uri)
+			viewModel.onAnyFilePicked(uri)
+		}
+	}
 	val createJsonFile = rememberLauncherForActivityResult(
 		ActivityResultContracts.CreateDocument("application/hjson"),
 	) { uri -> if (uri != null) viewModel.onJsonTargetPicked(uri) }
@@ -211,5 +220,26 @@ fun SubjectsScreen(
 		SubjectsContent(viewModel, exportBlockedReason, Modifier.weight(1f).headerShadow())
 		}
 	}
+}
+
+/**
+ * The document of an import, asked for with write access.
+ * - the failure popup offers the file to an outside editor, which has to reach the same file.
+ */
+internal class OpenEditableDocument : ActivityResultContract<Array<String>, Uri?>() {
+
+	override fun createIntent(context: Context, input: Array<String>): Intent =
+		Intent(Intent.ACTION_OPEN_DOCUMENT)
+			.addCategory(Intent.CATEGORY_OPENABLE)
+			.setType("*/*")
+			.putExtra(Intent.EXTRA_MIME_TYPES, input)
+			.addFlags(
+				Intent.FLAG_GRANT_READ_URI_PERMISSION or
+					Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+					Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION,
+			)
+
+	override fun parseResult(resultCode: Int, intent: Intent?): Uri? =
+		if (resultCode != Activity.RESULT_OK) null else intent?.data
 }
 

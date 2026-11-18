@@ -32,6 +32,12 @@ abstract class FileWorker(
 	 */
 	var onImported: ((ImportResult) -> Unit)? = null
 
+	/**
+	 * The door that runs this import again on a file the user has fixed, set before start.
+	 * - the failure editor offers Save where a retry has an owner.
+	 */
+	var onReimport: ((Uri) -> Unit)? = null
+
 	/** The view may be gone while the worker runs, so nothing binds the thread to it. */
 	fun start(): Thread =
 		Thread({ runTemplate() }, threadName).also { it.start() }
@@ -55,8 +61,15 @@ abstract class FileWorker(
 	/** Read -> parse -> persist -> refresh/notify. Runs on the worker thread. */
 	protected abstract fun doRun()
 
+	/** The document a failure of this worker came from, the file the editor fixes. */
+	protected open val sourceUri: Uri? get() = null
+
+	/** The text of that document, the content the editor shows for it. */
+	protected var sourceText: String? = null
+		private set
+
 	protected open fun onWordListParseFail(e: WordListParseException) {
-		Startup.onWordListParseFail(e)
+		Startup.onWordListParseFail(e, sourceUri, sourceText, onReimport)
 	}
 
 	protected open fun onParseFail(e: IllegalArgumentException) {
@@ -73,7 +86,7 @@ abstract class FileWorker(
 
 	// reads the whole picked document, and a failure already went out, so skip then
 	protected fun readContent(uri: Uri, progress: FileProgress): String? =
-		FileText.readText(uri, progress)
+		FileText.readText(uri, progress).also { sourceText = it }
 
 	// the save loop drives the row phase of the bar
 	protected fun persist(
@@ -83,6 +96,8 @@ abstract class FileWorker(
 		ItemRepository.import(progress.importer(importer), anchorId)
 
 	protected fun notifyImported(result: ImportResult, fixes: List<WordListAutoFix> = emptyList()) {
+		// the stored file needs no editor any more, so its held grant leaves here
+		sourceUri?.let { FileGateway.releaseEdit(appContext, it) }
 		Startup.onImportSuccess(result.words, result.chapters, fixes)
 		onImported?.invoke(result)
 	}
@@ -118,6 +133,8 @@ class WordIntoContainerImport(
 		}
 	}
 
+	override val sourceUri: Uri? get() = uri
+
 	override fun failureName(): String = uri.toString()
 }
 
@@ -146,6 +163,8 @@ class WordAsSubjectImport(
 			notifyImported(result, importer.autoFixes)
 		}
 	}
+
+	override val sourceUri: Uri? get() = uri
 
 	override fun failureName(): String = uri.toString()
 }

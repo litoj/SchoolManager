@@ -1,6 +1,7 @@
 package cz.litoj.schlmgr.data.transfer
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import cz.litoj.schlmgr.app.FileProgress
@@ -46,6 +47,36 @@ object FileGateway {
 
 	fun titledProgress(ctx: Context, labelRes: Int, name: String): FileProgress =
 		FileProgress(ctx.getString(labelRes) + name)
+
+	/** The grants the editor needs on a picked document. */
+	private const val EDIT_GRANTS =
+		Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+
+	/**
+	 * The grant of the pick dies with the picker, so the document is held for the editor.
+	 * - write is asked for first, an editor that cannot save fixes nothing.
+	 * - a read-only document answers with the grant it allows.
+	 */
+	fun holdForEdit(ctx: Context, uri: Uri) {
+		if (takeGrant(ctx, uri, EDIT_GRANTS)) return
+		takeGrant(ctx, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+	}
+
+	/** A stored import ends the file's story, so the held grant leaves with it. */
+	fun releaseEdit(ctx: Context, uri: Uri) {
+		val held = ctx.contentResolver.persistedUriPermissions.firstOrNull { it.uri == uri }
+			?: return
+		val grants =
+			if (held.isWritePermission) EDIT_GRANTS else Intent.FLAG_GRANT_READ_URI_PERMISSION
+		ctx.contentResolver.releasePersistableUriPermission(uri, grants)
+	}
+
+	private fun takeGrant(ctx: Context, uri: Uri, grants: Int): Boolean = try {
+		ctx.contentResolver.takePersistableUriPermission(uri, grants)
+		true
+	} catch (e: SecurityException) {
+		false
+	}
 
 	/**
 	 * - nothing counts the text.

@@ -29,6 +29,9 @@
 
     <color name="colorFailure">#FFFF5252</color>
     <color name="colorHighlight">#33FFFFFF</color>
+    <!-- The band of the line a failed import points at (see values/colors.xml).
+         The night card is dark, so the red needs its higher share to read. -->
+    <color name="colorMarkedLine">#66FE473F</color>
     <color name="colorSelectedRow">#406EB31F</color>
     <color name="colorMenuBackground">#FF303030</color>
 </resources>

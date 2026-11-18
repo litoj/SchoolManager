@@ -336,6 +336,8 @@
     <string name="paste_status_references">References: %1$d</string>
     <string name="paste_status_move">Move: %1$d</string>
     <string name="popup_copy">Copy</string>
+    <string name="popup_save_retry">Save and import again</string>
+    <string name="popup_save_failed">The file refused the text, nothing was changed</string>
     <string name="popup_copy_failed">Copying to the clipboard failed</string>
     <string name="popup_copy_truncated">[the copy was truncated — the text is too long for the clipboard]</string>
     <string name="press_exit">Press again to exit</string>

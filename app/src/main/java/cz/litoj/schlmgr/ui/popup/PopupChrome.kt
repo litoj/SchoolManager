@@ -55,10 +55,13 @@ val PopupMargin = 30.dp
  * - a scrollable middle takes weight 1f without fill and fills the free height first.
  *
  * @param margin the gap around the card, which sets its width
+ * @param atTop pins the card to the top with the screen height, for a body that fills the
+ *        rest of the screen
  */
 @Composable
 internal fun PopupCard(
 	margin: Dp = PopupMargin,
+	atTop: Boolean = false,
 	content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
 ) {
 	// the band height gaps both ends: the margin measures from the status bar above.
@@ -69,11 +72,12 @@ internal fun PopupCard(
 			.fillMaxSize()
 			.padding(top = statusBar, bottom = statusBar)
 			.padding(margin),
-		contentAlignment = Alignment.Center,
+		contentAlignment = if (atTop) Alignment.TopCenter else Alignment.Center,
 	) {
 		Column(
 			Modifier
 				.fillMaxWidth()
+				.then(if (atTop) Modifier.fillMaxHeight() else Modifier)
 				.background(colorResource(R.color.colorPrimaryBg))
 				// the card is the dialog window, so its surface swallows the backdrop tap
 				.pointerInput(Unit) { detectTapGestures { } }

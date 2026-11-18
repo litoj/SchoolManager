@@ -40,6 +40,9 @@
          Unlike colorFailure, it stays the same in both themes. -->
     <color name="colorDanger">#FE473F</color>
     <color name="colorFailure">#FFAA0000</color>
+    <!-- The line a failed import points at: the fixed red of colorDanger at 20%.
+         The editor of the failure marks it, so the report names a line the user sees. -->
+    <color name="colorMarkedLine">#33FE473F</color>
     <color name="colorScrim">#90000000</color>
     <!-- The NavigationView's checked-row highlight was the framework's
          colorControlHighlight: 12% black here, 20% white at night. One alpha of

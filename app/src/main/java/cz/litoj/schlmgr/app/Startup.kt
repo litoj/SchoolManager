@@ -106,9 +106,14 @@ object Startup {
 	// outcome reports here, so each forwards to [UserMessages] until that
 	// layer moves
 
-	/** Word-list parse failure with file examples kept line by line. */
+	/** Word-list parse failure with the picked [file] edited in place, fixed text re-imported. */
 	@JvmStatic
-	fun onWordListParseFail(error: WordListParseException) = UserMessages.onWordListParseFail(error)
+	fun onWordListParseFail(
+		error: WordListParseException,
+		file: Uri?,
+		source: String?,
+		retry: ((Uri) -> Unit)?,
+	) = UserMessages.onWordListParseFail(error, file, source, retry)
 
 	/** Word-list parse failure with [msg] as both snackbar line and popup body. */
 	@JvmStatic

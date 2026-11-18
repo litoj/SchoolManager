@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -71,23 +72,28 @@ open class MessagePopup(
 			}
 			HairlineDivider()
 			PopupButtonRow {
-				val truncationNote = stringResource(R.string.popup_copy_truncated)
-				val copyFailed = stringResource(R.string.popup_copy_failed)
-				PopupButton(stringResource(R.string.popup_copy), Modifier.weight(1f)) {
-					// the copy failure rides the message bus.
-					// the popup never emits on it directly
-					if (!copyToClipboard(
-							GlobalDependencies.appContext,
-							// the clip description of the UI: a snippet, not the content.
-							// the label rides in the same binder parcel
-							msg.take(CLIPBOARD_LABEL_CHARS),
-							capForClipboard(copyText, truncationNote),
-						)) UserMessages.showMsg(copyFailed, copyFailed)
-					Dialogs.dismiss(this@MessagePopup)
-				}
+				CopyButton()
 				VerticalButtonSeparator()
 				PopupButton(stringResource(R.string.ok), Modifier.weight(1f)) { Dialogs.dismiss(this@MessagePopup) }
 			}
+		}
+	}
+
+	/** The clipboard route of the message, the failure of the copy rides the message bus. */
+	@Composable
+	private fun RowScope.CopyButton() {
+		val truncationNote = stringResource(R.string.popup_copy_truncated)
+		val copyFailed = stringResource(R.string.popup_copy_failed)
+		PopupButton(stringResource(R.string.popup_copy), Modifier.weight(1f)) {
+			// the popup never emits on the bus directly
+			if (!copyToClipboard(
+					GlobalDependencies.appContext,
+					// the clip description of the UI: a snippet, not the content.
+					// the label rides in the same binder parcel
+					msg.take(CLIPBOARD_LABEL_CHARS),
+					capForClipboard(copyText, truncationNote),
+				)) UserMessages.showMsg(copyFailed, copyFailed)
+			Dialogs.dismiss(this@MessagePopup)
 		}
 	}
 

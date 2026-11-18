@@ -6,8 +6,10 @@ import android.util.Log
 import cz.litoj.schlmgr.data.wordlist.WordListAutoFix
 import cz.litoj.schlmgr.data.wordlist.WordListParseException
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.ui.popup.DialogSpec
 import cz.litoj.schlmgr.ui.popup.MessagePopup
 import cz.litoj.schlmgr.ui.popup.MessageSource
+import cz.litoj.schlmgr.ui.popup.WordListFixPopup
 
 /** The transient user messages of the app, safe to report from any thread. */
 object UserMessages {
@@ -34,15 +36,34 @@ object UserMessages {
 		GlobalDependencies.messages.tryEmit(GlobalDependencies.UiMessage.Undoable(notice, onUndo))
 	}
 
-	/** Word-list parse failure shown with its own actionable file context. */
+	/**
+	 * Word-list parse failure with its own actionable file context.
+	 * - [file] and [source] with a [retry] owner open the editor on the failing spot, and a
+	 *   saved fix runs [retry] on the same document.
+	 * - a failure of no reachable document stays a plain report of its source line.
+	 */
 	@JvmStatic
-	fun onWordListParseFail(error: WordListParseException): MessagePopup {
+	fun onWordListParseFail(
+		error: WordListParseException,
+		file: Uri?,
+		source: String?,
+		retry: ((Uri) -> Unit)?,
+	): DialogSpec {
 		val content = ImportFailureExplanation.of(error)
-		return MessagePopup(
+		val title = GlobalDependencies.appContext.getString(R.string.import_error_title)
+		if (file == null || source == null || retry == null) return MessagePopup(
 			msg = content.guidance,
 			copyText = content.text,
-			title = GlobalDependencies.appContext.getString(R.string.import_error_title),
+			title = title,
 			source = MessageSource(content.location, content.source, error.problemIndex),
+		)
+		return WordListFixPopup(
+			title = title,
+			report = content,
+			file = file,
+			source = source,
+			caret = ImportFailureExplanation.caretIn(source, error),
+			onReimport = retry,
 		)
 	}
 

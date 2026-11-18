@@ -82,6 +82,8 @@ class ImportTargetViewModel(
 				)
 			}
 			worker.onImported = { result -> postToUi { openSingleTop(result.topLevel) } }
+			// the mover imports one file only, so its fix re-runs the same import
+			worker.onReimport = { importNow() }
 			val thread = worker.start()
 			withContext(io) { thread.join() }
 			_targetState.update { it.copy(busy = false) }

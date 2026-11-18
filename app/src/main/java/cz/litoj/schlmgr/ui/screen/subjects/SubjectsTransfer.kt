@@ -90,6 +90,8 @@ internal class SubjectsTransfer(
 					host.refreshInfo()
 				},
 			)
+			// a fix saved in the failure editor runs this very import over again
+			worker.onReimport = ::onAnyFilePicked
 			host.postToUi { worker.start() }
 		}
 	}

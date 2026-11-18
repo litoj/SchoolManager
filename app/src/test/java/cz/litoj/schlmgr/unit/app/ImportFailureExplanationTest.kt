@@ -121,4 +121,13 @@ class ImportFailureExplanationTest {
 		assertTrue(fix(R.string.import_fix_translation_text, "Haus = ${placeholder(R.string.import_placeholder_translation)}") in body)
 		assertFalse("line 1" in body)
 	}
+
+	@Test
+	fun `the editor opens on the failing character of its line`() {
+		val first = "Haus\nWasser;water\n"
+		val later = "Wasser;water\nHaus\n"
+
+		assertEquals(4, ImportFailureExplanation.caretIn(first, parseError(first)))
+		assertEquals(17, ImportFailureExplanation.caretIn(later, parseError(later)))
+	}
 }

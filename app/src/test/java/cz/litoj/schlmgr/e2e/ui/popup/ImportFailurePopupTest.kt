@@ -45,7 +45,8 @@ class ImportFailurePopupTest {
 		}
 
 	private fun show(source: String) {
-		val popup = UserMessages.onWordListParseFail(parseError(source))
+		// the marker work here is the source block alone, so no file goes along
+		val popup = UserMessages.onWordListParseFail(parseError(source), null, null, null)
 		rule.setContent { popup.Content() }
 	}
 

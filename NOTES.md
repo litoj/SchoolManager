@@ -192,14 +192,24 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A fix is the whole message, the diagnosis line appears only when no fix survived.
 - One repair kind per edit type, so wording and validated edit can never drift apart.
 - A suggestion of one character mends the import buffer itself, spaces and tabs aside.
-- The buffer re-parses after every such repair, the picked file is never written.
+- The buffer re-parses after every such repair, the auto-repair leaves the picked file alone.
 - A repair needing user text, a second character or another line is left to the popup.
 - The success report counts the repaired lines and lists each one before and after.
 - Bare text is incomplete unless a following indented chapter block gives evidence.
 - A separator-led line without a description is a word line whose word got lost.
 - A note without a description has no word-list line, so the import refuses its export too.
+- No outside editor on the phone takes a foreign content URI for text, so the app edits the file itself.
+- The failure of a held file opens an editor on its failing character, the report above the file.
+- The editor takes the focus on open, so its caret shows and the keyboard comes.
+- The reported line is marked and brought into view, its failing column reached from the left.
+- The file keeps one line per source line, a long line scrolls aside instead of wrapping.
+- The caret of the editor is the text colour of the theme, the mark of the line reads on both palettes.
+- The editor keeps its save at the right edge of the row, where every popup of the app waits for the action.
+- Save writes the same document through the write grant of the pick and imports it again.
+- A document refusing the write keeps the editor, its note and the typed text.
+- A tap aside closes an untouched file only, a typed fix is never thrown away.
 - Unclosed chapters, stray description closings and unfinished escapes fail instead of importing silently.
-- The complete source line uses a monospace block on a contrasting surface.
+- The source block of a failure no editor can open uses a monospace block on a contrasting surface.
 - A `↓` aligns through measured glyph bounds with the exact symbol or missing-character insertion point.
 - Long source lines keep their alignment through horizontal scrolling.
 - An unfinished multiline description points to its opening line.
@@ -277,6 +287,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 ### Dialogs and creators
 
 - A `DialogSpec` stack uses one window per dialog, so dialogs survive rotation.
+- A message dialog of a known file offers Edit in place of Copy and stays open through it.
 - Every dialog title takes one header band, as tall as its button row.
 - The band is a floor, so a long title takes its second line instead of losing text.
 - A header icon holds one square tap slot at the row end, so its tap is not the glyph size.
@@ -356,6 +367,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The answer diff groups each wrong run.
 - The filter is built, rides as chips and wears its own glyph, with 969 behavior tests and debug lint green.
 - The success rate colours name their landmarks in help and in the results help, with 969 behavior tests and debug lint green.
+- The import fix editor waits for a phone check of its marked line and no-wrap view.
 - A dropdown hangs from its own button through one menu host, with 971 behavior tests and debug lint green.
 - A menu action carries its glyph once and the import fills a bar slot, with 971 behavior tests and debug lint green.
 - Only the subjects root closes the search, with 973 behavior tests and debug lint green.
@@ -383,3 +395,4 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The word-list import mends its one-character mistakes itself, with 977 behavior tests and debug lint green.
 - The arrow leaves the separators and a repair counts one character, with 988 tests and debug lint green.
 - A note needs its description in the creator and in the word-list import, with 985 behavior tests and debug lint green.
+- The failure dialog edits its picked file in place and imports it again, with 1005 tests and debug lint green.

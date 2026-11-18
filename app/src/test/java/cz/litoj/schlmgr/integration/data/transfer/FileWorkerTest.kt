@@ -11,9 +11,11 @@ import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.transfer.ExportFormat
 import cz.litoj.schlmgr.data.transfer.ExportPipeline
+import cz.litoj.schlmgr.data.transfer.FileGateway
 import cz.litoj.schlmgr.data.transfer.ImporterFactory
 import cz.litoj.schlmgr.ui.popup.Dialogs
 import cz.litoj.schlmgr.ui.popup.MessagePopup
+import cz.litoj.schlmgr.ui.popup.WordListFixPopup
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
 import kotlinx.coroutines.CoroutineStart
@@ -42,6 +44,7 @@ import org.robolectric.annotation.Config
  * - a container that closed before the run pins its own reload and failure.
  * - the exports pin the bytes both formats write and the empty-selection no-op.
  * - the picked documents are shadow-registered content uris.
+ * - the grant of a picked file leaves with a stored import and stays through a failure.
  * - the SAF query of Robolectric names no document, so the name falls back.
  * - the posts run inline, so the join of the worker thread settles every follow-up.
  */
@@ -51,6 +54,9 @@ class FileWorkerTest {
 
 	private lateinit var db: ItemDatabase
 	private var nextPick = 0
+
+	/** The document of the last [importPicked], the file a failure offers for Edit. */
+	private var lastPick: Uri? = null
 
 	/** The reloads the open screen ran, the posted follow-up of the worker. */
 	private class Reloads {
@@ -112,15 +118,25 @@ class FileWorkerTest {
 		return uri
 	}
 
-	/** The picked-file dispatch, with the resolvers as the view model hands them over. */
-	private fun importPicked(fileName: String, open: () -> DbItem?, text: String): Reloads {
+	/**
+	 * The picked-file dispatch, with the resolvers as the view model hands them over.
+	 * - [holds] is the grant the pick of the screen takes, [retry] the door of its editor.
+	 */
+	private fun importPicked(
+		fileName: String, open: () -> DbItem?, text: String,
+		holds: Boolean = false, retry: ((Uri) -> Unit)? = null,
+	): Reloads {
 		val reloads = Reloads()
 		val uri = picked(text)
-		ImporterFactory.createPickedImport(
+		lastPick = uri
+		if (holds) hold(uri)
+		val worker = ImporterFactory.createPickedImport(
 			GlobalDependencies.appContext, { it.run() }, uri, fileName,
 			open, { open() == null },
 			{ reloads.root++ }, { reloads.current++ }, { reloads.container++ },
-		).start().join()
+		)
+		worker.onReimport = retry
+		worker.start().join()
 		return reloads
 	}
 
@@ -307,14 +323,55 @@ class FileWorkerTest {
 		assertFalse(Dialogs.isShowing<MessagePopup>())
 	}
 
+	/** The picked file held for an outside editor, as the pick of the screen would hold it. */
+	private fun hold(uri: Uri) = FileGateway.holdForEdit(GlobalDependencies.appContext, uri)
+
+	private fun held(uri: Uri?) =
+		GlobalDependencies.appContext.contentResolver.persistedUriPermissions
+			.filter { it.uri == uri }
+
 	@Test
-	fun `an arrow line imports nothing and keeps its instructions`() {
+	fun `an unrepairable line imports nothing and reports its file`() {
 		Dialogs.clear()
 
 		importPicked("Broken.txt", { null }, "Kapitel {\nHaus->home\n}\n")
 
-		assertTrue(Dialogs.isShowing<MessagePopup>())
+		assertTrue("no editor without an owner to import the file again",
+			Dialogs.stack.value.single() is MessagePopup)
 		assertEquals(emptyList<String>(), ItemRepository.subjects().map { it.name })
+		Dialogs.clear()
+	}
+
+	@Test
+	fun `a failure whose import can run again opens the editor instead`() {
+		Dialogs.clear()
+		val again = mutableListOf<Uri>()
+
+		importPicked("Broken.txt", { null }, "Kapitel {\nHaus->home\n}\n", retry = { again.add(it) })
+
+		assertTrue("the editor is the only dialog of a fixable file",
+			Dialogs.stack.value.single() is WordListFixPopup)
+		assertEquals(emptyList<String>(), ItemRepository.subjects().map { it.name })
+		Dialogs.clear()
+	}
+
+	@Test
+	fun `a stored import gives the grant of its file back`() {
+		val lektion = ItemRepository.createChapter(
+			ItemRepository.createSubject("Deutsch", null).id, "Lektion 1", null)
+
+		importPicked("list.txt", { lektion }, "Haus;home", holds = true)
+
+		assertTrue("the imported file holds no grant", held(lastPick).isEmpty())
+	}
+
+	@Test
+	fun `a failed import keeps the grant of its file for the editor`() {
+		Dialogs.clear()
+
+		importPicked("Broken.txt", { null }, "Kapitel {\nHaus->home\n}\n", holds = true)
+
+		assertTrue("the editor still reaches the file", held(lastPick).isNotEmpty())
 		Dialogs.clear()
 	}
 
