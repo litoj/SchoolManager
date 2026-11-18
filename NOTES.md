@@ -307,6 +307,8 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Required creator hints append a red asterisk while their default text is visible.
 - A new word swaps with its translations through the button beside its name, exchanging escaped-backslash lists both ways.
 - The creator name hint names the created or edited type.
+- A passive message snackbar leaves on a tap, an action one answers only through its action.
+- Every snackbar leaves after 2 s, whatever its text or action.
 
 ### Theme
 
@@ -343,75 +345,6 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A VisibleForTesting door of production grows its own test beside the real one, so production is driven instead.
 - A pure rule needs no database fixture, a Room-backed unit test means the fixture is wrong.
 
-## Current
-
-- The Delete action dispatches through `MenuId.DELETE` again, with regression tests through the strip action.
-- Root container labels are “Sets” in English and “Sady” in Czech.
-- A refused creator confirm focuses the first missing required field, with 812 behavior tests and debug lint green.
-- Creator descriptions keep their input session during typing, with 814 behavior tests and debug lint green.
-- Passive message snackbars dismiss on a tap, while action snackbars remain clickable only through their action.
-- The snackbar dismissal behavior passes 816 behavior tests and debug lint.
-- Selection strip labels stay centered and the Go-to glyph is centered.
-- Browse and search rows update edits in place, including rename joins.
-- Search history keeps its scroll through the shared anchor path, and a new query starts at the top.
-- Top and bottom actions collapse by width through one shared calculation, with 837 behavior tests and debug lint green.
-- No emulator is connected for a physical keyboard check.
-- The selection More slot passes focused tests and lint, and is committed.
-- The top and selection More dropdowns render below and above their buttons, checked on Small_Phone.
-- Validated import suggestions and measured markers pass 871 behavior tests and debug lint.
-- The list reveal skips a shown row and obeys the phone, with 874 behavior tests and debug lint green.
-- The abort label and the dialog keyboard handoff pass 878 behavior tests and debug lint.
-- Repair and wording matrices run as unit tests, the popup keeps only the measured marker.
-- Walkthrough screenshots live in `docs/scenario-walkthrough`.
-- Colored answer diffs compare only expanded variants and pass 907 behavior tests and debug lint.
-- Seconds per character and its stored-format migration pass 907 behavior tests and debug lint.
-- Ignorable literal fields chain Enter and pass 907 behavior tests and debug lint.
-- Prompts describe the shown side, each name with its own description, with 909 behavior tests and debug lint green.
-- The sort, reference and location texts read plainly, and the cut names its set.
-- The New centre imports and the More row holds the import as text.
-- The paste mute, the reserved glyph slot and the palette reset.
-- Help search reads code blocks and a chevron shows the open state.
-- The run prompt shows the description lines the setting allows.
-- A search of the selection reports its row count.
-- The explorer model owns the top bar menu of both hosts.
-- The results help explains with the report's own rows.
-- Every dialog title shares one header band, a floor for a long title.
-- The answer diff groups each wrong run.
-- The filter is built, rides as chips and wears its own glyph, with 969 behavior tests and debug lint green.
-- The success rate colours name their landmarks in help and in the results help, with 969 behavior tests and debug lint green.
-- The import fix editor waits for a phone check of its marked line and no-wrap view.
-- A dropdown hangs from its own button through one menu host, with 971 behavior tests and debug lint green.
-- A menu action carries its glyph once and the import fills a bar slot, with 971 behavior tests and debug lint green.
-- Only the subjects root closes the search, with 973 behavior tests and debug lint green.
-- The standalone review fixes and leftover removals land, with 977 behavior tests and debug lint green.
-- Sorting gets triangles and the crumbs an up button, with 980 behavior tests and debug lint green.
-- Import leaves the top bar, and the crumbs and untested separators line up, with 979 behavior tests and debug lint green.
-- The New palette turns its grey wash solid in both themes, with 979 behavior tests and debug lint green.
-- The palette's reference pick links the selected rows into its initial chapter, with 982 behavior tests and debug lint green.
-- Breadcrumbs get three size presets, with 986 behavior tests and debug lint green.
-- Crumb buttons and their chevrons take clicks as one area, with 990 behavior tests and debug lint green.
-- Every snackbar leaves after 2 s, whatever its text or action, with its snackbar tests and debug lint green.
-- Every explorer host shares the search header, with 987 behavior tests and debug lint green.
-- The New palette keeps the back press while it shows, with 989 behavior tests and debug lint green.
-- The alphabetical sorts name themselves instead of the bare `A`, with 990 behavior tests and debug lint green.
-- The sources header carries a clear action, with 992 behavior tests and debug lint green.
-- Long-press select and reorder follow the pressed row, with 994 behavior tests and debug lint green.
-- A selection status keeps the container description on the info strip.
-- Every selected row reorders as one run, while a counted proxy follows the finger, its drag tests and debug lint green.
-- The picker and the explorer share their menu, row tap and scroll paths, with 1001 behavior tests and debug lint green.
-- The larger secondary glyphs and unmoved captions are verified by a rendered 360x640 capture.
-- The e2e suite drops pure layout, wiring and covered pins, with 959 behavior tests and debug lint green.
-- The explorer top bar holds one action set in every mode, with 960 behavior tests and debug lint green.
-- History since 2.3.0 folds follow-ups into their features, with 960 behavior tests and debug lint green.
-- The first launch explains progress notifications for imports, exports and deletions, with 965 behavior tests and debug lint green.
-- The word-list import mends its one-character mistakes itself, with 977 behavior tests and debug lint green.
-- A note needs its description in the creator and in the word-list import, with 985 behavior tests and debug lint green.
-- The arrow leaves the separators and a repair counts one character, with 988 tests and debug lint green.
-- The failure dialog edits its picked file in place and imports it again, with 1005 tests and debug lint green.
-- One export sheet picks the format and its destination, with 1020 tests and debug lint green.
-- Behavior tests hold no looks assertions, marker math and gap math and render folds dropped.
-- Every rule gets one owner test, 1020 tests to 875 with debug lint green.
-
 ### Coverage gaps the audit found, waiting for their own pass
 
 - Word list: `MISSING_CHAPTER_NAME`, `CHAPTER_OPEN` and `EXTRA_CHAR` as kinds, `DESCRIBED_TEXT`, 9 of 16 fix sentences, both unencodable writer shapes, a lone CR inside a description, `MAX_CANDIDATES` and `MAX_REPAIRS`.
@@ -419,3 +352,8 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Explorer: `pickReferences` and `finishReferencePicker`, `commitForkReferences`, four of the eight sort comparators, `onOtherRowClick` note copy, `armedReferences`, `goToRoot` during a search, the supersede guards of `openSibling`.
 - Row: `flipOnto` without a preload, a translation row flipped to its words, `applyPlacement` and `readPlacement`, `applyFresh` of a deleted item, the `searchShowPath` setting.
 - Creator: the swap for the three other kinds, `itemNameMissing` of a blank variant part, the note arm of `focusFirstMissing`, the resume without focus, the dirty side of the outside-tap dismissal.
+
+## Open items
+
+- The fix editor of a failed file waits for a phone check of its marked line and its no-wrap view.
+- The physical keyboard behaviour waits for an emulator or a device to drive it.
