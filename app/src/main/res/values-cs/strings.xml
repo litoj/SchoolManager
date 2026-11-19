@@ -288,11 +288,9 @@
     <string name="reference_fork_hint">Ponechané odkazy převezmou úpravu. Křížek nechá původní.</string>
     <string name="ref_source_pick">Vyberte umístění:</string>
     <string name="ref_source_pick_hint">Řádek je na více místech.</string>
-    <string name="export_format">Formát exportu</string>
-    <string name="export_value_word">Soubor se slovíčky</string>
-    <string name="export_value_json">Soubor JSON</string>
-    <string name="export_note_word">Bez úspěšnosti.</string>
-    <string name="export_note_json">Včetně úspěšnosti.</string>
+    <string name="export_omit_history">Vynechat úspěšnost</string>
+    <string name="export_note_word">Zapíše soubor se slovíčky bez úspěšnosti a odkazů.</string>
+    <string name="export_note_json">Zapíše soubor JSON s úspěšností a odkazy.</string>
     <string name="export_save">Uložit do souboru</string>
     <string name="more_import">Import</string>
     <string name="import_here">Importovat sem</string>

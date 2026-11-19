@@ -11,11 +11,11 @@ import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.AppSettings
 import cz.litoj.schlmgr.data.transfer.ExportFormat
 import cz.litoj.schlmgr.ui.component.HairlineDivider
-import cz.litoj.schlmgr.ui.component.SettingChoiceRow
+import cz.litoj.schlmgr.ui.component.SettingSwitchRow
 
 /**
- * The export door: the format of the file and where it lands.
- * - it opens with the format of the last export, so a repeat is two taps.
+ * The export door: the file and where it lands.
+ * - it opens with the choice of the last export, so a repeat is two taps.
  *
  * @param onSave the save dialog of the chosen format
  * @param onShare the share sheet of the chosen format
@@ -39,9 +39,9 @@ class ExportPopup(
 			PopupTitle(stringResource(R.string.more_export))
 			HairlineDivider()
 			PopupScrollBody {
-				SettingChoiceRow(
-					stringResource(R.string.export_format),
-					stringResource(valueRes(format)),
+				SettingSwitchRow(
+					stringResource(R.string.export_omit_history),
+					checked = format == ExportFormat.WORD,
 					onToggle = ::toggleFormat,
 					caption = stringResource(noteRes(format)),
 				)
@@ -55,7 +55,7 @@ class ExportPopup(
 		}
 	}
 
-	/** The format of the next export, the row of the sheet toggles it. */
+	/** The format of the next export, the switch of the sheet sets it. */
 	internal fun toggleFormat() {
 		format = if (format == ExportFormat.WORD) ExportFormat.JSON else ExportFormat.WORD
 	}
@@ -74,14 +74,11 @@ class ExportPopup(
 	}
 
 	companion object {
-		/** The format the last export used, the word list when nothing was stored. */
+		/** The choice the last export used, the word file when nothing was stored. */
 		private fun storedFormat(): ExportFormat =
 			ExportFormat.entries.firstOrNull {
 				it.name == AppSettings.getString(FORMAT_KEY, ExportFormat.WORD.name)
 			} ?: ExportFormat.WORD
-
-		private fun valueRes(format: ExportFormat) =
-			if (format == ExportFormat.WORD) R.string.export_value_word else R.string.export_value_json
 
 		private fun noteRes(format: ExportFormat) =
 			if (format == ExportFormat.WORD) R.string.export_note_word else R.string.export_note_json

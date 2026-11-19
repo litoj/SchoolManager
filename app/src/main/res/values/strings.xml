@@ -301,11 +301,9 @@
     <string name="reference_fork_hint">Kept references take the edit. The X keeps the original.</string>
     <string name="ref_source_pick">Choose a location:</string>
     <string name="ref_source_pick_hint">This row is in more places.</string>
-    <string name="export_format">Export format</string>
-    <string name="export_value_word">Word file</string>
-    <string name="export_value_json">JSON file</string>
-    <string name="export_note_word">No success rates.</string>
-    <string name="export_note_json">Success rates included.</string>
+    <string name="export_omit_history">Omit testing history</string>
+    <string name="export_note_word">Writes a word file without success rates or references.</string>
+    <string name="export_note_json">Writes a JSON file with success rates and references.</string>
     <string name="export_save">Save to file</string>
     <string name="more_import">Import</string>
     <string name="import_here">Import here</string>

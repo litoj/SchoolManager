@@ -233,7 +233,9 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Several rows in a container use the partial suffix, at the root they use `subjects`.
 - The JSON tree writes bare word and note roots at the top, and the importer accepts them.
 - Export walks pre-order, writes references as paths and keeps path targets outside the export in place.
-- The Export row opens one sheet: a format toggle, then Share or Save to file.
+- The Export row opens one sheet: a testing-history switch, then Share or Save to file.
+- The switch writes the word file when it omits history, the JSON file when it keeps it.
+- Its caption names the file that lands and what it leaves out.
 - The sheet opens on the format of the last export.
 - Share writes a cache copy, which the manifest file provider hands to the system sheet at once.
 - The saved file's snackbar still offers Share.

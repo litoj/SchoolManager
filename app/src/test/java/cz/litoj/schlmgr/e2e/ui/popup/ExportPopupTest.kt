@@ -21,8 +21,8 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * - the sheet asks once: the format and its destination.
- * - both of its doors take the format the row shows.
+ * - the sheet asks once: the history and its destination.
+ * - both of its doors take the format the switch shows.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -51,28 +51,29 @@ class ExportPopupTest {
 	}
 
 	@Test
-	fun `the sheet names its format and offers both destinations`() {
+	fun `the sheet names its history switch and offers both destinations`() {
 		openSheet()
 
-		rule.onNodeWithText("Export format").assertIsDisplayed()
-		rule.onNodeWithText("Word file").assertIsDisplayed()
+		rule.onNodeWithText("Omit testing history").assertIsDisplayed()
 		rule.onNodeWithText("Share").assertIsDisplayed()
 		rule.onNodeWithText("Save to file").assertIsDisplayed()
 	}
 
 	@Test
-	fun `the format row explains the format it shows`() {
+	fun `the switch explains the file it writes`() {
 		openSheet()
 
-		rule.onNodeWithText("No success rates.").assertIsDisplayed()
-		rule.onNodeWithText("Export format").performClick()
-		rule.onNodeWithText("Success rates included.").assertIsDisplayed()
+		rule.onNodeWithText("Writes a word file without success rates or references.")
+			.assertIsDisplayed()
+		rule.onNodeWithText("Omit testing history").performClick()
+		rule.onNodeWithText("Writes a JSON file with success rates and references.")
+			.assertIsDisplayed()
 	}
 
 	@Test
-	fun `a door takes the format the row shows and closes the sheet`() {
+	fun `a door takes the format the switch shows and closes the sheet`() {
 		openSheet()
-		rule.onNodeWithText("Export format").performClick()
+		rule.onNodeWithText("Omit testing history").performClick()
 
 		rule.onNodeWithText("Share").performClick()
 
