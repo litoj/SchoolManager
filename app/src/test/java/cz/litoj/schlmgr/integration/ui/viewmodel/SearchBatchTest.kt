@@ -52,7 +52,7 @@ class SearchBatchTest {
 
 		drain(vm, expected)
 
-		assertEquals(expected, vm.listState.value.items.map { it.payload })
+		assertEquals(expected, vm.listState.value.items)
 		assertEquals(expected.size, vm.listState.value.maxPosition)
 		assertEquals("the running count reached the strip",
 			InfoBar.Search(expected.size, done = false), vm.state.value.info)
@@ -80,7 +80,7 @@ class SearchBatchTest {
 		drain(vm, batch)
 
 		assertEquals(listOf(1, 2, 3, 4),
-			vm.listState.value.items.map { it.payload!!.position })
+			vm.listState.value.items.map { it.position })
 		assertEquals(4, vm.listState.value.maxPosition)
 	}
 }

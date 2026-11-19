@@ -16,7 +16,7 @@ import cz.litoj.schlmgr.data.db.ROOT_ID
  * @property pulse the row a jump landed on, which flashes once
  */
 data class ItemListState(
-	val items: List<ItemUiModel> = emptyList(),
+	val items: List<RowView> = emptyList(),
 	val maxPosition: Int = 1,
 	val pickerMode: Boolean = false,
 	val variant: ExplorerRowVariant = ExplorerRowVariant.Browse,
@@ -46,5 +46,5 @@ data class ItemListState(
  */
 data class ScrollAnchor(val step: Int, val index: Int, val offset: Int)
 
-/** The landed row and the step that tells repeated jumps apart. */
-data class ItemPulse(val itemId: Int, val step: Int)
+/** The slot a jump landed on and the step that tells repeated jumps apart. */
+data class ItemPulse(val index: Int, val step: Int)

@@ -18,7 +18,7 @@ import cz.litoj.schlmgr.ui.component.HairlineDivider
 import cz.litoj.schlmgr.ui.component.Item
 import cz.litoj.schlmgr.ui.component.positionColumnWidth
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
-import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
+import cz.litoj.schlmgr.ui.viewmodel.StaticRow
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 
 /**
@@ -72,7 +72,7 @@ class TestResultsHelpPopup : DialogSpec {
 	@Composable
 	private fun BandRow(position: Int, band: BandExample, positionWidth: Dp) {
 		Item(
-			ItemUiModel(
+			StaticRow(
 				key = "help-band-$position",
 				position = position,
 				name = stringResource(band.label),

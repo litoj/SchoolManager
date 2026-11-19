@@ -3,14 +3,13 @@ package cz.litoj.schlmgr.ui.viewmodel
 /**
  * The selection machine: row marks and the drag-select baseline.
  * - the host owns the rows, and this class decides the marks.
+ * - a mark is display state of the row, so marking publishes no list.
  */
 internal class Selection(private val host: Host) {
 
 	interface Host {
 
 		val models: List<ItemRow>
-
-		fun remap()
 
 		fun pasteArmed(): Boolean
 	}
@@ -22,7 +21,6 @@ internal class Selection(private val host: Host) {
 		if (row.selected == selected) return
 		row.select(selected)
 		dragSelect = null
-		host.remap()
 	}
 
 	fun toggleSelect(item: ItemRow?) {
@@ -47,7 +45,6 @@ internal class Selection(private val host: Host) {
 	fun selectAll(on: Boolean) {
 		host.models.forEach { it.select(on) }
 		dragSelect = null
-		host.remap()
 	}
 
 	fun onSelectAllToggle() {
@@ -59,12 +56,11 @@ internal class Selection(private val host: Host) {
 	fun clearSelection() {
 		host.models.forEach { it.select(false) }
 		dragSelect = null
-		host.remap()
 	}
 
 	/**
 	 * Drops the marks of rows outside the shown list.
-	 * - a restore loads them fresh right after, so no remap runs here.
+	 * - a restore loads them fresh right after, so nothing publishes here.
 	 */
 	fun discard(rows: List<ItemRow>) {
 		rows.forEach { it.select(false) }
@@ -85,15 +81,10 @@ internal class Selection(private val host: Host) {
 		val lo = anchor.coerceIn(0, models.size - 1)
 		val hi = to.coerceIn(0, models.size - 1)
 		val before = snapshot.second
-		var changed = false
 		for (i in models.indices) {
 			val want = i in minOf(lo, hi)..maxOf(lo, hi) || (i < before.size && before[i])
-			if (models[i].selected != want) {
-				models[i].select(want)
-				changed = true
-			}
+			if (models[i].selected != want) models[i].select(want)
 		}
-		if (changed) host.remap()
 	}
 
 	fun reset() {

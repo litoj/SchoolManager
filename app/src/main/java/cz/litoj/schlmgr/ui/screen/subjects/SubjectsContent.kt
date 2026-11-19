@@ -139,16 +139,16 @@ private fun mainCallbacks(
 	onPressHeld: (Boolean) -> Unit,
 ): ItemListCallbacks =
 	ItemListCallbacks(
-		onItemClick = { ui ->
-			if (selectionActive) viewModel.setSelected(ui.payload, !ui.selected)
-			else viewModel.onItemClick(ui.payload)
+		onItemClick = { index ->
+			viewModel.rowAt(index)?.let { row ->
+				if (selectionActive) viewModel.setSelected(row, !row.selected)
+				else viewModel.onItemClick(row)
+			}
 		},
 		onItemDoubleTap = viewModel::onItemDoubleTap,
-		onItemIconClick = { ui -> viewModel.toggleSelect(ui.payload) },
-		onItemLongClick = { ui ->
-			viewModel.onItemLongClick(ui.payload)
-		},
-		onInfo = { ui -> MessagePopup(ui.description) },
+		onItemIconClick = { index -> viewModel.toggleSelect(viewModel.rowAt(index)) },
+		onItemLongClick = { index -> viewModel.onItemLongClick(viewModel.rowAt(index)) },
+		onInfo = { index -> viewModel.rowAt(index)?.let { MessagePopup(it.description) } },
 		onReference = viewModel::onReferenceClick,
 		onInnerInfo = { _, line -> MessagePopup(line.description) },
 		onSelectRange = viewModel::selectRange,

@@ -2,6 +2,7 @@ package cz.litoj.schlmgr.ui.viewmodel
 
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
+import cz.litoj.schlmgr.data.db.ratio
 import cz.litoj.schlmgr.data.ItemRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -57,6 +58,15 @@ internal class InfoStrip(
 		setInfo(host.path.lastOrNull())
 	}
 
+	/** Publishes the counter and description read with the rows, before the same frame lands. */
+	fun publishLoadedInfo(container: DbItem?, fresh: DbItem?) {
+		infoJob?.cancel()
+		val kinds = host.rows().groupingBy { it.item.type }.eachCount()
+		val info = if (container == null) InfoBar.Root(kinds.values.sum())
+			else InfoBar.Children(kinds, fresh?.ratio ?: -1, container.description)
+		host.publishInfoAndCrumbs(info)
+	}
+
 	/**
 	 * Rebuilds the strip from the row kinds and the container stats.
 	 * - it runs on [io], and a newer refresh cancels the stale one.
@@ -78,9 +88,8 @@ internal class InfoStrip(
 
 	private fun infoBarOf(container: DbItem?, kinds: Map<ItemKind, Int>): InfoBar {
 		if (container != null) {
-			val counts = ItemRepository.recomputeCounters(container.id)
-			val ratio = if (counts.passed + counts.failed == 0) -1 else 100 * counts.passed / (counts.passed + counts.failed)
-			return InfoBar.Children(kinds, ratio, container.description)
+			val fresh = ItemRepository.get(container.id)
+			return InfoBar.Children(kinds, fresh?.ratio ?: -1, container.description)
 		}
 		return InfoBar.Root(kinds.values.sum())
 	}

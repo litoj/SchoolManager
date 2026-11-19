@@ -28,7 +28,7 @@ import cz.litoj.schlmgr.ui.component.Item
 import cz.litoj.schlmgr.ui.component.positionColumnWidth
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
-import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
+import cz.litoj.schlmgr.ui.viewmodel.StaticRow
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 
 /**
@@ -46,7 +46,7 @@ import cz.litoj.schlmgr.ui.viewmodel.RowKind
 class TestResultsPopup(items: List<TestItemModel>, private val success: Float) : DialogSpec {
 
 	private class ResultRow(
-		val model: ItemUiModel,
+		val model: StaticRow,
 		val expected: String,
 		val comparisons: List<AnswerComparison>,
 		val hasAnswer: Boolean,
@@ -160,7 +160,7 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 	}
 
 	/** The explorer-row model of one result, a plain unflipped row with the counters of the word. */
-	private fun toModel(word: DbItem, headline: String, position: Int) = ItemUiModel(
+	private fun toModel(word: DbItem, headline: String, position: Int) = StaticRow(
 		key = word,
 		position = position,
 		name = headline,

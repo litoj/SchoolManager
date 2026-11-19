@@ -18,7 +18,7 @@ import cz.litoj.schlmgr.ui.component.ItemList
 import cz.litoj.schlmgr.ui.component.ItemListCallbacks
 import cz.litoj.schlmgr.ui.component.ListEndReveal
 import cz.litoj.schlmgr.ui.viewmodel.ItemListState
-import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
+import cz.litoj.schlmgr.ui.viewmodel.StaticRow
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 import java.time.Duration
 import org.junit.Assert.assertEquals
@@ -49,7 +49,7 @@ class ListEndRevealTest {
 	}
 
 	private fun rows(count: Int) = List(count) { i ->
-		ItemUiModel("k$i", i + 1, "item ${i + 1}", "", RowKind.SUBJECT, 0, false, selected = false)
+		StaticRow("k$i", i + 1, "item ${i + 1}", "", RowKind.SUBJECT, 0, false, selected = false)
 	}
 
 	/** The phone's animation scales, a zero scale stands for the animations being off. */

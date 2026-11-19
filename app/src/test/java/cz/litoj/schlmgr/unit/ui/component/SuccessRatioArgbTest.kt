@@ -6,7 +6,7 @@ import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.component.successRatioArgb
 import cz.litoj.schlmgr.ui.component.successRatioBackground
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
-import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
+import cz.litoj.schlmgr.ui.viewmodel.StaticRow
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -57,10 +57,9 @@ class SuccessRatioArgbTest {
 
 	@Test
 	fun `a reference row renders the success-ratio background like any other`() {
-		val row = ItemUiModel(
+		val row = StaticRow(
 			key = Any(), position = 1, name = "x", description = "", kind = RowKind.CHAPTER,
 			ratio = 25, isReference = true, hasSource = true, selected = false,
-			payload = ItemRow(DbItem(name = "x", description = "", type = ItemKind.CHAPTER), null, 1),
 		)
 		assertEquals(Color(successRatioArgb(25)), successRatioBackground(row))
 	}

@@ -40,15 +40,16 @@ import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
-import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
+import cz.litoj.schlmgr.ui.viewmodel.RowView
+import cz.litoj.schlmgr.ui.viewmodel.StaticRow
 import cz.litoj.schlmgr.ui.viewmodel.TranslationLine
 import kotlin.math.min
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Item(
-	item: ItemUiModel,
+	item: RowView,
 	onClick: () -> Unit,
 	onLongClick: () -> Unit,
 	modifier: Modifier = Modifier,
@@ -140,8 +141,9 @@ fun Item(
 								Text(item.description, fontSize = 15.sp, color = ExplorerColors.description)
 							}
 						}
-						if (ItemRow.searchShowPath && item.trackPath?.isNotEmpty() == true) {
-							ItemTrackPath(item.trackPath)
+						if (ItemRow.searchShowPath) {
+							val track = item.trackPath
+							if (!track.isNullOrEmpty()) ItemTrackPath(track)
 						}
 						if (answer != null) answer()
 					}
@@ -201,7 +203,7 @@ private fun ItemTrackPath(path: List<DbItem>) {
 
 @Composable
 private fun PositionCell(
-	item: ItemUiModel,
+	item: RowView,
 	variant: ExplorerRowVariant,
 	width: Dp,
 	iconVisible: Boolean,
@@ -287,7 +289,7 @@ internal fun successRatioArgb(ratio: Int): Int = when {
 	}
 }
 
-internal fun successRatioBackground(item: ItemUiModel): Color = Color(successRatioArgb(item.ratio))
+internal fun successRatioBackground(item: RowView): Color = Color(successRatioArgb(item.ratio))
 
 private val CellSidePadding = 2.dp
 
@@ -306,7 +308,7 @@ private fun tintBandWidth(positionWidth: Dp, iconVisible: Boolean) =
  * - so the band is only drawn, with the cell content centered.
  * - [tintBandWidth] gives the width of the band.
  */
-private fun Modifier.successRatioBand(item: ItemUiModel, bandWidth: Dp): Modifier = drawBehind {
+private fun Modifier.successRatioBand(item: RowView, bandWidth: Dp): Modifier = drawBehind {
 	val band = bandWidth.toPx()
 	val x = if (layoutDirection == LayoutDirection.Ltr) 0f else size.width - band
 	drawRect(
@@ -374,8 +376,7 @@ private fun ItemPreviews() {
 private object PreviewModels {
 	private var id = 0
 
-	// previews render [ItemUiModel] only and never reach the backing row,
-	// so the payload stays at its default null
+	// previews render a sample row, since no controller stands behind them
 
 	fun subject(pos: Int, ratio: Int, name: String) =
 		row(pos, ratio, name, RowKind.SUBJECT)
@@ -389,7 +390,7 @@ private object PreviewModels {
 	fun reference(pos: Int, name: String) =
 		row(pos, -1, name, RowKind.WORD).copy(isReference = true)
 
-	private fun row(pos: Int, ratio: Int, name: String, kind: RowKind) = ItemUiModel(
+	private fun row(pos: Int, ratio: Int, name: String, kind: RowKind) = StaticRow(
 		key = "preview-${id++}", position = pos, name = name, description = "",
 		kind = kind, ratio = ratio, isReference = false, selected = false,
 	)

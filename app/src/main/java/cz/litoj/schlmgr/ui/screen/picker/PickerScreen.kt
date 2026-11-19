@@ -128,13 +128,15 @@ private fun PickerContent(viewModel: PickerViewModel, modifier: Modifier = Modif
 
 /** The row intents, where a selection tap toggles like on the subjects screen. */
 private fun pickerCallbacks(viewModel: PickerViewModel, selectionActive: Boolean): ItemListCallbacks = ItemListCallbacks(
-	onItemClick = { ui ->
-		if (selectionActive) viewModel.setSelected(ui.payload, !ui.selected)
-		else viewModel.onItemClick(ui.payload)
+	onItemClick = { index ->
+		viewModel.rowAt(index)?.let { row ->
+			if (selectionActive) viewModel.setSelected(row, !row.selected)
+			else viewModel.onItemClick(row)
+		}
 	},
 	onItemDoubleTap = viewModel::onItemDoubleTap,
-	onItemIconClick = { ui -> viewModel.toggleSelect(ui.payload) },
-	onItemLongClick = { ui -> viewModel.onItemLongClick(ui.payload) },
+	onItemIconClick = { index -> viewModel.toggleSelect(viewModel.rowAt(index)) },
+	onItemLongClick = { index -> viewModel.onItemLongClick(viewModel.rowAt(index)) },
 	onSelectRange = viewModel::selectRange,
 	onSelectEnd = viewModel::endRangeSelect,
 	onTopPull = viewModel::openSearchField,

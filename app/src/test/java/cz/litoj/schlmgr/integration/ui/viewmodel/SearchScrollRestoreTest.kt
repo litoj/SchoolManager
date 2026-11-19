@@ -59,7 +59,7 @@ class SearchScrollRestoreTest {
 
 		vm.changedPath(1)
 
-		assertEquals("the filtered rows return", hits, vm.listState.value.items.map { it.payload })
+		assertEquals("the filtered rows return", hits, vm.listState.value.items)
 		assertEquals(2, vm.listState.value.anchor?.index)
 		assertEquals(60, vm.listState.value.anchor?.offset)
 		assertEquals("no browse reload runs", emptyList<DbItem?>(), vm.contents)

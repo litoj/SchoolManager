@@ -1,5 +1,6 @@
 package cz.litoj.schlmgr.e2e.ui.screen
 
+import android.os.Looper
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -8,17 +9,22 @@ import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
+import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
 import cz.litoj.schlmgr.ui.screen.subjects.SubjectsScreen
+import cz.litoj.schlmgr.ui.viewmodel.InfoBar
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
+import java.time.Duration
 import kotlinx.coroutines.Dispatchers
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 
 /**
@@ -70,6 +76,20 @@ class SubjectsSiblingScrollTest {
 		rule.onNode(hasScrollToIndexAction()).performScrollToIndex(30)
 		rule.waitForIdle()
 		return model
+	}
+
+	@Test
+	fun `a sibling load publishes rows and info at the next frame`() {
+		val model = scrolledFirstChapter()
+		rule.mainClock.autoAdvance = false
+
+		model.openSibling(1)
+		rule.mainClock.advanceTimeByFrame()
+		Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16))
+
+		rule.onNodeWithText("u0").assertExists()
+		assertEquals(40, (model.state.value.info as InfoBar.Children).kinds[ItemKind.WORD])
+		rule.onNodeWithText("t30").assertDoesNotExist()
 	}
 
 	@Test

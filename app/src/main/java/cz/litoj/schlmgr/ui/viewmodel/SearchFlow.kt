@@ -39,7 +39,7 @@ internal class SearchFlow(
 
 		fun removeRows(items: Collection<ItemRow>)
 
-		fun remap()
+		fun republish()
 
 		fun discardSelection(rows: List<ItemRow>)
 
@@ -232,7 +232,7 @@ internal class SearchFlow(
 				val (f, content) = fresh[i]
 				if (f == null) dead.add(row) else row.applyFresh(f, content)
 			}
-			if (dead.isNotEmpty()) host.removeRows(dead) else host.remap()
+			if (dead.isNotEmpty()) host.removeRows(dead) else host.republish()
 			// the count follows the drop.
 			host.refreshInfo()
 		}

@@ -5,7 +5,6 @@ import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel.Request
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
-import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -35,8 +34,8 @@ internal class SubjectsNavigation(
 	}
 
 	/** Opens the reference original: a single source opens, several show the picker. */
-	fun onReferenceClick(ui: ItemUiModel) {
-		val row = ui.payload ?: return
+	fun onReferenceClick(index: Int) {
+		val row = host.items().getOrNull(index) ?: return
 		jumpToSources(row.item.id, row.parentId)
 	}
 
@@ -107,14 +106,10 @@ internal class SubjectsNavigation(
 				// an armed move never left
 				if (host.searching) return@postToUi
 				history.replaceCurrent(newPath)
-				siblingStep++
-				host.switchedSibling(siblingStep, delta)
 				host.setContent(history.path.lastOrNull())
 			}
 		}
 	}
-
-	private var siblingStep = 0
 
 	private var siblingJob: Job? = null
 

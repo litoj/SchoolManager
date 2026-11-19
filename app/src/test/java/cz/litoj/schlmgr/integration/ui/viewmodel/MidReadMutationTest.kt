@@ -93,7 +93,7 @@ class MidReadMutationTest {
 		shadowOf(RuntimeEnvironment.getApplication().mainLooper).idle()
 
 		assertEquals(listOf("c1", "c2"),
-			vm.listState.value.items.map { it.payload!!.item.name })
+			vm.listState.value.items.map { it.name })
 	}
 
 	@Test

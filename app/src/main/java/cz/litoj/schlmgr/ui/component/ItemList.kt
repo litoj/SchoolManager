@@ -51,8 +51,9 @@ import cz.litoj.schlmgr.app.SystemAnimation
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 import cz.litoj.schlmgr.ui.viewmodel.ItemListState
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
-import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
+import cz.litoj.schlmgr.ui.viewmodel.RowView
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
+import cz.litoj.schlmgr.ui.viewmodel.StaticRow
 import cz.litoj.schlmgr.ui.viewmodel.selectedRows
 import cz.litoj.schlmgr.ui.viewmodel.TranslationLine
 import androidx.compose.foundation.background
@@ -63,13 +64,12 @@ import kotlin.math.roundToInt
 /**
  * User-intent callbacks for the explorer list.
  * - defaults let previews and partial hosts provide only what they need.
- * - the row callbacks carry the affected [ItemUiModel].
- * - [ItemUiModel.payload] reaches the backing [ItemRow] when required.
- * - the drag and select callbacks carry indexes or nothing.
+ * - every callback names the row by its index in the shown list, like the drag and select ones.
+ * - the host owns the rows, so the list hands over a slot and never a row object.
  */
 class ItemListCallbacks(
 	/** A tap on a row opens a container or flips a word, and the screen dispatches it. */
-	val onItemClick: (ItemUiModel) -> Unit = {},
+	val onItemClick: (Int) -> Unit = {},
 	/**
 	 * The closing tap of a double, the list consumes it and no row sees it.
 	 * - the explorer flips every word and translation row to the side
@@ -77,19 +77,19 @@ class ItemListCallbacks(
 	 */
 	val onItemDoubleTap: () -> Unit = {},
 	/** The type icon of a row tapped, the host selects the row with it. */
-	val onItemIconClick: (ItemUiModel) -> Unit = {},
+	val onItemIconClick: (Int) -> Unit = {},
 	/**
 	 * A long-press on a row starts its selection, and a selected row keeps it.
 	 * - the same press may then drag a range or move every selected row.
 	 * - the directory jump of a search hit lives in the more menu.
 	 */
-	val onItemLongClick: (ItemUiModel) -> Unit = {},
+	val onItemLongClick: (Int) -> Unit = {},
 	/** Info icon tapped. Hosts traditionally open the text popup with the description. */
-	val onInfo: (ItemUiModel) -> Unit = {},
+	val onInfo: (Int) -> Unit = {},
 	/** Reference icon tapped. The screen navigates to the source of the referenced row. */
-	val onReference: (ItemUiModel) -> Unit = {},
+	val onReference: (Int) -> Unit = {},
 	/** Info icon of an inner line of a flipped row, which opens its own description popup. */
-	val onInnerInfo: (ItemUiModel, TranslationLine) -> Unit = { _, _ -> },
+	val onInnerInfo: (Int, TranslationLine) -> Unit = { _, _ -> },
 	/** A drag-select covered the rows from..to, 0-based and inclusive. */
 	val onSelectRange: (Int, Int) -> Unit = { _, _ -> },
 	/** A drag-select ended, so its selection becomes the new baseline. */
@@ -279,7 +279,7 @@ fun ItemList(
 		) { index, item ->
 			Item(
 				item = item,
-				onClick = { callbacks.onItemClick(item) },
+				onClick = { callbacks.onItemClick(index) },
 				// the press acts at once, because a selection starts immediately.
 				// it snapshots the drag mode, which [rememberListDragModifier] then claims.
 				onLongClick = {
@@ -288,12 +288,12 @@ fun ItemList(
 					// the haptic rides on the long-press of combinedClickable
 					pending.arm(index, mode)
 					// the row shows selected at once, and a range press lets the strip follow
-					callbacks.onItemLongClick(item)
+					callbacks.onItemLongClick(index)
 					if (mode == ListDragMode.Reorder) callbacks.onPressHeld(true)
 				},
 				// the icon selects while a selection runs or the picker shows
 				onIconClick = if (state.selectionActive || state.pickerMode) {
-					{ callbacks.onItemIconClick(item) }
+					{ callbacks.onItemIconClick(index) }
 				} else null,
 				descVisible = !state.pickerMode,
 				variant = state.variant,
@@ -309,16 +309,16 @@ fun ItemList(
 					.animateItem(fadeInSpec = null, placementSpec = RowPlacementSpec, fadeOutSpec = null)
 					.animateContentSize(animationSpec = RowSizeSpec),
 				infoAction = if (!state.pickerMode && item.description.isNotEmpty() && !ItemRow.showsDescription(item.description)) {
-					{ InfoActionIcon { callbacks.onInfo(item) } }
+					{ InfoActionIcon { callbacks.onInfo(index) } }
 				} else null,
 				// a reference row jumps to its home from wherever it shows
 				referenceAction = if (!state.pickerMode && item.hasSource) {
-					{ ReferenceActionIcon { callbacks.onReference(item) } }
+					{ ReferenceActionIcon { callbacks.onReference(index) } }
 				} else null,
 				onInnerInfo = if (!state.pickerMode) {
-					{ line -> callbacks.onInnerInfo(item, line) }
+					{ line -> callbacks.onInnerInfo(index, line) }
 				} else null,
-				pulseStep = state.pulse?.takeIf { it.itemId == item.payload?.item?.id }?.step,
+				pulseStep = state.pulse?.takeIf { it.index == index }?.step,
 			)
 		}
 	}
@@ -488,18 +488,17 @@ private fun ActionIcon(res: Int, onClick: () -> Unit, description: Int? = null) 
 
 @Composable
 private fun ItemListPreview() {
-	// previews render [ItemUiModel] only and never reach the backing row,
-	// so the payload stays at its default null
+	// previews render sample rows, since no controller stands behind them
 	val items = listOf(
-		ItemUiModel("s1", 1, "Mathematics", "school subject", RowKind.SUBJECT,
+		StaticRow("s1", 1, "Mathematics", "school subject", RowKind.SUBJECT,
 			64, isReference = false, selected = false),
-		ItemUiModel("s2", 2, "Imported subject", "", RowKind.SUBJECT,
+		StaticRow("s2", 2, "Imported subject", "", RowKind.SUBJECT,
 			50, isReference = false, selected = false),
-		ItemUiModel("c1", 3, "Integrals", "", RowKind.CHAPTER,
+		StaticRow("c1", 3, "Integrals", "", RowKind.CHAPTER,
 			-1, isReference = false, selected = false),
-		ItemUiModel("w1", 4, "das Haus", "podstatné jméno", RowKind.WORD,
+		StaticRow("w1", 4, "das Haus", "podstatné jméno", RowKind.WORD,
 			100, isReference = false, selected = true),
-		ItemUiModel("r1", 5, "see: Algebra", "", RowKind.WORD,
+		StaticRow("r1", 5, "see: Algebra", "", RowKind.WORD,
 			-1, isReference = true, selected = false),
 	)
 	Column(Modifier.fillMaxSize()) {

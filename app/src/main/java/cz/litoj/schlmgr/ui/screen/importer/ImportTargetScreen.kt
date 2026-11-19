@@ -112,7 +112,7 @@ fun ImportTargetScreen(
 /** The mover rows only open containers, and a description still opens its popup. */
 private fun importCallbacks(viewModel: ImportTargetViewModel, busy: Boolean): ItemListCallbacks =
 	ItemListCallbacks(
-		onItemClick = { ui -> if (!busy) viewModel.onItemClick(ui.payload) },
-		onInfo = { ui -> MessagePopup(ui.description) },
+		onItemClick = { index -> if (!busy) viewModel.onItemClick(viewModel.rowAt(index)) },
+		onInfo = { index -> viewModel.rowAt(index)?.let { MessagePopup(it.description) } },
 		onInnerInfo = { _, line -> MessagePopup(line.description) },
 	)

@@ -18,7 +18,6 @@ import cz.litoj.schlmgr.data.db.ROOT_ID
 import cz.litoj.schlmgr.data.db.WordEdit
 import cz.litoj.schlmgr.data.db.ratio
 import cz.litoj.schlmgr.ui.viewmodel.CreatorResult
-import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
 import cz.litoj.schlmgr.ui.screen.test.TestSetupState
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
 import cz.litoj.schlmgr.ui.viewmodel.menuIdOf
@@ -280,10 +279,11 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		override fun setContent(container: DbItem?) = this@MainExplorerViewModel.setContent(container)
 		override fun openChain(path: MutableList<DbItem>, pulseItemId: Int?) =
 			this@MainExplorerViewModel.openChain(path, pulseItemId)
+
 		override fun orderedChildren(parentId: Int) = this@MainExplorerViewModel.orderedChildren(parentId)
 	}
 
-	fun onReferenceClick(ui: ItemUiModel) = navigation.onReferenceClick(ui)
+	fun onReferenceClick(index: Int) = navigation.onReferenceClick(index)
 
 	fun openSibling(delta: Int) = navigation.openSibling(delta)
 

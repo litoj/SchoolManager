@@ -24,7 +24,7 @@ class IncrementalAddTest {
 		vm.addItem(added)
 		val after = vm.listState.value.items
 		assertEquals(4, after.size)
-		assertEquals(added, after.last().payload)
+		assertEquals(added, after.last())
 		// identity, not equality, because a rebuild would map every row again
 		before.forEachIndexed { i, _ -> assertSame(before[i], after[i]) }
 	}
@@ -35,7 +35,7 @@ class IncrementalAddTest {
 		assertEquals(3, vm.listState.value.maxPosition)
 		val inserted = ItemRow(DbItem(name = "wide", description = "", type = ItemKind.WORD), null, 99, false)
 		vm.addItem(0, inserted)
-		assertEquals(inserted, vm.listState.value.items.first().payload)
+		assertEquals(inserted, vm.listState.value.items.first())
 		assertEquals(listOf(1, 2, 3, 4), vm.listState.value.items.map { it.position })
 		assertEquals(4, vm.listState.value.maxPosition)
 	}

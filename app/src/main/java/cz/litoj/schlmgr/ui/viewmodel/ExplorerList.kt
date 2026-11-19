@@ -37,6 +37,8 @@ internal class ExplorerList(
 
 		fun publishChrome(reorderable: Boolean)
 
+		fun publishLoadedInfo(container: DbItem?, fresh: DbItem?)
+
 		fun publishReorderable(reorderable: Boolean)
 
 		fun refreshInfo()
@@ -155,8 +157,8 @@ internal class ExplorerList(
 		}
 		_listState.update {
 			it.copy(
-				items = models.map { row -> row.toUi() },
-				maxPosition = models.maxOfOrNull { it.position } ?: 1,
+				items = models.toList(),
+				maxPosition = models.maxOfOrNull { row -> row.position } ?: 1,
 				variant = if (isSearch) ExplorerRowVariant.Search else ExplorerRowVariant.Browse,
 				pickerMode = pickerMode,
 				contentStep = it.contentStep + 1,
@@ -189,26 +191,29 @@ internal class ExplorerList(
 		loadJob = scope.launch {
 			var gen = listMutationGen
 			while (true) {
-				val rows = withContext(io) { readRows(container) } ?: return@launch
+				val content = withContext(io) {
+					val rows = readRows(container) ?: return@withContext null
+					val fresh = if (container == null) null else ItemRepository.get(container.id)
+					rows to fresh
+				} ?: return@launch
+				val (rows, fresh) = content
 				if (gen == listMutationGen) {
 					viewStates.applyFlips(containerId, rows)
 					val ordered = if (rememberSort) viewStates.applyOrder(containerId, rows) else rows
 					val target = pulseItemId?.let { id -> ordered.indexOfFirst { it.item.id == id } } ?: -1
-					val pulse = if (target >= 0) ItemPulse(ordered[target].item.id, ++pulseStep) else null
+					val pulse = if (target >= 0) ItemPulse(target, ++pulseStep) else null
 					// the remembered place of the view, a first visit starts at the top
 					val anchor = if (target >= 0) ScrollAnchor(++loadStep, target, 0)
 					else ScrollAnchor(++loadStep, saved?.scrollIndex ?: 0, saved?.scrollOffset ?: 0)
 					publish(ordered, isSearch = false, isPicker = false, landedContainer = containerId,
 						anchor = anchor, pulse = pulse)
+					host.publishLoadedInfo(container, fresh)
 					clearPulseAfter(pulse)
 					break
 				}
 				gen = listMutationGen
 			}
-			// the load landed, so the null release lets the info refresh below publish
 			loadJob = null
-			// the info strip reads the loaded list, so it must follow the load
-			host.refreshInfo()
 		}
 	}
 
@@ -252,17 +257,8 @@ internal class ExplorerList(
 				contentStep = it.contentStep + 1,
 				// a row appended at the end is new content, the list shows it
 				scrollToBottom = if (at == models.lastIndex) it.scrollToBottom + 1 else it.scrollToBottom,
-				items = List(models.size) { i ->
-					val row = models[i]
-					val old = it.items.getOrNull(i)
-					// the row kept its slot, so reuse the mapped item.
-					if (i < at && old?.payload === row && old.position == row.position &&
-						old.selected == row.selected
-					) {
-						old
-					} else row.toUi()
-				},
-				maxPosition = models.maxOfOrNull { it.position } ?: 1,
+				items = models.toList(),
+				maxPosition = models.maxOfOrNull { row -> row.position } ?: 1,
 			)
 		}
 	}
@@ -270,10 +266,9 @@ internal class ExplorerList(
 	fun append(batch: List<ItemRow>) {
 		batch.forEachIndexed { index, row -> row.renumber(models.size + 1 + index) }
 		models.addAll(batch)
-		val mapped = batch.map { it.toUi() }
 		_listState.update {
 			it.copy(
-				items = it.items + mapped,
+				items = models.toList(),
 				maxPosition = models.size,
 			)
 		}
@@ -287,7 +282,7 @@ internal class ExplorerList(
 		// the removal leaves number gaps, so renumber like a reorder step does
 		models.forEachIndexed { i, row -> row.renumber(i + 1) }
 		host.resetDragSelect()
-		remap(structuralChange = true)
+		republish(structuralChange = true)
 	}
 
 	fun items(): List<ItemRow> = models
@@ -302,15 +297,12 @@ internal class ExplorerList(
 	 */
 	fun flipWord(item: ItemRow?) {
 		val row = item ?: return
-		if (row.flipOnto(!row.flipped)) {
-			remap()
-			return
-		}
+		// the flip writes the row, which repaints itself
+		if (row.flipOnto(!row.flipped)) return
 		scope.launch {
 			val content = withContext(io) { ItemRow.flipContentOf(row.item) }
 			row.preloadFlip(content)
 			row.applyFlip(content)
-			remap()
 		}
 	}
 
@@ -344,9 +336,7 @@ internal class ExplorerList(
 				row.preloadFlip(contents[i])
 				row.flipOnto(flipped)
 			}
-			remap()
 		}
-		remap()
 	}
 
 	/**
@@ -368,16 +358,20 @@ internal class ExplorerList(
 		models.clear()
 		models.addAll(reordered)
 		models.forEachIndexed { i, row -> row.renumber(i + 1) }
-		remap()
+		republish()
 		return true
 	}
 
-	fun remap(structuralChange: Boolean = false) {
-		val mapped = models.map { it.toUi() }
+	/**
+	 * Hands the list a fresh row list, for a change a row cannot publish itself.
+	 * - a mark, a flip or an edit needs none, since the row owns its display state.
+	 * - [structuralChange] also moves the rows, so a stale drag arm must not survive it.
+	 */
+	fun republish(structuralChange: Boolean = false) {
 		_listState.update {
 			it.copy(
-				items = mapped,
-				maxPosition = models.maxOfOrNull { it.position } ?: 1,
+				items = models.toList(),
+				maxPosition = models.maxOfOrNull { row -> row.position } ?: 1,
 				contentStep = if (structuralChange) it.contentStep + 1 else it.contentStep,
 			)
 		}

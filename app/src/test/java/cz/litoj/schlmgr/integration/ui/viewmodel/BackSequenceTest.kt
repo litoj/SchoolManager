@@ -84,7 +84,7 @@ class BackSequenceTest {
 		vm.changedPath(1)
 
 		assertEquals("the filtered list is showing again", SearchUi.RESULTS, vm.state.value.searchUi)
-		assertEquals(hits, vm.listState.value.items.map { it.payload })
+		assertEquals(hits, vm.listState.value.items)
 		assertTrue("no browse reload ran", vm.contents.isEmpty())
 	}
 

@@ -29,7 +29,6 @@ import cz.litoj.schlmgr.ui.viewmodel.SearchUi
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction
 import cz.litoj.schlmgr.ui.viewmodel.SettingsState
 import cz.litoj.schlmgr.ui.viewmodel.TranslationValue
-import cz.litoj.schlmgr.ui.viewmodel.toUi
 import java.util.concurrent.Executors
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineStart
@@ -148,6 +147,22 @@ class MainExplorerViewModelTest {
 		val row = ItemRow.ofSearchHit(word, listOf(ItemRepository.get(aId)!!, c1.item), 1, emptyList())
 		model.load(listOf(row), isSearch = true)
 		return model to row
+	}
+
+	@Test
+	fun `a loaded info strip reads fresh counters instead of the historical row`() {
+		seed()
+		val model = vmIn("A")
+		val chapter = model.items().single { it.item.name == "c1" }
+		model.onItemClick(chapter)
+		val word = ItemRepository.createWord(chapter.item.id, "word", null, listOf("translation" to null))
+		ItemRepository.bumpWordCounters(word.id, true)
+		assertEquals(0, model.history.path.last().passedTests)
+
+		model.onBackRequested()
+
+		val info = model.state.value.info as InfoBar.Children
+		assertEquals(100, info.ratio)
 	}
 
 	@Test
@@ -1190,7 +1205,7 @@ class MainExplorerViewModelTest {
 		assertEquals(listOf("A", "c1"), model.state.value.breadcrumbs)
 		assertTrue("the hit's container shows it", model.items().any { it.item.id == hit.id })
 		assertEquals("the landing shows the hit", 1, model.listState.value.anchor?.index)
-		assertEquals("the landed hit pulses", hit.id, model.listState.value.pulse?.itemId)
+		assertEquals("the landed hit pulses", 1, model.listState.value.pulse?.index)
 	}
 
 	@Test
@@ -1226,7 +1241,7 @@ class MainExplorerViewModelTest {
 		val model = vmIn("A")
 		model.onItemClick(model.items().single { it.item.name == "c1" })
 
-		model.onReferenceClick(model.items().single { it.item.name == "w1" }.toUi())
+		model.onReferenceClick(model.items().indexOfFirst { it.item.name == "w1" })
 
 		assertEquals("the jump landed on the word's other home",
 			listOf("A", "c2"), model.history.path.map { it.name })

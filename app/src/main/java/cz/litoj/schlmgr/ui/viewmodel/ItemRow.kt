@@ -3,6 +3,7 @@ package cz.litoj.schlmgr.ui.viewmodel
 import androidx.annotation.VisibleForTesting
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import cz.litoj.schlmgr.app.AppSettings
 import cz.litoj.schlmgr.data.ItemRepository
@@ -11,6 +12,7 @@ import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.DbLink
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.db.ROOT_ID
+import cz.litoj.schlmgr.data.db.ratio
 
 class Placement(
 	val parentId: Int, val isReference: Boolean, val hasSource: Boolean, val chain: List<DbItem>?,
@@ -20,24 +22,36 @@ class Placement(
  * One shared row object for composables and the controller.
  * - a reference-linked row keeps its type icon, with a jump to its source.
  * - the mutable fields are main-owned, since an io read snapshots them on main first.
+ * - the displayed ones are Compose state, so the row renders itself and no copy travels to the screen.
  */
-class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean = true) {
+class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean = true) : RowView {
 
-	var item: DbItem = item
+	/** The LazyColumn key, the row's database id. */
+	override val key: Any get() = item.id
+
+	var item: DbItem by mutableStateOf(item)
 		private set
-	var parentId: Int? = parentId
+	var parentId: Int? by mutableStateOf(parentId)
 		private set
 
-	var position: Int = position
+	override var position: Int by mutableIntStateOf(position)
 		private set
-	var flipped = false
+	var flipped: Boolean by mutableStateOf(false)
 		private set
-	var selected = false
+	override var selected: Boolean by mutableStateOf(false)
 		private set
-	var toShow = ""
+	var toShow: String by mutableStateOf("")
 		private set
-	var info = ""
+	var info: String by mutableStateOf("")
 		private set
+
+	override val name: String get() = toShow
+
+	override val description: String get() = info
+
+	override val kind: RowKind get() = rowKindOf(item, isSubject)
+
+	override val ratio: Int get() = item.ratio
 
 	/**
 	 * The per-translation lines of a flipped word, one entry per translation.
@@ -45,12 +59,15 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	 * - it renders under each translation when inline descriptions are on.
 	 * - so a description stays with its translation.
 	 */
-	var translationLines: List<TranslationLine> = emptyList()
+	var translationLines: List<TranslationLine> by mutableStateOf(emptyList())
 		private set
+
+	override val translations: List<TranslationLine> get() = translationLines
 
 	/**
 	 * The container chain of the hit for a search row, with the root first.
 	 * - the direct parent comes last, and null marks a browse row.
+	 * - navigation reads it, so it stays a plain list the row edits in place.
 	 */
 	var path: MutableList<DbItem>? = null
 		private set
@@ -59,10 +76,12 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	 * The displayed trail below the search root, empty for a direct hit.
 	 * - [path] keeps the full chain for navigation.
 	 */
-	var shownPath: List<DbItem>? = null
+	var shownPath: List<DbItem>? by mutableStateOf(null)
 		private set
 
-	var isReference = false
+	override val trackPath: List<DbItem>? get() = shownPath
+
+	override var isReference: Boolean by mutableStateOf(false)
 		private set
 
 	/**
@@ -76,7 +95,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	 * - its source can be gone, since the home was deleted while the link kept the row alive.
 	 * - without another container there is nowhere to jump, so the icon stays hidden.
 	 */
-	var hasSource = false
+	override var hasSource: Boolean by mutableStateOf(false)
 		private set
 
 	val isSubject: Boolean

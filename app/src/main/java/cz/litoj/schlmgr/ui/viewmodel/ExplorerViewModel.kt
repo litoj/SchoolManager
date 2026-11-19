@@ -183,13 +183,16 @@ abstract class ExplorerViewModel<R>(
 
 	fun addItem(index: Int, item: ItemRow) = list.addItem(index, item)
 
-	fun notifyChanged() = list.remap()
+	fun notifyChanged() = list.republish()
 
 	fun selectionCount(): Int = list.selectionCount()
 
 	fun removeItems(items: Collection<ItemRow>) = list.removeItems(items)
 
 	fun items(): List<ItemRow> = list.items()
+
+	/** The row of one shown slot, null when an index aged past the list. */
+	fun rowAt(index: Int): ItemRow? = list.items().getOrNull(index)
 
 	fun onChange() {
 		_state.update {
@@ -315,7 +318,7 @@ abstract class ExplorerViewModel<R>(
 		override val models get() = list.items()
 		override fun appendRows(batch: List<ItemRow>) = list.append(batch)
 		override fun removeRows(items: Collection<ItemRow>) = list.removeItems(items)
-		override fun remap() = list.remap()
+		override fun republish() = list.republish()
 		override fun discardSelection(rows: List<ItemRow>) = selection.discard(rows)
 		override fun load(
 			content: List<ItemRow>,
@@ -469,7 +472,6 @@ abstract class ExplorerViewModel<R>(
 
 	private inner class SelectionHost : Selection.Host {
 		override val models get() = list.items()
-		override fun remap() = list.remap()
 		override fun pasteArmed() = this@ExplorerViewModel.pasteArmed()
 	}
 
@@ -507,6 +509,9 @@ abstract class ExplorerViewModel<R>(
 				)
 			}
 		}
+
+		override fun publishLoadedInfo(container: DbItem?, fresh: DbItem?) =
+			infoStrip.publishLoadedInfo(container, fresh)
 
 		override fun publishReorderable(reorderable: Boolean) =
 			updateState { it.copy(reorderable = reorderable) }

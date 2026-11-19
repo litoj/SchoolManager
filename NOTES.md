@@ -45,6 +45,10 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 ### Explorer
 
 - `ExplorerViewModel` holds the shared core: history, search, selection, list and info strip.
+- `ItemRow` is the displayed row, it owns its display state and publishes its own changes.
+- A mark, a flip or an edit therefore publishes no list, only a row list change does.
+- `RowView` is what a row renders, `ItemRow` for the live list and `StaticRow` for a sample.
+- The list reports a row by its index, like the drag and select gestures already do.
 - Back clears the selection, then goes up one level, then asks for a second exit press.
 - The drawer press runs the same ladder in one go, an armed paste rides along.
 - The picker leaves on one back press.
@@ -53,6 +57,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - An unpreloaded row reads on io once.
 - A sideways FAB move does not climb.
 - A downward move shows the FAB and resets travel.
+- A browse load publishes the rows, breadcrumbs and fresh container info together.
 - Only a load landing shows the FAB again.
 - Insert and delete keep the FAB hidden.
 - The base fan stays fixed, with the two secondary actions at two-thirds diameter plus 7dp; import lifts clear of the bottom and both shift left by one caption height.

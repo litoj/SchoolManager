@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.ui.component.ItemList
 import cz.litoj.schlmgr.ui.component.ItemListCallbacks
 import cz.litoj.schlmgr.ui.viewmodel.ItemListState
-import cz.litoj.schlmgr.ui.viewmodel.ItemUiModel
+import cz.litoj.schlmgr.ui.viewmodel.StaticRow
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 import cz.litoj.schlmgr.ui.viewmodel.TranslationLine
 import java.time.Duration
@@ -49,13 +49,13 @@ class ItemListDragTest {
 	private val steps = mutableListOf<Pair<Int, Int>>()
 
 	/** The rows kept in order by the host, which the drop moves once. */
-	private val items = mutableStateListOf<ItemUiModel>()
+	private val items = mutableStateListOf<StaticRow>()
 
 	/** The state published by the last composition, the way a test reads the republish back. */
 	private var published = ItemListState()
 
-	private fun rows(count: Int, selected: Int? = null): List<ItemUiModel> = List(count) { i ->
-		ItemUiModel(
+	private fun rows(count: Int, selected: Int? = null): List<StaticRow> = List(count) { i ->
+		StaticRow(
 			key = "k$i",
 			position = i + 1,
 			name = "item ${i + 1}",
@@ -68,7 +68,7 @@ class ItemListDragTest {
 	}
 
 	/** A flipped word row of four translation lines, several times taller than a plain row. */
-	private fun tallRow(position: Int): ItemUiModel = ItemUiModel(
+	private fun tallRow(position: Int): StaticRow = StaticRow(
 		key = "tall",
 		position = position,
 		name = "tall",
@@ -189,8 +189,7 @@ class ItemListDragTest {
 					state = state,
 					callbacks = ItemListCallbacks(
 						onItemLongClick = { pressed ->
-							val i = items.indexOfFirst { it.key == pressed.key }
-							if (i >= 0 && !items[i].selected) items[i] = items[i].copy(selected = true)
+							if (!items[pressed].selected) items[pressed] = items[pressed].copy(selected = true)
 						},
 						onReorderMove = ::moveRow,
 						onReorderDrop = onDrop,
@@ -260,8 +259,7 @@ class ItemListDragTest {
 					state = ItemListState(items = items.toList(), maxPosition = items.size),
 					callbacks = ItemListCallbacks(
 						onItemLongClick = { pressed ->
-							val i = items.indexOfFirst { it.key == pressed.key }
-							if (i >= 0) items[i] = items[i].copy(selected = true)
+							items[pressed] = items[pressed].copy(selected = true)
 						},
 						onSelectRange = { from, to -> ranges += from to to },
 						onReorderMove = ::moveRow,
@@ -334,8 +332,8 @@ class ItemListDragTest {
 					callbacks = ItemListCallbacks(
 						onItemLongClick = { pressed ->
 							state.value = state.value.copy(
-								items = state.value.items.map {
-									if (it.key == pressed.key) it.copy(selected = true) else it
+								items = state.value.items.mapIndexed { i, row ->
+									if (i == pressed) (row as StaticRow).copy(selected = true) else row
 								},
 							)
 						},
@@ -396,8 +394,7 @@ class ItemListDragTest {
 					state = ItemListState(items = items.toList(), maxPosition = items.size),
 					callbacks = ItemListCallbacks(
 						onItemLongClick = { pressed ->
-							val i = items.indexOfFirst { it.key == pressed.key }
-							if (i >= 0) items[i] = items[i].copy(selected = true)
+							items[pressed] = items[pressed].copy(selected = true)
 						},
 						onPressHeld = { holds += it },
 					),
