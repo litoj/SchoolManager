@@ -10,15 +10,9 @@ data class ExplorerScreenState(
 	val isInfoExpanded: Boolean = false,
 	val reorderable: Boolean = false,
 	val searchUi: SearchUi = SearchUi.OFF,
-	val sibling: SiblingSwitch? = null,
-	/**
-	 * How many content loads landed, which the slide waits on.
-	 * - the slide does not wait on list identity.
-	 */
+	/** How many content loads landed, which resets the row gestures and floating action button. */
 	val contentStep: Int = 0,
 )
-
-data class SiblingSwitch(val step: Int, val dir: Int)
 
 /**
  * The search mode, which decides what the user sees of the search.

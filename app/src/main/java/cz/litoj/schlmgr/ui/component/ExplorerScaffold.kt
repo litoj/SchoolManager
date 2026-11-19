@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
@@ -51,9 +52,14 @@ fun ExplorerScaffold(
 	actionBar: @Composable () -> Unit = {},
 ) {
 	val currentReport by rememberUpdatedState(onScrollPosition)
-	// the anchor lands before the slide composes the incoming pane, so it shows in place
-	LaunchedEffect(listState.anchor) {
-		listState.anchor?.let { scrollState.scrollToItem(it.index, it.offset) }
+	// the request preserves this state and performs no animated correction
+	SideEffect(scrollState, listState.anchor) {
+		val anchor = listState.anchor ?: return@SideEffect
+		// the same position must not invalidate the layout and spend another frame on it
+		if (scrollState.firstVisibleItemIndex == anchor.index &&
+			scrollState.firstVisibleItemScrollOffset == anchor.offset
+		) return@SideEffect
+		scrollState.requestScrollToItem(anchor.index, anchor.offset)
 	}
 	ListEndReveal(listState, scrollState)
 	// the list keeps the one live scroll, which every history snapshot captures on leaving

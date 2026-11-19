@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -48,7 +47,7 @@ internal fun SubjectsContent(
 	// the pixel threshold keys the gesture, so a density change restarts it
 	val swipeThreshold = with(LocalDensity.current) { 40.dp.toPx() }
 	val searching = listState.variant == ExplorerRowVariant.Search
-	var swipe by remember { mutableFloatStateOf(0f) }
+	val swipe = remember { SiblingSwipe() }
 	val openSibling by rememberUpdatedState(viewModel::openSibling)
 	val scrollState = rememberLazyListState()
 	// a held long-press keeps the strip away, so the list never shrinks under the drag
@@ -76,20 +75,19 @@ internal fun SubjectsContent(
 			callbacks = callbacks,
 			scrollState = scrollState,
 			onScrollPosition = viewModel::onScrollPosition,
-			listArea = { SiblingSlideList(state, listState, callbacks, scrollState, Modifier.weight(1f)) },
 			// the armed status takes the top line, so the bottom strip holds only its actions
 			statusLine = armedStatus ?: selectionStatus,
 			modifier = Modifier.fillMaxSize()
 				.fabDragVisibility(fabVisibility) { scrollState.canScrollForward || scrollState.canScrollBackward }
 				.pointerInput(swipeThreshold) {
 				detectHorizontalDragGestures(
-					onHorizontalDrag = { _, amount -> swipe += amount },
+					onHorizontalDrag = { _, amount -> swipe.travel += amount },
 					onDragEnd = {
-						if (swipe < -swipeThreshold) openSibling(1)
-						else if (swipe > swipeThreshold) openSibling(-1)
-						swipe = 0f
+						if (swipe.travel < -swipeThreshold) openSibling(1)
+						else if (swipe.travel > swipeThreshold) openSibling(-1)
+						swipe.reset()
 					},
-					onDragCancel = { swipe = 0f },
+					onDragCancel = { swipe.reset() },
 				)
 			},
 		) {
@@ -122,6 +120,15 @@ internal fun SubjectsContent(
 		}
 		SubjectsFab(
 			viewModel, listState, fabVisibility, Modifier.matchParentSize())
+	}
+}
+
+/** Gesture-local travel, which must not schedule a render on every pointer movement. */
+private class SiblingSwipe {
+	var travel = 0f
+
+	fun reset() {
+		travel = 0f
 	}
 }
 

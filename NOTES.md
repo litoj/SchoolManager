@@ -49,7 +49,6 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The drawer press runs the same ladder in one go, an armed paste rides along.
 - The picker leaves on one back press.
 - A container load re-anchors at the top, except an import target or a Go-to hit.
-- The frozen pane of a sibling slide starts at the live position, so the swap shows no jump.
 - Rows preload flip content at open, and the cost is accepted.
 - An unpreloaded row reads on io once.
 - A sideways FAB move does not climb.

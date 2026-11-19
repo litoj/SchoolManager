@@ -31,8 +31,6 @@ internal class SubjectsNavigation(
 
 		fun openChain(path: MutableList<DbItem>, pulseItemId: Int?)
 
-		fun switchedSibling(step: Int, delta: Int)
-
 		fun orderedChildren(parentId: Int): List<DbItem>
 	}
 

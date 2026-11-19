@@ -27,7 +27,6 @@ import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import cz.litoj.schlmgr.ui.viewmodel.MenuId
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
-import cz.litoj.schlmgr.ui.viewmodel.SiblingSwitch
 import cz.litoj.schlmgr.ui.viewmodel.TranslationRow
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -281,10 +280,6 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		override fun setContent(container: DbItem?) = this@MainExplorerViewModel.setContent(container)
 		override fun openChain(path: MutableList<DbItem>, pulseItemId: Int?) =
 			this@MainExplorerViewModel.openChain(path, pulseItemId)
-		override fun switchedSibling(step: Int, delta: Int) {
-			updateState { it.copy(sibling = SiblingSwitch(step, delta)) }
-		}
-
 		override fun orderedChildren(parentId: Int) = this@MainExplorerViewModel.orderedChildren(parentId)
 	}
 
