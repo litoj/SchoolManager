@@ -70,7 +70,7 @@
     <string name="filter_apply">Použít</string>
     <string name="data_desc">Popis</string>
     <string name="data_name">Název</string>
-    <string name="data_name_subject">Název sady</string>
+    <string name="data_name_subject">Název předmětu</string>
     <string name="data_name_chapter">Název kapitoly</string>
     <string name="data_name_note">Název poznámky</string>
     <string name="data_name_word">Název slovíčka</string>
@@ -93,7 +93,7 @@
     <string name="fail_paste_inside">"Položku nelze vložit do ní samotné ani do jejího obsahu."</string>
     <string name="fail_paste_present">"Vkládané položky už jsou v cíli."</string>
     <string name="fail_paste_target">"Není otevřená žádná složka, kam vložit."</string>
-    <string name="fail_paste_other_subject">"Položky nelze přesouvat do jiné sady."</string>
+    <string name="fail_paste_other_subject">"Položky nelze přesouvat do jiného předmětu."</string>
     <string name="fail_kind_file">soubor:</string>
     <string name="fail_type">", typ: "</string>
     <string name="import_error_title">Import seznamu slovíček se nezdařil</string>
@@ -162,10 +162,10 @@
         <item quantity="other">%1$d kapitol</item>
     </plurals>
     <plurals name="stat_subjects">
-        <item quantity="one">%1$d sada</item>
-        <item quantity="few">%1$d sady</item>
-        <item quantity="many">%1$d sad</item>
-        <item quantity="other">%1$d sad</item>
+        <item quantity="one">%1$d předmět</item>
+        <item quantity="few">%1$d předměty</item>
+        <item quantity="many">%1$d předmětů</item>
+        <item quantity="other">%1$d předmětů</item>
     </plurals>
     <plurals name="stat_notes">
         <item quantity="one">%1$d poznámka</item>
@@ -199,7 +199,7 @@
     <string name="help_create_how">Tlačítko Nový rozloží typy otevřené obrazovky. Přetažení vybere typ hned, klepnutí nechá paletu stát s Importem uprostřed.
         \nTlačítko se při posouvání seznamu dolů schová.
         \nTvůrce má název, popis a u slovíčka také překlady.</string>
-    <string name="help_create_mch">Sady</string>
+    <string name="help_create_mch">Předměty</string>
     <string name="help_create_note">Poznámky</string>
     <string name="help_create_note_how">Poznámka nese název a popis a slouží pro text, který není slovíčkem, například pravidlo gramatiky.
         \nKlepnutí na poznámku zkopíruje její text.</string>
@@ -222,7 +222,7 @@
     <string name="help_extra_words_export">Export položek</string>
     <string name="help_extra_words_export_how">Menu zobrazí Export jen při vybraných řádcích.\nExport zahrne každý vybraný řádek kromě překladů.\nSoubor se slovíčky: kompaktní, bez úspěšnosti a odkazů.\nSoubor JSON: úplný, včetně úspěšnosti, poznámek a odkazů.</string>
     <string name="help_extra_words_import">Import položek</string>
-    <string name="help_extra_words_import_how">Uvnitř sady se slovíčka importují do ní, na obrazovce sad se vytvoří nová sada.\nChyba uvádí soubor a řádek. Opravte řádek a zvolte soubor znovu.</string>
+    <string name="help_extra_words_import_how">Uvnitř předmětu se slovíčka importují do něj, na obrazovce předmětů se vytvoří nový předmět.\nChyba uvádí soubor a řádek. Opravte řádek a zvolte soubor znovu.</string>
     <string name="help_import_format">Formát souboru</string>
     <string name="help_import_format_body">Kapitola: název { a } na samostatných řádcích.
         \nSlovíčko: slovíčko = překlad.
@@ -237,7 +237,7 @@
     <string name="help_no_match">Odpovídající nápověda neexistuje.</string>
     <string name="help_search">Vyhledávání</string>
     <string name="help_search_hint">Hledat v nápovědě</string>
-    <string name="help_search_how">Hledání najde názvy a překlady v otevřené sadě.
+    <string name="help_search_how">Hledání najde názvy a překlady v otevřeném předmětu.
         \nIkona filtru přidá filtr, štítky pod hlavičkou pojmenují filtry, se kterými hledání běží.
         \nKlepnutí na štítek filtr znovu otevře, křížek ho odebere.
         \nHledání vyhoví textu pole i všem filtrům najednou.
@@ -277,10 +277,10 @@
         \nHotovo nebo vypršení času otevře výsledky, kde Opakovat spustí nový test se stejnými zdroji.</string>
     <string name="help_test_select">Výběr položek do testu</string>
     <string name="help_test_select_how">Přidat zdroj otevře seznam položek. Dlouhým stiskem řádku nebo klepnutím na ikonu typu vyberte zdroj, pak stiskněte Vybrat.
-        \nVšechny zdroje musí patřit jedné sadě.</string>
+        \nVšechny zdroje musí patřit jednomu předmětu.</string>
     <string name="menu_label">Menu</string>
     <string name="menu_about">Nápověda a o aplikaci</string>
-    <string name="menu_objects">Sady</string>
+    <string name="menu_objects">Předměty</string>
     <string name="menu_settings">Nastavení</string>
     <string name="more">Více</string>
     <string name="more_export">Export</string>
@@ -310,11 +310,11 @@
     <string name="json_export_ext">.hjson</string>
     <string name="json_import_types">application/hjson</string>
     <string name="new_chapter">Nová kapitola</string>
-    <string name="new_mch">Nová sada</string>
+    <string name="new_mch">Nový předmět</string>
     <string name="new_word">Nové slovíčko</string>
     <string name="new_note">Nová poznámka</string>
     <string name="fab_new">Nový</string>
-    <string name="palette_subject">Sada</string>
+    <string name="palette_subject">Předmět</string>
     <string name="palette_chapter">Kapitola</string>
     <string name="palette_word">Slovíčko</string>
     <string name="palette_note">Poznámka</string>
@@ -379,7 +379,7 @@
     <string name="setts_place_search">lišta hledání</string>
     <string name="setts_place_more">menu více</string>
     <string name="setts_act_test">Spustí test z vybraných řádků</string>
-    <string name="setts_act_cut">Přenese řádky do jiné složky ve stejné sadě</string>
+    <string name="setts_act_cut">Přenese řádky do jiné složky ve stejném předmětu</string>
     <string name="setts_act_edit">Otevře jediný vybraný řádek k úpravám</string>
     <string name="setts_act_delete">Smaže vybrané řádky</string>
     <string name="setts_act_reference">Přidá řádky jako odkazy do jiné složky</string>
@@ -411,8 +411,8 @@
         <item quantity="many">Chybí %1$d odpovědí. Přesto dokončit?</item>
         <item quantity="other">Chybí %1$d odpovědí. Přesto dokončit?</item>
     </plurals>
-    <string name="test_one_subject">Zdroje testu musí pocházet z jedné sady.</string>
-    <string name="test_one_subject_of">Zdroje testu musí pocházet z jedné sady (%s).</string>
+    <string name="test_one_subject">Zdroje testu musí pocházet z jednoho předmětu.</string>
+    <string name="test_one_subject_of">Zdroje testu musí pocházet z jednoho předmětu (%s).</string>
     <string name="test_size">Slovíčka k otestování</string>
     <plurals name="test_available">
         <item quantity="one">z %d dostupného</item>
@@ -428,7 +428,7 @@
     </plurals>
     <string name="test_time">Sekundy na znak</string>
     <string name="test_total_time">Celkový čas: %1$d s</string>
-    <string name="test_sources_header">Zdroje · jedna sada</string>
+    <string name="test_sources_header">Zdroje · jeden předmět</string>
     <string name="test_sources_hint">Vybraná kapitola zastupuje svá slovíčka.</string>
     <string name="test_clear_sources">Vymazat seznam</string>
     <string name="test_start_blocked">Přidejte aspoň jeden zdroj</string>
@@ -459,9 +459,9 @@
     <string name="test_source_removed">Odebráno: %s</string>
     <string name="time_left">%1$ds</string>
     <string name="time_up">Čas vypršel</string>
-    <string name="unavailable_add_source_full">Celá sada už je zdrojem.</string>
+    <string name="unavailable_add_source_full">Celý předmět už je zdrojem.</string>
     <string name="unavailable_export_empty">Překlady nelze exportovat.</string>
     <string name="unavailable_import_busy">Import právě probíhá.</string>
-    <string name="unavailable_search_root">Hledání vyžaduje otevřenou sadu.</string>
+    <string name="unavailable_search_root">Hledání vyžaduje otevřený předmět.</string>
     <string name="unavailable_single_row">Vyberte právě jeden řádek.</string>
 </resources>

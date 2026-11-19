@@ -45,6 +45,8 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 ### Explorer
 
 - `ExplorerViewModel` holds the shared core: history, search, selection, list and info strip.
+- The root page is Subjects, plural, and its info line counts the same word.
+- A created row is a Subject too, singular, in the palette and the editor.
 - `ItemRow` is the displayed row, it owns its display state and publishes its own changes.
 - A mark, a flip or an edit therefore publishes no list, only a row list change does.
 - `RowView` is what a row renders, `ItemRow` for the live list and `StaticRow` for a sample.
