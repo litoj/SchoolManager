@@ -248,11 +248,13 @@ internal fun positionColumnWidth(
 	val measurer = rememberTextMeasurer()
 	val density = LocalDensity.current
 	val size = CellMetrics.of(variant).textSize
-	// the density and the font scale change the pixels, so they reopen the measure.
-	return remember(maxPosition, size, density, density.fontScale) {
+	val style = TextStyle(fontSize = size)
+	// navigation keeps the digit widths until the text metrics change.
+	val widths = remember(measurer, size, density, density.fontScale) {
+		IntArray(10) { measurer.measure(it.toString(), style).size.width }
+	}
+	return remember(maxPosition, widths) {
 		with(density) {
-			val style = TextStyle(fontSize = size)
-			val widths = IntArray(10) { measurer.measure(it.toString(), style).size.width }
 			measurer.measure(positionText(widestPosition(maxPosition) { widths[it] }), style)
 				.size.width.toDp()
 		}
