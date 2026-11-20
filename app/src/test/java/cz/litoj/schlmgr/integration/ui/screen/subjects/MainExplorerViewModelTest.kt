@@ -60,12 +60,15 @@ class MainExplorerViewModelTest {
 	private lateinit var db: ItemDatabase
 	private var now = 1_000_000L
 
-	/** The search pins run from the word side, the default flip carries its own pins. */
+	/** The search pins run from the word side. */
 	private val searchDefFlipWas = ItemRow.searchDefFlip
+
+	/** The join cases read a flipped browse row, so the browse side is pinned too. */
+	private val defFlipWas = ItemRow.defFlip
 
 	@Before
 	fun setUp() {
-		setRowOptions(searchDefFlip = false)
+		setRowOptions(searchDefFlip = false, defFlip = true)
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
 		freshDb()
 	}
@@ -75,7 +78,7 @@ class MainExplorerViewModelTest {
 		Dialogs.clear()
 		db.close()
 		ItemRepository.resetForTest()
-		setRowOptions(searchDefFlip = searchDefFlipWas)
+		setRowOptions(searchDefFlip = searchDefFlipWas, defFlip = defFlipWas)
 	}
 
 	/** An empty root, so every case of a parameterized run starts from the same rows. */
@@ -1283,6 +1286,60 @@ class MainExplorerViewModelTest {
 				model.listState.value.variant == ExplorerRowVariant.Search)
 			if (searching) assertEquals("the query stays for the next run", "[", model.query.value)
 		}
+	}
+
+	@Test
+	fun `a rename join onto a shown sibling keeps the survivor row`() {
+		for (searching in listOf(false, true)) {
+			freshDb()
+			val list = if (searching) "search" else "browse"
+			val (aId, _) = seed()
+			val c1 = ItemRepository.children(aId).single()
+			val survivor = ItemRepository.createWord(c1.id, "beta", null, listOf("t" to null))
+			val edited = ItemRepository.createWord(c1.id, "meta", null, listOf("e" to null))
+			val after = ItemRepository.createWord(c1.id, "other", null, listOf("o" to null))
+			val model = vmIn("A")
+			if (searching) {
+				model.openSearchField()
+				model.onQuerySubmit("eta")
+			} else {
+				model.onItemClick(model.items().single { it.item.id == c1.id })
+			}
+			val row = model.items().single { it.item.id == edited.id }
+			val trl = ItemRepository.translations(edited.id).single()
+
+			assertTrue(model.commitWordEdit(row, CreatorResult(
+				"beta", "", listOf(TranslationValue("e", "", trl)), emptyList())))
+
+			// the query matches the two joined words only
+			val expected = if (searching) listOf(survivor.id) else listOf(survivor.id, after.id)
+			assertEquals("the $list list shows the joined word once",
+				expected, model.items().map { it.item.id })
+			assertEquals("the $list list renumbers behind the row that left",
+				expected.indices.map { it + 1 }, model.items().map { it.position })
+			assertEquals("the survivor keeps its name",
+				listOf("beta") + if (searching) emptyList() else listOf("other"),
+				model.items().map { it.item.name })
+		}
+	}
+
+	@Test
+	fun `a rename join onto a shown sibling re-renders the survivor row`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		val survivor = ItemRepository.createWord(c1.id, "beta", null, listOf("t" to null))
+		val edited = ItemRepository.createWord(c1.id, "meta", null, listOf("e" to null))
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.id == c1.id })
+		val row = model.items().single { it.item.id == edited.id }
+		val trl = ItemRepository.translations(edited.id).single()
+
+		assertTrue(model.commitWordEdit(row, CreatorResult(
+			"beta", "", listOf(TranslationValue("e", "", trl)), emptyList())))
+
+		assertEquals("the survivor row shows the merged word",
+			listOf("e", "t"), model.items().single { it.item.id == survivor.id }
+				.translationLines.map { it.name }.sorted())
 	}
 
 	@Test

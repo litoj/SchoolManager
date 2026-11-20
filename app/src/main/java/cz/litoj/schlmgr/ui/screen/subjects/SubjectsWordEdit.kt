@@ -36,6 +36,9 @@ internal class SubjectsWordEdit(
 
 		fun addItem(index: Int, item: ItemRow)
 
+		/** Drops rows that the edit removed from the container. */
+		fun removeItems(items: Collection<ItemRow>)
+
 		/** Descends into the container, like tapping it: extends the path and loads its content. */
 		fun openContainer(container: DbItem)
 	}
@@ -84,8 +87,9 @@ internal class SubjectsWordEdit(
 
 	/**
 	 * Every edit updates its shown row in place, without rebuilding its list.
-	 * - a rename join keeps the surviving word at the edited row.
-	 * - list membership and view position stay as they were before the edit.
+	 * - a rename join onto a word the list does not show keeps the survivor at the edited row.
+	 * - a join onto a shown row keeps that row, since the survivor keeps its own slot there.
+	 * - the edited row leaves and the rows behind it renumber, like any other removal.
 	 */
 	private suspend fun commitWordEditNow(row: ItemRow, edit: WordEdit, rowId: Int) {
 		val word = ItemRepository.editWord(edit)
@@ -95,8 +99,18 @@ internal class SubjectsWordEdit(
 		val contents = (touched.flatMap { ItemRepository.parentIds(it) }.toSet() - rowId)
 			.associateWith { id -> ItemRepository.get(id)?.let { ItemRow.flipContentOf(it) } }
 		host.postToUi {
-			row.applyFresh(word, flip)
-			for (shared in host.items()) contents[shared.item.id]?.let { shared.applyFresh(shared.item, it) }
+			val survivor = host.items().firstOrNull { it !== row && it.item.id == word.id }
+			if (survivor == null) row.applyFresh(word, flip)
+			else {
+				survivor.applyFresh(word, flip)
+				host.removeItems(listOf(row))
+			}
+			// the edited word's own row shows [word], so it needs no second read
+			val shown = survivor ?: row
+			for (shared in host.items()) {
+				if (shared === shown) continue
+				contents[shared.item.id]?.let { shared.applyFresh(shared.item, it) }
+			}
 			host.notifyChanged()
 			host.clearSelection()
 			host.refreshInfo()

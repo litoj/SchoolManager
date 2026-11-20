@@ -138,6 +138,7 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		override fun notifyChanged() = this@MainExplorerViewModel.notifyChanged()
 		override fun addItem(item: ItemRow) = this@MainExplorerViewModel.addItem(item)
 		override fun addItem(index: Int, item: ItemRow) = this@MainExplorerViewModel.addItem(index, item)
+		override fun removeItems(items: Collection<ItemRow>) = this@MainExplorerViewModel.removeItems(items)
 		override fun openContainer(container: DbItem) = this@MainExplorerViewModel.openContainer(container)
 	}
 

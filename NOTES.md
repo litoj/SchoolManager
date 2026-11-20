@@ -149,7 +149,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A word hit starts on its translations through the search translate setting.
 - Go-to is search-only, opens the hit's parent and pulses the landed row once.
 - Live results keep their state across settings changes, which take effect on a new run.
-- Edits never rematch an active query, and a rename join rebinds its hit to the surviving word.
+- Edits never rematch an active query, and the join rule of Editing updates its hits too.
 - History restores a search's rows and scroll, while a new query starts at the top.
 - Search rows update through the shared list path, with history state captured only on leaving.
 - A search hit shows only the container trail below the search start.
@@ -160,9 +160,11 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Names and descriptions are trimmed at the write boundary.
 - Every change saves immediately, with no save button.
 - Keep `passed_tests` and `failed_tests`.
-- Every edit updates its shown row in place, including a rename join to a surviving word.
+- An edit updates its row in place and reloads no list.
+- A rename join onto a word the list does not show keeps the survivor at the edited row.
+- A join onto a shown word keeps that word's own row, since the survivor keeps its slot.
+- The merged row leaves like any deletion, so the rows behind it renumber.
 - Rows sharing a touched translation re-render.
-- An edit never reloads the list or changes its membership.
 
 ### Flip
 
