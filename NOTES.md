@@ -290,6 +290,8 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Every caption of that help is followed by the example it describes.
 - A correct variant answer still labels the full variant word.
 - Result positions follow item order, with lifetime passed/total only at the trailing edge.
+- A result row is a normal word row, so it carries the word icon and the band behind it.
+- The report row form is shared, so a help sample renders exactly like a result.
 
 ### Settings
 

@@ -56,7 +56,6 @@ fun Item(
 	/** The type icon tapped, a running selection or the picker selects the row with it. */
 	onIconClick: (() -> Unit)? = null,
 	descVisible: Boolean,
-	iconVisible: Boolean = true,
 	variant: ExplorerRowVariant = ExplorerRowVariant.Browse,
 	positionWidth: Dp,
 	infoAction: (@Composable () -> Unit)? = null,
@@ -83,7 +82,7 @@ fun Item(
 				// the selection rides the background of the row, which paints under the
 				// success-ratio tint of the position cell, so the whole row highlights
 				.background(background)
-				.successRatioBand(item, tintBandWidth(positionWidth, iconVisible))
+				.successRatioBand(item, tintBandWidth(positionWidth))
 				// no ripple: the press feedback is the selection tint and the drag itself
 				.combinedClickable(
 					interactionSource = remember { MutableInteractionSource() },
@@ -96,7 +95,6 @@ fun Item(
 				item,
 				variant,
 				positionWidth,
-				iconVisible,
 				Modifier.align(Alignment.CenterVertically),
 				onIconClick,
 			)
@@ -160,7 +158,7 @@ fun Item(
 			Modifier
 				.align(if (LocalLayoutDirection.current == LayoutDirection.Ltr)
 					Alignment.BottomStart else Alignment.BottomEnd)
-				.width(tintBandWidth(positionWidth, iconVisible)),
+				.width(tintBandWidth(positionWidth)),
 		) { HairlineDivider() }
 	}
 }
@@ -206,7 +204,6 @@ private fun PositionCell(
 	item: RowView,
 	variant: ExplorerRowVariant,
 	width: Dp,
-	iconVisible: Boolean,
 	modifier: Modifier = Modifier,
 	onIconClick: (() -> Unit)? = null,
 ) {
@@ -224,7 +221,7 @@ private fun PositionCell(
 				.padding(horizontal = CellSidePadding)
 				.width(width),
 		)
-		if (iconVisible) Image(
+		Image(
 			painterResource(item.kind.iconRes),
 			// the name tells the accessibility service which row the icon selects
 			contentDescription = if (onIconClick == null) null else item.name,
@@ -298,8 +295,7 @@ private val ItemNameStartPadding = 3.dp
 private val ItemNameTopPadding = 3.dp
 private val ItemNameVerticalPadding = 2.dp
 
-private fun tintBandWidth(positionWidth: Dp, iconVisible: Boolean) =
-	positionWidth + CellSidePadding * 2 + if (iconVisible) IconSize else 0.dp
+private fun tintBandWidth(positionWidth: Dp) = positionWidth + CellSidePadding * 2 + IconSize
 
 /**
  * The success-ratio band behind the position cell, painted in the draw phase.

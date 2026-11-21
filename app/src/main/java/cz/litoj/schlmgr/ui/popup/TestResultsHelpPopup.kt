@@ -3,19 +3,14 @@ package cz.litoj.schlmgr.ui.popup
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.testing.AnswerComparison
 import cz.litoj.schlmgr.ui.component.HairlineDivider
-import cz.litoj.schlmgr.ui.component.Item
 import cz.litoj.schlmgr.ui.component.positionColumnWidth
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 import cz.litoj.schlmgr.ui.viewmodel.StaticRow
@@ -71,7 +66,7 @@ class TestResultsHelpPopup : DialogSpec {
 	/** A report row, so the band and the count show the pair the caption names. */
 	@Composable
 	private fun BandRow(position: Int, band: BandExample, positionWidth: Dp) {
-		Item(
+		ReportRow(
 			StaticRow(
 				key = "help-band-$position",
 				position = position,
@@ -82,17 +77,9 @@ class TestResultsHelpPopup : DialogSpec {
 				isReference = false,
 				selected = false,
 			),
-			onClick = {},
-			onLongClick = {},
-			descVisible = false,
-			iconVisible = false,
-			positionWidth = positionWidth,
-			trailing = {
-				Text(
-					"${band.passed}/${band.tested}",
-					style = TextStyle(fontSize = 15.sp, color = colorResource(R.color.colorPrimaryFg)),
-				)
-			},
+			band.passed,
+			band.tested,
+			positionWidth,
 		)
 	}
 

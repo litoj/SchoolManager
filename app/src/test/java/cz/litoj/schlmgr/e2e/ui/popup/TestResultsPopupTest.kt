@@ -1,5 +1,6 @@
 package cz.litoj.schlmgr.e2e.ui.popup
 
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.room.Room
@@ -12,10 +13,12 @@ import cz.litoj.schlmgr.support.setRowOptions
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestEntry
 import cz.litoj.schlmgr.testing.TestItemModel
+import cz.litoj.schlmgr.ui.component.IconSize
 import cz.litoj.schlmgr.ui.popup.Dialogs
 import cz.litoj.schlmgr.ui.popup.TestResultsPopup
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import org.junit.After
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -29,6 +32,7 @@ import org.robolectric.annotation.Config
  * - the direction of the run holds after the setting changes.
  * - translations past the description limit stay listed.
  * - a word without translations shows no empty label.
+ * - the row keeps the word icon of a normal explorer row.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -162,5 +166,19 @@ class TestResultsPopupTest {
 		show(popupOf(DbItem(name = "chleba", description = "", type = ItemKind.WORD)))
 
 		rule.onNodeWithText("Correct", substring = true).assertDoesNotExist()
+	}
+
+	@Test
+	fun `the report row paints the word icon of a normal row`() {
+		show(popupOf(seededWord()))
+
+		// the clickable row merges its cells, so the cells only show in the unmerged tree
+		val index = rule.onNodeWithText("1.", useUnmergedTree = true).getBoundsInRoot()
+		val name = rule.onNodeWithText("bread\nroll", useUnmergedTree = true).getBoundsInRoot()
+
+		assertTrue(
+			"the name starts behind a block as wide as the kind icon",
+			name.left - index.right >= IconSize,
+		)
 	}
 }

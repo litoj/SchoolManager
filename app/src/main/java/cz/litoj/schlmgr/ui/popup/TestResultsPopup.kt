@@ -3,16 +3,11 @@ package cz.litoj.schlmgr.ui.popup
 import android.content.Intent
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.WordNames
@@ -24,7 +19,6 @@ import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestItemModel
 import cz.litoj.schlmgr.ui.activity.TestActivity
 import cz.litoj.schlmgr.ui.component.HairlineDivider
-import cz.litoj.schlmgr.ui.component.Item
 import cz.litoj.schlmgr.ui.component.positionColumnWidth
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerRowVariant
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
@@ -39,7 +33,7 @@ import cz.litoj.schlmgr.ui.viewmodel.RowKind
  * - green marks matches, grey marks missing letters and red marks extra letters.
  * - the title help icon opens the colored explanation.
  * - passed/total ends the row.
- * - the kind icon drops out, a test only ever holds words.
+ * - the word icon stays, a test only ever holds words.
  *
  * @param success success percentage from 0 to 100, not a fraction
  */
@@ -104,33 +98,19 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 
 	@Composable
 	private fun WordResultRow(row: ResultRow, positionWidth: Dp) {
-		Item(
-			row.model,
-			onClick = {},
-			onLongClick = {},
-			descVisible = false,
-			iconVisible = false,
-			positionWidth = positionWidth,
+		ReportRow(row.model, row.passed, row.tested, positionWidth) {
 			// the labels need string resources, and the model is built outside composition.
 			// this slot also ignores the description limit, so no translation collapses.
-			answer = {
-				AnswerDiffText(
-					stringResource(R.string.test_your_answer, ""),
-					row.comparisons,
-					row.hasAnswer,
-				)
-				// a right guess already names the answer, unless variants need the full word
-				if (row.expected.isNotEmpty() && (!row.correct || row.hasVariants)) {
-					ExpectedAnswerText(row.expected)
-				}
-			},
-			trailing = {
-				Text(
-					"${row.passed}/${row.tested}",
-					style = TextStyle(fontSize = 15.sp, color = colorResource(R.color.colorPrimaryFg)),
-				)
-			},
-		)
+			AnswerDiffText(
+				stringResource(R.string.test_your_answer, ""),
+				row.comparisons,
+				row.hasAnswer,
+			)
+			// a right guess already names the answer, unless variants need the full word
+			if (row.expected.isNotEmpty() && (!row.correct || row.hasVariants)) {
+				ExpectedAnswerText(row.expected)
+			}
+		}
 	}
 
 	private fun toRow(item: TestItemModel, position: Int): ResultRow {
