@@ -145,7 +145,7 @@ class FlipConflictPopup(conflicts: List<FlipConflict>) : DialogSpec {
 					Modifier.weight(1f)
 				) { dismiss() }
 				VerticalButtonSeparator()
-				PopupButton(stringResource(R.string.flip_conflicts_ok), Modifier.weight(1f)) { notifyOk() }
+				PopupButton(stringResource(R.string.ok), Modifier.weight(1f)) { notifyOk() }
 			}
 		}
 	}

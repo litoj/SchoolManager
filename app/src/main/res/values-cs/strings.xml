@@ -2,7 +2,7 @@
 <resources>
     <string name="action_full_text">Celý Text</string>
     <string name="action_reference">Přidat odkaz</string>
-    <string name="action_flip">Překlopit</string>
+    <string name="action_flip">Překlopit překlady</string>
     <string name="action_sw_success">" zapsáno úspěšně"</string>
     <string name="action_share">Sdílet</string>
     <string name="action_undo">Vrátit zpět</string>
@@ -298,7 +298,6 @@
     <string name="more_go_to">Přejít na umístění</string>
     <string name="flip_conflicts_title">Kolidující položky</string>
     <string name="flip_conflicts_hint">Neupravené řádky si nechají vnější vazby. Úprava vytvoří pro překlopení kopii.</string>
-    <string name="flip_conflicts_ok">Překlopit</string>
     <string name="flip_conflicts_blank">Každá kolidující položka potřebuje název</string>
     <string name="flip_conflicts_help">Každý řádek je slovíčko nebo překlad, který přesahuje výběr.
         \nSlovíčko se nachází i ve složkách mimo výběr, překlopení by je tedy změnilo. Překlad sdílí slovíčka mimo výběr, překlopení by z něj udělalo kopii a sdílení by skončilo.
@@ -383,7 +382,7 @@
     <string name="setts_act_edit">Otevře jediný vybraný řádek k úpravám</string>
     <string name="setts_act_delete">Smaže vybrané řádky</string>
     <string name="setts_act_reference">Přidá řádky jako odkazy do jiné složky</string>
-    <string name="setts_act_flip">Prohodí uložené slovíčko a jeho překlady</string>
+    <string name="setts_act_flip">Překlopí uložené slovíčko a jeho překlady</string>
     <string name="setts_act_export">Exportuje vybrané řádky do souboru</string>
     <string name="setts_act_goto">Otevře složku jediného výsledku</string>
     <string name="sort">Seřadit podle</string>

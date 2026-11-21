@@ -169,6 +169,8 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 ### Flip
 
 - The Flip action swaps the stored word and its translations.
+- A flip moves no counters, every row keeps its own through the role change.
+- A flipped chapter often reads lower, since a translation holds less history than its word.
 - A word tap flips one row.
 - A second tap within the window flips the shown list to that state.
 - The first tap picks the word under the finger and is always a word.
@@ -319,6 +321,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The creator name hint names the created or edited type.
 - A passive message snackbar leaves on a tap, an action one answers only through its action.
 - Every snackbar leaves after 2 s, whatever its text or action.
+- A dialog confirms with the shared `OK`, its button never repeats the action name.
 
 ### Theme
 

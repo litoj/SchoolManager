@@ -1,7 +1,7 @@
 <resources>
     <string name="action_full_text">Full Text</string>
     <string name="action_reference">Add reference</string>
-    <string name="action_flip">Flip</string>
+    <string name="action_flip">Flip translations</string>
     <string name="action_sw_success">" written with success"</string>
     <string name="action_share">Share</string>
     <string name="action_undo">Undo</string>
@@ -311,7 +311,6 @@
     <string name="more_go_to">Go to location</string>
     <string name="flip_conflicts_title">Conflicting items</string>
     <string name="flip_conflicts_hint">Untouched rows keep their outside links. Edit a row to give the flip a copy.</string>
-    <string name="flip_conflicts_ok">Flip</string>
     <string name="flip_conflicts_blank">Every conflicting item needs a name</string>
     <string name="flip_conflicts_help">Each row is a word or a translation that reaches past the selection.
         \nA word row lives in folders outside the selection too, so the flip would change them. A translation row is shared with words outside, so the flip would copy it and the sharing would end.

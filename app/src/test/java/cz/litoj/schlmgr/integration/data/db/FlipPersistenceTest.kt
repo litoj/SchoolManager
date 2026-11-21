@@ -75,6 +75,28 @@ class FlipPersistenceTest {
 	}
 
 	@Test
+	fun `a flip moves no counters, every row keeps its own`() {
+		val subject = ItemRepository.createSubject("english", null)
+		val c1 = ItemRepository.createChapter(subject.id, "c1", null, 0)
+		val dog = word(c1.id, "dog", "pes")
+		val pes = ItemRepository.translations(dog.id).single()
+		repeat(4) { ItemRepository.bumpCounters(listOf(dog.id), true) }
+		ItemRepository.bumpCounters(listOf(dog.id), false)
+		// a translation answers on its own, so it holds its own history
+		repeat(2) { ItemRepository.bumpCounters(listOf(pes.id), true) }
+
+		ItemRepository.flip(listOf(dog.id))
+
+		assertEquals("the row that became the word keeps its counters",
+			listOf(2 to 0), listOf(word("pes").passedTests to word("pes").failedTests))
+		val dogTrl = ItemRepository.translations(word("pes").id).single()
+		assertEquals("the row that became a translation keeps its counters",
+			4 to 1, dogTrl.passedTests to dogTrl.failedTests)
+		assertEquals("the chapter derives from the word rows below it",
+			2, ItemRepository.get(c1.id)!!.passedTests)
+	}
+
+	@Test
 	fun `a plain flip swaps the roles`() {
 		val subject = ItemRepository.createSubject("english", null)
 		val dog = word(subject.id, "dog", "pes", "hound")
