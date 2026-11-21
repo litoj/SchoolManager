@@ -366,8 +366,6 @@
     <string name="setts_double_tap_ms">Double-tap window (ms)</string>
     <string name="setts_double_tap_ms_hint">Two taps within this time flip the whole list. 0 turns it off.</string>
     <string name="setts_test_amount">Words per test</string>
-    <string name="setts_test_clever">Prefer weak words</string>
-    <string name="setts_test_clever_hint">Starts with the weakest and least tested words.</string>
     <string name="setts_test_variants">Require every name variant</string>
     <string name="setts_test_variants_hint">A word like A/B asks for A and B in separate answer fields. Time multiplies by 1.5 per added variant.</string>
     <string name="setts_test_time">Seconds per character</string>
@@ -415,6 +413,8 @@
     <string name="test_direction">Answer with</string>
     <string name="test_dir_normal">Word</string>
     <string name="test_dir_reverse">Translation</string>
+    <string name="test_clever">Prefer weak words</string>
+    <string name="test_clever_hint">Starts with the weakest and least tested words.</string>
     <string name="test_variants_word">Word variant</string>
     <string name="test_variants_translation">Translation variant</string>
     <plurals name="test_blank_answers">

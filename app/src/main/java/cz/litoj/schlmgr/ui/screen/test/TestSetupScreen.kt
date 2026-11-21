@@ -53,6 +53,7 @@ import cz.litoj.schlmgr.ui.component.iconRes
 import cz.litoj.schlmgr.ui.component.SettingCaption
 import cz.litoj.schlmgr.ui.component.SettingChoiceRow
 import cz.litoj.schlmgr.ui.component.SettingNumberRow
+import cz.litoj.schlmgr.ui.component.SettingSwitchRow
 import cz.litoj.schlmgr.ui.component.DefaultTextColor
 import cz.litoj.schlmgr.ui.component.reportUnavailable
 import cz.litoj.schlmgr.ui.shell.TopBar
@@ -135,6 +136,11 @@ private fun TestSetupContent(viewModel: TestSetupViewModel, modifier: Modifier =
 			)
 			HairlineDivider()
 			DirectionRow(TestSetupState.reverseTest, viewModel::toggleReverse)
+			HairlineDivider()
+			SettingSwitchRow(
+				stringResource(R.string.test_clever), TestSetupState.cleverTest, viewModel::toggleClever,
+				caption = stringResource(R.string.test_clever_hint),
+			)
 			HairlineDivider()
 			SourcesHeader(hasSources, viewModel::clearSources)
 			SettingCaption(stringResource(R.string.test_sources_hint), Modifier.padding(start = 8.dp))

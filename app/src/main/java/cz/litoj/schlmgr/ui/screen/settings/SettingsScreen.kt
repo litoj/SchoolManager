@@ -151,11 +151,6 @@ private fun SettingsList(state: SettingsState, modifier: Modifier = Modifier) {
 		)
 		HairlineDivider()
 		SettingSwitchRow(
-			stringResource(R.string.setts_test_clever), state.clever, state::toggleClever,
-			caption = stringResource(R.string.setts_test_clever_hint),
-		)
-		HairlineDivider()
-		SettingSwitchRow(
 			stringResource(R.string.setts_test_variants), state.requireVariants, state::toggleRequireVariants,
 			caption = stringResource(R.string.setts_test_variants_hint),
 		)

@@ -25,7 +25,6 @@ class SettingsState(
 	descLinesText: String = ItemRow.DEFAULT_DESC_LINES.toString(),
 	doubleTapMsText: String = ItemRow.doubleTapMs.toString(),
 	wordSplitText: String = ";",
-	clever: Boolean = false,
 	requireVariants: Boolean = false,
 	ignoredMistakesText: String = TestEngine.ignoredMistakesText,
 	amountText: String = "10",
@@ -50,8 +49,6 @@ class SettingsState(
 	var doubleTapMsText by mutableStateOf(doubleTapMsText)
 		private set
 	var wordSplitText by mutableStateOf(wordSplitText)
-		private set
-	var clever by mutableStateOf(clever)
 		private set
 	var requireVariants by mutableStateOf(requireVariants)
 		private set
@@ -128,12 +125,6 @@ class SettingsState(
 	fun doubleTapMsFocusLost() {
 		if (doubleTapMsText.toIntOrNull() == null)
 			doubleTapMsText = ItemRow.doubleTapMs.toString()
-	}
-
-	fun toggleClever() {
-		clever = !clever
-		TestEngine.applyOptions(clever, TestEngine.amount)
-		AppSettings.set("isClever", clever)
 	}
 
 	fun toggleRequireVariants() {
@@ -252,7 +243,6 @@ class SettingsViewModel : ViewModel() {
 		descLinesText = ItemRow.descLines.toString(),
 		doubleTapMsText = ItemRow.doubleTapMs.toString(),
 		wordSplitText = WordListWriter.wordTranslationSplitter,
-		clever = TestEngine.isClever,
 		requireVariants = AppSettings.getBool("testRequireAllVariants", false),
 		ignoredMistakesText = TestEngine.ignoredMistakesText,
 		amountText = TestEngine.amount.toString(),

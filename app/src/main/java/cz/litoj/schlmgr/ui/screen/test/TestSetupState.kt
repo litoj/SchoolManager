@@ -17,7 +17,7 @@ import cz.litoj.schlmgr.ui.viewmodel.RowKind
 
 /**
  * Process-wide state of a test being set up.
- * - it holds the picked source chains and the amount, duration and reverse answers.
+ * - it holds the picked source chains and the amount, duration, reverse and content answers.
  * - written only through the doors of this object, so the dedup pass cannot be forgotten.
  * - source doors serialize because the explorer, picker and setup use independent IO coroutines.
  * - reset happens only on a genuine fresh entry.
@@ -94,6 +94,13 @@ object TestSetupState {
 	var reverseTest by mutableStateOf(TestEngine.isReversed)
 		private set
 
+	/**
+	 * The last pick rides on the engine, so the next setup starts where this one ended.
+	 * - on means urgency ranking, off means a random pool.
+	 */
+	var cleverTest by mutableStateOf(TestEngine.isClever)
+		private set
+
 	/** An empty or below-1 field falls back to the engine default at the start. */
 	fun setAmount(text: String) {
 		amountText = text.filter(Char::isDigit)
@@ -108,13 +115,18 @@ object TestSetupState {
 		reverseTest = on
 	}
 
-	/** A settings change between visits reaches the next test. */
+	fun setClever(on: Boolean) {
+		cleverTest = on
+	}
+
+	/** The engine holds the last picks, so a fresh setup returns to them. */
 	@Synchronized
 	fun reset() {
 		clearSources()
 		amountText = TestEngine.amount.toString()
 		timeText = TestEngine.getSecondsPerChar().toString()
 		reverseTest = TestEngine.isReversed
+		cleverTest = TestEngine.isClever
 	}
 
 	/** The Clear list action, which drops every source with its counts and pool. */

@@ -184,6 +184,12 @@ class TestEngine {
 			isReversed = reversed
 		}
 
+		/** The content rule of the next test, the door the test setup writes. */
+		@JvmStatic
+		fun applyClever(clever: Boolean) {
+			isClever = clever
+		}
+
 		/** Requires every parsed variant of the answer, rather than any one. */
 		@JvmStatic
 		fun applyRequireAllVariants(on: Boolean) {

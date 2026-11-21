@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 
 /**
  * The logic of the test setup screen.
- * - it holds the amount and duration answers, the reverse switch and the fresh-entry decision.
+ * - it holds the amount and duration answers, the reverse and content switches and the fresh-entry decision.
  * - it also holds the two navigation steps, start test and open the source picker.
  * - answers and sources live in [TestSetupState], whose source doors serialize every writer.
  */
@@ -91,6 +91,14 @@ class TestSetupViewModel(
 		TestSetupState.setReverse(on)
 		TestEngine.applyReversed(on)
 		AppSettings.set("reverseTest", on)
+	}
+
+	/** The content switch: on ranks by urgency, off lets a random pool through. */
+	fun toggleClever() {
+		val on = !TestSetupState.cleverTest
+		TestSetupState.setClever(on)
+		TestEngine.applyClever(on)
+		AppSettings.set("isClever", on)
 	}
 
 	/**

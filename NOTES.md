@@ -258,6 +258,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The sources header carries a clear action, which drops the whole list.
 - The picker starts at the explorer position without moving it.
 - Clever mode ranks by urgency, otherwise the pick is random.
+- The setup screen carries that switch, and its last pick returns with the next setup.
 - The setup rows name their units, and captions derive the pool and total time.
 - The tested side row flips on tap, starting from the setting in a fresh setup, with the word side as default.
 - Start waits for a source and says why.

@@ -353,8 +353,6 @@
     <string name="setts_double_tap_ms">Okno dvojkliku (ms)</string>
     <string name="setts_double_tap_ms_hint">Dva kliky v tomto čase překlopí celý seznam. 0 ho vypne.</string>
     <string name="setts_test_amount">Slovíčka na test</string>
-    <string name="setts_test_clever">Upřednostnit slabá slovíčka</string>
-    <string name="setts_test_clever_hint">Začne nejslabšími a nejméně testovanými slovíčky.</string>
     <string name="setts_test_variants">Požadovat všechny varianty názvu</string>
     <string name="setts_test_variants_hint">Slovíčko A/B vyžaduje A i B, každé na vlastním řádku. Čas roste 1,5krát na každou další variantu.</string>
     <string name="setts_test_time">Sekundy na znak</string>
@@ -402,6 +400,8 @@
     <string name="test_direction">Odpověď</string>
     <string name="test_dir_normal">Slovíčko</string>
     <string name="test_dir_reverse">Překlad</string>
+    <string name="test_clever">Upřednostnit slabá slovíčka</string>
+    <string name="test_clever_hint">Začne nejslabšími a nejméně testovanými slovíčky.</string>
     <string name="test_variants_word">Varianta slovíčka</string>
     <string name="test_variants_translation">Varianta překladu</string>
     <plurals name="test_blank_answers">
