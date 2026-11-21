@@ -25,7 +25,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Use `/usr/lib/jvm/java-21-openjdk` for gradle.
 - The JBR is `/opt/android-studio/jbr`, Java 25.
 - `JAVA_TOOL_OPTIONS` prints a local warning line.
-- `GRADLE_USER_HOME` is `~/.cache/gradle`, wrapper 9.8.1.
+- `GRADLE_USER_HOME` is `~/.cache/gradle`, wrapper 9.9.2.
 - The SDK path is in `local.properties`.
 - Build-tools 36.0.0 holds `apksigner`.
 - `--offline` works after an IDE sync.

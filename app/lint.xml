@@ -5,4 +5,5 @@
          separate change with its own testing, not a lint finding. -->
     <issue id="NewerVersionAvailable" severity="ignore" />
     <issue id="AndroidGradlePluginVersion" severity="ignore" />
+    <issue id="GradleDependency" severity="ignore" />
 </lint>
