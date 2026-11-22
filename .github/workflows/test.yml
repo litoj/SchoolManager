@@ -29,8 +29,29 @@ jobs:
           distribution: liberica
           java-version: '21'
 
+      # Robolectric fetches its instrumented SDK jar into ~/.m2 itself, outside
+      # Gradle, so that directory needs this cache of its own.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.m2
+          key: m2-${{ runner.os }}-15-robolectric-13954326-i7
+
       # Restores the dependency and build caches; org.gradle.caching is already on.
       - uses: gradle/actions/setup-gradle@v6
+
+      # A cold pull hits Maven Central rate limits with 429, so the fetch retries.
+      # The version matches the @Config(sdk = [35]) pins.
+      - name: Fetch the Robolectric SDK
+        run: |
+          sdk=15-robolectric-13954326-i7
+          jar="$HOME/.m2/repository/org/robolectric/android-all-instrumented/$sdk/android-all-instrumented-$sdk.jar"
+          if [ ! -f "$jar" ]; then
+            mkdir -p "$(dirname "$jar")"
+            curl -fsSL --retry 10 --retry-delay 5 \
+              "https://repo1.maven.org/maven2/org/robolectric/android-all-instrumented/$sdk/android-all-instrumented-$sdk.jar" \
+              -o "$jar.part"
+            mv "$jar.part" "$jar"
+          fi
 
       - name: Unit tests
         run: ./gradlew :app:testDebugUnitTest --stacktrace
