@@ -90,7 +90,7 @@ internal fun SubjectsContent(
 								config, searching, listState.singleSelected, exportBlockedReason, direct,
 							)
 						},
-						onOverflow = viewModel::onMenuItemClick,
+						onOverflow = viewModel::onSelectionMenuPick,
 						exportBlockedReason = exportBlockedReason,
 					)
 				}

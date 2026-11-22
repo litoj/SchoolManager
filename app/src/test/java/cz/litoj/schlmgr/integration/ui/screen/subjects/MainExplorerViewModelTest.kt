@@ -970,6 +970,38 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
+	fun `a drag that empties the batch never starts a selection`() {
+		val (aId, _) = seed()
+		ItemRepository.createChapter(aId, "c2", null, 1)
+		val model = vmIn("A")
+		model.setSelected(model.items().single { it.item.name == "c1" }, true)
+		model.move(true)
+
+		// the press takes the only row out, so the paste ends before the drag moves
+		model.onItemLongClick(model.items().single { it.item.name == "c1" })
+		model.selectRange(0, 1)
+
+		assertFalse("the paste ended with its last row", model.pasteArmed)
+		assertFalse("the drag started no selection", model.listState.value.selectionActive)
+		model.endRangeSelect()
+		assertFalse("the lift started no selection", model.listState.value.selectionActive)
+		assertEquals(0, model.selectionCount())
+	}
+
+	@Test
+	fun `a chosen action ends the selection even when it refuses`() {
+		seed()
+		val model = vm()
+		model.setSelected(model.items().single { it.item.name == "A" }, true)
+		model.setSelected(model.items().single { it.item.name == "B" }, true)
+
+		// a test of two subjects refuses, and the choice still ends the selection
+		model.onSelectionAction(SelectionAction.TEST)
+
+		assertEquals("the choice ended the selection", 0, model.selectionCount())
+	}
+
+	@Test
 	fun `a list reload ends a running drag, so its next step keeps the batch`() {
 		val (aId, _) = seed()
 		ItemRepository.createChapter(aId, "c2", null, 1)

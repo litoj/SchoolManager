@@ -533,12 +533,18 @@ abstract class ExplorerViewModel<R>(
 
 	/**
 	 * The long-press starts a selection and keeps one, so the same press can drag it.
-	 * - a gathering list toggles the row in its batch instead.
+	 * - a gathering list toggles the row in its batch instead, and owns the gesture that follows.
 	 */
 	fun onItemLongClick(item: ItemRow?) {
 		val row = item ?: return
-		if (gathering()) batch.toggle(row)
-		else if (!row.selected) setSelected(row, true)
+		if (gathering()) {
+			batch.begin()
+			batch.toggle(row)
+		} else {
+			// a selection press owns its drag too, so no earlier batch latch survives
+			batch.endRange()
+			if (!row.selected) setSelected(row, true)
+		}
 	}
 
 	private inner class SelectionHost : Selection.Host {
@@ -557,8 +563,9 @@ abstract class ExplorerViewModel<R>(
 		if (gathering()) batch.hold(row, selected) else selection.setSelected(row, selected)
 	}
 
+	/** A drag that began on the batch keeps it, even when the drag emptied the paste. */
 	fun selectRange(from: Int, to: Int) =
-		if (gathering()) batch.range(from, to) else selection.setRangeSelected(from, to)
+		if (gathering() || batch.armed) batch.range(from, to) else selection.setRangeSelected(from, to)
 
 	fun endRangeSelect() {
 		val dragged = batch.dragging

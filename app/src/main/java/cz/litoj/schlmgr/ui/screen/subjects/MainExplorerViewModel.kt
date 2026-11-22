@@ -238,9 +238,15 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		}
 	}
 
-	/** Runs one strip action, where export opens the sheet of its destinations. */
-	fun onSelectionAction(action: SelectionAction) {
-		onMenuItemClick(menuIdOf(action))
+	/** Runs one strip action, whose choice ends the selection whether it runs or refuses. */
+	fun onSelectionAction(action: SelectionAction) = pickSelectionAction(menuIdOf(action))
+
+	/** The strip overflow names the same actions, so it ends the selection the same way. */
+	fun onSelectionMenuPick(itemId: Int) = pickSelectionAction(itemId)
+
+	private fun pickSelectionAction(itemId: Int) {
+		onMenuItemClick(itemId)
+		clearSelection()
 	}
 
 	/** Every navigation lands here, so the armed paste re-reads its target. */

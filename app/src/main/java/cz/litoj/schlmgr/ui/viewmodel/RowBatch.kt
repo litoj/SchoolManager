@@ -32,6 +32,15 @@ internal class RowBatch(private val host: Host) {
 	/** Whether a drag adds its range right now, so a step stays cheap. */
 	val dragging: Boolean get() = dragBase != null
 
+	/** Whether a press owns the running gesture, so its drag never turns into a selection. */
+	var armed = false
+		private set
+
+	/** A gathering press calls it before it toggles, so the gesture stays with the batch. */
+	fun begin() {
+		armed = true
+	}
+
 	private fun set(next: List<ItemRow>) {
 		rows.forEach { it.batch(false) }
 		rows = next
@@ -88,6 +97,7 @@ internal class RowBatch(private val host: Host) {
 	}
 
 	fun endRange() {
+		armed = false
 		dragBase = null
 	}
 }
