@@ -72,6 +72,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A long-press starts selection, with the row type icon toggling each row.
 - A long-press drag on an unselected row selects the range, and a selected row moves where the list has an order.
 - A reorder drag moves every selected row in shown order, while a counted proxy alone follows the finger.
+- A drop onto a row that moves changes nothing, since it reads as a cancel.
 - A selection press shows the action strip at once, while a reorder press holds it away until the lift.
 - The row type icon toggles a row during a selection or a gathering batch.
 - The row tap keeps its own meaning.

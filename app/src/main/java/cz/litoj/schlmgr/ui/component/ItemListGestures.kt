@@ -107,8 +107,10 @@ internal fun Modifier.rememberListDragModifier(
 
 			fun stepReorder(position: Offset) {
 				if (!stillValid()) return
+				// a finger over a row that moves asks to cancel, not to move the run there
+				val overMoving = indexAtY(listState, position.y, edge)?.let { it in dragRows } == true
 				// the list stays put until the drop, so the insert slot counts the unselected rows
-				pendingTarget = insertIndex(listState, dragRows, position.y)
+				pendingTarget = if (overMoving) null else insertIndex(listState, dragRows, position.y)
 				reported = true
 				currentReorderStep(anchorIndex, position, pendingTarget)
 			}

@@ -299,16 +299,16 @@ class ItemListDragTest {
 		}
 		val firstTop = row("item 1").top
 		val thirdTop = row("item 3").top
-		drag("item 1", "item 5") { _, _ ->
+		drag("item 1", "item 6") { _, _ ->
 			assertEquals("the source rows keep their places", firstTop, row("item 1").top)
 			assertEquals("every source row keeps its place", thirdTop, row("item 3").top)
 			assertEquals("the proxy names the whole selection", 1,
 				rule.onAllNodesWithText("3 items").fetchSemanticsNodes().size)
 		}
 
-		assertEquals("one move lands every selected row: steps=$steps", listOf(0 to 2), steps)
+		assertEquals("one move lands every selected row: steps=$steps", listOf(0 to 3), steps)
 		assertEquals(
-			listOf("item 2", "item 4", "item 1", "item 3", "item 5", "item 6"),
+			listOf("item 2", "item 4", "item 6", "item 1", "item 3", "item 5"),
 			items.map { it.name },
 		)
 	}
@@ -462,6 +462,31 @@ class ItemListDragTest {
 	 * - the finger never crosses that row's middle, so no swap may fire.
 	 * - a held finger still emits small moves, which the drag replays as wiggles.
 	 */
+	@Test
+	fun `a drop onto a moving row changes nothing`() {
+		var drops = 0
+		items += rows(6)
+		items[0] = items[0].copy(selected = true)
+		items[2] = items[2].copy(selected = true)
+		rule.setContent {
+			Column(Modifier.size(300.dp, 400.dp)) {
+				ItemList(
+					state = ItemListState(items = items.toList(), maxPosition = items.size),
+					callbacks = ItemListCallbacks(onReorderMove = ::moveRow, onReorderDrop = { drops++ }),
+					reorderable = true,
+				)
+			}
+		}
+		val before = items.map { it.name }
+
+		// the finger ends on a row that itself moves, so the drop reads as a cancel
+		drag("item 1", "item 3") { _, _ -> }
+
+		assertTrue("nothing moves: steps=$steps", steps.isEmpty())
+		assertEquals(0, drops)
+		assertEquals(before, items.map { it.name })
+	}
+
 	@Test
 	fun `a finger held in the top of a tall row does not flip the order back and forth`() {
 		items += rows(4, selected = 0).mapIndexed { i, item -> if (i == 1) tallRow(2) else item }
