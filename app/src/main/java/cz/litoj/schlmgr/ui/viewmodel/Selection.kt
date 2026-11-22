@@ -61,8 +61,9 @@ internal class Selection(private val host: Host) {
 	/**
 	 * One drag-select step, where the range is [anchor]..[to].
 	 * - pulled-back rows return to their pre-drag state.
+	 * - [selectedTo] paints an icon press state instead of only adding marks.
 	 */
-	fun setRangeSelected(anchor: Int, to: Int) {
+	fun setRangeSelected(anchor: Int, to: Int, selectedTo: Boolean? = null) {
 		val models = host.models
 		if (models.isEmpty()) return
 		var snapshot = dragSelect
@@ -74,7 +75,8 @@ internal class Selection(private val host: Host) {
 		val hi = to.coerceIn(0, models.size - 1)
 		val before = snapshot.second
 		for (i in models.indices) {
-			val want = i in minOf(lo, hi)..maxOf(lo, hi) || (i < before.size && before[i])
+			val inside = i in minOf(lo, hi)..maxOf(lo, hi)
+			val want = if (inside) selectedTo ?: true else (i < before.size && before[i])
 			if (models[i].selected != want) models[i].select(want)
 		}
 	}

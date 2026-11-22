@@ -1,6 +1,7 @@
 package cz.litoj.schlmgr.e2e.ui.screen
 
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -9,6 +10,7 @@ import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
+import cz.litoj.schlmgr.ui.component.RowIconTag
 import cz.litoj.schlmgr.ui.screen.picker.PickerScreen
 import cz.litoj.schlmgr.ui.screen.picker.PickerViewModel
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
@@ -27,8 +29,8 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * The type icon of a row selects it while a selection runs or the picker shows.
- * - the row tap keeps its own meaning, the word flip in the picker included.
+ * The type icon of a row marks it wherever the list selects or gathers.
+ * - a browse icon tap starts a selection, and the picker icon toggles its pick.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -84,7 +86,7 @@ class IconSelectTest {
 	}
 
 	@Test
-	fun `selection - the icon selects another row of the running selection`() {
+	fun `browse - an icon tap starts the selection`() {
 		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
 		rule.setContent { SubjectsScreen(model, {}, {}, {}) }
 		rule.waitForIdle()
@@ -92,23 +94,44 @@ class IconSelectTest {
 		rule.waitForIdle()
 		rule.onNodeWithText("c1").performClick()
 		rule.waitForIdle()
-		// a long-press starts the selection, the icon then adds the second word
+
+		rule.onAllNodesWithTag(RowIconTag, useUnmergedTree = true)[1].performClick()
+		rule.waitForIdle()
+
+		rule.runOnIdle {
+			assertTrue("the icon tap starts the selection",
+				model.items().single { it.item.name == "w2" }.selected)
+			// the icon marks, so the word keeps its shown side
+			assertTrue("the icon tap never flips the word",
+				model.items().single { it.item.name == "w2" }.flipped)
+		}
+	}
+
+	@Test
+	fun `selection - a tap on the icon toggles the row`() {
+		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		rule.setContent { SubjectsScreen(model, {}, {}, {}) }
+		rule.waitForIdle()
+		rule.onNodeWithText("A").performClick()
+		rule.waitForIdle()
+		rule.onNodeWithText("c1").performClick()
+		rule.waitForIdle()
+		// a long-press starts the selection, the icon then toggles the second word
 		rule.onNodeWithText("t1").performTouchInput {
 			down(center)
 			advanceEventTime(1_000)
 			up()
 		}
 		rule.waitForIdle()
-		// the default flip shows translations, so the icon carries the display name
-		rule.onNodeWithContentDescription("t2").performClick()
+		rule.onAllNodesWithTag(RowIconTag, useUnmergedTree = true)[1].performClick()
 		rule.waitForIdle()
 		rule.runOnIdle {
-			assertTrue("the icon added the second word to the selection",
+			assertTrue("the row tap added the second word to the selection",
 				model.items().single { it.item.name == "w2" }.selected)
 			assertTrue("the first selection stays",
 				model.items().single { it.item.name == "xyz" }.selected)
-			// the default flip stays, the icon never flips a word
-			assertTrue("the icon left the second word flipped",
+			// the icon toggles, so the word keeps its side
+			assertTrue("the icon never flips during a selection",
 				model.items().single { it.item.name == "w2" }.flipped)
 		}
 	}

@@ -58,6 +58,8 @@ class PasteFactsTest {
 		assertTrue("a folder counts as its own content", facts[1].inside)
 		assertTrue("the foreign row belongs to another set", facts[2].otherSet)
 		assertTrue("the linked word already sits in the folder", facts[3].present)
+		assertTrue("the existing link is a reference", facts[3].reference)
+		assertFalse("a plain row names no reference", facts[0].reference)
 		assertFalse("the rows of one set stay in it", facts[0].otherSet || facts[1].otherSet)
 	}
 }

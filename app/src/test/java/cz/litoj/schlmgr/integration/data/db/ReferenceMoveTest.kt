@@ -88,17 +88,40 @@ class ReferenceMoveTest {
 	}
 
 	@Test
-	fun `a move onto an already-linked container reports already-present`() {
+	fun `a home row moves onto its reference and turns the link plain`() {
 		val subject = ItemRepository.createSubject("s", null)
 		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
 		val c2 = ItemRepository.createChapter(subject.id, "c2", null)
 		val word = ItemRepository.createWord(c1.id, "w", null, listOf("t" to (null as String?)))
 		assertTrue(ItemRepository.reference(word.id, c2.id))
+		// a sibling after the reference proves the moved row keeps the reference's slot
+		val later = ItemRepository.createWord(c2.id, "later", null, listOf("t2" to (null as String?)))
 
-		// no crash on the duplicate link, because the row is already there
-		assertEquals(ItemRepository.MoveResult.ALREADY_PRESENT, ItemRepository.move(word.id, c1.id, c2.id))
-		assertEquals(listOf(word.id), ItemRepository.children(c1.id).map { it.id })
-		assertEquals(listOf(word.id), ItemRepository.children(c2.id).map { it.id })
+		assertEquals(ItemRepository.MoveResult.MOVED, ItemRepository.move(word.id, c1.id, c2.id))
+
+		assertFalse("the promoted link is plain", ItemRepository.linkIsReference(c2.id, word.id))
+		assertEquals("the reference's slot stays",
+			listOf(word.id, later.id), ItemRepository.children(c2.id).map { it.id })
+		assertTrue("the home chapter lost the row", ItemRepository.children(c1.id).isEmpty())
+		// a plain link is not promoted a second time
+		assertEquals(ItemRepository.MoveResult.ALREADY_PRESENT,
+			ItemRepository.move(word.id, c2.id, c2.id))
+	}
+
+	@Test
+	fun `a reference row moves onto a reference only as already-present`() {
+		val subject = ItemRepository.createSubject("s", null)
+		val home = ItemRepository.createChapter(subject.id, "home", null)
+		val from = ItemRepository.createChapter(subject.id, "from", null)
+		val to = ItemRepository.createChapter(subject.id, "to", null)
+		val word = ItemRepository.createWord(home.id, "w", null, listOf("t" to (null as String?)))
+		assertTrue(ItemRepository.reference(word.id, from.id))
+		assertTrue(ItemRepository.reference(word.id, to.id))
+
+		assertEquals(ItemRepository.MoveResult.ALREADY_PRESENT, ItemRepository.move(word.id, from.id, to.id))
+
+		assertTrue("both shown links stay references", ItemRepository.linkIsReference(from.id, word.id))
+		assertTrue(ItemRepository.linkIsReference(to.id, word.id))
 	}
 
 	@Test

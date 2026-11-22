@@ -133,6 +133,7 @@ private fun pickerCallbacks(viewModel: PickerViewModel): ItemListCallbacks = Ite
 	onItemIconClick = { index -> viewModel.toggleSelect(viewModel.rowAt(index)) },
 	onItemLongClick = { index -> viewModel.onItemLongClick(viewModel.rowAt(index)) },
 	onSelectRange = viewModel::selectRange,
+	onSelectRangeTo = viewModel::selectRangeTo,
 	onSelectEnd = viewModel::endRangeSelect,
 	onTopPull = viewModel::openSearchField,
 	onTopPullReversed = viewModel::closeSearchField,

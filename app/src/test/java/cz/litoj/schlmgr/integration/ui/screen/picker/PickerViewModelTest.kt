@@ -107,7 +107,9 @@ class PickerViewModelTest {
 
 	@Test
 	fun `back pops a path level and keeps the picks`() {
-		seed()
+		val aId = seed()
+		// a second chapter stays unheld, so the leaving list is not the whole of its container
+		ItemRepository.createChapter(aId, "c2", null, 1)
 		val model = vm()
 		model.onItemClick(model.items().single { it.item.name == "A" && it.item.type == ItemKind.CHAPTER })
 		model.setSelected(model.items().single { it.item.name == "c1" }, true)
@@ -185,6 +187,8 @@ class PickerViewModelTest {
 		val aId = seed()
 		val c1 = ItemRepository.children(aId).single()
 		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
+		// a second word stays unheld, so the chapter of the pick stays unheld too
+		ItemRepository.createWord(c1.id, "w2", null, listOf("t2" to null))
 		ItemRepository.createChapter(aId, "c2", null, 1)
 		val model = vm()
 		model.onItemClick(model.items().single { it.item.name == "A" && it.item.type == ItemKind.CHAPTER })
@@ -269,7 +273,9 @@ class PickerViewModelTest {
 
 	@Test
 	fun `a sibling switch opens the next subject and keeps the picks`() {
-		seed()
+		val aId = seed()
+		// a second chapter stays unheld, so the switch leaves no wholly held list
+		ItemRepository.createChapter(aId, "c2", null, 1)
 		ItemRepository.createSubject("B", null)
 		val model = vm()
 		model.onItemClick(model.items().single { it.item.name == "A" })

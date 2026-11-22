@@ -9,14 +9,21 @@ import androidx.compose.runtime.setValue
  * - the armed paste and the picker gather through it.
  * - the host owns the shown rows, and this class decides their marks.
  * - a drag carries the mark its press left on the dragged row.
+ * - where the host clumps, a container and its wholly held view stand for each other.
  */
-internal class RowBatch(private val host: Host) {
+internal class GatheredRows(private val host: Host) {
 
 	interface Host {
 
 		val models: List<ItemRow>
 
-		/** The batch changed, an emptied one included. */
+		/** The row of the container the list shows, null while the root or a search shows. */
+		fun openContainer(): ItemRow?
+
+		/** Whether a wholly held container stands for its rows, the picker of test sources. */
+		fun clumpsContainer(): Boolean
+
+		/** The gather changed, an emptied one included. */
 		fun batchChanged()
 	}
 
@@ -55,11 +62,51 @@ internal class RowBatch(private val host: Host) {
 
 	fun clear() = set(emptyList())
 
-	/** Marks the shown rows the batch holds, whichever folder it took them from. */
+	/** Marks the shown rows the gather holds, whichever folder it took them from. */
 	fun markShown(shown: List<ItemRow>) {
 		val ids = rows.mapTo(HashSet()) { it.item.id }
 		shown.forEach { it.batch(it.item.id in ids) }
 	}
+
+	/**
+	 * The list shows [shown] as the whole view of a container.
+	 * - a held container hands its place in the gather to its rows, so the view ticks whole.
+	 * - the container leaves the gather, so one untick inside the view keeps the rest held.
+	 */
+	fun viewShown(shown: List<ItemRow>) {
+		takeInView(shown)
+		markShown(shown)
+	}
+
+	private fun takeInView(shown: List<ItemRow>) {
+		if (shown.isEmpty() || !host.clumpsContainer()) return
+		val container = host.openContainer() ?: return
+		val held = rows.mapTo(HashSet()) { it.item.id }
+		if (container.item.id !in held) return
+		container.batch(false)
+		rows = rows.filterNot { it.item.id == container.item.id } +
+			shown.filter { it.item.id !in held }
+	}
+
+	/**
+	 * The list leaves [left] behind, the whole view of one container.
+	 * - a wholly held view collapses into its container, so the parent list ticks it.
+	 * - picks under another parent stay, since only the direct view is replaced.
+	 * - one unticked row keeps the held rows as the picks and the container unheld.
+	 */
+	fun viewLeft(left: List<ItemRow>) {
+		if (left.isEmpty() || !host.clumpsContainer()) return
+		val container = host.openContainer() ?: return
+		val held = rows.mapTo(HashSet()) { it.item.id }
+		if (!left.all { it.item.id in held }) return
+		val leftIds = left.mapTo(HashSet()) { it.item.id }
+		val next = rows.filterNot { it.item.id in leftIds && selectedUnder(it, container.item.id) }
+		set(if (next.any { it.item.id == container.item.id }) next else next + container)
+	}
+
+	/** Whether [row] stands under [containerId], the search path carrying the direct parent last. */
+	private fun selectedUnder(row: ItemRow, containerId: Int): Boolean =
+		(row.path?.lastOrNull()?.id ?: row.parentId) == containerId
 
 	fun hold(row: ItemRow, on: Boolean) {
 		val id = row.item.id

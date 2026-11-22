@@ -794,8 +794,46 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
+	fun `a cut home row turns the target reference into a plain link`() {
+		val (c1Id, c2Id) = linkedWordsSetup()
+		val model = vmInSet("c1")
+		model.setSelected(model.items().single { it.item.name == "w2" }, true)
+		model.move(false)
+		model.onBackRequested()
+		model.onItemClick(model.items().single { it.item.name == "c2" })
+
+		assertEquals("the target reference leaves room for the home row", 0, model.pasteBlockedReason)
+
+		model.doPaste()
+
+		val w2 = ItemRepository.children(c2Id).single { it.name == "w2" }
+		assertFalse("the pasted link is plain", ItemRepository.linkIsReference(c2Id, w2.id))
+		assertFalse("the home row left its chapter",
+			ItemRepository.children(c1Id).any { it.name == "w2" })
+	}
+
+	@Test
+	fun `a cut reference row stays present in its folder`() {
+		linkedWordsSetup()
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == "c2" })
+		model.setSelected(model.items().single { it.item.name == "w2" }, true)
+		model.move(false)
+
+		assertEquals("a reference row promotes nothing",
+			R.string.fail_paste_present, model.pasteBlockedReason)
+	}
+
+	@Test
 	fun `a batch the target only partly holds runs its button and names what stayed`() {
-		val (_, c2Id) = linkedWordsSetup()
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		val c2 = ItemRepository.createChapter(aId, "c2", null, 1)
+		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
+		val held = ItemRepository.createWord(c1.id, "w2", null, listOf("t2" to null))
+		// the target holds w2 as a plain shared row, so only w1 still has to move
+		ItemRepository.legacyLinkAtEnd(c2.id, held.id)
+		ItemRepository.recomputeCounters(c2.id)
 		val model = vmInSet("c1")
 		model.setSelected(model.items().single { it.item.name == "w1" }, true)
 		model.setSelected(model.items().single { it.item.name == "w2" }, true)
@@ -819,8 +857,8 @@ class MainExplorerViewModelTest {
 			}
 		}
 
-		assertEquals("the new row moved and the linked one stayed",
-			listOf("w1", "w2"), ItemRepository.children(c2Id).map { it.name }.sorted())
+		assertEquals("the new row moved and the held one stayed",
+			listOf("w1", "w2"), ItemRepository.children(c2.id).map { it.name }.sorted())
 	}
 
 	@Test
@@ -881,6 +919,20 @@ class MainExplorerViewModelTest {
 		model.onItemClick(model.items().single { it.item.id == aId })
 
 		assertEquals("the cut subject merges across sets", 0, model.pasteBlockedReason)
+	}
+
+	@Test
+	fun `back at the root cancels the armed move instead of exiting`() {
+		val (_, bId) = seed()
+		val model = vm()
+		model.setSelected(model.items().single { it.item.id == bId }, true)
+		model.move(false)
+		assertTrue(model.pasteArmed)
+
+		assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
+
+		assertFalse("the back press cancelled the move", model.pasteArmed)
+		assertTrue("the root stays open", model.history.path.isEmpty())
 	}
 
 	@Test

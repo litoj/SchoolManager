@@ -3,21 +3,26 @@ package cz.litoj.schlmgr.e2e.ui.component
 import android.os.Looper
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpRect
 import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.ui.component.ItemList
 import cz.litoj.schlmgr.ui.component.ItemListCallbacks
+import cz.litoj.schlmgr.ui.component.RowIconTag
 import cz.litoj.schlmgr.ui.viewmodel.ItemListState
 import cz.litoj.schlmgr.ui.viewmodel.StaticRow
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
@@ -80,13 +85,22 @@ class ItemListDragTest {
 		translations = List(4) { i -> TranslationLine("tall line ${i + 1}", "") },
 	)
 
-	private fun show(count: Int, selected: Int? = null) {
+	private fun show(
+		count: Int,
+		selected: Int? = null,
+		iconClick: (Int) -> Unit = {},
+		rangeTo: (Int, Int, Boolean) -> Unit = { _, _, _ -> },
+	) {
 		items += rows(count, selected)
 		rule.setContent {
 			Column(Modifier.size(300.dp, 400.dp)) {
 				ItemList(
 					state = ItemListState(items = items.toList(), maxPosition = items.size),
-					callbacks = ItemListCallbacks(onReorderMove = ::moveRow),
+					callbacks = ItemListCallbacks(
+						onItemIconClick = iconClick,
+						onSelectRangeTo = rangeTo,
+						onReorderMove = ::moveRow,
+					),
 					reorderable = true,
 				)
 			}
@@ -113,6 +127,17 @@ class ItemListDragTest {
 	private fun row(name: String): DpRect = rule.onNodeWithText(name).getBoundsInRoot()
 
 	private fun centerY(name: String): Dp = row(name).let { it.top + (it.bottom - it.top) / 2 }
+
+	/** The center of the type icon of the [index]-th row, in root pixels. */
+	private fun iconCenter(index: Int): Offset {
+		val bounds = rule.onAllNodesWithTag(RowIconTag, useUnmergedTree = true)[index].getBoundsInRoot()
+		return with(rule.density) {
+			Offset(
+				(bounds.left + (bounds.right - bounds.left) / 2).toPx(),
+				(bounds.top + (bounds.bottom - bounds.top) / 2).toPx(),
+			)
+		}
+	}
 
 	/**
 	 * Long-presses the row named [name], then moves the finger onto [onto].
@@ -151,6 +176,18 @@ class ItemListDragTest {
 		pressAndDrag(name, onto)
 		check(row(name), toY)
 		rule.onRoot().performTouchInput { up() }
+		settle()
+	}
+
+	/**
+	 * Long-presses [name] and parks the finger inside the row [onto] at [fraction] of its height.
+	 * - 0 parks at the row's top edge, 1 at its bottom edge.
+	 */
+	private fun parkOn(name: String, onto: String, fraction: Float) {
+		val bounds = row(onto)
+		val px = pressAndDrag(name, onto)
+		val y = with(rule.density) { (bounds.top + (bounds.bottom - bounds.top) * fraction).toPx() }
+		rule.onRoot().performTouchInput { moveTo(Offset(px, y)) }
 		settle()
 	}
 
@@ -221,6 +258,128 @@ class ItemListDragTest {
 	}
 
 	@Test
+	fun `a default icon press selects its row and its immediate drag reorders it`() {
+		show(5, iconClick = { items[it] = items[it].copy(selected = !items[it].selected) })
+		val from = iconCenter(1)
+		val toY = with(rule.density) { centerY("item 4").toPx() }
+		rule.mainClock.autoAdvance = false
+		rule.onRoot().performTouchInput { down(from) }
+		rule.waitForIdle()
+
+		assertEquals("no box waits under the finger before the drag", 0,
+			rule.onAllNodesWithText("1 item").fetchSemanticsNodes().size)
+		assertTrue("the icon press marks its row as a long press would", items.any { it.selected })
+		rule.onRoot().performTouchInput { moveTo(Offset(from.x, toY - 1f)) }
+		settle()
+
+		assertEquals("the moving box shows when the drag starts", 1,
+			rule.onAllNodesWithText("1 item").fetchSemanticsNodes().size)
+		rule.onRoot().performTouchInput { moveTo(Offset(from.x, toY)) }
+		settle()
+		rule.onRoot().performTouchInput { up() }
+		settle()
+
+		assertEquals("the immediate icon drag reorders", listOf(1 to 3), steps)
+	}
+
+	@Test
+	fun `a selected icon press and its drag deselect every covered row`() {
+		show(5, selected = 1,
+			iconClick = { items[it] = items[it].copy(selected = !items[it].selected) },
+			rangeTo = { from, to, on -> for (index in from..to) items[index] = items[index].copy(selected = on) },
+		)
+		val from = iconCenter(1)
+		val toY = with(rule.density) { centerY("item 4").toPx() }
+		rule.mainClock.autoAdvance = false
+		rule.onRoot().performTouchInput { down(from) }
+		rule.waitForIdle()
+
+		assertTrue("the press waits for movement before changing selection", items[1].selected)
+		rule.onRoot().performTouchInput {
+			moveTo(Offset(from.x, toY - 1f))
+			moveTo(Offset(from.x, toY))
+		}
+		rule.onRoot().performTouchInput { up() }
+		settle()
+
+		assertEquals(listOf(false, false, false, false, false), items.map { it.selected })
+		assertTrue("the selected icon drag never reorders: steps=$steps", steps.isEmpty())
+	}
+
+	@Test
+	fun `a tap on the type icon marks the row`() {
+		val clicks = mutableListOf<Int>()
+		items += rows(3)
+		rule.setContent {
+			Column(Modifier.size(300.dp, 400.dp)) {
+				ItemList(
+					state = ItemListState(items = items.toList(), maxPosition = items.size),
+					callbacks = ItemListCallbacks(onItemIconClick = { clicks += it }),
+					reorderable = true,
+				)
+			}
+		}
+
+		rule.onAllNodesWithTag(RowIconTag, useUnmergedTree = true)[1].performClick()
+
+		assertEquals("the icon tap marks its row", listOf(1), clicks)
+	}
+
+	@Test
+	fun `a selection icon tap toggles only on release`() {
+		show(5, selected = 1,
+			iconClick = { items[it] = items[it].copy(selected = !items[it].selected) })
+		val from = iconCenter(1)
+		rule.mainClock.autoAdvance = false
+
+		rule.onRoot().performTouchInput { down(from) }
+		rule.waitForIdle()
+		assertTrue("the anchor stays selected while the gesture is undecided", items[1].selected)
+		rule.onRoot().performTouchInput { up() }
+		settle()
+
+		assertFalse("release without a drag toggles the anchor", items[1].selected)
+		assertTrue("the tap never reorders: steps=$steps", steps.isEmpty())
+	}
+
+	@Test
+	fun `a long press on a selected icon reorders instead of painting selection`() {
+		val toggles = mutableListOf<Int>()
+		items += rows(5, selected = 1)
+		rule.setContent {
+			Column(Modifier.size(300.dp, 400.dp)) {
+				ItemList(
+					state = ItemListState(items = items.toList(), maxPosition = items.size),
+					callbacks = ItemListCallbacks(
+						onItemIconClick = { toggles += it },
+						onReorderMove = ::moveRow,
+					),
+					reorderable = true,
+				)
+			}
+		}
+		val from = iconCenter(1)
+		val toY = with(rule.density) { centerY("item 4").toPx() }
+		rule.mainClock.autoAdvance = false
+		rule.onRoot().performTouchInput {
+			down(from)
+			advanceEventTime(viewConfiguration.longPressTimeoutMillis + 100)
+		}
+		settle()
+		rule.onRoot().performTouchInput {
+			moveTo(Offset(from.x, toY - 1f))
+			moveTo(Offset(from.x, toY))
+		}
+		settle()
+
+		assertTrue("the icon never toggles the row: $toggles", toggles.isEmpty())
+		rule.onRoot().performTouchInput { up() }
+		settle()
+
+		assertEquals("steps=$steps", listOf(1 to 3), steps)
+	}
+
+	@Test
 	fun `a reorder leaves every row still and moves only its proxy`() {
 		show(8, selected = 7)
 		val start = row("item 8")
@@ -228,6 +387,7 @@ class ItemListDragTest {
 			assertEquals("the row stays in the list", start, row("item 8"))
 			val proxy = rule.onNodeWithText("1 item").getBoundsInRoot()
 			assertTrue("the proxy sits above the finger", proxy.bottom <= finger)
+			rule.onNodeWithTag("reorder_target").assertExists()
 		}
 	}
 
@@ -474,7 +634,113 @@ class ItemListDragTest {
 		val before = items.map { it.name }
 
 		// the finger ends on a row that itself moves, so the drop reads as a cancel
-		drag("item 1", "item 3") { _, _ -> }
+		drag("item 1", "item 3") { _, _ ->
+			rule.onNodeWithTag("reorder_target").assertDoesNotExist()
+		}
+
+		assertTrue("nothing moves: steps=$steps", steps.isEmpty())
+		assertEquals(0, drops)
+		assertEquals(before, items.map { it.name })
+	}
+
+	/**
+	 * The own-slot cancel of a single run.
+	 * - the lower half above and the upper half below name the slot the run already fills.
+	 * - the marker stays away, so the release is a cancel like a press on a moving row.
+	 */
+	@Test
+	fun `a drop on the run's own slot above changes nothing`() {
+		var drops = 0
+		showReorder(8) {
+			drops++
+			clearSelection()
+		}
+
+		parkOn("item 2", "item 1", 0.9f)
+
+		rule.onNodeWithTag("reorder_target").assertDoesNotExist()
+		rule.onRoot().performTouchInput { up() }
+		settle()
+
+		assertTrue("nothing moves: steps=$steps", steps.isEmpty())
+		assertEquals(0, drops)
+		assertTrue("the long-press's selection stands", items[1].selected)
+	}
+
+	@Test
+	fun `a drop on the run's own slot below changes nothing`() {
+		var drops = 0
+		showReorder(8) {
+			drops++
+			clearSelection()
+		}
+
+		parkOn("item 2", "item 3", 0.1f)
+
+		rule.onNodeWithTag("reorder_target").assertDoesNotExist()
+		rule.onRoot().performTouchInput { up() }
+		settle()
+
+		assertTrue("nothing moves: steps=$steps", steps.isEmpty())
+		assertEquals(0, drops)
+		assertTrue("the long-press's selection stands", items[1].selected)
+	}
+
+	/** Composes six rows with rows 2 and 4 selected, so the run leaves a hole between them. */
+	private fun showGappedRun(onDrop: () -> Unit) {
+		items += rows(6)
+		items[1] = items[1].copy(selected = true)
+		items[3] = items[3].copy(selected = true)
+		rule.setContent {
+			Column(Modifier.size(300.dp, 400.dp)) {
+				ItemList(
+					state = ItemListState(items = items.toList(), maxPosition = items.size),
+					callbacks = ItemListCallbacks(onReorderMove = ::moveRow, onReorderDrop = onDrop),
+					reorderable = true,
+				)
+			}
+		}
+	}
+
+	/**
+	 * The hole of a gathered run.
+	 * - the hole row has a moving row on each of its edges, so both name the run's own place.
+	 * - the marker stays away and the release moves nothing.
+	 */
+	@Test
+	fun `a drop at the bottom of the hole row changes nothing`() {
+		var drops = 0
+		showGappedRun {
+			drops++
+			clearSelection()
+		}
+		val before = items.map { it.name }
+
+		parkOn("item 4", "item 3", 0.9f)
+
+		rule.onNodeWithTag("reorder_target").assertDoesNotExist()
+		rule.onRoot().performTouchInput { up() }
+		settle()
+
+		assertTrue("nothing moves: steps=$steps", steps.isEmpty())
+		assertEquals(0, drops)
+		assertEquals(before, items.map { it.name })
+	}
+
+	@Test
+	fun `a drop at the top of the row below a gathered run changes nothing`() {
+		var drops = 0
+		showGappedRun {
+			drops++
+			clearSelection()
+		}
+		val before = items.map { it.name }
+
+		parkOn("item 4", "item 5", 0.1f)
+
+		rule.onNodeWithTag("reorder_target").assertDoesNotExist()
+		rule.onRoot().performTouchInput { up() }
+		settle()
 
 		assertTrue("nothing moves: steps=$steps", steps.isEmpty())
 		assertEquals(0, drops)
@@ -524,5 +790,60 @@ class ItemListDragTest {
 		settle()
 
 		assertTrue("the finger never crossed the tall row's middle: steps=$steps", steps.isEmpty())
+	}
+
+	@Test
+	fun `edge auto scroll updates the target under its new geometry`() {
+		var drops = 0
+		val scrolls = mutableListOf<Pair<Int, Int>>()
+		val scroll = LazyListState()
+		items += rows(30, selected = 6)
+		rule.setContent {
+			Column(Modifier.size(300.dp, 400.dp)) {
+				ItemList(
+					state = ItemListState(items = items.toList(), maxPosition = items.size),
+					callbacks = ItemListCallbacks(
+						onReorderMove = ::moveRow,
+						onReorderDrop = { drops++ },
+					),
+					modifier = Modifier.size(300.dp, 400.dp),
+					reorderable = true,
+					listState = scroll,
+				)
+			}
+		}
+		rule.mainClock.autoAdvance = false
+		rule.waitForIdle()
+
+		parkOn("item 7", "item 7", 0.9f)
+		rule.onNodeWithTag("reorder_target").assertDoesNotExist()
+		val before = items.map { it.name }
+
+		var scrolled = false
+		var frameCount = 0
+		while (frameCount < 80 && !scrolled) {
+			frame(16)
+			frameCount++
+			val moved = scroll.firstVisibleItemIndex to scroll.firstVisibleItemScrollOffset
+			scrolls += moved
+			scrolled = (moved.first > 0 || moved.second > 0) && markerShown()
+		}
+		assertTrue("the list never scrolled: scrolls=$scrolls", scrolled)
+
+		rule.onRoot().performTouchInput { up() }
+		settle()
+
+		assertEquals("drops=$drops", 1, steps.size)
+		assertEquals(1, drops)
+		assertFalse("the scrolled drop kept the old order: $before", before == items.map { it.name })
+	}
+
+	private fun markerShown(): Boolean =
+		rule.onAllNodesWithTag("reorder_target").fetchSemanticsNodes().isNotEmpty()
+
+	private fun frame(millis: Long) {
+		rule.mainClock.advanceTimeBy(millis)
+		Shadows.shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(millis))
+		rule.waitForIdle()
 	}
 }

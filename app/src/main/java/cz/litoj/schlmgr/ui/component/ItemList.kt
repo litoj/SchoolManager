@@ -37,6 +37,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.pluralStringResource
@@ -92,6 +93,8 @@ class ItemListCallbacks(
 	val onInnerInfo: (Int, TranslationLine) -> Unit = { _, _ -> },
 	/** A drag-select covered the rows from..to, 0-based and inclusive. */
 	val onSelectRange: (Int, Int) -> Unit = { _, _ -> },
+	/** An icon drag applies one selection state from its press to the covered range. */
+	val onSelectRangeTo: (Int, Int, Boolean) -> Unit = { _, _, _ -> },
 	/** A drag-select ended, so its selection becomes the new baseline. */
 	val onSelectEnd: () -> Unit = {},
 	/**
@@ -119,35 +122,59 @@ class ItemListCallbacks(
 )
 
 /**
- * The long-press-to-drag handoff, owned by [ItemList].
- * - the long-press arms a mode, see [arm].
+ * The press-to-drag handoff, owned by [ItemList].
+ * - a long press or the type icon arms a mode, see [arm].
  * - the drag claims it with [claim], and the gesture end clears it with [reset].
  * - a plain holder, not Compose state, so no step recomposes.
  */
+internal data class ClaimedListDrag(
+	val index: Int,
+	val mode: ListDragMode,
+	val selectTo: Boolean? = null,
+)
+
 internal class LongPressDragHandler {
 	private var index: Int = -1
 	private var mode: ListDragMode = ListDragMode.None
+	// an icon press owns the finger at once, so its moves never scroll the list
+	private var holdsMoves: Boolean = false
+	private var selectTo: Boolean? = null
+	private var dragClaimed = false
 
 	val isArmed: Boolean get() = index >= 0
 
-	fun arm(index: Int, mode: ListDragMode) {
+	/** True while the armed press came from the type icon rather than a long press. */
+	val consumesMoves: Boolean get() = index >= 0 && holdsMoves
+
+	/** A claimed action outlives gesture cleanup, so its release cannot become another tap. */
+	val suppressTap: Boolean get() = dragClaimed
+
+	fun arm(index: Int, mode: ListDragMode, holdsMoves: Boolean = false, selectTo: Boolean? = null) {
 		this.index = index
 		this.mode = mode
+		this.holdsMoves = holdsMoves
+		this.selectTo = selectTo
+		dragClaimed = false
 	}
 
 	/**
 	 * Null when no press is waiting, otherwise the row and its snapshotted mode.
 	 */
-	fun claim(): Pair<Int, ListDragMode>? {
+	fun claim(): ClaimedListDrag? {
 		if (index < 0) return null
-		val claimed = index to mode
+		val claimed = ClaimedListDrag(index, mode, selectTo)
+		dragClaimed = true
 		index = -1
+		holdsMoves = false
+		selectTo = null
 		return claimed
 	}
 
 	fun reset() {
 		index = -1
 		mode = ListDragMode.None
+		holdsMoves = false
+		selectTo = null
 	}
 }
 
@@ -223,6 +250,7 @@ fun ItemList(
 		pending = pending,
 		selectedOf = { anchor -> selectedRows(state.items.map { it.selected }, anchor) },
 		onSelectRange = callbacks.onSelectRange,
+		onSelectRangeTo = callbacks.onSelectRangeTo,
 		onSelectEnd = callbacks.onSelectEnd,
 		onGestureEnd = {
 			dragOver = null
@@ -297,10 +325,20 @@ fun ItemList(
 					callbacks.onItemLongClick(index)
 					if (mode == ListDragMode.Reorder) callbacks.onPressHeld(true)
 				},
-				// the icon marks while a selection runs or a batch gathers
-				onIconClick = if (state.selectionActive || state.gathering) {
-					{ callbacks.onItemIconClick(index) }
-				} else null,
+				// a deferred icon tap toggles on release, once the gesture has not claimed a drag
+				onIconClick = if (reorderable && !state.selectionActive) null
+				else { { if (!pending.suppressTap) callbacks.onItemIconClick(index) } },
+				iconDragConsumesDown = reorderable && !state.selectionActive,
+				onIconDragStart = if (reorderable && !state.selectionActive) {
+					{
+						pending.arm(index, ListDragMode.Reorder, holdsMoves = true)
+						callbacks.onItemIconClick(index)
+					}
+				} else {
+					{
+						pending.arm(index, ListDragMode.Select, holdsMoves = true, selectTo = !item.selected)
+					}
+				},
 				descVisible = !state.pickerMode,
 				variant = state.variant,
 				positionWidth = positionWidth,
@@ -365,7 +403,8 @@ fun ItemList(
 				}
 				.fillMaxWidth()
 				.height(2.dp)
-				.background(colorResource(R.color.colorPrimaryHeader)),
+				.background(colorResource(R.color.colorPrimaryHeader))
+				.testTag(DropMarkerTag),
 		)
 	}
 	}
@@ -409,6 +448,8 @@ private val DragProxyWidth = 104.dp
 private val DragProxyHeight = 34.dp
 /** Keeps the proxy above the finger, so it covers no row under the touch. */
 private val DragProxyGap = 8.dp
+/** The drop marker's tag, so a test can see whether a release would move the run. */
+private const val DropMarkerTag = "reorder_target"
 
 /**
  * The floating reorder drag: the selected rows move as one while the list stays.

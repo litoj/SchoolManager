@@ -37,8 +37,14 @@ internal class ExplorerList(
 
 		fun resetDragSelect()
 
-		/** Every row the list starts to show, a full load or a search batch. */
-		fun rowsShown(rows: List<ItemRow>)
+		/** Rows whose mark follows the gather, a new row or one search batch. */
+		fun rowsMarked(rows: List<ItemRow>)
+
+		/** The list shows a whole container view, a load or a re-sort. */
+		fun viewShown(rows: List<ItemRow>)
+
+		/** The list leaves the whole container view [rows] behind. */
+		fun viewLeft(rows: List<ItemRow>)
 
 		fun publishChrome(reorderable: Boolean)
 
@@ -61,6 +67,10 @@ internal class ExplorerList(
 
 	/** The container whose children the rows hold, the root id at the subjects screen. */
 	private var currentContainerId = ROOT_ID
+
+	/** The row of that container, so a wholly held view can collapse into it. */
+	var containerRow: ItemRow? = null
+		private set
 
 	/** Tells the container loads apart, so each re-anchor request is a distinct one. */
 	private var loadStep = 0
@@ -124,6 +134,8 @@ internal class ExplorerList(
 		anchor: ScrollAnchor? = null,
 	) {
 		loadJob?.cancel()
+		// a search shows rows of many containers, so no view there collapses into one
+		if (isSearch) containerRow = null
 		// leaving the browse view for a search keeps its state for the return
 		if (isSearch && !searching) viewStates.capture(currentContainerId, scrollIndex, scrollOffset, models)
 		publish(content, isSearch, isPicker, anchor = anchor)
@@ -149,7 +161,7 @@ internal class ExplorerList(
 		pickerMode = isPicker || host.picker
 		host.resetDragSelect()
 		models = content.toMutableList()
-		host.rowsShown(models)
+		host.viewShown(models)
 		val bottomRequested = scrollToBottomPending
 		val scroll = if (bottomRequested) {
 			scrollToBottomPending = false
@@ -191,6 +203,9 @@ internal class ExplorerList(
 	) {
 		loadJob?.cancel()
 		val containerId = container?.id ?: ROOT_ID
+		// a reload stays in its view, while only navigation away may collapse the leaving picks
+		if (containerId != currentContainerId &&
+			containerRow?.item?.id != pathIds.getOrNull(pathIds.size - 2)) host.viewLeft(models)
 		// search rows are not the view of the container, so they capture nothing
 		if (!searching) viewStates.capture(currentContainerId, scrollIndex, scrollOffset, models)
 		val saved = viewStates.moveTo(currentContainerId, containerId, pathIds)
@@ -201,9 +216,9 @@ internal class ExplorerList(
 				val content = withContext(io) {
 					val rows = readRows(container) ?: return@withContext null
 					val fresh = if (container == null) null else ItemRepository.get(container.id)
-					rows to fresh
+					Triple(rows, ownRow(container, pathIds), fresh)
 				} ?: return@launch
-				val (rows, fresh) = content
+				val (rows, own, fresh) = content
 				if (gen == listMutationGen) {
 					viewStates.applyFlips(containerId, rows)
 					val ordered = if (rememberSort) viewStates.applyOrder(containerId, rows) else rows
@@ -212,6 +227,7 @@ internal class ExplorerList(
 					// the remembered place of the view, a first visit starts at the top
 					val anchor = if (target >= 0) ScrollAnchor(++loadStep, target, 0)
 					else ScrollAnchor(++loadStep, saved?.scrollIndex ?: 0, saved?.scrollOffset ?: 0)
+					containerRow = own
 					publish(ordered, isSearch = false, isPicker = false, landedContainer = containerId,
 						anchor = anchor, pulse = pulse)
 					host.publishLoadedInfo(container, fresh)
@@ -249,6 +265,14 @@ internal class ExplorerList(
 		)
 	}
 
+	/**
+	 * The row of [container] itself, so a wholly held view can collapse into it.
+	 * - its parent reads from the path above it, and the read belongs on [io] with the rows.
+	 */
+	private fun ownRow(container: DbItem?, pathIds: List<Int>): ItemRow? = container?.let {
+		ItemRow(it, pathIds.getOrNull(pathIds.size - 2) ?: ROOT_ID, 0, applyDefFlip = false)
+	}
+
 	fun addItem(item: ItemRow) = insertItem(models.size, item)
 
 	fun addItem(index: Int, item: ItemRow) = insertItem(index, item)
@@ -260,7 +284,7 @@ internal class ExplorerList(
 		models.add(at, item)
 		models.forEachIndexed { i, row -> row.renumber(i + 1) }
 		host.resetDragSelect()
-		host.rowsShown(listOf(item))
+		host.rowsMarked(listOf(item))
 		_listState.update {
 			it.copy(
 				contentStep = it.contentStep + 1,
@@ -275,7 +299,7 @@ internal class ExplorerList(
 	fun append(batch: List<ItemRow>) {
 		batch.forEachIndexed { index, row -> row.renumber(models.size + 1 + index) }
 		models.addAll(batch)
-		host.rowsShown(batch)
+		host.rowsMarked(batch)
 		_listState.update {
 			it.copy(
 				items = models.toList(),

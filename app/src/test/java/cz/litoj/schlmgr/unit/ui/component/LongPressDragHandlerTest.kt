@@ -1,5 +1,6 @@
 package cz.litoj.schlmgr.unit.ui.component
 
+import cz.litoj.schlmgr.ui.component.ClaimedListDrag
 import cz.litoj.schlmgr.ui.component.ListDragMode
 import cz.litoj.schlmgr.ui.component.LongPressDragHandler
 import cz.litoj.schlmgr.ui.component.listDragMode
@@ -28,7 +29,7 @@ class LongPressDragHandlerTest {
 		val handler = LongPressDragHandler()
 		handler.arm(3, ListDragMode.Select)
 		assertTrue(handler.isArmed)
-		assertEquals(3 to ListDragMode.Select, handler.claim())
+		assertEquals(ClaimedListDrag(3, ListDragMode.Select), handler.claim())
 		assertFalse(handler.isArmed)
 		assertNull(handler.claim())
 	}
@@ -46,7 +47,7 @@ class LongPressDragHandlerTest {
 	fun `a claim keeps the mode the press snapshotted`() {
 		val handler = LongPressDragHandler()
 		handler.arm(3, ListDragMode.Reorder)
-		assertEquals(3 to ListDragMode.Reorder, handler.claim())
+		assertEquals(ClaimedListDrag(3, ListDragMode.Reorder), handler.claim())
 	}
 
 	@Test
@@ -54,7 +55,24 @@ class LongPressDragHandlerTest {
 		val handler = LongPressDragHandler()
 		handler.arm(3, ListDragMode.Select)
 		handler.arm(7, ListDragMode.Reorder)
-		assertEquals(7 to ListDragMode.Reorder, handler.claim())
+		assertEquals(ClaimedListDrag(7, ListDragMode.Reorder), handler.claim())
+	}
+
+	@Test
+	fun `an icon arm holds its moves until the claim takes it`() {
+		val handler = LongPressDragHandler()
+		handler.arm(3, ListDragMode.Reorder, holdsMoves = true)
+		assertTrue(handler.consumesMoves)
+		assertEquals(ClaimedListDrag(3, ListDragMode.Reorder), handler.claim())
+		assertFalse(handler.consumesMoves)
+	}
+
+	@Test
+	fun `an icon claim keeps the selection state of its press`() {
+		val handler = LongPressDragHandler()
+		handler.arm(3, ListDragMode.Select, holdsMoves = true, selectTo = false)
+
+		assertEquals(false, handler.claim()?.selectTo)
 	}
 
 	@Test

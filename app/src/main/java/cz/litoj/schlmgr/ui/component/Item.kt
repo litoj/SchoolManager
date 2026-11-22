@@ -7,6 +7,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +20,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -26,8 +30,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -53,8 +60,11 @@ fun Item(
 	onClick: () -> Unit,
 	onLongClick: () -> Unit,
 	modifier: Modifier = Modifier,
-	/** The type icon tapped, a running selection or the picker selects the row with it. */
+	/** The type icon tapped, which marks the row or toggles its pick. */
 	onIconClick: (() -> Unit)? = null,
+	/** The type icon arms an immediate reorder or a deferred selection paint. */
+	onIconDragStart: (() -> Unit)? = null,
+	iconDragConsumesDown: Boolean = true,
 	descVisible: Boolean,
 	variant: ExplorerRowVariant = ExplorerRowVariant.Browse,
 	positionWidth: Dp,
@@ -97,6 +107,9 @@ fun Item(
 				positionWidth,
 				Modifier.align(Alignment.CenterVertically),
 				onIconClick,
+				onIconDragStart,
+				iconDragConsumesDown,
+				onLongClick,
 			)
 			// the wrapper column holds the texts and the trailing actions.
 			// so the separator below them spans the part of the row without the success-rate colour.
@@ -199,6 +212,7 @@ private fun ItemTrackPath(path: List<DbItem>) {
 	}
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PositionCell(
 	item: RowView,
@@ -206,6 +220,9 @@ private fun PositionCell(
 	width: Dp,
 	modifier: Modifier = Modifier,
 	onIconClick: (() -> Unit)? = null,
+	onIconDragStart: (() -> Unit)? = null,
+	iconDragConsumesDown: Boolean = true,
+	onIconLongClick: (() -> Unit)? = null,
 ) {
 	Row(
 		modifier,
@@ -223,12 +240,38 @@ private fun PositionCell(
 		)
 		Image(
 			painterResource(item.kind.iconRes),
-			// the name tells the accessibility service which row the icon selects
-			contentDescription = if (onIconClick == null) null else item.name,
+			// the name tells the accessibility service which row the icon acts on
+			contentDescription = if (onIconClick == null && onIconDragStart == null) null else item.name,
 			modifier = Modifier
 				.size(IconSize)
-				.then(if (onIconClick != null) Modifier.clickable { onIconClick() } else Modifier),
+				.testTag(RowIconTag)
+				.then(
+					if (onIconClick != null) Modifier.combinedClickable(
+						interactionSource = remember { MutableInteractionSource() },
+						indication = null,
+						onClick = onIconClick,
+						onLongClick = onIconLongClick,
+					) else Modifier
+				)
+				.then(if (onIconDragStart != null) Modifier.iconDrag(onIconDragStart, iconDragConsumesDown) else Modifier),
 		)
+	}
+}
+
+/**
+ * The type-icon drag arm: the press marks the row and blocks the row tap under it.
+ * - the move then claims the drag, so the box renders like a long-press drag.
+ */
+@Composable
+private fun Modifier.iconDrag(onDragStart: () -> Unit, consumesDown: Boolean): Modifier {
+	val currentDragStart by rememberUpdatedState(onDragStart)
+	return pointerInput(Unit, consumesDown) {
+		awaitEachGesture {
+			val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+			// only immediate reorder consumes at once, a deferred tap decides on release
+			if (consumesDown) down.consume()
+			currentDragStart()
+		}
 	}
 }
 
@@ -326,6 +369,9 @@ private class CellMetrics private constructor(val textSize: androidx.compose.ui.
 }
 
 private val ActionIconSize = 30.dp
+
+/** The type icon of every row, which a drag test hits by its row index. */
+internal const val RowIconTag = "row_icon"
 
 private const val PulseDurationMs = 650
 

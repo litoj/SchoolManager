@@ -46,7 +46,7 @@ internal data class RowGeometry(val index: Int, val offset: Int, val size: Int)
  * - the mode is snapshotted at the long-press, and events in the Initial pass use edge auto-scroll.
  * - a structural list change mid-drag invalidates the claimed row indexes, so the drop never fires.
  * - the content step keys the claim, so a selection remap or a drag reorder keeps the indexes.
- * - a reorder round trip keeps its order and never drops.
+ * - a drop boundary at the edge of a moving row is the run's own place, so that drop cancels.
  */
 @Composable
 internal fun Modifier.rememberListDragModifier(
@@ -55,6 +55,7 @@ internal fun Modifier.rememberListDragModifier(
 	pending: LongPressDragHandler,
 	selectedOf: (Int) -> List<Int>,
 	onSelectRange: (Int, Int) -> Unit,
+	onSelectRangeTo: (Int, Int, Boolean) -> Unit,
 	onSelectEnd: () -> Unit,
 	onGestureEnd: () -> Unit,
 	onReorderStart: (Int, Offset) -> Unit,
@@ -62,6 +63,7 @@ internal fun Modifier.rememberListDragModifier(
 	onReorderDrop: (Int, Int?) -> Unit,
 ): Modifier {
 	val currentSelect by rememberUpdatedState(onSelectRange)
+	val currentSelectTo by rememberUpdatedState(onSelectRangeTo)
 	val currentSelectEnd by rememberUpdatedState(onSelectEnd)
 	val currentGestureEnd by rememberUpdatedState(onGestureEnd)
 	val currentStart by rememberUpdatedState(onReorderStart)
@@ -81,6 +83,7 @@ internal fun Modifier.rememberListDragModifier(
 			var dragging = false
 			var mode = ListDragMode.None
 			var dragIndex = -1
+			var selectTo: Boolean? = null
 			// the claimed slot, which measures the net move of the drag
 			var anchorIndex = -1
 			// every selected row the press gathers and moves as one run
@@ -100,17 +103,17 @@ internal fun Modifier.rememberListDragModifier(
 			fun stepSelect(y: Float) {
 				if (!stillValid()) return
 				indexAtY(listState, y, edge)?.let {
-					currentSelect(dragIndex, it)
+					val to = selectTo
+					if (to == null) currentSelect(dragIndex, it)
+					else currentSelectTo(dragIndex, it, to)
 					reported = true
 				}
 			}
 
 			fun stepReorder(position: Offset) {
 				if (!stillValid()) return
-				// a finger over a row that moves asks to cancel, not to move the run there
-				val overMoving = indexAtY(listState, position.y, edge)?.let { it in dragRows } == true
 				// the list stays put until the drop, so the insert slot counts the unselected rows
-				pendingTarget = if (overMoving) null else insertIndex(listState, dragRows, position.y)
+				pendingTarget = reorderTarget(listState, dragRows, position.y)
 				reported = true
 				currentReorderStep(anchorIndex, position, pendingTarget)
 			}
@@ -122,10 +125,13 @@ internal fun Modifier.rememberListDragModifier(
 				if (!change.pressed) break
 				pointer.set(change.position)
 				if (!dragging) {
+					// the icon press never scrolls, even before the slop claims the drag
+					if (pending.consumesMoves) change.consume()
 					if (pending.isArmed && abs(change.position.y - down.position.y) > slop) {
 						dragging = true
-						val (anchor, claimedMode) = pending.claim() ?: break
+						val (anchor, claimedMode, claimedSelectTo) = pending.claim() ?: break
 						mode = claimedMode
+						selectTo = claimedSelectTo
 						dragIndex = anchor
 						anchorIndex = anchor
 						dragRows = currentSelected(anchor)
@@ -343,15 +349,6 @@ internal fun indexAtY(
  * - the rows above the viewport count too.
  * - free of [LazyListState], so it is unit-testable.
  */
-internal fun insertIndex(listState: LazyListState, selected: List<Int>, y: Float): Int {
-	val info = listState.layoutInfo
-	return insertIndexAt(
-		info.visibleItemsInfo.map { RowGeometry(it.index, it.offset, it.size) },
-		selected,
-		y,
-	)
-}
-
 internal fun insertIndexAt(visible: List<RowGeometry>, selected: List<Int>, y: Float): Int {
 	if (visible.isEmpty()) return 0
 	val moving = selected.toSet()
@@ -361,6 +358,49 @@ internal fun insertIndexAt(visible: List<RowGeometry>, selected: List<Int>, y: F
 		row.index !in moving && row.offset + row.size / 2f <= y
 	}
 	return count
+}
+
+/**
+ * The slot a reorder drop would land in at finger [y], or null where the drop changes nothing.
+ * - the boundary sits at the top edge of the target-th remaining row, or at the list tail.
+ * - a boundary on the edge of a moving row is a place the run already fills, so it names none.
+ * - free of [LazyListState], so it is unit-testable.
+ */
+internal fun reorderTargetAt(
+	visible: List<RowGeometry>,
+	selected: List<Int>,
+	y: Float,
+	rowCount: Int,
+): Int? {
+	val target = insertIndexAt(visible, selected, y)
+	if (touchesMovingRow(target, selected.toSet(), rowCount)) return null
+	return target
+}
+
+/**
+ * True when the drop boundary of [target] sits at an edge of a moving row.
+ * - the run crosses no row there, so the release would leave its order or shuffle its own holes.
+ */
+private fun touchesMovingRow(target: Int, moving: Set<Int>, rowCount: Int): Boolean {
+	var remaining = 0
+	for (index in 0 until rowCount) {
+		if (index in moving) continue
+		if (remaining++ == target) return index - 1 in moving
+	}
+	return rowCount - 1 in moving
+}
+
+/**
+ * The reorder target of the list rows at finger [y], null where the drop changes nothing.
+ */
+internal fun reorderTarget(listState: LazyListState, selected: List<Int>, y: Float): Int? {
+	val info = listState.layoutInfo
+	return reorderTargetAt(
+		info.visibleItemsInfo.map { RowGeometry(it.index, it.offset, it.size) },
+		selected,
+		y,
+		info.totalItemsCount,
+	)
 }
 
 /**

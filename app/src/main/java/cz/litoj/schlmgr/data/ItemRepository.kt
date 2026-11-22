@@ -451,6 +451,7 @@ object ItemRepository {
 	 * - [MoveResult.REFUSED_OTHER_SUBJECT]: the target sits in another subject.
 	 * - use the subject merge for that case.
 	 * - [MoveResult.ALREADY_PRESENT]: the target already links the row.
+	 * - a home row replaces the target's reference link, which keeps its slot.
 	 * - nothing changes on refusal.
 	 */
 	@JvmStatic
@@ -463,9 +464,11 @@ object ItemRepository {
 			// items stay in one subject, so moving into another subject refuses
 			if (dao.subjectRootOf(childId, ROOT_ID) != dao.subjectRootOf(newParentId, ROOT_ID))
 				return@withTransaction MoveResult.REFUSED_OTHER_SUBJECT
-			if (dao.linkPosition(newParentId, childId) != null)
+			val slot = dao.linkPosition(newParentId, childId)
+			// only a home row promotes the target's reference link
+			if (slot != null && !promotesReference(dao, childId, oldParentId, newParentId))
 				return@withTransaction MoveResult.ALREADY_PRESENT
-			if (moveInternal(dao, MoveRequest(childId, oldParentId, newParentId, position)))
+			if (moveInternal(dao, MoveRequest(childId, oldParentId, newParentId, position), slot))
 				MoveResult.MOVED else MoveResult.REFUSED_CYCLE
 		}
 	}
@@ -537,16 +540,32 @@ object ItemRepository {
 		override val references: List<StreamReference> = emptyList()
 	}
 
-	private suspend fun moveInternal(dao: ItemDao, req: MoveRequest): Boolean {
+	/** True when the target holds a reference link while the row leaves a plain home link. */
+	private suspend fun promotesReference(
+		dao: ItemDao,
+		childId: Int,
+		oldParentId: Int,
+		newParentId: Int,
+	): Boolean = dao.linkIsReference(newParentId, childId) == true &&
+		dao.linkIsReference(oldParentId, childId) != true
+
+	private suspend fun moveInternal(
+		dao: ItemDao,
+		req: MoveRequest,
+		promoteSlot: Int? = null,
+	): Boolean {
 		if (closesCycle(dao, req.childId, req.newParentId)) return false
 		// the word sums of the subtree, one chain loses them and the other gains them
 		val stats = dao.subgraphWordCounters(req.childId)
 		val plainLeave = dao.linkIsReference(req.oldParentId, req.childId) != true
 		dao.deleteLink(req.oldParentId, req.childId)
+		// the promoted reference frees its slot, which the moved row takes again
+		if (promoteSlot != null) dao.deleteLink(req.newParentId, req.childId)
 		// read before the new link lands, or it would count as an outside entry
 		val shared = (stats.passed != 0 || stats.failed != 0) &&
 			dao.plainLinksIntoSubtree(req.childId) > 0
 		LinkOrder.linkAt(dao, req.newParentId, req.childId, req.position)
+		if (promoteSlot != null) dao.setLinkPosition(req.newParentId, req.childId, promoteSlot)
 		if (stats.passed == 0 && stats.failed == 0) return true
 		if (shared) {
 			// the subtree is shared, so only the exact sums stay right
@@ -564,11 +583,17 @@ object ItemRepository {
 	/**
 	 * What one container would do to one row of a paste batch.
 	 * - [present]: the container already links the row.
+	 * - [reference]: that existing link is a reference.
 	 * - [inside]: the container sits inside the row content, the row itself included.
 	 * - [otherSet]: the row and the container sit in different subjects.
 	 * - the facts the write guards test, so a preview and a write cannot disagree by rule.
 	 */
-	data class PasteFacts(val present: Boolean, val inside: Boolean, val otherSet: Boolean)
+	data class PasteFacts(
+		val present: Boolean,
+		val reference: Boolean,
+		val inside: Boolean,
+		val otherSet: Boolean,
+	)
 
 	/**
 	 * The facts of every row in batch order, read in one block.
@@ -578,8 +603,10 @@ object ItemRepository {
 	fun pasteFacts(childIds: List<Int>, targetId: Int): List<PasteFacts> = query {
 		val dao = it.itemDao()
 		childIds.map { childId ->
+			val present = dao.linkPosition(targetId, childId) != null
 			PasteFacts(
-				present = dao.linkPosition(targetId, childId) != null,
+				present = present,
+				reference = present && dao.linkIsReference(targetId, childId) == true,
 				inside = dao.subgraphContains(childId, targetId),
 				otherSet = dao.subjectRootOf(childId, ROOT_ID) != dao.subjectRootOf(targetId, ROOT_ID),
 			)

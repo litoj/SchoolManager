@@ -154,7 +154,13 @@ abstract class ExplorerViewModel<R>(
 	/** An armed paste freezes reorder. */
 	protected open fun pasteArmed() = false
 
-	private val batch = RowBatch(BatchHost())
+	/**
+	 * Cancels the host's armed move, true when one waited.
+	 * - back runs it at the exit point, so the app never closes over it.
+	 */
+	protected open fun cancelArmedMove(): Boolean = false
+
+	private val batch = GatheredRows(GatheredHost())
 
 	/** Whether the row gestures gather the batch across folders instead of selecting. */
 	protected open fun gathering() = false
@@ -162,8 +168,17 @@ abstract class ExplorerViewModel<R>(
 	/** The batch changed, an emptied one included. */
 	protected open fun batchChanged() {}
 
+	/** Whether a wholly held container stands for its rows, the picker of test sources. */
+	protected open fun clumpsContainer() = false
+
 	/** The gathered rows, whichever folders they came from. */
 	fun batchRows(): List<ItemRow> = batch.rows
+
+	/** The gather after a closing action leaves the current container view. */
+	protected fun gatheredRowsForClose(): List<ItemRow> {
+		batch.viewLeft(list.items())
+		return batch.rows
+	}
 
 	/** Whether a drag is adding its range right now. */
 	protected fun batchDragging(): Boolean = batch.dragging
@@ -172,8 +187,10 @@ abstract class ExplorerViewModel<R>(
 
 	protected fun clearBatch() = batch.clear()
 
-	private inner class BatchHost : RowBatch.Host {
+	private inner class GatheredHost : GatheredRows.Host {
 		override val models get() = list.items()
+		override fun openContainer() = list.containerRow
+		override fun clumpsContainer() = this@ExplorerViewModel.clumpsContainer()
 		override fun batchChanged() = this@ExplorerViewModel.batchChanged()
 	}
 
@@ -445,7 +462,7 @@ abstract class ExplorerViewModel<R>(
 	}
 
 	/**
-	 * Back, deepest layer out: selection, then search, then one level.
+	 * Back, deepest layer out: selection, then search, then one level, then the armed move.
 	 * - the root press goes through [registerExitPress].
 	 */
 	fun onBackRequested(): BackOutcome {
@@ -465,10 +482,12 @@ abstract class ExplorerViewModel<R>(
 			}
 			SearchUi.OFF -> {}
 		}
+		// an armed move leaves before the exit press, so back never exits over it
 		if (history.path.isNotEmpty()) {
 			changedPath(1)
 			return BackOutcome.HANDLED
 		}
+		if (cancelArmedMove()) return BackOutcome.HANDLED
 		return if (registerExitPress()) BackOutcome.EXIT_HINT else BackOutcome.EXIT
 	}
 
@@ -573,6 +592,9 @@ abstract class ExplorerViewModel<R>(
 	fun selectRange(from: Int, to: Int) =
 		if (batch.armed) batch.range(from, to) else selection.setRangeSelected(from, to)
 
+	fun selectRangeTo(from: Int, to: Int, selectedTo: Boolean) =
+		if (gathering()) selectRange(from, to) else selection.setRangeSelected(from, to, selectedTo)
+
 	fun endRangeSelect() {
 		val dragged = batch.dragging
 		batch.endRange()
@@ -581,7 +603,8 @@ abstract class ExplorerViewModel<R>(
 		if (dragged) batchChanged()
 	}
 
-	fun setRangeSelected(anchor: Int, to: Int) = selection.setRangeSelected(anchor, to)
+	fun setRangeSelected(anchor: Int, to: Int, selectedTo: Boolean? = null) =
+		selection.setRangeSelected(anchor, to, selectedTo)
 
 	fun moveRow(from: Int, to: Int) = list.move(from, to)
 
@@ -602,7 +625,11 @@ abstract class ExplorerViewModel<R>(
 			selection.reset()
 		}
 
-		override fun rowsShown(rows: List<ItemRow>) = batch.markShown(rows)
+		override fun rowsMarked(rows: List<ItemRow>) = batch.markShown(rows)
+
+		override fun viewShown(rows: List<ItemRow>) = batch.viewShown(rows)
+
+		override fun viewLeft(rows: List<ItemRow>) = batch.viewLeft(rows)
 
 		override fun publishChrome(reorderable: Boolean) {
 			_state.update {

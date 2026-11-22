@@ -122,6 +122,7 @@ private fun mainCallbacks(
 		onReference = viewModel::onReferenceClick,
 		onInnerInfo = { _, line -> MessagePopup(line.description) },
 		onSelectRange = viewModel::selectRange,
+		onSelectRangeTo = viewModel::selectRangeTo,
 		onSelectEnd = viewModel::endRangeSelect,
 		onReorderMove = viewModel::moveRow,
 		onReorderDrop = viewModel::persistOrder,

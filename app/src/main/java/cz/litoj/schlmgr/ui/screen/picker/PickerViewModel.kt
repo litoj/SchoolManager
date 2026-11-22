@@ -39,6 +39,9 @@ class PickerViewModel(
 	/** The picks gather across folders, so one Select takes rows of several. */
 	override fun gathering() = true
 
+	/** Test sources come with their chapter, so a held chapter and its rows stand for each other. */
+	override fun clumpsContainer() = referenceTarget == null
+
 	/**
 	 * The strip Select: collects the gathered rows into the source list of the test.
 	 * - it closes the picker, and a refused pick reports and stays open.
@@ -48,7 +51,7 @@ class PickerViewModel(
 	fun onSelect() {
 		// a hit carries its own chain, a browse row rebuilds it from the parent it was picked under.
 		// - read on the main thread, before the dispatcher switch
-		val picked = batchRows().map(TestSetupState::seedOf)
+		val picked = gatheredRowsForClose().map(TestSetupState::seedOf)
 		viewModelScope.launch {
 			if (referenceTarget != null) {
 				val accepted = withContext(io) {

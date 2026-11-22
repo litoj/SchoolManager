@@ -54,6 +54,18 @@ class DragSelectTest {
 	}
 
 	@Test
+	fun `an icon drag deselects every covered row and restores untouched marks`() {
+		val vm = wordVm(5)
+		vm.items()[1].select(true)
+		vm.items()[2].select(true)
+		vm.items()[4].select(true)
+
+		vm.setRangeSelected(1, 3, false)
+
+		assertEquals(listOf(false, false, false, false, true), selected(vm.items()))
+	}
+
+	@Test
 	fun `after the drag ends its selection is the baseline of the next drag`() {
 		val vm = wordVm(5)
 		vm.setRangeSelected(1, 3)

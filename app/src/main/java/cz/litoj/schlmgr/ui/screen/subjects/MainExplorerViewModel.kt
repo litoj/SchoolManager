@@ -125,6 +125,13 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 	override fun pasteArmed() = pasteArmed
 
+	/** Back cancels the armed move at the exit point, so the app never closes over it. */
+	override fun cancelArmedMove(): Boolean {
+		if (!pasteArmed) return false
+		cancelPaste()
+		return true
+	}
+
 	/** The armed paste carries the batch, so its rows gather across folders. */
 	override fun gathering() = pasteArmed
 

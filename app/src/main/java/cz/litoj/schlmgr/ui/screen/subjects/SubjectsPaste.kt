@@ -48,7 +48,7 @@ internal class SubjectsPaste(
 		fun batchDragging(): Boolean
 	}
 
-	private class PasteSrc(val row: ItemRow, val id: Int, val oldParent: Int?)
+	private class PasteSrc(val row: ItemRow, val id: Int, val oldParent: Int?, val reference: Boolean)
 
 	private class PasteOutcome(val notice: UiNotice?, val placements: List<Pair<ItemRow, Placement>>)
 
@@ -97,7 +97,7 @@ internal class SubjectsPaste(
 			return
 		}
 		// snapshot on main, so the answer can only describe one container and one batch
-		val src = host.batchRows().map { PasteSrc(it, it.item.id, it.parentId) }
+		val src = host.batchRows().map { PasteSrc(it, it.item.id, it.parentId, it.isReference) }
 		blockJob = scope.launch(io) {
 			val facts = ItemRepository.pasteFacts(src.map { it.id }, target.id)
 			// the read costs a graph walk per row, so a superseded one must not answer
@@ -113,6 +113,7 @@ internal class SubjectsPaste(
 	/**
 	 * The mute rule for one batch, the first refusal its writes would report.
 	 * - a batch the target already holds would only lose the armed rows.
+	 * - a cut home row still runs where the target holds only its reference.
 	 */
 	private fun blockOf(referencing: Boolean, src: List<PasteSrc>, facts: List<PasteFacts>): Int {
 		var allPresent = true
@@ -122,7 +123,9 @@ internal class SubjectsPaste(
 			val staysInSet = !referencing && oldParent != null && oldParent != ROOT_ID
 			if (staysInSet && facts[index].otherSet) return R.string.fail_paste_other_subject
 			if (facts[index].inside) return R.string.fail_paste_inside
-			if (!facts[index].present) allPresent = false
+			// a home row promotes the target's reference link, so it is not present
+			val promotes = staysInSet && !src[index].reference && facts[index].reference
+			if (!facts[index].present || promotes) allPresent = false
 		}
 		return if (allPresent) R.string.fail_paste_present else 0
 	}
@@ -144,7 +147,7 @@ internal class SubjectsPaste(
 	fun doPaste() {
 		val kind = referencing ?: return
 		// snapshot on main
-		val src = host.batchRows().map { PasteSrc(it, it.item.id, it.parentId) }
+		val src = host.batchRows().map { PasteSrc(it, it.item.id, it.parentId, it.isReference) }
 		armPaste(null, emptyList())
 		val np = host.path.lastOrNull()
 		if (np == null) {
@@ -176,12 +179,12 @@ internal class SubjectsPaste(
 		var refusedSubject = false
 		val moved = ArrayList<PasteSrc>()
 		for (armed in src) {
-			if (armed.id in present) {
+			val oldParent = armed.oldParent
+			// a present row skips where its write could only keep it as it is
+			if (armed.id in present && (referencing || oldParent == null || oldParent == ROOT_ID)) {
 				skipped = true
 				continue
 			}
-			// a parentless row references instead of moving.
-			val oldParent = armed.oldParent
 			when {
 				// a reference and a subject merge refuse on a cycle.
 				referencing || oldParent == null ->

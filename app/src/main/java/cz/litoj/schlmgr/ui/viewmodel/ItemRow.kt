@@ -108,7 +108,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		selected = on
 	}
 
-	/** The mark write of the gathered batch, see [RowBatch]. */
+	/** The mark write of the gathered rows, see [GatheredRows]. */
 	fun batch(on: Boolean) {
 		batched = on
 	}

@@ -51,7 +51,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A mark, a flip or an edit therefore publishes no list, only a row list change does.
 - `RowView` is what a row renders, `ItemRow` for the live list and `StaticRow` for a sample.
 - The list reports a row by its index, like the drag and select gestures already do.
-- Back clears the selection, then goes up one level, then asks for a second exit press.
+- Back cancels the selection, goes up one level, cancels the armed move, then asks for a second exit press.
 - The drawer press runs the same ladder in one go, an armed paste rides along.
 - The picker leaves on one back press.
 - A container load re-anchors at the top, except an import target or a Go-to hit.
@@ -72,9 +72,14 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A long-press starts selection, with the row type icon toggling each row.
 - A long-press drag on an unselected row selects the range, and a selected row moves where the list has an order.
 - A reorder drag moves every selected row in shown order, while a counted proxy alone follows the finger.
-- A drop onto a row that moves changes nothing, since it reads as a cancel.
+- A drop boundary at the edge of a moving row is a place the run already fills, so it changes nothing.
+- The drop marker shows only where the release would move the run.
+- A dragged run is selected, so its slots stay tinted until the drop.
 - A selection press shows the action strip at once, while a reorder press holds it away until the lift.
-- The row type icon toggles a row during a selection or a gathering batch.
+- The row type icon toggles the row's selection or pick in every list that selects.
+- In the default view, an icon press selects its row and arms an immediate reorder.
+- In selection mode, an icon tap toggles on release, while an immediate drag paints the anchor's opposite state.
+- A cancelled gesture only cleans up, so it never reorders or creates a row.
 - The row tap keeps its own meaning.
 - A picker row tap opens or flips an unpicked row, and takes a pick back otherwise.
 - A chosen action ends the selection, whether it runs or refuses.
@@ -98,18 +103,25 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - One pinned top-bar slot switches from Search to Filter while the field is open.
 - The top arrow cancels the selection and an armed move.
 - An armed move occupies the top line, with cancel and paste in its strip.
-- An armed paste and the picker gather one `RowBatch` across folders instead of selecting.
-- The batch rows show selected in every list that shows them.
-- A tap on a batched row takes the mark back instead of opening or flipping it.
-- A long-press toggles a row in the batch, and a drag carries the mark the press left on it.
+- An armed paste and the picker gather one `GatheredRows` list across folders instead of selecting.
+- Gathered rows show their mark in every list that shows them.
+- A tap on a gathered row takes the mark back instead of opening or flipping it.
+- A long-press toggles a row in the gather, and a drag carries the mark the press left on it.
 - A press that takes a row out therefore clears every row its drag crosses.
-- The batch mark is its own row state, so navigation keeps it while it clears a selection.
-- An emptied batch ends the paste like its cancel, an empty picker hides its strip.
-- The drag that emptied the batch keeps owning its steps, so no selection starts under it.
+- The gather mark is its own row state, so navigation keeps it while it clears a selection.
+- The test-source picker lets a held chapter and its whole view stand for each other.
+- Expansion takes in only children the gather does not hold yet.
+- Collapse replaces only picks made under the leaving parent, so reference picks survive.
+- Picker Select closes the current view with the same collapse as back.
+- A reload of the open container never leaves its view.
+- The swap reads the direct parent only, so a held ancestor and a search list never take part.
+- An emptied gather ends the paste like its cancel, an empty picker hides its strip.
+- The drag that emptied the gather keeps owning its steps, so no selection starts under it.
 - Select all mutes while a paste waits, search, sort and navigation stay.
 - A status edits only the first info line, so the container description below it stays.
-- The paste mutes for a folder that would refuse the batch or already holds all of it.
-- A batch with one row left to move keeps the paste live, and its tap names the reason.
+- The paste mutes for a folder that would refuse the gather or already holds all of it.
+- A cut home row pasted onto its reference turns that link plain and keeps its slot.
+- A gather with one row left to move keeps the paste live, and its tap names the reason.
 - A paste read is cancelled on navigation, so only the open folder answers.
 - An unavailable action keeps its place and mutes, with the reason in a notice.
 - Only a mode takeover may replace a control.
