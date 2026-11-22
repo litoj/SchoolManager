@@ -268,7 +268,8 @@
         \nThe top-right check selects all or ends the selection. Back ends it too.</string>
     <string name="help_select_move">Cut takes the selected rows and shows the paste strip. Open the target and press Paste.
         \nThe armed move survives a chapter switch.
-        \nA long press or the row icon in any chapter adds a row to the move or takes it out, and Add reference works the same.</string>
+        \nA long press or the row icon in any chapter adds a row to the move or takes it out, and Add reference works the same.
+        \nA tap or a drag on a picked row takes its mark back, so the rows it crosses leave the move.</string>
     <string name="help_test">Tests</string>
     <string name="help_test_how">The test asks for the words of the picked sources.</string>
     <string name="help_test_results">Test results</string>
@@ -293,6 +294,7 @@
         \nDone or the timeout opens the report, where Retake runs a new test on the same sources.</string>
     <string name="help_test_select">Selecting items for the test</string>
     <string name="help_test_select_how">Add source opens the picker. Long-press a row or tap its type icon to pick it, then Select.
+        \nA tap on a picked row takes the pick back.
         \nAll sources must belong to one subject.</string>
     <string name="menu_label">Menu</string>
     <string name="menu_about">Help &amp; About</string>

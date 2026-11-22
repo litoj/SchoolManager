@@ -2,6 +2,7 @@ package cz.litoj.schlmgr.ui.screen.importer
 
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
+import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
@@ -22,6 +23,7 @@ import kotlinx.coroutines.withContext
 /**
  * The import mover: the explorer chooses the target container and the worker lands the file.
  * - the bar stays visible, since every move needs a destination and an action.
+ * - it runs as a picker host, so its rows stay plain and no gesture edits them.
  * - the picked file URI stays fixed for the screen, the provider name
  *   resolves once on io.
  */
@@ -31,7 +33,7 @@ class ImportTargetViewModel(
 	nameOf: (Uri) -> String = {
 		FileGateway.displayName(GlobalDependencies.appContext, it, "")
 	},
-) : ExplorerViewModel<Nothing>(NavigationHistory(), io = io) {
+) : ExplorerViewModel<Nothing>(NavigationHistory(), picker = true, io = io) {
 
 	/**
 	 * The state of the mover bar and the resolved document name.
@@ -62,6 +64,11 @@ class ImportTargetViewModel(
 		if (row.item.type != ItemKind.CHAPTER) return
 		super.onItemClick(row)
 	}
+
+	/** A running import keeps its list, so its search door mutes like the rows. */
+	override val searchBlockedReason: Int
+		get() = if (_targetState.value.busy) R.string.unavailable_import_busy
+		else super.searchBlockedReason
 
 	fun importNow() {
 		if (_targetState.value.busy || _targetState.value.imported) return
@@ -109,4 +116,7 @@ class ImportTargetViewModel(
 		onChange()
 		requestScrollToBottom()
 	}
+
+	/** Leaving the mover does not exit the app, so one press is enough. */
+	override fun registerExitPress() = false
 }

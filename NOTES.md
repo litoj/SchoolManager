@@ -124,6 +124,8 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The breadcrumb presets use fixed heights, with horizontal padding added only in spacious mode.
 - Sibling swipes follow the parent view's sort order, not raw database order.
 - The shared explorer frame carries the swipe, so the picker and the import mover switch siblings too.
+- Every explorer offers search and filter, so the mover searches its tree too.
+- Only the default explorer reorders, and only it and the picker mark rows.
 - The view-state store lives with the view model, so rotation keeps it and restart drops it.
 - A search round trip restores the same view state.
 - The scaffold restores the scroll anchor and reports the live scroll for every host.

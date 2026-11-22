@@ -255,7 +255,8 @@
         \nZaškrtnutí vpravo nahoře vybere vše nebo výběr ukončí. Ukončí ho i zpět.</string>
     <string name="help_select_move">Vyjmout vezme vybrané řádky a zobrazí vkládací lištu. Otevřete cíl a stiskněte Vložit.
         \nPřesun přežije přepnutí kapitoly.
-        \nDlouhý stisk nebo ikona řádku v libovolné kapitole přidá řádek k přesunu nebo ho odebere, Přidat odkaz funguje stejně.</string>
+        \nDlouhý stisk nebo ikona řádku v libovolné kapitole přidá řádek k přesunu nebo ho odebere, Přidat odkaz funguje stejně.
+        \nKlepnutí nebo tažení po vybraném řádku znaménko odebere, takže řádky pod ním z přesunu vypadnou.</string>
     <string name="help_test">Testy</string>
     <string name="help_test_how">Test se ptá na slovíčka ze zvolených zdrojů.</string>
     <string name="help_test_results">Výsledky testu</string>
@@ -280,6 +281,7 @@
         \nHotovo nebo vypršení času otevře výsledky, kde Opakovat spustí nový test se stejnými zdroji.</string>
     <string name="help_test_select">Výběr položek do testu</string>
     <string name="help_test_select_how">Přidat zdroj otevře seznam položek. Dlouhým stiskem řádku nebo klepnutím na ikonu typu vyberte zdroj, pak stiskněte Vybrat.
+        \nKlepnutí na vybranou položku ji odebere.
         \nVšechny zdroje musí patřit jednomu předmětu.</string>
     <string name="menu_label">Menu</string>
     <string name="menu_about">Nápověda a o aplikaci</string>

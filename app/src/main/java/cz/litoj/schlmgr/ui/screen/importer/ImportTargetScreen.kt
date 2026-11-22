@@ -1,7 +1,7 @@
 package cz.litoj.schlmgr.ui.screen.importer
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -17,26 +17,31 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.component.ActionStripHeight
 import cz.litoj.schlmgr.ui.component.ExplorerScaffold
+import cz.litoj.schlmgr.ui.component.ExplorerSearchControls
 import cz.litoj.schlmgr.ui.component.ImportActionBar
 import cz.litoj.schlmgr.ui.component.ItemListCallbacks
 import cz.litoj.schlmgr.ui.popup.InfoPopup
-import cz.litoj.schlmgr.ui.popup.MessagePopup
 import cz.litoj.schlmgr.ui.shell.ExplorerBackHandler
 import cz.litoj.schlmgr.ui.shell.editFilter
 import cz.litoj.schlmgr.ui.shell.TopBar
 import cz.litoj.schlmgr.ui.shell.explorerBack
 import cz.litoj.schlmgr.ui.shell.TopBarIconButton
 import cz.litoj.schlmgr.ui.shell.TopBarNav
-import cz.litoj.schlmgr.ui.shell.TopBarTitle
 import cz.litoj.schlmgr.ui.shell.headerShadow
 import cz.litoj.schlmgr.ui.shell.MessageSnackbarHost
 import cz.litoj.schlmgr.ui.shell.messageSnackbarHost
+import cz.litoj.schlmgr.ui.shell.pickExplorerMenu
+import cz.litoj.schlmgr.ui.viewmodel.ActionConfig
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
+import cz.litoj.schlmgr.ui.viewmodel.InfoBar
+import cz.litoj.schlmgr.ui.viewmodel.explorerMenu
+import cz.litoj.schlmgr.ui.viewmodel.SearchUi
 
 /**
  * The import mover screen: the explorer picks the target, the always-visible bar acts.
  * - the file URI stays with the view model, so the activity only starts and finishes it.
  * - the result reloads the target list and turns the bar into Done.
+ * - it carries the explorer search, sort and filter, while its rows stay plain.
  */
 @Composable
 fun ImportTargetScreen(
@@ -47,18 +52,21 @@ fun ImportTargetScreen(
 	val state by viewModel.state.collectAsStateWithLifecycle()
 	val listState by viewModel.listState.collectAsStateWithLifecycle()
 	val target by viewModel.targetState.collectAsStateWithLifecycle()
+	val query by viewModel.query.collectAsStateWithLifecycle()
 	val context = LocalContext.current
 	val snackbar = messageSnackbarHost()
 	val scrollState = rememberLazyListState()
+	val fieldOpen = state.searchUi != SearchUi.OFF
+	val searchBlockedReason = viewModel.searchBlockedReason
 	// a busy import keeps the target, so back and cancel cannot change or lose it.
-	// the mover rides the explorer back chain, so its exit hint shows too
+	// the mover rides the explorer back chain, where one press leaves the mover
 	val leave = {
 		if (!target.busy) explorerBack(viewModel, onExit, context)
 	}
 	BackHandler(target.busy) {}
 	ExplorerBackHandler(viewModel, onExitApp = onExit, enabled = !target.busy)
 
-	Box(Modifier.fillMaxSize().navigationBarsPadding()) {
+	BoxWithConstraints(Modifier.fillMaxSize().navigationBarsPadding()) {
 		Column(Modifier.fillMaxSize()) {
 			TopBar {
 				TopBarNav(
@@ -68,7 +76,26 @@ fun ImportTargetScreen(
 					blockedReason = R.string.unavailable_import_busy,
 					contentDescription = stringResource(R.string.back),
 				)
-				TopBarTitle(stringResource(R.string.import_file_title, target.fileName))
+				ExplorerSearchControls(
+					title = stringResource(R.string.import_file_title, target.fileName),
+					query = query,
+					fieldOpen = fieldOpen,
+					searchBlockedReason = searchBlockedReason,
+					entries = explorerMenu(
+						viewModel.menuKind, selecting = false, singleSelected = false,
+						ActionConfig.load(),
+						filterActive = (state.info as? InfoBar.Search)?.criteria?.isNotEmpty() == true,
+						searchBlockedReason = searchBlockedReason,
+						// the mover marks no rows, so it offers no select all
+						selectAll = false,
+					),
+					width = this@BoxWithConstraints.maxWidth,
+					onOpenSearch = viewModel::openSearchField,
+					onQueryChange = viewModel::onQueryChange,
+					onQuerySubmit = viewModel::onQuerySubmit,
+					onDismissSearch = viewModel::dismissSearch,
+					onMenuPick = { pickExplorerMenu(viewModel, it) },
+				)
 				TopBarIconButton(
 					icon = R.drawable.ic_help,
 					contentDescription = stringResource(R.string.help),
@@ -110,10 +137,9 @@ fun ImportTargetScreen(
 	}
 }
 
-/** The mover rows only open containers, and a description still opens its popup. */
+/** The mover rows only open containers, and a swipe down opens the search. */
 private fun importCallbacks(viewModel: ImportTargetViewModel, busy: Boolean): ItemListCallbacks =
 	ItemListCallbacks(
 		onItemClick = { index -> if (!busy) viewModel.onItemClick(viewModel.rowAt(index)) },
-		onInfo = { index -> viewModel.rowAt(index)?.let { MessagePopup(it.description) } },
-		onInnerInfo = { _, line -> MessagePopup(line.description) },
+		onTopPull = { if (!busy) viewModel.openSearchField() },
 	)

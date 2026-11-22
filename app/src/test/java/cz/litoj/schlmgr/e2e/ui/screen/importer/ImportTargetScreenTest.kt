@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.room.Room
@@ -13,6 +14,7 @@ import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.ui.screen.importer.ImportTargetScreen
 import cz.litoj.schlmgr.ui.screen.importer.ImportTargetViewModel
+import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
 import kotlinx.coroutines.Dispatchers
 import java.util.concurrent.CountDownLatch
 import org.junit.After
@@ -39,7 +41,8 @@ import java.nio.charset.StandardCharsets
  * - the picked documents are shadow-registered content uris.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35])
+// a phone wide enough for search and the list icons beside it
+@Config(sdk = [35], qualifiers = "w411dp-h891dp")
 class ImportTargetScreenTest {
 
 	@get:Rule
@@ -111,6 +114,25 @@ class ImportTargetScreenTest {
 
 	private fun label(res: Int, vararg args: Any): String =
 		RuntimeEnvironment.getApplication().getString(res, *args)
+
+	private fun text(res: Int): String = RuntimeEnvironment.getApplication().getString(res)
+
+	@Test
+	fun `the mover offers search and filter but marks no rows`() {
+		val model = mover()
+
+		rule.onNodeWithContentDescription(text(R.string.search)).assertExists()
+		rule.onNodeWithContentDescription(text(R.string.filter_tag)).assertExists()
+		rule.onNodeWithContentDescription(text(R.string.select_all)).assertDoesNotExist()
+		rule.runOnIdle { assertTrue("the rows stay plain", model.listState.value.pickerMode) }
+	}
+
+	@Test
+	fun `one back press at the root leaves the mover`() {
+		val model = mover()
+
+		rule.runOnIdle { assertEquals(ExplorerViewModel.BackOutcome.EXIT, model.onBackRequested()) }
+	}
 
 	@Test
 	fun `an import lands, turns the bar into Done and opens the single top-level container`() {

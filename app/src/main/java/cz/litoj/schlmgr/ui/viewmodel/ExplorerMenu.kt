@@ -89,17 +89,20 @@ fun explorerMenu(
 	direct: Int = 4,
 	searchBlockedReason: Int = 0,
 	selectAllBlockedReason: Int = 0,
+	/** False for a host that marks no rows, so the entry never shows. */
+	selectAll: Boolean = true,
 ): List<MenuEntry> {
 	val search = kind == ExplorerMenuKind.SEARCH
 	val actions = selectionOverflowMenu(config, search, singleSelected, exportBlockedReason, direct)
 	val clear = if (search && filterActive)
 		listOf(MenuEntry(MenuId.CLEAR_FILTER, R.string.clear_filter, icon = R.drawable.ic_cancel))
 	else emptyList()
-	val selectAll = MenuEntry(
+	val selectAllEntry = MenuEntry(
 		MenuId.SELECT_ALL, R.string.select_all, icon = R.drawable.ic_check_all,
 		blockedReason = selectAllBlockedReason,
 	)
-	val lead = listOf(selectAll) + (if (search) searchStatic else browseRows()) + filterMenu(searchBlockedReason)
+	val selectAllLead = if (selectAll) listOf(selectAllEntry) else emptyList()
+	val lead = selectAllLead + (if (search) searchStatic else browseRows()) + filterMenu(searchBlockedReason)
 	val menu = if (search) lead + clear + actions else lead + actions
 	return menu.filter { it.selectionAction == selecting }
 }
