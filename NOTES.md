@@ -75,7 +75,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A selection press shows the action strip at once, while a reorder press holds it away until the lift.
 - The row type icon toggles a row during a selection or a gathering batch.
 - The row tap keeps its own meaning.
-- A picker row tap keeps its meaning, so the picks can span folders.
+- A picker row tap opens or flips an unpicked row, and takes a pick back otherwise.
 - Every performed action finishes the selection, a refused one keeps it.
 - The strip fits as many configured actions as width allows, and More holds the rest.
 - A top-bar action without an icon always goes to the More menu, which shows its text.
@@ -99,7 +99,9 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - An armed move occupies the top line, with cancel and paste in its strip.
 - An armed paste and the picker gather one `RowBatch` across folders instead of selecting.
 - The batch rows show selected in every list that shows them.
-- A long-press adds a row to the batch or takes it out, a drag adds a range.
+- A tap on a batched row takes the mark back instead of opening or flipping it.
+- A long-press toggles a row in the batch, and a drag carries the mark the press left on it.
+- A press that takes a row out therefore clears every row its drag crosses.
 - The batch mark is its own row state, so navigation keeps it while it clears a selection.
 - An emptied batch ends the paste like its cancel, an empty picker hides its strip.
 - Select all mutes while a paste waits, search, sort and navigation stay.

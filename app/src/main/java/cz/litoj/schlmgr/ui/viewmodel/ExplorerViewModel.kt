@@ -503,6 +503,11 @@ abstract class ExplorerViewModel<R>(
 	 */
 	open fun onItemClick(item: ItemRow?) {
 		val row = item ?: return
+		// a marked row leaves its mark, since a gathered chapter carries all its content
+		if (row.batched) {
+			toggleSelect(row)
+			return
+		}
 		when (row.item.type) {
 			ItemKind.WORD -> flipWord(row)
 			ItemKind.CHAPTER -> openRow(row)

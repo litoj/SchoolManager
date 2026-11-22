@@ -1,6 +1,8 @@
 package cz.litoj.schlmgr.e2e.ui.screen
 
 import android.os.Looper
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -94,6 +96,14 @@ class PickerScreenTest {
 		rule.waitForIdle()
 	}
 
+	/** The middle of the row named [name], in pixels, so a drag can aim at it. */
+	private fun rowCenter(name: String, horizontal: Boolean): Float {
+		val bounds = rule.onNodeWithText(name).getBoundsInRoot()
+		val middle = if (horizontal) bounds.left + (bounds.right - bounds.left) / 2
+		else bounds.top + (bounds.bottom - bounds.top) / 2
+		return with(rule.density) { middle.toPx() }
+	}
+
 	@Test
 	fun `the caller names the pick`() {
 		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
@@ -137,6 +147,56 @@ class PickerScreenTest {
 
 		rule.runOnIdle { assertEquals("B", model.history.path.single().name) }
 		rule.onNodeWithText("B").assertExists()
+	}
+
+	@Test
+	fun `a tap on a picked row takes the pick back`() {
+		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		rule.setContent { PickerScreen(model, {}) }
+		rule.waitForIdle()
+
+		selectTheRow()
+		rule.onNodeWithText("A").performClick()
+		rule.waitForIdle()
+
+		rule.runOnIdle {
+			assertFalse("the pick left", model.items().single { it.item.name == "A" }.batched)
+			assertTrue("the subject stayed shut", model.history.path.isEmpty())
+		}
+		rule.onNodeWithText(text(R.string.select)).assertDoesNotExist()
+	}
+
+	@Test
+	fun `a drag from a picked row clears the run`() {
+		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		rule.setContent { PickerScreen(model, {}) }
+		rule.waitForIdle()
+		rule.runOnIdle { model.items().forEach { model.toggleSelect(it) } }
+		rule.waitForIdle()
+
+		val x = rowCenter("A", horizontal = true)
+		val startY = rowCenter("A", horizontal = false)
+		val endY = rowCenter("B", horizontal = false)
+		rule.mainClock.autoAdvance = false
+		rule.onRoot().performTouchInput {
+			down(Offset(x, startY))
+			advanceEventTime(viewConfiguration.longPressTimeoutMillis + 100)
+		}
+		settle()
+		// the press takes the first pick back, so the drag starts from a marked row
+		rule.runOnIdle { assertFalse(model.items().single { it.item.name == "A" }.batched) }
+		rule.onRoot().performTouchInput {
+			moveTo(Offset(x, endY - 1f))
+			moveTo(Offset(x, endY))
+		}
+		settle()
+		rule.mainClock.autoAdvance = true
+		rule.onRoot().performTouchInput { up() }
+		rule.waitForIdle()
+
+		rule.runOnIdle {
+			assertFalse("the drag cleared both picks", model.items().any { it.batched })
+		}
 	}
 
 	@Test

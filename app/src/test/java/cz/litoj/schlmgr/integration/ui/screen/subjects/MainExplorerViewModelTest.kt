@@ -642,7 +642,10 @@ class MainExplorerViewModelTest {
 	fun `a row the open list already holds blocks the paste, a reference too`() {
 		for (reference in listOf(false, true)) {
 			freshDb()
-			seed()
+			val (aId, _) = seed()
+			val c1 = ItemRepository.children(aId).single()
+			// a hit reaches the armed chapter's content, since its own tap keeps the mark
+			ItemRepository.createChapter(c1.id, "inner", null)
 			val kind = if (reference) "reference" else "cut"
 			val model = vmIn("A")
 			model.setSelected(model.items().single { it.item.name == "c1" }, true)
@@ -651,15 +654,12 @@ class MainExplorerViewModelTest {
 			assertEquals("the open list already holds the $kind row",
 				R.string.fail_paste_present, model.pasteBlockedReason)
 
-			model.onItemClick(model.items().single { it.item.name == "c1" })
+			model.openSearchField()
+			model.onQuerySubmit("inner")
+			model.onItemClick(model.items().single { it.item.name == "inner" })
 
 			assertEquals("the $kind row is its own content",
 				R.string.fail_paste_inside, model.pasteBlockedReason)
-
-			model.onBackRequested()
-
-			assertEquals("the walk back out holds the $kind row again",
-				R.string.fail_paste_present, model.pasteBlockedReason)
 		}
 	}
 
@@ -721,10 +721,6 @@ class MainExplorerViewModelTest {
 			settle(io)
 			assertEquals("the open list already holds the cut row",
 				R.string.fail_paste_present, model.pasteBlockedReason)
-
-			model.onItemClick(model.items().single { it.item.name == "c1" })
-			settle(io)
-			assertEquals(R.string.fail_paste_inside, model.pasteBlockedReason)
 
 			model.goToRoot()
 			assertEquals("the root answers without a read",
@@ -959,6 +955,21 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
+	fun `a tap on a batched chapter takes the mark back instead of opening it`() {
+		val (aId, _) = seed()
+		ItemRepository.createChapter(aId, "c2", null, 1)
+		val model = vmIn("A")
+		model.setSelected(model.items().single { it.item.name == "c1" }, true)
+		model.move(true)
+		val c1 = model.items().single { it.item.name == "c1" }
+
+		model.onItemClick(c1)
+
+		assertFalse("the tap took the mark back", c1.batched)
+		assertEquals("the chapter stayed shut", listOf("A"), model.history.path.map { it.name })
+	}
+
+	@Test
 	fun `a list reload ends a running drag, so its next step keeps the batch`() {
 		val (aId, _) = seed()
 		ItemRepository.createChapter(aId, "c2", null, 1)
@@ -1024,24 +1035,36 @@ class MainExplorerViewModelTest {
 		model.setSelected(model.items().single { it.item.name == "c1" }, true)
 		model.move(true)
 		fun armed() = model.items().filter { it.batched }.map { it.item.name }
+		fun row(name: String) = model.items().single { it.item.name == name }
 
-		model.onItemLongClick(model.items().single { it.item.name == "c2" })
+		model.onItemLongClick(row("c2"))
 		assertEquals("the press adds its row", listOf("c1", "c2"), armed())
 		assertEquals("the batch is no selection", 0, model.selectionCount())
-		model.onItemLongClick(model.items().single { it.item.name == "c2" })
+		model.onItemLongClick(row("c2"))
 		assertEquals("a second press takes it out", listOf("c1"), armed())
 		assertTrue("the list lends the icons to the paste", model.listState.value.gathering)
-		model.toggleSelect(model.items().single { it.item.name == "c3" })
+		model.toggleSelect(row("c3"))
 		assertEquals("the icon adds its row", listOf("c1", "c3"), armed())
-		model.toggleSelect(model.items().single { it.item.name == "c3" })
+		model.toggleSelect(row("c3"))
 		assertEquals("a second icon tap takes it out", listOf("c1"), armed())
 
+		// the press marks the row, and the drag carries that mark over its range
+		model.onItemLongClick(row("c2"))
 		model.selectRange(1, 2)
 		assertEquals("the drag adds its range", listOf("c1", "c2", "c3"), armed())
 		model.selectRange(1, 1)
 		assertEquals("a pulled-back row returns to the drag start", listOf("c1", "c2"), armed())
 		model.endRangeSelect()
 		assertEquals(2, model.armedCount)
+
+		// a press that takes a row out clears every row its drag crosses
+		model.onItemLongClick(row("c3"))
+		model.endRangeSelect()
+		assertEquals(listOf("c1", "c2", "c3"), armed())
+		model.onItemLongClick(row("c1"))
+		model.endRangeSelect()
+		model.selectRange(0, 1)
+		assertEquals("the drag clears its run", listOf("c3"), armed())
 	}
 
 	@Test
@@ -1183,10 +1206,14 @@ class MainExplorerViewModelTest {
 	fun `doPaste refuses a move into the armed rows content and reports it`() {
 		val (aId, _) = seed()
 		val c1 = ItemRepository.children(aId).single()
+		// the hit reaches the armed chapter's content, since its own tap keeps the mark
+		ItemRepository.createChapter(c1.id, "inner", null)
 		val model = vmIn("A")
 		model.setSelected(model.items().single { it.item.name == "c1" }, true)
 		model.move(false)
-		model.onItemClick(model.items().single { it.item.name == "c1" })
+		model.openSearchField()
+		model.onQuerySubmit("inner")
+		model.onItemClick(model.items().single { it.item.name == "inner" })
 
 		runBlocking {
 			val notice = async(start = CoroutineStart.UNDISPATCHED) {
@@ -1201,7 +1228,8 @@ class MainExplorerViewModelTest {
 
 		assertFalse(model.pasteArmed)
 		assertEquals("the chapter stayed in its set", listOf("c1"), ItemRepository.children(aId).map { it.name })
-		assertTrue("nothing landed inside the armed chapter", ItemRepository.children(c1.id).isEmpty())
+		assertEquals("nothing landed inside the armed chapter",
+			listOf("inner"), ItemRepository.children(c1.id).map { it.name })
 	}
 
 	@Test

@@ -138,18 +138,67 @@ class PickerViewModelTest {
 	}
 
 	@Test
-	fun `opening a chapter keeps the picks and marks them on return`() {
+	fun `a tap on a picked row takes the pick back without opening it`() {
 		seed()
 		val model = vm()
-		model.onItemClick(model.items().single { it.item.name == "A" && it.item.type == ItemKind.CHAPTER })
-		model.setSelected(model.items().single { it.item.name == "c1" }, true)
+		val a = model.items().single { it.item.name == "A" && it.item.type == ItemKind.CHAPTER }
+		model.setSelected(a, true)
 
+		model.onItemClick(a)
+
+		assertFalse(a.batched)
+		assertTrue("the tap did not open the subject", model.history.path.isEmpty())
+	}
+
+	@Test
+	fun `a drag from a picked row clears its range and a fresh drag adds`() {
+		val aId = seed()
+		val c1 = ItemRepository.children(aId).single()
+		listOf("w1", "w2", "w3").forEach {
+			ItemRepository.createWord(c1.id, it, null, listOf("t" to null))
+		}
+		val model = vm()
+		model.onItemClick(model.items().single { it.item.name == "A" })
 		model.onItemClick(model.items().single { it.item.name == "c1" })
-		assertEquals(listOf("A", "c1"), model.state.value.breadcrumbs)
-		assertEquals(listOf("c1"), model.batchRows().map { it.item.name })
+		fun row(name: String) = model.items().single { it.item.name == name }
+
+		// a press on an unpicked row adds its range
+		model.onItemLongClick(row("w1"))
+		model.selectRange(0, 2)
+		assertEquals(listOf("w1", "w2", "w3"), model.batchRows().map { it.item.name })
+		model.endRangeSelect()
+
+		// a press on a picked row clears the range of its drag
+		model.onItemLongClick(row("w1"))
+		model.selectRange(0, 1)
+		assertEquals("the drag dropped its range", listOf("w3"), model.batchRows().map { it.item.name })
+		model.selectRange(0, 0)
+		assertEquals(
+			"a pulled-back row returns to the batch",
+			listOf("w2", "w3"), model.batchRows().map { it.item.name },
+		)
+		model.endRangeSelect()
+	}
+
+	@Test
+	fun `opening a chapter keeps the picks and marks them on return`() {
+		val aId = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
+		ItemRepository.createChapter(aId, "c2", null, 1)
+		val model = vm()
+		model.onItemClick(model.items().single { it.item.name == "A" && it.item.type == ItemKind.CHAPTER })
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		model.setSelected(model.items().single { it.item.name == "w1" }, true)
 
 		model.onBackRequested()
-		assertTrue("the fresh row of the pick shows marked", model.items().single { it.item.name == "c1" }.batched)
+		model.onItemClick(model.items().single { it.item.name == "c2" })
+		assertEquals(listOf("A", "c2"), model.state.value.breadcrumbs)
+		assertEquals(listOf("w1"), model.batchRows().map { it.item.name })
+
+		model.onBackRequested()
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		assertTrue("the fresh row of the pick shows marked", model.items().single { it.item.name == "w1" }.batched)
 	}
 
 	@Test
@@ -179,18 +228,21 @@ class PickerViewModelTest {
 
 	@Test
 	fun `restored search results come back with their picks`() {
-		seed()
+		val aId = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
 		val model = vm()
 		model.onItemClick(model.items().single { it.item.name == "A" && it.item.type == ItemKind.CHAPTER })
 		model.openSearchField()
-		model.onQuerySubmit("c1")
-		model.setSelected(model.items().single { it.item.name == "c1" }, true)
+		model.onQuerySubmit("1")
+		model.setSelected(model.items().single { it.item.name == "w1" }, true)
 
+		// the tap opens the unpicked chapter hit, so the pick rides along
 		model.onItemClick(model.items().single { it.item.name == "c1" })
 		assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
 		assertEquals(SearchUi.RESULTS, model.state.value.searchUi)
 
-		assertTrue("the pick outlived the trip", model.items().single { it.item.name == "c1" }.batched)
+		assertTrue("the pick outlived the trip", model.items().single { it.item.name == "w1" }.batched)
 	}
 
 	@Test
@@ -199,15 +251,20 @@ class PickerViewModelTest {
 		val c1 = ItemRepository.children(aId).single()
 		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
 		ItemRepository.createWord(c1.id, "w2", null, listOf("t2" to null))
+		val c2 = ItemRepository.createChapter(aId, "c2", null, 1)
+		ItemRepository.createWord(c2.id, "w3", null, listOf("t3" to null))
+		ItemRepository.createWord(c2.id, "w4", null, listOf("t4" to null))
 		val model = vm()
 		model.onItemClick(model.items().single { it.item.name == "A" && it.item.type == ItemKind.CHAPTER })
-		model.setSelected(model.items().single { it.item.name == "c1" }, true)
 		model.onItemClick(model.items().single { it.item.name == "c1" })
+		model.setSelected(model.items().single { it.item.name == "w1" }, true)
+		model.onBackRequested()
+		model.onItemClick(model.items().single { it.item.name == "c2" })
 
 		model.onSelectAllToggle()
 
 		assertTrue("the shown rows joined the picks", model.items().all { it.batched })
-		assertEquals(listOf("c1", "w1", "w2"), model.batchRows().map { it.item.name })
+		assertEquals(listOf("w1", "w3", "w4"), model.batchRows().map { it.item.name })
 	}
 
 	@Test

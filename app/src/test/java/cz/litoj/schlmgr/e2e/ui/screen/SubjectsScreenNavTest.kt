@@ -94,10 +94,8 @@ class SubjectsScreenNavTest {
 		rule.waitForIdle()
 		rule.runOnIdle { assertTrue("the cut armed a move", model.pasteArmed) }
 
-		// the armed row itself is the one container the paste refuses
-		rule.onNodeWithText("c1").performClick()
-		rule.waitForIdle()
-		rule.runOnIdle { assertEquals(R.string.fail_paste_inside, model.pasteBlockedReason) }
+		// the open subject already holds the armed row, so the paste refuses the tap
+		rule.runOnIdle { assertEquals(R.string.fail_paste_present, model.pasteBlockedReason) }
 
 		runBlocking {
 			val notice = async(start = CoroutineStart.UNDISPATCHED) {
@@ -108,7 +106,7 @@ class SubjectsScreenNavTest {
 			withTimeout(1_000) {
 				assertEquals(
 					GlobalDependencies.UiMessage.Notice(
-						UiNotice.ActionUnavailable(R.string.fail_paste_inside)),
+						UiNotice.ActionUnavailable(R.string.fail_paste_present)),
 					notice.await())
 			}
 		}
