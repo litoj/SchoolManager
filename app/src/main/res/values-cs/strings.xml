@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="action_full_text">Celý Text</string>
-    <string name="action_reference">Přidat odkaz</string>
+    <string name="action_reference">Vytvořit</string>
     <string name="action_flip">Překlopit překlady</string>
     <string name="action_sw_success">" zapsáno úspěšně"</string>
     <string name="action_share">Sdílet</string>
@@ -255,7 +255,7 @@
         \nZaškrtnutí vpravo nahoře vybere vše nebo výběr ukončí. Ukončí ho i zpět.</string>
     <string name="help_select_move">Vyjmout vezme vybrané řádky a zobrazí vkládací lištu. Otevřete cíl a stiskněte Vložit.
         \nPřesun přežije přepnutí kapitoly.
-        \nDlouhý stisk nebo ikona řádku v libovolné kapitole přidá řádek k přesunu nebo ho odebere, Přidat odkaz funguje stejně.
+        \nDlouhý stisk nebo ikona řádku v libovolné kapitole přidá řádek k přesunu nebo ho odebere, Vytvořit funguje stejně.
         \nKlepnutí nebo tažení po vybraném řádku znaménko odebere, takže řádky pod ním z přesunu vypadnou.</string>
     <string name="help_test">Testy</string>
     <string name="help_test_how">Test se ptá na slovíčka ze zvolených zdrojů.</string>
@@ -291,6 +291,7 @@
     <string name="more_export">Export</string>
     <string name="reference_fork">Které odkazy převezmou úpravu?</string>
     <string name="reference_fork_hint">Ponechané odkazy převezmou úpravu. Křížek nechá původní.</string>
+    <string name="reference_picker_title">Vytvořit odkaz</string>
     <string name="ref_source_pick">Vyberte umístění:</string>
     <string name="ref_source_pick_hint">Řádek je na více místech.</string>
     <string name="export_omit_history">Vynechat úspěšnost</string>
@@ -357,6 +358,9 @@
     <string name="setts_desc_lines_hint">Delší popisy se schovají za ikonu info.</string>
     <string name="setts_double_tap_ms">Okno dvojkliku (ms)</string>
     <string name="setts_double_tap_ms_hint">Dva kliky v tomto čase překlopí celý seznam. 0 ho vypne.</string>
+    <string name="setts_band_intensity">Sytost barvy úspěšnosti</string>
+    <string name="setts_band_intensity_hint">Nejvyšší krytí pásku úspěšnosti. Řádek se třemi a více testy tmavne červeně s každým neúspěchem.</string>
+    <string name="value_percent">%1$d %%</string>
     <string name="setts_test_amount">Slovíčka na test</string>
     <string name="setts_test_variants">Požadovat všechny varianty názvu</string>
     <string name="setts_test_variants_hint">Slovíčko A/B vyžaduje A i B, každé na vlastním řádku. Čas roste 1,5krát na každou další variantu.</string>
@@ -384,7 +388,7 @@
     <string name="setts_act_cut">Přenese řádky do jiné složky ve stejném předmětu</string>
     <string name="setts_act_edit">Otevře jediný vybraný řádek k úpravám</string>
     <string name="setts_act_delete">Smaže vybrané řádky</string>
-    <string name="setts_act_reference">Přidá řádky jako odkazy do jiné složky</string>
+    <string name="setts_act_reference">Vytvoří odkazy na řádky v jiné složce</string>
     <string name="setts_act_flip">Překlopí uložené slovíčko a jeho překlady</string>
     <string name="setts_act_export">Exportuje vybrané řádky do souboru</string>
     <string name="setts_act_goto">Otevře složku jediného výsledku</string>

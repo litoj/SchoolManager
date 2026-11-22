@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import cz.litoj.schlmgr.app.AppSettings
 import cz.litoj.schlmgr.data.wordlist.WordListWriter
 import cz.litoj.schlmgr.ui.component.CrumbSize
+import cz.litoj.schlmgr.ui.component.SuccessBand
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.ui.component.NumberInput
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
@@ -33,6 +34,7 @@ class SettingsState(
 	searchDiacritics: Boolean = false,
 	selectionOrder: List<SelectionAction> = ActionConfig.DEFAULT_ORDER,
 	crumbSize: CrumbSize = CrumbSize.current,
+	bandIntensity: Int = SuccessBand.DEFAULT_INTENSITY,
 ) {
 	var parse by mutableStateOf(parse)
 		private set
@@ -43,6 +45,8 @@ class SettingsState(
 	var searchShowPath by mutableStateOf(searchShowPath)
 		private set
 	var crumbSize by mutableStateOf(crumbSize)
+		private set
+	var bandIntensity by mutableStateOf(bandIntensity)
 		private set
 	var descLinesText by mutableStateOf(descLinesText)
 		private set
@@ -97,6 +101,12 @@ class SettingsState(
 	fun cycleCrumbSize() {
 		crumbSize = CrumbSize.next()
 		CrumbSize.select(crumbSize)
+	}
+
+	/** The band re-renders live, so the list darkens while the slider moves. */
+	fun changeBandIntensity(percent: Int) {
+		bandIntensity = percent
+		SuccessBand.setPeak(percent)
 	}
 
 	/** Zero stands for the icon-only display. */
@@ -250,5 +260,6 @@ class SettingsViewModel : ViewModel() {
 		defaultReverse = TestEngine.isReversed,
 		searchDiacritics = AppSettings.getBool("searchNoDiacritics", false),
 		selectionOrder = config.order,
+		bandIntensity = SuccessBand.intensity,
 	)
 }

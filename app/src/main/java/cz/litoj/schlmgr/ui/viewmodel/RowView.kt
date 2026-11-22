@@ -28,6 +28,12 @@ interface RowView {
 	/** The success percent of the row, negative when untested. */
 	val ratio: Int
 
+	/** All tests the row counts, the failure step of the band reads it. */
+	val testedCount: Int
+
+	/** The failed tests of the row, each one deepens the red band. */
+	val failedTests: Int
+
 	val isReference: Boolean
 
 	/** Whether the reference can jump, since a second container holds the row. */
@@ -56,6 +62,8 @@ data class StaticRow(
 	override val description: String = "",
 	override val kind: RowKind = RowKind.WORD,
 	override val ratio: Int = -1,
+	override val testedCount: Int = 0,
+	override val failedTests: Int = 0,
 	override val isReference: Boolean = false,
 	override val hasSource: Boolean = false,
 	override val selected: Boolean = false,

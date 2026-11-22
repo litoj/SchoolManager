@@ -6,6 +6,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import cz.litoj.schlmgr.app.Startup
 import cz.litoj.schlmgr.ui.component.CrumbSize
+import cz.litoj.schlmgr.ui.component.SuccessBand
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 
 /**
@@ -17,6 +18,7 @@ internal fun ComponentActivity.startAppShell() {
 	Startup.init(this)
 	ItemRow.applyStoredOptions()
 	CrumbSize.applyStoredOptions()
+	SuccessBand.applyStoredOptions()
 	// a solid dark scrim keeps the navigation bar black in both palettes
 	enableEdgeToEdge(
 		// the status band is dark green in both palettes, so the dark style

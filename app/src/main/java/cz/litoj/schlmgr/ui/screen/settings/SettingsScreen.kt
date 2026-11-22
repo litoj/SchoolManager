@@ -38,6 +38,7 @@ import cz.litoj.schlmgr.ui.component.SettingCaption
 import cz.litoj.schlmgr.ui.component.SettingChoiceRow
 import cz.litoj.schlmgr.ui.component.SettingFieldRow
 import cz.litoj.schlmgr.ui.component.SettingNumberRow
+import cz.litoj.schlmgr.ui.component.SettingSliderRow
 import cz.litoj.schlmgr.ui.component.SettingSwitchRow
 import cz.litoj.schlmgr.ui.component.DefaultTextColor
 import cz.litoj.schlmgr.ui.shell.TopBar
@@ -108,6 +109,12 @@ private fun SettingsList(state: SettingsState, modifier: Modifier = Modifier) {
 			stringResource(R.string.setts_double_tap_ms), state.doubleTapMsText, state::setDoubleTapMs,
 			{ state.doubleTapMsFocusLost(); keyboard?.hide() },
 			caption = stringResource(R.string.setts_double_tap_ms_hint),
+		)
+		HairlineDivider()
+		SettingSliderRow(
+			stringResource(R.string.setts_band_intensity), state.bandIntensity,
+			state::changeBandIntensity,
+			caption = stringResource(R.string.setts_band_intensity_hint),
 		)
 		HairlineDivider()
 		SettingChoiceRow(

@@ -385,7 +385,7 @@ class CreatorPopup(
 					if (kind == Kind.NEW_WORD) Icon(
 						painterResource(R.drawable.ic_flip_black),
 						contentDescription = stringResource(R.string.swap_word),
-						tint = Color.Unspecified,
+						tint = textColor,
 						modifier = Modifier
 							.padding(start = 12.5.dp)
 							.size(IconSize)

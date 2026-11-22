@@ -167,7 +167,7 @@ fun Item(
 		}
 
 		// an untested row keeps no tint, so its bottom line joins across the band
-		if (successRatioArgb(item.ratio) == 0) Box(
+		if (item.ratio < 0) Box(
 			Modifier
 				.align(if (LocalLayoutDirection.current == LayoutDirection.Ltr)
 					Alignment.BottomStart else Alignment.BottomEnd)
@@ -311,25 +311,45 @@ private fun ActionSlot(content: @Composable () -> Unit) {
 /**
  * Success-ratio tint with a low alpha so it stays readable over both themes.
  * - a red-to-yellow ramp below 50 % and a yellow-to-green ramp above it.
- * - the red side keeps the peak alpha, so worse items carry more visual weight.
- * - the alpha falls toward green, whose higher luminance keeps the band light.
+ * - the peak alpha comes from [SuccessBand], the green end keeps half of it.
+ * - below 50 % a row with three or more tests adds a step per failure, capped at full alpha.
+ * - a chapter or subject adds 1 % of the peak per failure, since its count spans many words.
  * - an untested row and an empty container stay untinted.
  */
-internal fun successRatioArgb(ratio: Int): Int = when {
-	ratio < 0 -> 0
-	else -> {
-		// red holds 0x80 through the equal score, green fades to 0x40
-		val alpha = if (ratio < 50) 0x80 else 0x40 + (100 - ratio) * 0x40 / 50
-		// below 50 the green channel ramps up with the ratio, so the tint turns yellow
-		// above 50 the red channel fades with the ratio, so the tint runs to green
-		if (ratio < 50)
-			(alpha shl 24) or 0xFF0000 or ((ratio * 256 / 50).coerceIn(0, 255) shl 8) or 0x22
-		else
-			(alpha shl 24) or (((100 - ratio) * 256 / 50).coerceIn(0, 255) shl 16) or 0xFF00 or 0x22
+internal fun successRatioArgb(
+	ratio: Int,
+	testedCount: Int = 0,
+	failedTests: Int = 0,
+	peak: Int = SuccessBand.peakAlpha(),
+	failureStepDivisor: Int = FAILURE_STEP_DIVISOR,
+): Int {
+	if (ratio < 0) return 0
+	// the red side deepens with every failure once enough tests back the rate
+	val alpha = if (ratio < 50)
+		if (testedCount >= FAILURE_STEP_MIN_TESTS)
+			(peak + failedTests * peak / failureStepDivisor).coerceAtMost(0xFF)
+		else peak
+	else {
+		// the green end keeps half the peak, whose higher luminance keeps the band light
+		val green = peak / 2
+		green + (100 - ratio) * (peak - green) / 50
 	}
+	// below 50 the green channel ramps up with the ratio, so the tint turns yellow
+	// above 50 the red channel fades with the ratio, so the tint runs to green
+	return if (ratio < 50)
+		(alpha shl 24) or 0xFF0000 or ((ratio * 256 / 50).coerceIn(0, 255) shl 8) or 0x22
+	else
+		(alpha shl 24) or (((100 - ratio) * 256 / 50).coerceIn(0, 255) shl 16) or 0xFF00 or 0x22
 }
 
-internal fun successRatioBackground(item: RowView): Color = Color(successRatioArgb(item.ratio))
+internal fun successRatioBackground(item: RowView): Color =
+	Color(successRatioArgb(
+		item.ratio, item.testedCount, item.failedTests,
+		failureStepDivisor = when (item.kind) {
+			RowKind.CHAPTER, RowKind.SUBJECT -> CONTAINER_FAILURE_STEP_DIVISOR
+			else -> FAILURE_STEP_DIVISOR
+		},
+	))
 
 private val CellSidePadding = 2.dp
 
@@ -374,6 +394,15 @@ private val ActionIconSize = 30.dp
 internal const val RowIconTag = "row_icon"
 
 private const val PulseDurationMs = 650
+
+/** The band deepens only once a rate rests on this many tests. */
+private const val FAILURE_STEP_MIN_TESTS = 3
+
+/** One failure adds a tenth of the peak to a word's red side. */
+private const val FAILURE_STEP_DIVISOR = 10
+
+/** A chapter or subject spans many words, so one failure adds a hundredth of the peak. */
+private const val CONTAINER_FAILURE_STEP_DIVISOR = 100
 
 val RowKind.iconRes: Int
 	get() = when (this) {

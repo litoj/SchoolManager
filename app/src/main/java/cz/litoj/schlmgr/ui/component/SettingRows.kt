@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.Slider
+import androidx.compose.material.SliderDefaults
 import androidx.compose.material.Switch
 import androidx.compose.material.SwitchDefaults
 import androidx.compose.material.Text
@@ -16,11 +18,13 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
+import kotlin.math.roundToInt
 
 // the shared settings-style rows that the settings and test-setup screens both render.
 // one place keeps the two from drifting apart in padding, font size or switch colours.
@@ -148,6 +152,40 @@ fun SettingChoiceRow(
 			Text(label, Modifier.weight(1f), style = TextStyle(fontSize = 18.sp, color = DefaultTextColor))
 			Text(value, style = TextStyle(fontSize = 18.sp, color = DefaultTextColor))
 		}
+		caption?.let { SettingCaption(it) }
+	}
+}
+
+/** A label with its percent and a slider below, followed by an optional caption. */
+@Composable
+fun SettingSliderRow(
+	label: String,
+	value: Int,
+	onValueChange: (Int) -> Unit,
+	caption: String? = null,
+	valueRange: IntRange = 0..100,
+) {
+	Column(
+		Modifier
+			.fillMaxWidth()
+			.padding(5.dp),
+	) {
+		Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+			Text(label, Modifier.weight(1f), style = TextStyle(fontSize = 18.sp, color = DefaultTextColor))
+			Text(
+				stringResource(R.string.value_percent, value),
+				style = TextStyle(fontSize = 18.sp, color = DefaultTextColor),
+			)
+		}
+		Slider(
+			value = value.toFloat(),
+			onValueChange = { onValueChange(it.roundToInt().coerceIn(valueRange)) },
+			valueRange = valueRange.first.toFloat()..valueRange.last.toFloat(),
+			colors = SliderDefaults.colors(
+				thumbColor = colorResource(R.color.colorPrimaryHeader),
+				activeTrackColor = colorResource(R.color.colorPrimaryHeader),
+			),
+		)
 		caption?.let { SettingCaption(it) }
 	}
 }

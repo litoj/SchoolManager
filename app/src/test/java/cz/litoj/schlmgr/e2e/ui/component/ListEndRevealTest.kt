@@ -49,7 +49,7 @@ class ListEndRevealTest {
 	}
 
 	private fun rows(count: Int) = List(count) { i ->
-		StaticRow("k$i", i + 1, "item ${i + 1}", "", RowKind.SUBJECT, 0, false, selected = false)
+		StaticRow("k$i", i + 1, "item ${i + 1}", "", RowKind.SUBJECT, 0, isReference = false, selected = false)
 	}
 
 	/** The phone's animation scales, a zero scale stands for the animations being off. */

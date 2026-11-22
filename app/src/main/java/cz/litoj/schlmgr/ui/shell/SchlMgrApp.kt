@@ -153,7 +153,7 @@ fun SchlMgrApp(
 									navController.popBackStack()
 								},
 								title = if (subjectsViewModel.referenceTarget != null)
-									R.string.action_reference else R.string.test_add,
+									R.string.reference_picker_title else R.string.test_add,
 							)
 						}
 						composable(Destination.ABOUT.name) { entry ->

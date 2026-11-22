@@ -13,6 +13,7 @@ import cz.litoj.schlmgr.data.db.DbLink
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.db.ROOT_ID
 import cz.litoj.schlmgr.data.db.ratio
+import cz.litoj.schlmgr.data.db.testedCount
 
 class Placement(
 	val parentId: Int, val isReference: Boolean, val hasSource: Boolean, val chain: List<DbItem>?,
@@ -54,6 +55,10 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	override val kind: RowKind get() = rowKindOf(item, isSubject)
 
 	override val ratio: Int get() = item.ratio
+
+	override val testedCount: Int get() = item.testedCount
+
+	override val failedTests: Int get() = item.failedTests
 
 	/**
 	 * The per-translation lines of a flipped word, one entry per translation.

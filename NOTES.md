@@ -374,7 +374,10 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Custom visuals derive from their surroundings.
 - Disabled icons only tint, with no separate disabled variants.
 - The New palette wears that grey wash solid, so the list never mixes into it.
-- The success band keeps the red-to-yellow hue ramp at alpha 80 and fades the yellow-to-green side to alpha 40.
+- The success band's peak alpha comes from the settings slider, 50 % by default.
+- Its red-to-yellow side adds a tenth of that peak per failure once a row has three tests, capped at full alpha.
+- A chapter or subject adds 1 % of that peak per failure, since its count spans many words.
+- The yellow-to-green side fades to half the peak alpha.
 - An untested row and an empty container stay untinted, and their separator runs the full line.
 
 ### Help
