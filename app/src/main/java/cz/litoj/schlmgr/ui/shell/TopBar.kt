@@ -159,7 +159,8 @@ fun RowScope.TopBarIconButton(
 }
 
 /**
- * Direct actions fill measured slots, while More opens with the rest.
+ * The actions show as icons when all fit, otherwise More holds every one.
+ * - a partial row would split the list controls, so a narrow bar keeps only its pinned icons.
  * - a row without a glyph stays in the menu, where its text names it.
  */
 @Composable
@@ -175,9 +176,10 @@ fun RowScope.TopBarActions(
 		reservedWidth = TopBarSizes.reserved(pinned),
 		slotWidth = TopBarSizes.action,
 	)
-	val direct = entries.indices.filter { entries[it].icon != 0 }.take(layout.direct)
+	val icons = entries.indices.filter { entries[it].icon != 0 }
+	val direct = if (icons.size <= layout.direct) icons else emptyList()
 	direct.forEach { TopBarEntryAction(entries[it], onPick) }
-	if (layout.showMore || entries.any { it.icon == 0 }) {
+	if (direct.size < entries.size) {
 		TopBarMoreButton(
 			entries.filterIndexed { index, _ -> index !in direct },
 			stringResource(R.string.more),

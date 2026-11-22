@@ -64,4 +64,12 @@ class FilterChipsTest {
 
 		rule.runOnIdle { assertEquals(SearchTag.RATE, dropped) }
 	}
+
+	@Test
+	fun `the filter tags go by importance`() {
+		assertEquals(
+			listOf(SearchTag.NAME, SearchTag.TYPE, SearchTag.RATE, SearchTag.TESTED, SearchTag.DESCRIPTION),
+			SearchTag.entries,
+		)
+	}
 }

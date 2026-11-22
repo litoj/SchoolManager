@@ -1,6 +1,8 @@
 package cz.litoj.schlmgr.ui.viewmodel
 
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.ui.search.SearchTag
+import cz.litoj.schlmgr.ui.search.label
 import cz.litoj.schlmgr.ui.shell.MenuEntry
 
 /**
@@ -36,6 +38,11 @@ object MenuId {
 	const val GOTO = 23
 	const val DELETE = 24
 	const val CLEAR_FILTER = 25
+	const val FILTER_NAME = 26
+	const val FILTER_TYPE = 27
+	const val FILTER_RATE = 28
+	const val FILTER_TESTED = 29
+	const val SELECT_ALL = 30
 }
 
 /**
@@ -69,6 +76,8 @@ internal fun selectionOverflowMenu(
  *
  * @param exportBlockedReason the reason of an empty writable selection, 0 when it can export
  * @param filterActive whether the search runs a structured filter, which adds its clear row
+ * @param searchBlockedReason the reason a search can't run, which mutes the filter too
+ * @param selectAllBlockedReason the reason select all can't run, 0 when it can
  */
 fun explorerMenu(
 	kind: ExplorerMenuKind,
@@ -78,14 +87,20 @@ fun explorerMenu(
 	exportBlockedReason: Int = 0,
 	filterActive: Boolean = false,
 	direct: Int = 4,
+	searchBlockedReason: Int = 0,
+	selectAllBlockedReason: Int = 0,
 ): List<MenuEntry> {
 	val search = kind == ExplorerMenuKind.SEARCH
 	val actions = selectionOverflowMenu(config, search, singleSelected, exportBlockedReason, direct)
 	val clear = if (search && filterActive)
 		listOf(MenuEntry(MenuId.CLEAR_FILTER, R.string.clear_filter, icon = R.drawable.ic_cancel))
 	else emptyList()
-	val menu = if (search) searchStatic + clear + actions
-	else browseRows() + actions
+	val selectAll = MenuEntry(
+		MenuId.SELECT_ALL, R.string.select_all, icon = R.drawable.ic_check_all,
+		blockedReason = selectAllBlockedReason,
+	)
+	val lead = listOf(selectAll) + (if (search) searchStatic else browseRows()) + filterMenu(searchBlockedReason)
+	val menu = if (search) lead + clear + actions else lead + actions
 	return menu.filter { it.selectionAction == selecting }
 }
 
@@ -103,6 +118,27 @@ private val sortMenu = listOf(
 /** The browse menu rows, where import belongs to the New palette instead. */
 private fun browseRows(): List<MenuEntry> = listOf(
 	MenuEntry(0, R.string.sort, icon = R.drawable.ic_sort_black, children = sortMenu),
+)
+
+/**
+ * The filter tags of the header, the least used one stays in the editor.
+ * - a tag pick opens the editor on that tag, so the success rate shows before any search.
+ */
+private val filterTags = linkedMapOf(
+	MenuId.FILTER_NAME to SearchTag.NAME,
+	MenuId.FILTER_TYPE to SearchTag.TYPE,
+	MenuId.FILTER_RATE to SearchTag.RATE,
+	MenuId.FILTER_TESTED to SearchTag.TESTED,
+)
+
+/** The tag of one filter leaf id, null for any other id. */
+fun filterTagOf(id: Int): SearchTag? = filterTags[id]
+
+/** The filter icon of the header, which a blocked search mutes with the same reason. */
+private fun filterMenu(searchBlockedReason: Int) = MenuEntry(
+	0, R.string.filter_tag, icon = R.drawable.ic_filter,
+	children = filterTags.map { (id, tag) -> MenuEntry(id, tag.label) },
+	blockedReason = searchBlockedReason,
 )
 
 private val searchStatic = listOf(

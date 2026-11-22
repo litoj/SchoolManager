@@ -238,7 +238,7 @@
     <string name="help_search">Vyhledávání</string>
     <string name="help_search_hint">Hledat v nápovědě</string>
     <string name="help_search_how">Hledání najde názvy a překlady v otevřeném předmětu.
-        \nIkona filtru přidá filtr, štítky pod hlavičkou pojmenují filtry, se kterými hledání běží.
+        \nIkona filtru vedle řazení přidá filtr, štítky pod hlavičkou pojmenují filtry, se kterými hledání běží.
         \nKlepnutí na štítek filtr znovu otevře, křížek ho odebere.
         \nHledání vyhoví textu pole i všem filtrům najednou.
         \nVýsledek hledání slovíčka zobrazuje jeho překlady přímo, přepínač v nastavení to vypne.

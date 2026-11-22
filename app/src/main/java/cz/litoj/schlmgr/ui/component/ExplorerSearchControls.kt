@@ -13,7 +13,7 @@ import cz.litoj.schlmgr.ui.shell.TopBarTitle
 
 /**
  * The shared search and overflow controls of an explorer header.
- * - their order never changes: search, the list actions, then the pinned select-all.
+ * - search is the one pinned icon, the menu entries take the room left and spill into More.
  * - the list actions stay while a selection runs, since the strip only owns the row actions.
  */
 @Composable
@@ -28,13 +28,11 @@ fun RowScope.ExplorerSearchControls(
 	onQueryChange: (String) -> Unit,
 	onQuerySubmit: (String) -> Unit,
 	onDismissSearch: () -> Unit,
-	onFilter: () -> Unit,
-	onToggleSelectAll: () -> Unit,
 	onMenuPick: (Int) -> Unit,
 ) {
 	if (fieldOpen) TopBarSearchField(
 		query, onQueryChange, onQuerySubmit, onDismissSearch,
-		Modifier.weight(1f), onFilter = onFilter,
+		Modifier.weight(1f),
 	)
 	else TopBarTitle(title)
 	TopBarIconButton(
@@ -45,10 +43,5 @@ fun RowScope.ExplorerSearchControls(
 		blockedReason = searchBlockedReason,
 		onClick = onOpenSearch,
 	)
-	TopBarActions(entries, width, onMenuPick, pinned = 2)
-	TopBarIconButton(
-		icon = R.drawable.ic_check_all,
-		contentDescription = stringResource(R.string.select_all),
-		onClick = onToggleSelectAll,
-	)
+	TopBarActions(entries, width, onMenuPick, pinned = 1)
 }

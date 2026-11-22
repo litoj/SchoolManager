@@ -67,4 +67,38 @@ class TopBarActionsTest {
 		rule.onNodeWithContentDescription("Import").assertExists()
 		rule.onNodeWithContentDescription("More").assertDoesNotExist()
 	}
+
+	@Test
+	fun `a bar that holds only some icons keeps them all in more`() {
+		show(
+			listOf(
+				MenuEntry(1, R.string.search, icon = R.drawable.ic_search),
+				MenuEntry(2, R.string.more_import, icon = R.drawable.ic_download),
+				MenuEntry(3, R.string.sort, icon = R.drawable.ic_sort_black),
+			),
+		)
+
+		// two slots for three icons, so a partial row would split the list controls
+		rule.onNodeWithContentDescription("Search").assertDoesNotExist()
+		rule.onNodeWithContentDescription("Import").assertDoesNotExist()
+		openMore()
+		rule.onNodeWithText("Sort by").assertExists()
+	}
+
+	@Test
+	fun `a bar too narrow for every icon moves them all into more`() {
+		show(
+			listOf(
+				MenuEntry(1, R.string.search, icon = R.drawable.ic_search),
+				MenuEntry(2, R.string.more_import, icon = R.drawable.ic_download),
+				MenuEntry(3, R.string.sort, icon = R.drawable.ic_sort_black),
+			),
+			width = 150.dp,
+		)
+
+		rule.onNodeWithContentDescription("Search").assertDoesNotExist()
+		openMore()
+		rule.onNodeWithText("Search").assertExists()
+		rule.onNodeWithText("Import").assertExists()
+	}
 }

@@ -122,9 +122,13 @@ internal class SearchFlow(
 	/** The query a run answers to: the field text and the filters of the dialog. */
 	fun currentQuery() = SearchQuery(query.value, criteria)
 
-	/** [criterion] replaces the one of its tag and runs again. */
+	/**
+	 * [criterion] replaces the one of its tag and runs again.
+	 * - a filter picked from a plain list starts it, and the list then shows the results.
+	 */
 	fun applyFilter(criterion: Criterion) {
 		criteria = currentQuery().with(criterion).criteria
+		if (host.searchUi() == SearchUi.OFF) host.setSearchUi(SearchUi.RESULTS)
 		runFilters()
 	}
 

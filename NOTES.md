@@ -81,19 +81,16 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A top-bar action without an icon always goes to the More menu, which shows its text.
 - The view model names the menu kind, the search door and the file doors of its own list.
 - One menu door serves every host, so no screen picks a menu kind by hand.
-- One menu door answers the sort family and the clear filter for every host.
+- One menu door answers select all, the sort family, the filter tags and the clear filter for every host.
 - One row tap flips a word or opens a folder for every host, and the host keeps notes and inert hits.
-- One shared search header orders search, the list menu, then optional selection controls.
 - The shared picker takes its purpose title from the caller: test sources or a reference.
 - One menu host holds a button and its dropdown in one box, so a menu opens at its own button.
 - A host that opens no file lists no import row.
 - Settings highlights use the same capacity calculation as the shown strips.
-- Every explorer pins Select all on the right, with sorting shown directly or collapsed by width.
 - The picker shows the same container info line as the explorer, so no hint line replaces it.
 - A strip label stays centered and ellipsizes when its slot cannot hold the full text.
 - A label with no glyph keeps the glyph slot, so one strip never splits its labels.
 - The top More button hides while a selection runs.
-- The explorer top bar keeps one action set: search, the list menu, then the pinned Select all.
 - Cut applies only to a browse list.
 - The settings editor names the strips that show each action at the current width.
 - Top actions estimate capacity at 1.2 per slot, while titles and search keep 96 dp of intrinsic minimum space.
@@ -130,7 +127,8 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 ### Search
 
 - The index preloads the open container subgraph, so matching runs in memory with no id-list queries.
-- Search stays available in every explorer state except the subjects root.- A search started from a selection reads the selected rows and their content only.
+- Search stays available in every explorer state except the subjects root.
+- A search started from a selection reads the selected rows and their content only.
 - The scope holds until the search ends, so a refined query never widens it.
 - The picker marks its sources, so its search stays unlimited.
 - A query matches names and translations, and a typed translation finds its words.
@@ -147,6 +145,12 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The editor holds Apply back, so no run starts from a value that cannot compare.
 - An unfinished run reads as searching, an empty finished run names the next step.
 - A filter shows as a chip under the header, its body opens the editor, its mark drops it.
+- The filter icon sits beside sort, its dropdown lists the tags, so the success rate shows before any search.
+- The header order is search, select all, sort, filter, only search is pinned.
+- The list icons show together or all wait in More, so a narrow phone shows only search.
+- A tag pick opens the editor on that tag, or on its set filter.
+- Description stays in the editor only, the dropdown keeps the important tags.
+- A filter applied from a plain list shows its results like a search.
 - The info strip names the result count and the rows a limited run read.
 - The search menu drops every filter and leaves the typed text running.
 - The field stays while it holds text, with or without the keyboard.

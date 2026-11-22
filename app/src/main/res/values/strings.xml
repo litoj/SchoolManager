@@ -251,7 +251,7 @@
     <string name="help_search">Searching</string>
     <string name="help_search_hint">Search help</string>
     <string name="help_search_how">Search finds names and translations in the open subject.
-        \nThe filter icon adds a filter, the chips under the header name the ones a search runs with.
+        \nThe filter icon beside sort adds a filter, the chips under the header name the ones a search runs with.
         \nA chip label opens its filter again, its mark drops it.
         \nA search answers to its text and to every filter together.
         \nA word result shows its translations directly, a settings toggle turns that off.

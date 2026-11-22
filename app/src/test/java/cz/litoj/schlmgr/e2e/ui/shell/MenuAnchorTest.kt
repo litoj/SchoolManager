@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -88,5 +89,29 @@ class MenuAnchorTest {
 			assertEquals(1, picked)
 		}
 		rule.onNodeWithText(sortLabel()).assertDoesNotExist()
+	}
+
+	@Test
+	fun `every row icon takes one size whatever its drawable declares`() {
+		val rows = listOf(
+			MenuEntry(1, R.string.select_all, icon = R.drawable.ic_check_all),
+			MenuEntry(2, R.string.sort, icon = R.drawable.ic_sort_black),
+		)
+		rule.setContent {
+			Row(Modifier.height(60.dp)) {
+				MenuHost(rows, {}, Modifier.width(60.dp).fillMaxHeight()) { open ->
+					Box(Modifier.fillMaxSize().testTag("button").clickable { open() })
+				}
+			}
+		}
+
+		rule.onNodeWithTag("button").performClick()
+
+		// the label follows its icon, so one icon size lines every label up
+		val selectAll = RuntimeEnvironment.getApplication().getString(R.string.select_all)
+		assertEquals(
+			rule.onNodeWithText(sortLabel(), useUnmergedTree = true).getUnclippedBoundsInRoot().left,
+			rule.onNodeWithText(selectAll, useUnmergedTree = true).getUnclippedBoundsInRoot().left,
+		)
 	}
 }

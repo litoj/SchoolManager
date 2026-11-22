@@ -24,7 +24,8 @@ import org.robolectric.annotation.Config
  * - the list actions never leave it, only the strip under it changes.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35])
+// a phone wide enough for every list icon, a narrow one keeps them all in More
+@Config(sdk = [35], qualifiers = "w411dp-h891dp")
 class SubjectsTopBarModeTest {
 
 	@get:Rule
@@ -67,5 +68,7 @@ class SubjectsTopBarModeTest {
 		// the nav turning into Back proves the mode, and the list menu is still up there
 		rule.onNodeWithContentDescription("Back").assertExists()
 		rule.onNodeWithContentDescription("Sort by").assertExists()
+		rule.onNodeWithContentDescription("Select all").assertExists()
+		rule.onNodeWithContentDescription("Filter by").assertExists()
 	}
 }

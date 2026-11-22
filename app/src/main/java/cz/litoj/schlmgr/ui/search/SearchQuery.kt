@@ -5,13 +5,14 @@ import cz.litoj.schlmgr.data.db.ItemKind
 /**
  * What one criterion compares.
  * - a new measure or field is one entry here plus its matcher in [SearchEngine].
+ * - the entries go by importance, since the header menu lists them in that order.
  */
 enum class SearchTag {
-	TYPE,
 	NAME,
-	DESCRIPTION,
+	TYPE,
 	RATE,
-	TESTED;
+	TESTED,
+	DESCRIPTION;
 
 	/** the value of a measure is a whole number */
 	val numeric: Boolean get() = this == RATE || this == TESTED

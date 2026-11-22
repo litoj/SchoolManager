@@ -3,6 +3,7 @@ package cz.litoj.schlmgr.ui.shell
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.DropdownMenu
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
@@ -25,6 +26,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.ui.component.IconSize
 import cz.litoj.schlmgr.ui.component.reportUnavailable
 
 /** One action as data: placement belongs to whoever shows it, the glyph travels with the row. */
@@ -138,12 +140,14 @@ private fun entryColor(entry: MenuEntry): Color =
 	if (entry.enabled) LocalContentColor.current
 	else LocalContentColor.current.copy(alpha = 0.38f)
 
+/** The drawables declare their own sizes, so the row fixes one for every icon. */
 @Composable
 private fun MenuIcon(entry: MenuEntry) {
 	if (entry.icon != 0) Icon(
 		painterResource(entry.icon),
 		contentDescription = null,
 		tint = entryColor(entry),
+		modifier = Modifier.size(IconSize),
 	)
 }
 

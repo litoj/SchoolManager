@@ -3,9 +3,6 @@ package cz.litoj.schlmgr.e2e.ui.component
 import android.view.View
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -17,11 +14,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * The search field against the keyboard, driven through the window insets.
- * - a dismissed keyboard closes the field.
- * - the filter keeps the field and its query, though its popup window hides the keyboard.
- */
+/** The search field against the keyboard, driven through the window insets. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class TopBarSearchFieldTest {
@@ -31,12 +24,11 @@ class TopBarSearchFieldTest {
 
 	private lateinit var view: View
 	private var closes = 0
-	private var filters = 0
 
 	private fun show() {
 		rule.setContent {
 			view = LocalView.current
-			TopBarSearchField("hled", {}, {}, { closes++ }, onFilter = { filters++ })
+			TopBarSearchField("hled", {}, {}, { closes++ })
 		}
 		rule.waitForIdle()
 		keyboard(visible = true)
@@ -60,19 +52,5 @@ class TopBarSearchFieldTest {
 		keyboard(visible = false)
 
 		rule.runOnIdle { assertEquals(1, closes) }
-	}
-
-	@Test
-	fun `the filter keeps the field and the query when the keyboard hides`() {
-		show()
-
-		rule.onNodeWithContentDescription("Search filter").performClick()
-		keyboard(visible = false)
-
-		rule.runOnIdle {
-			assertEquals(1, filters)
-			assertEquals(0, closes)
-		}
-		rule.onNodeWithText("hled").assertExists()
 	}
 }

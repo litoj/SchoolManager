@@ -1,11 +1,13 @@
 package cz.litoj.schlmgr.unit.ui.viewmodel
 
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.ui.search.SearchTag
 import cz.litoj.schlmgr.ui.viewmodel.ActionConfig
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerMenuKind
 import cz.litoj.schlmgr.ui.viewmodel.MenuId
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction
 import cz.litoj.schlmgr.ui.viewmodel.explorerMenu
+import cz.litoj.schlmgr.ui.viewmodel.filterTagOf
 import cz.litoj.schlmgr.ui.viewmodel.menuKindFor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -146,6 +148,42 @@ class ExplorerMenuTest {
 	}
 
 	@Test
+	fun `every menu kind leads with select all, sort, then filter`() {
+		for (kind in ExplorerMenuKind.entries) {
+			val lead = menu(kind, selecting = false).take(3).map { it.label }
+			assertEquals("$kind", listOf(R.string.select_all, R.string.sort, R.string.filter_tag), lead)
+		}
+	}
+
+	@Test
+	fun `the filter offers the tags by importance without description`() {
+		val filter = menu(ExplorerMenuKind.CONTAINER, selecting = false).single { it.label == R.string.filter_tag }
+
+		assertEquals(R.drawable.ic_filter, filter.icon)
+		assertEquals(
+			listOf(SearchTag.NAME, SearchTag.TYPE, SearchTag.RATE, SearchTag.TESTED),
+			filter.children.map { filterTagOf(it.id) },
+		)
+	}
+
+	@Test
+	fun `blocked reasons mute the filter and select all`() {
+		val blocked = explorerMenu(
+			ExplorerMenuKind.CONTAINER, selecting = false, singleSelected = true, config,
+			searchBlockedReason = R.string.unavailable_search_root,
+			selectAllBlockedReason = R.string.unavailable_paste_armed,
+		)
+
+		assertEquals(R.string.unavailable_search_root, blocked.single { it.label == R.string.filter_tag }.blockedReason)
+		assertEquals(R.string.unavailable_paste_armed, blocked.single { it.id == MenuId.SELECT_ALL }.blockedReason)
+	}
+
+	@Test
+	fun `a non filter id has no tag`() {
+		assertEquals(null, filterTagOf(MenuId.SORT_ALPHA_AZ))
+	}
+
+	@Test
 	fun `the sort rows put original first and each descending choice before ascending`() {
 		assertEquals(
 			listOf(
@@ -162,7 +200,7 @@ class ExplorerMenuTest {
 		// sort-default reloads the browse order, which a search list has none of,
 		// and the entry would leave the search mode on a browse list
 		val sort = menu(ExplorerMenuKind.SEARCH, selecting = false)
-			.single { it.children.isNotEmpty() }
+			.single { it.label == R.string.sort }
 		assertTrue(sort.children.none { it.id == MenuId.SORT_DEFAULT })
 		assertTrue(sort.children.isNotEmpty())
 	}

@@ -42,12 +42,14 @@ import java.util.regex.Pattern
  * - a new criterion picks its tag first, so one dialog serves every tag.
  * - [query] supplies the filter a tag already has, so picking it back reopens its value.
  * - Apply is held until the value fits the tag, so a criterion never fails to search.
+ * - [startTag] opens a new criterion on that tag, the tag a header menu pick names.
  */
 class CriterionPopup(
 	private val query: SearchQuery,
 	private val existing: Criterion?,
 	private val onApply: (Criterion) -> Unit,
 	private val onDrop: (SearchTag) -> Unit,
+	startTag: SearchTag? = null,
 ) : DialogSpec {
 
 	private var tag by mutableStateOf(existing?.tag ?: SearchTag.TYPE)
@@ -57,6 +59,7 @@ class CriterionPopup(
 	private var value by mutableStateOf(existing?.startText ?: "")
 
 	init {
+		if (existing == null && startTag != null) pickTag(startTag)
 		Dialogs.show(this)
 	}
 
