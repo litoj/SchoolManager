@@ -3,6 +3,7 @@ package cz.litoj.schlmgr.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.db.ratio
@@ -12,12 +13,15 @@ import cz.litoj.schlmgr.ui.search.SearchTag
 import cz.litoj.schlmgr.testing.TestEngine
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * The explorer state of one screen.
@@ -55,6 +59,43 @@ abstract class ExplorerViewModel<R>(
 		setContent(history.path.lastOrNull())
 		onChange()
 	}
+
+	/**
+	 * Opens the sibling [delta] away, the horizontal swipe of every explorer.
+	 * - it replaces the entry, so back goes up.
+	 * - the swipe cancels the row selection, while an armed paste stays alive.
+	 */
+	fun openSibling(delta: Int) {
+		val path = history.path
+		if (path.isEmpty() || searching) return
+		clearSelection()
+		val current = path.last()
+		val parent = path.getOrNull(path.size - 2)
+		val newPath = ArrayList(path)
+		siblingJob?.cancel()
+		// a stale swipe must not land over a newer one
+		val generation = ++siblingGeneration
+		siblingJob = viewModelScope.launch {
+			val siblings = withContext(io) {
+				if (parent != null) orderedChildren(parent.id) else ItemRepository.subjects()
+			}
+			val index = siblings.indexOfFirst { it.id == current.id }
+			if (index < 0) return@launch
+			val target = siblings.getOrNull(index + delta) ?: return@launch
+			// only chapters can open
+			if (target.type != ItemKind.CHAPTER) return@launch
+			// a newer navigation supersedes, and a mid-read search blocks the landing
+			if (generation != siblingGeneration) return@launch
+			if (history.path.lastOrNull() !== current || searching) return@launch
+			newPath[newPath.size - 1] = target
+			history.replaceCurrent(newPath)
+			setContent(history.path.lastOrNull())
+		}
+	}
+
+	private var siblingJob: Job? = null
+
+	private var siblingGeneration = 0
 
 	/** Unlimited, so a request survives while the view is stopped. */
 	private val _requests = Channel<R>(Channel.UNLIMITED)

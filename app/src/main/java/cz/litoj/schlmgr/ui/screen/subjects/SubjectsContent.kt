@@ -1,6 +1,5 @@
 package cz.litoj.schlmgr.ui.screen.subjects
 
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -9,13 +8,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cz.litoj.schlmgr.ui.component.ExplorerScaffold
@@ -32,8 +27,7 @@ import cz.litoj.schlmgr.ui.viewmodel.selectionOverflowMenu
 
 /**
  * The explorer content of the subjects screen.
- * - the scaffold holds the action strip and the floating New button.
- * - the sibling swipe sits over all of it.
+ * - the scaffold holds the action strip, the sibling swipe and the floating New button.
  */
 @Composable
 internal fun SubjectsContent(
@@ -43,12 +37,7 @@ internal fun SubjectsContent(
 ) {
 	val state by viewModel.state.collectAsStateWithLifecycle()
 	val listState by viewModel.listState.collectAsStateWithLifecycle()
-	// a horizontal swipe switches to the sibling.
-	// the pixel threshold keys the gesture, so a density change restarts it
-	val swipeThreshold = with(LocalDensity.current) { 40.dp.toPx() }
 	val searching = listState.variant == ExplorerRowVariant.Search
-	val swipe = remember { SiblingSwipe() }
-	val openSibling by rememberUpdatedState(viewModel::openSibling)
 	val scrollState = rememberLazyListState()
 	// a held long-press keeps the strip away, so the list never shrinks under the drag
 	var pressHeld by remember { mutableStateOf(false) }
@@ -73,23 +62,13 @@ internal fun SubjectsContent(
 			onFilterDrop = viewModel::dropFilter,
 			onParentClick = { viewModel.onBackRequested() },
 			callbacks = callbacks,
+			onSibling = viewModel::openSibling,
 			scrollState = scrollState,
 			onScrollPosition = viewModel::onScrollPosition,
 			// the armed status takes the top line, so the bottom strip holds only its actions
 			statusLine = armedStatus ?: selectionStatus,
 			modifier = Modifier.fillMaxSize()
-				.fabDragVisibility(fabVisibility) { scrollState.canScrollForward || scrollState.canScrollBackward }
-				.pointerInput(swipeThreshold) {
-				detectHorizontalDragGestures(
-					onHorizontalDrag = { _, amount -> swipe.travel += amount },
-					onDragEnd = {
-						if (swipe.travel < -swipeThreshold) openSibling(1)
-						else if (swipe.travel > swipeThreshold) openSibling(-1)
-						swipe.reset()
-					},
-					onDragCancel = { swipe.reset() },
-				)
-			},
+				.fabDragVisibility(fabVisibility) { scrollState.canScrollForward || scrollState.canScrollBackward },
 		) {
 			when {
 				viewModel.pasteArmed -> PasteActionBar(
@@ -120,15 +99,6 @@ internal fun SubjectsContent(
 		}
 		SubjectsFab(
 			viewModel, listState, fabVisibility, Modifier.matchParentSize())
-	}
-}
-
-/** Gesture-local travel, which must not schedule a render on every pointer movement. */
-private class SiblingSwipe {
-	var travel = 0f
-
-	fun reset() {
-		travel = 0f
 	}
 }
 

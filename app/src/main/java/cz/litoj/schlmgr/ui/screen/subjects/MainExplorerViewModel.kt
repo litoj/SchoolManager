@@ -293,16 +293,11 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 	private inner class NavigationHost : SubjectsNavigation.Host, SubjectsHost by shared {
 		override fun selectionCount() = this@MainExplorerViewModel.selectionCount()
 		override val pasteArmed get() = this@MainExplorerViewModel.pasteArmed
-		override fun setContent(container: DbItem?) = this@MainExplorerViewModel.setContent(container)
 		override fun openChain(path: MutableList<DbItem>, pulseItemId: Int?) =
 			this@MainExplorerViewModel.openChain(path, pulseItemId)
-
-		override fun orderedChildren(parentId: Int) = this@MainExplorerViewModel.orderedChildren(parentId)
 	}
 
 	fun onReferenceClick(index: Int) = navigation.onReferenceClick(index)
-
-	fun openSibling(delta: Int) = navigation.openSibling(delta)
 
 	fun navigateToSource(path: List<DbItem>, pulseItemId: Int? = null) =
 		navigation.navigateToSource(path, pulseItemId)

@@ -1,5 +1,6 @@
 package cz.litoj.schlmgr.ui.component
 
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,9 +10,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.ui.search.Criterion
 import cz.litoj.schlmgr.ui.search.SearchTag
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerScreenState
@@ -20,7 +25,8 @@ import cz.litoj.schlmgr.ui.viewmodel.ItemListState
 /**
  * The explorer screen: top chrome and item list, plus a slot for the bottom action strip.
  * - stateless, the screen collects the state and maps row intents through [callbacks].
- * - [listArea] overrides the plain list, the sibling slide of the subjects screen does it.
+ * - the sibling swipe rides the frame, so every explorer switches the same way.
+ * - [listArea] overrides the plain list, a host that composes its own list does it.
  */
 @Composable
 fun ExplorerScaffold(
@@ -32,6 +38,8 @@ fun ExplorerScaffold(
 	onFilterDrop: (SearchTag) -> Unit,
 	onParentClick: () -> Unit,
 	callbacks: ItemListCallbacks,
+	/** The sibling step the horizontal swipe asks for, one ahead or one back. */
+	onSibling: (Int) -> Unit,
 	modifier: Modifier = Modifier,
 	/** The list state of the owning screen, shared so the screen can watch the scroll. */
 	scrollState: LazyListState = rememberLazyListState(),
@@ -70,7 +78,7 @@ fun ExplorerScaffold(
 	}
 	// the displayed list, browse content and search results alike, comes from
 	// the caller. The scaffold renders it as-is, with no search side channel.
-	Column(modifier.fillMaxSize()) {
+	Column(modifier.fillMaxSize().siblingSwipe(onSibling)) {
 		ExplorerTopBar(
 			breadcrumbs = state.breadcrumbs,
 			onBreadcrumbClick = onBreadcrumbClick,
@@ -84,5 +92,37 @@ fun ExplorerScaffold(
 		)
 		listArea()
 		actionBar()
+	}
+}
+
+/** The pixel travel that switches a sibling, so a short drag keeps the list. */
+private val SiblingSwipeThreshold = 40.dp
+
+/** The horizontal swipe of the explorer frame, which asks for one sibling step. */
+@Composable
+private fun Modifier.siblingSwipe(onSibling: (Int) -> Unit): Modifier {
+	val threshold = with(LocalDensity.current) { SiblingSwipeThreshold.toPx() }
+	val current by rememberUpdatedState(onSibling)
+	val swipe = remember { SiblingSwipe() }
+	// the pixel threshold keys the gesture, so a density change restarts it
+	return pointerInput(threshold) {
+		detectHorizontalDragGestures(
+			onHorizontalDrag = { _, amount -> swipe.travel += amount },
+			onDragEnd = {
+				if (swipe.travel < -threshold) current(1)
+				else if (swipe.travel > threshold) current(-1)
+				swipe.reset()
+			},
+			onDragCancel = { swipe.reset() },
+		)
+	}
+}
+
+/** The travel of the running swipe, so a drag that ends short changes nothing. */
+private class SiblingSwipe {
+	var travel = 0f
+
+	fun reset() {
+		travel = 0f
 	}
 }

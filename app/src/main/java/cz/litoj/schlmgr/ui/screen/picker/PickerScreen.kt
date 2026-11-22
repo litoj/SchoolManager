@@ -114,6 +114,7 @@ private fun PickerContent(viewModel: PickerViewModel, modifier: Modifier = Modif
 		onFilterDrop = viewModel::dropFilter,
 		onParentClick = { viewModel.onBackRequested() },
 		callbacks = pickerCallbacks(viewModel),
+		onSibling = viewModel::openSibling,
 		onScrollPosition = viewModel::onScrollPosition,
 		modifier = modifier,
 		statusLine = if (picked > 0) stringResource(R.string.data_selected, picked) else null,

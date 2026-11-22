@@ -211,6 +211,20 @@ class PickerViewModelTest {
 	}
 
 	@Test
+	fun `a sibling switch opens the next subject and keeps the picks`() {
+		seed()
+		ItemRepository.createSubject("B", null)
+		val model = vm()
+		model.onItemClick(model.items().single { it.item.name == "A" })
+		model.setSelected(model.items().single { it.item.name == "c1" }, true)
+
+		model.openSibling(1)
+
+		assertEquals(listOf("B"), model.history.path.map { it.name })
+		assertEquals(listOf("c1"), model.batchRows().map { it.item.name })
+	}
+
+	@Test
 	fun `the picker menu follows its own list`() {
 		seed()
 		val model = vm()

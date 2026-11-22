@@ -4,8 +4,10 @@ import android.os.Looper
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
 import androidx.room.Room
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.GlobalDependencies
@@ -17,6 +19,7 @@ import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import java.time.Duration
 import kotlinx.coroutines.Dispatchers
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -119,6 +122,21 @@ class PickerScreenTest {
 		tapSelectAll()
 		rule.runOnIdle { assertFalse(model.items().any { it.batched }) }
 		rule.onNodeWithText(text(R.string.select)).assertDoesNotExist()
+	}
+
+	@Test
+	fun `a horizontal swipe opens the sibling subject`() {
+		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		rule.setContent { PickerScreen(model, {}) }
+		rule.waitForIdle()
+		rule.onNodeWithText("A").performClick()
+		rule.waitForIdle()
+
+		rule.onRoot().performTouchInput { swipeLeft() }
+		rule.waitForIdle()
+
+		rule.runOnIdle { assertEquals("B", model.history.path.single().name) }
+		rule.onNodeWithText("B").assertExists()
 	}
 
 	@Test

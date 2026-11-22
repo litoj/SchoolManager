@@ -2,17 +2,15 @@ package cz.litoj.schlmgr.ui.screen.subjects
 
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
-import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel.Request
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /**
- * Reference jump, sibling swipe, picker landing.
+ * Reference jump and picker landing.
  */
 internal class SubjectsNavigation(
 	private val scope: CoroutineScope,
@@ -26,11 +24,7 @@ internal class SubjectsNavigation(
 
 		val pasteArmed: Boolean
 
-		fun setContent(container: DbItem?)
-
 		fun openChain(path: MutableList<DbItem>, pulseItemId: Int?)
-
-		fun orderedChildren(parentId: Int): List<DbItem>
 	}
 
 	/** Opens the reference original: a single source opens, several show the picker. */
@@ -72,48 +66,6 @@ internal class SubjectsNavigation(
 			}
 		}
 	}
-
-	/**
-	 * Opens the sibling delta away.
-	 * - it replaces the entry, so back goes up.
-	 * - the swipe cancels the row selection.
-	 * - an armed move stays alive, and its paste can land on the switched chapter.
-	 */
-	fun openSibling(delta: Int) {
-		val path = history.path
-		if (path.isEmpty() || host.searching) return
-		host.clearSelection()
-		val current = path.last()
-		val parent = path.getOrNull(path.size - 2)
-		val pathCopy = ArrayList(path)
-		siblingJob?.cancel()
-		// a stale swipe must not land over a newer one.
-		val generation = ++siblingGeneration
-		siblingJob = scope.launch(io) {
-			val siblings = if (parent != null) host.orderedChildren(parent.id) else ItemRepository.subjects()
-			val index = siblings.indexOfFirst { it.id == current.id }
-			if (index < 0) return@launch
-			val target = siblings.getOrNull(index + delta) ?: return@launch
-			// only chapters can open.
-			if (target.type != ItemKind.CHAPTER) return@launch
-			val newPath = pathCopy
-			newPath[newPath.size - 1] = target
-			host.postToUi {
-				// a newer navigation supersedes.
-				if (generation != siblingGeneration) return@postToUi
-				if (history.path.lastOrNull() !== current) return@postToUi
-				// a mid-read search blocks the landing, since the selection already left.
-				// an armed move never left
-				if (host.searching) return@postToUi
-				history.replaceCurrent(newPath)
-				host.setContent(history.path.lastOrNull())
-			}
-		}
-	}
-
-	private var siblingJob: Job? = null
-
-	private var siblingGeneration = 0
 
 	fun navigateToSource(path: List<DbItem>, pulseItemId: Int? = null) {
 		val current = mutableListOf<DbItem>()

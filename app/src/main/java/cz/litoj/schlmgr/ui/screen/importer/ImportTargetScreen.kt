@@ -86,6 +86,7 @@ fun ImportTargetScreen(
 				onFilterDrop = viewModel::dropFilter,
 				onParentClick = { if (!target.busy) viewModel.onBackRequested() },
 				callbacks = importCallbacks(viewModel, target.busy),
+				onSibling = { if (!target.busy) viewModel.openSibling(it) },
 				scrollState = scrollState,
 				onScrollPosition = viewModel::onScrollPosition,
 				modifier = Modifier.weight(1f).headerShadow(),
