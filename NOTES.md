@@ -199,6 +199,10 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 
 - Import runs in one Room transaction: save and merge by name and type, resolve references, refresh counters.
 - Every import door opens the picker, which accepts text files in the word format.
+- A word list with anything but chapters at its top level lands in one chapter named after the file.
+- At the root that chapter is a subject.
+- A target already of that name takes the content itself.
+- A file whose one top-level container bears the target name merges into the target, in both formats.
 - The New palette centre carries the download icon, since it is the only import door.
 - Shared files open the import mover.
 - The explorer picks the target.

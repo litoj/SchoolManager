@@ -128,6 +128,10 @@ object ItemRepository {
 	@JvmStatic
 	fun parentRows(childId: Int): List<DbItem> = query { it.itemDao().parentRowsOf(childId) }
 
+	/** The plain home of a container, null for a row only references hold. */
+	@JvmStatic
+	fun plainParentOf(childId: Int): Int? = query { it.itemDao().plainParentsOf(childId).firstOrNull() }
+
 	/**
 	 * Container chain down to parent, subject first, root excluded.
 	 * Multi-parent rows take first parent found.

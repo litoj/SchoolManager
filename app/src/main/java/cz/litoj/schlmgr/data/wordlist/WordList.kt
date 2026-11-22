@@ -703,11 +703,12 @@ class WordListReader private constructor(
 }
 
 /**
- * - top-level items become root items in file order, with no wrapper.
+ * - top-level items become root items in file order.
+ * - a [wrapper] name holds them in one chapter when any of them is not a chapter.
  * - see [DataImporter] for the stream contract.
  * - single-character mistakes of the file mend themselves, see [WordListAutoRepair].
  */
-class WordListImporter(containerName: String, text: String) : DataImporter {
+class WordListImporter(containerName: String, text: String, wrapper: String? = null) : DataImporter {
 	override val items: List<StreamItem>
 	override val references: List<StreamReference> = emptyList()
 
@@ -717,7 +718,10 @@ class WordListImporter(containerName: String, text: String) : DataImporter {
 	init {
 		val repaired = WordListAutoRepair.parse(text, containerName)
 		val out = ArrayList<StreamItem>()
-		addEntries(out, repaired.root.entries, null)
+		val entries = repaired.root.entries
+		if (wrapper != null && entries.any { it !is WordListChapter })
+			addEntries(out, entries, StreamBuilder.addChapter(out, wrapper, "", null))
+		else addEntries(out, entries, null)
 		items = out
 		autoFixes = repaired.fixes
 	}

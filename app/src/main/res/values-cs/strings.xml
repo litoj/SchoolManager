@@ -224,7 +224,7 @@
     <string name="help_extra_words_export">Export položek</string>
     <string name="help_extra_words_export_how">Menu zobrazí Export jen při vybraných řádcích.\nExport zahrne každý vybraný řádek kromě překladů.\nSoubor se slovíčky: kompaktní, bez úspěšnosti a odkazů.\nSoubor JSON: úplný, včetně úspěšnosti, poznámek a odkazů.</string>
     <string name="help_extra_words_import">Import položek</string>
-    <string name="help_extra_words_import_how">Uvnitř předmětu se slovíčka importují do něj, na obrazovce předmětů se vytvoří nový předmět.\nChyba uvádí soubor a řádek. Opravte řádek a zvolte soubor znovu.</string>
+    <string name="help_extra_words_import_how">Slovíčka mimo kapitolu se importují do kapitoly pojmenované podle souboru.\nNa obrazovce předmětů je to předmět.\nKontejner toho jména převezme slovíčka sám.\nSoubor zabalený do jména otevřeného kontejneru ho naplní.\nChyba uvádí soubor a řádek. Opravte řádek a zvolte soubor znovu.</string>
     <string name="help_import_format">Formát souboru</string>
     <string name="help_import_format_body">Kapitola: název { a } na samostatných řádcích.
         \nSlovíčko: slovíčko = překlad.

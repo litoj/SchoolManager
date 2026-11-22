@@ -76,7 +76,7 @@ object ImporterFactory {
 		ImportKind.WORD_INTO_CONTAINER ->
 			WordIntoContainerImport(appContext, postToUi, uri, fileName, openContainer, atRoot, onRootReload, onContainerReload)
 		ImportKind.WORD_AS_SUBJECT ->
-			WordAsSubjectImport(appContext, postToUi, uri, onRootReload)
+			WordAsSubjectImport(appContext, postToUi, uri, fileName, onRootReload)
 		ImportKind.JSON_TREE ->
 			JsonTreeImport(appContext, postToUi, uri, openContainer, atRoot, onRootReload, onCurrentReload)
 	}

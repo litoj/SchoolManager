@@ -111,8 +111,12 @@ abstract class ItemDao {
 	 * - plain links form the primary derivation chain.
 	 * - only plain parents carry counters and child order.
 	 * - reference links only expose content without owning it.
+	 * - the order is stable, so a caller that takes the first parent always picks the same one.
 	 */
-	@Query("SELECT parent_id FROM item_link WHERE child_id = :childId AND is_reference = 0")
+	@Query(
+		"SELECT parent_id FROM item_link WHERE child_id = :childId AND is_reference = 0 " +
+			"ORDER BY parent_id"
+	)
 	abstract suspend fun plainParentsOf(childId: Int): List<Int>
 
 	@Query(

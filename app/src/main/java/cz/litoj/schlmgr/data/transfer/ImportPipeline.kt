@@ -122,12 +122,12 @@ class WordIntoContainerImport(
 		// the resolver holds the pick-time snapshot, never null for a container
 		// target. The root anchor below is the defensive default
 		val self = openContainer()
-		val anchor = self?.id ?: ROOT_ID
 		FileGateway.importProgress(appContext, R.string.progress_import, uri).use { progress ->
 			val content = readContent(uri, progress) ?: return
 			// wrapped, since the save loop drives the row phase of the bar
-			val importer = WordListImporter(fileName.ifEmpty { uri.toString() }, content)
-			val outcome = persist(importer, progress, anchor)
+			val importer = WordListImporter(
+				fileName.ifEmpty { uri.toString() }, content, wordListWrapper(fileName, self))
+			val outcome = persist(importer, progress, importAnchor(importer, self))
 			post { if (self == null && atRoot()) onRootReload() else onRefreshed() }
 			notifyImported(outcome, importer.autoFixes)
 		}
@@ -138,11 +138,36 @@ class WordIntoContainerImport(
 	override fun failureName(): String = uri.toString()
 }
 
+/** The suffixes a picked document name can carry, so the stem drops only a real suffix. */
+private val fileSuffixes = setOf("txt", "text", "md", "csv", "json", "hjson")
+
 /**
- * A word list picked at the root: the file content lands as it is, with no wrapper.
- * - a saved container wrapper chapter becomes a subject again.
- * - bare words land as the rows of the root.
- * - the file name only labels the parse errors.
+ * The chapter that holds a bare word-list top level, named by the file stem.
+ * - a name without a known suffix keeps its dots, so no part of it is lost.
+ * - an unnamed file gets none.
+ * - a target already named so gets none, since it takes the content itself.
+ */
+private fun wordListWrapper(fileName: String, target: DbItem?): String? {
+	val dot = fileName.lastIndexOf('.')
+	val stem = if (dot > 0 && fileName.substring(dot + 1).lowercase() in fileSuffixes)
+		fileName.substring(0, dot) else fileName
+	return stem.trim().takeIf { it.isNotBlank() && it != target?.name }
+}
+
+/**
+ * The anchor of an import into [target], the root without one.
+ * - a file whose one top-level container bears the target name anchors at the target home.
+ * - so that container merges into the target by name instead of nesting inside it.
+ */
+private fun importAnchor(importer: DataImporter, target: DbItem?): Int {
+	val self = target ?: return ROOT_ID
+	val top = importer.items.filter { it.parent == null }.singleOrNull()?.item
+	if (top == null || top.type != self.type || top.name != self.name) return self.id
+	return ItemRepository.plainParentOf(self.id) ?: self.id
+}
+
+/**
+ * A word list picked at the root, where its top-level chapters become subjects.
  * - the importer parses the whole text before anything is written.
  * - the subjects screen reloads instead of adding rows.
  */
@@ -150,14 +175,15 @@ class WordAsSubjectImport(
 	appContext: Context,
 	postToUi: (Runnable) -> Unit,
 	private val uri: Uri,
+	private val fileName: String,
 	private val onRootReload: () -> Unit,
 ) : FileWorker(appContext, postToUi, "Subject file import") {
 
 	override fun doRun() {
-		val fileName = FileGateway.displayName(appContext, uri, uri.toString())
 		FileGateway.importProgress(appContext, R.string.progress_import, uri).use { progress ->
 			val content = readContent(uri, progress) ?: return
-			val importer = WordListImporter(fileName, content)
+			val importer = WordListImporter(
+				fileName.ifEmpty { uri.toString() }, content, wordListWrapper(fileName, null))
 			val result = persist(importer, progress)
 			post { onRootReload() }
 			notifyImported(result, importer.autoFixes)
@@ -196,8 +222,7 @@ class JsonTreeImport(
 				throw IllegalArgumentException("$fileName: ${e.message}", e)
 			}
 			// no open container means the root, where the file chapters become subjects
-			val anchor = openContainer()?.id ?: ROOT_ID
-			val result = persist(importer, progress, anchor)
+			val result = persist(importer, progress, importAnchor(importer, openContainer()))
 			post { if (atRoot()) onRootReload() else onCurrentReload() }
 			notifyImported(result)
 		}

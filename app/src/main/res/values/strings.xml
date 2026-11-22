@@ -209,7 +209,7 @@
     <string name="help_extra_words_export">Export items</string>
     <string name="help_extra_words_export_how">The menu shows Export only while rows are selected.\nThe export reaches every selected row except translations.\nWord file: compact, no success rates, no references.\nJSON file: complete, success rates, notes and references included.</string>
     <string name="help_extra_words_import">Import items</string>
-    <string name="help_extra_words_import_how">Inside a subject the words land in it, at the subjects screen a new subject is created.\nAn error names the file and line. Fix that line and pick the file again.</string>
+    <string name="help_extra_words_import_how">Words outside a chapter land in a chapter named after the file.\nAt the subjects screen it is a subject.\nA container of that name takes the words itself.\nA file wrapped in the open name fills that container.\nAn error names the file and line. Fix that line and pick the file again.</string>
     <string name="help_import_format">File format</string>
     <string name="help_import_format_body">Chapter: name { and } on their own lines.
         \nWord: word = translation.

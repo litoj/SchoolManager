@@ -6,7 +6,6 @@ import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
-import cz.litoj.schlmgr.data.db.ROOT_ID
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.transfer.ExportDestination
@@ -43,7 +42,8 @@ import org.robolectric.annotation.Config
  * - every way a picked file can land pins the anchor the worker persists with.
  * - the tree JSON lands at the root or inside the open container.
  * - a word list lands as the rows of the root.
- * - its own wrapper chapter counts as a subject and bare words as root rows.
+ * - its own wrapper chapter counts as a subject.
+ * - a bare word list lands in a container named after the file.
  * - a word list can also land as the content of the open container.
  * - a container that closed before the run pins its own reload and failure.
  * - the exports pin the bytes both formats write and the empty-selection no-op.
@@ -208,19 +208,105 @@ class FileWorkerTest {
 	}
 
 	@Test
-	fun `a word list into the open container lands its words inside it and refreshes the content`() {
+	fun `a bare word list into the open container lands in a chapter named after the file`() {
 		val deutsch = ItemRepository.createSubject("Deutsch", null)
 		val lektion = ItemRepository.createChapter(deutsch.id, "Lektion 1", null)
 
 		val reloads = importPicked("list.txt", { lektion }, "Haus;home\nSchule;school")
 
 		assertEquals(listOf("Deutsch"), ItemRepository.subjects().map { it.name })
-		val words = ItemRepository.children(lektion.id)
+		val list = ItemRepository.children(lektion.id).single()
+		assertEquals("list", list.name)
+		assertEquals(ItemKind.CHAPTER, list.type)
+		val words = ItemRepository.children(list.id)
 		assertEquals(listOf("Haus", "Schule"), words.map { it.name })
 		assertEquals(listOf("home"), ItemRepository.translations(words[0].id).map { it.name })
 		assertEquals(1, reloads.container)
 		assertEquals(0, reloads.root)
 		assertEquals(0, reloads.current)
+	}
+
+	@Test
+	fun `a bare word list keeps the dots of a name without a known suffix`() {
+		val deutsch = ItemRepository.createSubject("Deutsch", null)
+		val lektion = ItemRepository.createChapter(deutsch.id, "Lektion 1", null)
+
+		importPicked("U1.1", { lektion }, "Haus;home")
+
+		assertEquals(listOf("U1.1"), ItemRepository.children(lektion.id).map { it.name })
+	}
+
+	@Test
+	fun `a top level of notes alone lands in a chapter named after the file`() {
+		val deutsch = ItemRepository.createSubject("Deutsch", null)
+		val lektion = ItemRepository.createChapter(deutsch.id, "Lektion 1", null)
+
+		// any entry that is not a chapter takes the wrapper, a note included
+		importPicked("list.txt", { lektion }, "= text [a note]")
+
+		val list = ItemRepository.children(lektion.id).single()
+		assertEquals("list", list.name)
+		assertEquals(listOf("text"), ItemRepository.children(list.id).map { it.name })
+	}
+
+	@Test
+	fun `a bare word list into a container named like the file lands its words inside it`() {
+		val deutsch = ItemRepository.createSubject("Deutsch", null)
+		val lektion = ItemRepository.createChapter(deutsch.id, "Lektion 1", null)
+
+		importPicked("Lektion 1.txt", { lektion }, "Haus;home\n= text [a note]")
+
+		// the open container already is the chapter of the file
+		assertEquals(listOf("Haus", "text"), ItemRepository.children(lektion.id).map { it.name })
+	}
+
+	@Test
+	fun `a tree file wrapped in the name of the open subject fills that subject`() {
+		val deutsch = ItemRepository.createSubject("Deutsch", null)
+		val wrapped = "{\nname: Deutsch\nchildren: [\n{\nname: Německo 20\nchildren: [\n" +
+			"{ \"name\": \"gesund\", \"translations\": [{ \"name\": \"zdravý\" }] }\n]\n}\n]\n}"
+
+		importPicked("Deutsch.hjson", { deutsch }, wrapped)
+
+		// the subject made before the import already is the container of the file
+		assertEquals(listOf(deutsch.id), ItemRepository.subjects().map { it.id })
+		val chapter = ItemRepository.children(deutsch.id).single()
+		assertEquals("Německo 20", chapter.name)
+		assertEquals(listOf("gesund"), ItemRepository.children(chapter.id).map { it.name })
+	}
+
+	@Test
+	fun `a word list wrapped in the name of the open chapter fills that chapter`() {
+		val deutsch = ItemRepository.createSubject("Deutsch", null)
+		val lektion = ItemRepository.createChapter(deutsch.id, "Lektion 1", null)
+
+		importPicked("anything.txt", { lektion }, "Lektion 1 {\nHaus;home\n}")
+
+		assertEquals(listOf(lektion.id), ItemRepository.children(deutsch.id).map { it.id })
+		assertEquals(listOf("Haus"), ItemRepository.children(lektion.id).map { it.name })
+	}
+
+	@Test
+	fun `a bare word list joins the chapter of the file name the container already holds`() {
+		val deutsch = ItemRepository.createSubject("Deutsch", null)
+		val lektion = ItemRepository.createChapter(deutsch.id, "Lektion 1", null)
+		val list = ItemRepository.createChapter(lektion.id, "list", null)
+		ItemRepository.createWord(list.id, "Hund", null, listOf("dog" to null))
+
+		importPicked("list.txt", { lektion }, "Haus;home")
+
+		assertEquals(listOf(list.id), ItemRepository.children(lektion.id).map { it.id })
+		assertEquals(listOf("Hund", "Haus"), ItemRepository.children(list.id).map { it.name })
+	}
+
+	@Test
+	fun `a word list of chapters only into the open container gets no chapter of the file name`() {
+		val deutsch = ItemRepository.createSubject("Deutsch", null)
+		val lektion = ItemRepository.createChapter(deutsch.id, "Lektion 1", null)
+
+		importPicked("list.txt", { lektion }, "A {\nHaus;home\n}\nB {\nSchule;school\n}")
+
+		assertEquals(listOf("A", "B"), ItemRepository.children(lektion.id).map { it.name })
 	}
 
 	@Test
@@ -234,7 +320,8 @@ class FileWorkerTest {
 		val reloads = importPicked("list.txt", { open.also { open = null } }, "Haus;home")
 
 		assertEquals(0, ItemRepository.children(lektion.id).size)
-		assertTrue(ItemRepository.children(ROOT_ID).any { it.name == "Haus" && it.type == ItemKind.WORD })
+		val list = ItemRepository.subjects().single { it.name == "list" }
+		assertEquals(listOf("Haus"), ItemRepository.children(list.id).map { it.name })
 		assertEquals(1, reloads.root)
 	}
 
@@ -251,15 +338,47 @@ class FileWorkerTest {
 	}
 
 	@Test
-	fun `a bare word list at the root lands its words as the root's own rows`() {
-		val reloads = importPicked("words.txt", { null }, "Haus;home")
+	fun `a bare word list at the root lands in a subject named after the file`() {
+		val reloads = importPicked("words.txt", { null }, "Haus;home\nKapitel {\nSchule;school\n}")
 
-		// the content lands as it is, with no wrapper container of the file name
+		val subject = ItemRepository.subjects().single()
+		assertEquals("words", subject.name)
+		assertEquals(ItemKind.CHAPTER, subject.type)
+		val rows = ItemRepository.children(subject.id)
+		assertEquals(listOf("Haus", "Kapitel"), rows.map { it.name })
+		assertEquals(listOf("home"), ItemRepository.translations(rows[0].id).map { it.name })
+		assertEquals(1, reloads.root)
+	}
+
+	@Test
+	fun `a bare word list at the root joins the subject of the file name`() {
+		val words = ItemRepository.createSubject("words", null)
+		ItemRepository.createWord(words.id, "Hund", null, listOf("dog" to null))
+
+		importPicked("words.txt", { null }, "Haus;home")
+
+		assertEquals(listOf(words.id), ItemRepository.subjects().map { it.id })
+		assertEquals(listOf("Hund", "Haus"), ItemRepository.children(words.id).map { it.name })
+	}
+
+	@Test
+	fun `a bare word list without a file name lands its words as the root's own rows`() {
+		importPicked("", { null }, "Haus;home")
+
 		val row = ItemRepository.subjects().single()
 		assertEquals("Haus", row.name)
 		assertEquals(ItemKind.WORD, row.type)
 		assertEquals(listOf("home"), ItemRepository.translations(row.id).map { it.name })
-		assertEquals(1, reloads.root)
+	}
+
+	@Test
+	fun `a bare word list without a file name into the open container lands its words inside it`() {
+		val deutsch = ItemRepository.createSubject("Deutsch", null)
+		val lektion = ItemRepository.createChapter(deutsch.id, "Lektion 1", null)
+
+		importPicked("", { lektion }, "Haus;home")
+
+		assertEquals(listOf("Haus"), ItemRepository.children(lektion.id).map { it.name })
 	}
 
 	@Test
