@@ -132,6 +132,8 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The scope holds until the search ends, so a refined query never widens it.
 - The picker marks its sources, so its search stays unlimited.
 - A query matches names and translations, and a typed translation finds its words.
+- A translation answers only the text parts, the type and the counters are read from its word.
+- Only a word answers a number, so no chapter or note matches a rate or a count.
 - Queries and candidate text are trimmed.
 - A new query cancels the pending run, with results published in batches.
 - Every non-empty query runs after typing pauses, whatever its length.
@@ -139,10 +141,11 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - The typed text and every criterion of a run must hold.
 - The tags are type, name, description, success rate and times tested, each with its own comparisons.
 - The dialog captions what a measure counts, and the rate says whether untested rows join.
-- An untested rate answers as the lowest one, and the choice keeps those rows out of the run.
+- An untested rate answers as zero, and the choice keeps those rows out of the run.
 - A tag owns one criterion, so applying it again replaces it.
 - The field text is literal, the written query syntax is gone.
 - The editor holds Apply back, so no run starts from a value that cannot compare.
+- A rate stays within 0 and 100 and a count never goes negative.
 - An unfinished run reads as searching, an empty finished run names the next step.
 - A filter shows as a chip under the header, its body opens the editor, its mark drops it.
 - The filter icon sits beside sort, its dropdown lists the tags, so the success rate shows before any search.

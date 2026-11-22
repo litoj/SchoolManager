@@ -61,17 +61,32 @@ class SearchEngine(query: SearchQuery, private val foldDiacritics: Boolean = fal
 	private fun folded(text: String): String =
 		if (foldDiacritics) DiacriticFold.of(text) else text
 
-	private val matcher: Correct = allOf(query)
+	/**
+	 * The parts a translation may answer for its word: the typed text, names and descriptions.
+	 * - a type or a counter belongs to the row itself, so no translation answers one.
+	 */
+	private val textParts: Correct
+
+	/** The parts only the row itself answers, so a word retried through a translation keeps them. */
+	private val ownParts: Correct
+
+	init {
+		val text = ArrayList<Correct>()
+		val own = ArrayList<Correct>()
+		val typed = query.text.trim()
+		// the typed text is a name search, the criteria add their own comparisons
+		if (typed.isNotEmpty()) text.add(nameTest(FilterOperator.CONTAINS, typed))
+		for (criterion in query.criteria) {
+			val test = criterionTest(criterion)
+			if (criterion.tag == SearchTag.NAME || criterion.tag == SearchTag.DESCRIPTION) text.add(test)
+			else own.add(test)
+		}
+		textParts = Correct { item -> text.all { it.verify(item) } }
+		ownParts = Correct { item -> own.all { it.verify(item) } }
+	}
 
 	/** Every part of the query must hold, so the run answers to all of them. */
-	private fun allOf(query: SearchQuery): Correct {
-		val tests = ArrayList<Correct>()
-		val text = query.text.trim()
-		// the typed text is a name search, the criteria add their own comparisons
-		if (text.isNotEmpty()) tests.add(nameTest(FilterOperator.CONTAINS, text))
-		for (criterion in query.criteria) tests.add(criterionTest(criterion))
-		return Correct { item -> tests.all { it.verify(item) } }
-	}
+	private val matcher: Correct = Correct { item -> ownParts.verify(item) && textParts.verify(item) }
 
 	private fun criterionTest(criterion: Criterion): Correct {
 		val value = criterion.value
@@ -143,20 +158,25 @@ class SearchEngine(query: SearchQuery, private val foldDiacritics: Boolean = fal
 
 	/**
 	 * The rate test of one criterion.
-	 * - an untested rate is -1, below every tested one, and the choice names who joins.
+	 * - a joining untested word counts as zero, since a rate of zero is typeable.
+	 * - only a word carries counters, so a container never answers a number.
 	 */
 	private fun rateTest(operator: FilterOperator, rate: CriterionValue.Rate): Correct {
 		val test = comparison(operator) ?: return none()
 		return Correct { item ->
 			val percent = item.ratio
-			(rate.untested == UntestedRows.INCLUDE || percent >= 0) && test(percent, rate.percent)
+			when {
+				item.type != ItemKind.WORD -> false
+				percent < 0 -> rate.untested == UntestedRows.INCLUDE && test(0, rate.percent)
+				else -> test(percent, rate.percent)
+			}
 		}
 	}
 
-	/** The count test of one criterion, where zero is a value of its own. */
+	/** The count test of one criterion, where zero is a value of its own and only a word carries counters. */
 	private fun timesTest(operator: FilterOperator, times: CriterionValue.Times): Correct {
 		val test = comparison(operator) ?: return none()
-		return Correct { item -> test(item.testedCount, times.value) }
+		return Correct { item -> item.type == ItemKind.WORD && test(item.testedCount, times.value) }
 	}
 
 	/** null for an operator that compares text or a kind, never a number. */
@@ -221,10 +241,10 @@ class SearchEngine(query: SearchQuery, private val foldDiacritics: Boolean = fal
 					list.add(item)
 					walk(index, index.childrenOf(item.id), list, onMatch)
 				}
-				ItemKind.WORD -> if (!yes && inScope(item)) {
-					// a word that missed its own name is retried through its translations.
+				ItemKind.WORD -> if (!yes && inScope(item) && ownParts.verify(item)) {
+					// a word that missed its own text is retried through its translations.
 					// the WORD is the hit, so its own row and path show
-					if (index.childrenOf(item.id).any { matcher.verify(it) } && found.add(item.id))
+					if (index.childrenOf(item.id).any { textParts.verify(it) } && found.add(item.id))
 						onMatch(item, ArrayList(path), true)
 				}
 				else -> {}

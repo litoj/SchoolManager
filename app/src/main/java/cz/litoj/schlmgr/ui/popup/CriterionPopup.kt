@@ -94,7 +94,14 @@ class CriterionPopup(
 	private fun validation(): Int? {
 		val text = value.trim()
 		if (tag == SearchTag.TYPE) return null
-		if (tag.numeric) return if (text.toIntOrNull() == null) R.string.filter_number_error else null
+		if (tag.numeric) {
+			val number = text.toIntOrNull() ?: return R.string.filter_number_error
+			return when {
+				number < 0 -> R.string.filter_number_negative
+				tag == SearchTag.RATE && number > 100 -> R.string.filter_rate_range
+				else -> null
+			}
+		}
 		if (text.isEmpty()) return R.string.filter_value_missing
 		if (operator == FilterOperator.REGEX && !compiles(text)) return R.string.filter_regex_error
 		return null

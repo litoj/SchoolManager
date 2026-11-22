@@ -40,7 +40,7 @@
     <string name="filter_kind_chapter">Chapters</string>
     <string name="filter_kind_note">Notes</string>
     <string name="filter_untested">Untested rows</string>
-    <string name="filter_untested_in">count as the lowest</string>
+    <string name="filter_untested_in">count as zero</string>
     <string name="filter_untested_out">stay out</string>
     <string name="filter_condition">Condition</string>
     <string name="filter_op_contains">contains</string>
@@ -58,6 +58,8 @@
     <string name="filter_value_number">Whole number</string>
     <string name="filter_value_missing">Enter a value.</string>
     <string name="filter_number_error">Enter a whole number.</string>
+    <string name="filter_number_negative">Enter a number 0 or higher.</string>
+    <string name="filter_rate_range">A success rate runs from 0 to 100.</string>
     <string name="filter_regex_error">Invalid regular expression.</string>
     <string name="filter_chip">"%1$s %2$s %3$s"</string>
     <string name="filter_chip_kind">"%1$s: %2$s"</string>

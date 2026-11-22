@@ -42,7 +42,7 @@
     <string name="filter_kind_chapter">Kapitoly</string>
     <string name="filter_kind_note">Poznámky</string>
     <string name="filter_untested">Nezkoušené řádky</string>
-    <string name="filter_untested_in">počítají jako nejslabší</string>
+    <string name="filter_untested_in">počítají jako nula</string>
     <string name="filter_untested_out">zůstanou mimo</string>
     <string name="filter_condition">Podmínka</string>
     <string name="filter_op_contains">obsahuje</string>
@@ -60,6 +60,8 @@
     <string name="filter_value_number">Celé číslo</string>
     <string name="filter_value_missing">Zadejte hodnotu.</string>
     <string name="filter_number_error">Zadejte celé číslo.</string>
+    <string name="filter_number_negative">Zadejte číslo 0 nebo vyšší.</string>
+    <string name="filter_rate_range">Úspěšnost je od 0 do 100.</string>
     <string name="filter_regex_error">Neplatný regulární výraz.</string>
     <string name="filter_chip">"%1$s %2$s %3$s"</string>
     <string name="filter_chip_kind">"%1$s: %2$s"</string>
