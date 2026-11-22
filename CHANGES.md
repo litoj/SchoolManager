@@ -15,12 +15,13 @@
 
 ### Filter
 
-- A Filter by bar under the header names the filters on every searchable list.
-- The bar offers name, type, success rate and times tested.
+- A filter icon beside sort shows on every searchable list.
+- The header goes search, select all, sort, filter.
+- A phone too narrow for all of them shows only search, the rest waits in More.
+- Its dropdown offers name, type, success rate and times tested.
 - Description stays in the type row of the filter editor.
-- A tag chip opens the editor on that tag.
+- A tag pick opens the editor on that tag.
 - A filter applied from a plain list shows its results like a search.
-- The bar starts at its icon, a narrow screen cuts off its right side.
 - The filter icon left the search field.
 
 ### Filter results
