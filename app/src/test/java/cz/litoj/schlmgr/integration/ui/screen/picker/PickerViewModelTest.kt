@@ -24,7 +24,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * - the picker selects like the subjects screen, no mode of its own.
+ * - the picker gathers its picks like an armed paste, so they span folders.
  * - a search hop stays stacked, so back returns the unselected results.
  * - its top-bar menu follows the open list, its file doors stay shut.
  */
@@ -106,17 +106,15 @@ class PickerViewModelTest {
 	}
 
 	@Test
-	fun `back clears the selection before it pops a path level`() {
+	fun `back pops a path level and keeps the picks`() {
 		seed()
 		val model = vm()
 		model.onItemClick(model.items().single { it.item.name == "A" && it.item.type == ItemKind.CHAPTER })
 		model.setSelected(model.items().single { it.item.name == "c1" }, true)
 
 		assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
-		assertFalse("the selection left, the list stayed", model.items().any { it.selected })
-
-		assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
 		assertTrue("the back press left the subject", model.history.path.isEmpty())
+		assertEquals(listOf("c1"), model.batchRows().map { it.item.name })
 	}
 
 	@Test
@@ -128,26 +126,30 @@ class PickerViewModelTest {
 	}
 
 	@Test
-	fun `the selection mode follows the selected rows, not the picker`() {
+	fun `the picker gathers its picks instead of selecting`() {
 		seed()
 		val model = vm()
+		val a = model.items().single { it.item.name == "A" && it.item.type == ItemKind.CHAPTER }
 
-		assertFalse("no row is selected, so no selection mode", model.listState.value.selectionActive)
-		model.setSelected(model.items().single { it.item.name == "A" && it.item.type == ItemKind.CHAPTER }, true)
-		assertTrue(model.listState.value.selectionActive)
+		assertTrue("the icons gather from the start", model.listState.value.gathering)
+		model.setSelected(a, true)
+		assertTrue(a.batched)
+		assertFalse("no selection mode runs", model.listState.value.selectionActive)
 	}
 
 	@Test
-	fun `opening a chapter drops the selection with the list`() {
+	fun `opening a chapter keeps the picks and marks them on return`() {
 		seed()
 		val model = vm()
 		model.onItemClick(model.items().single { it.item.name == "A" && it.item.type == ItemKind.CHAPTER })
 		model.setSelected(model.items().single { it.item.name == "c1" }, true)
 
 		model.onItemClick(model.items().single { it.item.name == "c1" })
-
-		assertFalse("a new list starts unselected", model.items().any { it.selected })
 		assertEquals(listOf("A", "c1"), model.state.value.breadcrumbs)
+		assertEquals(listOf("c1"), model.batchRows().map { it.item.name })
+
+		model.onBackRequested()
+		assertTrue("the fresh row of the pick shows marked", model.items().single { it.item.name == "c1" }.batched)
 	}
 
 	@Test
@@ -176,7 +178,7 @@ class PickerViewModelTest {
 	}
 
 	@Test
-	fun `restored search results come back unselected`() {
+	fun `restored search results come back with their picks`() {
 		seed()
 		val model = vm()
 		model.onItemClick(model.items().single { it.item.name == "A" && it.item.type == ItemKind.CHAPTER })
@@ -188,8 +190,24 @@ class PickerViewModelTest {
 		assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
 		assertEquals(SearchUi.RESULTS, model.state.value.searchUi)
 
-		assertFalse("the selection belonged to the left list, none carries over",
-			model.items().any { it.selected })
+		assertTrue("the pick outlived the trip", model.items().single { it.item.name == "c1" }.batched)
+	}
+
+	@Test
+	fun `select all in one folder keeps the picks of another`() {
+		val aId = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
+		ItemRepository.createWord(c1.id, "w2", null, listOf("t2" to null))
+		val model = vm()
+		model.onItemClick(model.items().single { it.item.name == "A" && it.item.type == ItemKind.CHAPTER })
+		model.setSelected(model.items().single { it.item.name == "c1" }, true)
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+
+		model.onSelectAllToggle()
+
+		assertTrue("the shown rows joined the picks", model.items().all { it.batched })
+		assertEquals(listOf("c1", "w1", "w2"), model.batchRows().map { it.item.name })
 	}
 
 	@Test

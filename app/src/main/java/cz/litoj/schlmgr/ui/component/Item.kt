@@ -73,7 +73,7 @@ fun Item(
 		pulseAlpha.animateTo(0f, tween(PulseDurationMs))
 	}
 	val pulse = ExplorerColors.pulseRow
-	val background = if (item.selected) ExplorerColors.selectedRow
+	val background = if (item.selected || item.batched) ExplorerColors.selectedRow
 	else pulse.copy(alpha = pulse.alpha * pulseAlpha.value)
 	Box(modifier) {
 		Row(

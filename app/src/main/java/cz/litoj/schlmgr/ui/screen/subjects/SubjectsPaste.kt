@@ -36,28 +36,41 @@ internal class SubjectsPaste(
 		fun notifyChanged()
 
 		fun refreshReorderable()
-	}
 
-	private class PasteData(
-		val referencing: Boolean,
-		val src: List<ItemRow>,
-	)
+		/** The rows the armed paste carries, gathered by the explorer batch. */
+		fun batchRows(): List<ItemRow>
+
+		fun startBatch(rows: List<ItemRow>)
+
+		fun clearBatch()
+
+		/** Whether a drag is adding its range right now. */
+		fun batchDragging(): Boolean
+	}
 
 	private class PasteSrc(val row: ItemRow, val id: Int, val oldParent: Int?)
 
 	private class PasteOutcome(val notice: UiNotice?, val placements: List<Pair<ItemRow, Placement>>)
 
-	private var pasteData by mutableStateOf<PasteData?>(null)
+	/** The kind of the armed paste, true for references, null while none waits. */
+	private var referencing by mutableStateOf<Boolean?>(null)
 
 	/** The open block read, the newest one only. */
 	private var blockJob: Job? = null
 
-	val armed: Boolean get() = pasteData != null
+	val armed: Boolean get() = referencing != null
 
-	private fun armPaste(data: PasteData?) {
-		pasteData = data
+	private fun armPaste(kind: Boolean?, rows: List<ItemRow>) {
+		referencing = kind
 		host.refreshReorderable()
-		refreshBlock()
+		if (kind == null) host.clearBatch() else host.startBatch(rows)
+	}
+
+	/** An emptied batch ends the paste, as its cancel does. */
+	fun onBatchChanged() {
+		if (armed && host.batchRows().isEmpty()) armPaste(null, emptyList())
+		// a drag reads the block once at its end, since each step would cost a graph walk
+		else if (!host.batchDragging()) refreshBlock()
 	}
 
 	/** Why the open container refuses the armed rows, 0 when the paste may run. */
@@ -69,8 +82,8 @@ internal class SubjectsPaste(
 	fun refreshBlock() {
 		blockJob?.cancel()
 		blockJob = null
-		val paste = pasteData
-		if (paste == null) {
+		val kind = referencing
+		if (kind == null) {
 			blockedReason = 0
 			return
 		}
@@ -80,12 +93,13 @@ internal class SubjectsPaste(
 			return
 		}
 		// snapshot on main, so the answer can only describe one container and one batch
-		val src = paste.src.map { PasteSrc(it, it.item.id, it.parentId) }
+		val src = host.batchRows().map { PasteSrc(it, it.item.id, it.parentId) }
 		blockJob = scope.launch(io) {
 			val facts = ItemRepository.pasteFacts(src.map { it.id }, target.id)
 			// the read costs a graph walk per row, so a superseded one must not answer
 			if (!isActive) return@launch
-			host.postToUi { blockedReason = blockOf(paste.referencing, src, facts) }
+			// the posted write lands later, so the paste may have ended meanwhile
+			host.postToUi { if (referencing == kind) blockedReason = blockOf(kind, src, facts) }
 		}
 	}
 
@@ -107,34 +121,32 @@ internal class SubjectsPaste(
 	}
 
 	/** What the armed paste holds, its kind and the rows it carries. */
-	val armedReferences: Boolean get() = pasteData?.referencing == true
+	val armedReferences: Boolean get() = referencing == true
 
-	val armedCount: Int get() = pasteData?.src?.size ?: 0
+	val armedCount: Int get() = if (armed) host.batchRows().size else 0
 
 	/** Arms the paste from the selection, where true means references, see [doPaste]. */
 	fun move(reference: Boolean) {
 		if (host.selectionCount() == 0) return
-		armPaste(PasteData(
-			referencing = reference,
-			src = host.items().filter(ItemRow::selected),
-		))
+		val picked = host.items().filter(ItemRow::selected)
 		host.clearSelection()
+		armPaste(reference, picked)
 	}
 
 	/** A browse list re-reads, and a search list re-maps. */
 	fun doPaste() {
-		val paste = pasteData ?: return
-		armPaste(null)
+		val kind = referencing ?: return
+		// snapshot on main
+		val src = host.batchRows().map { PasteSrc(it, it.item.id, it.parentId) }
+		armPaste(null, emptyList())
 		val np = host.path.lastOrNull()
 		if (np == null) {
 			UserMessages.showNotice(UiNotice.PasteNoTarget)
 			return
 		}
 		val searchNow = host.searching
-		// snapshot on main
-		val src = paste.src.map { PasteSrc(it, it.item.id, it.parentId) }
 		scope.launch(io) {
-			val outcome = performPaste(paste.referencing, src, np, searchNow)
+			val outcome = performPaste(kind, src, np, searchNow)
 			host.postToUi {
 				outcome.notice?.let(UserMessages::showNotice)
 				outcome.placements.forEach { (row, placement) -> row.applyPlacement(placement) }
@@ -193,6 +205,6 @@ internal class SubjectsPaste(
 	}
 
 	fun cancelPaste() {
-		armPaste(null)
+		armPaste(null, emptyList())
 	}
 }

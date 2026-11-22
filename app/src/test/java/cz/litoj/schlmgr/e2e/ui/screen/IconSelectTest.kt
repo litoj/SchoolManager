@@ -60,7 +60,7 @@ class IconSelectTest {
 	}
 
 	@Test
-	fun `picker - the icon selects the row, the row tap still flips the word`() {
+	fun `picker - the icon picks the row, the row tap still flips the word`() {
 		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
 		rule.setContent { PickerScreen(model, {}) }
 		rule.waitForIdle()
@@ -78,8 +78,8 @@ class IconSelectTest {
 		rule.runOnIdle {
 			assertFalse("the row tap unflipped the word",
 				model.items().single { it.item.name == "xyz" }.flipped)
-			assertTrue("the icon selected the word",
-				model.items().single { it.item.name == "xyz" }.selected)
+			assertTrue("the icon picked the word",
+				model.items().single { it.item.name == "xyz" }.batched)
 		}
 	}
 

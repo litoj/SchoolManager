@@ -384,6 +384,19 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
+	fun `a filter from the plain list shows its results like a search`() {
+		seed()
+		val model = vmIn("A")
+
+		model.applyFilter(Criterion(SearchTag.TYPE, FilterOperator.IS, CriterionValue.Kind(ItemKind.CHAPTER)))
+
+		assertEquals(SearchUi.RESULTS, model.state.value.searchUi)
+		assertEquals(listOf("c1"), model.items().map { it.item.name })
+		model.cancelSearch()
+		assertEquals("the nav arrow leaves it like a search", SearchUi.OFF, model.state.value.searchUi)
+	}
+
+	@Test
 	fun `dropping the last filter leaves the typed text`() {
 		seed()
 		val model = vmIn("A")
@@ -942,6 +955,46 @@ class MainExplorerViewModelTest {
 
 		model.cancelPaste()
 		assertFalse(model.pasteArmed)
+		assertFalse("the cancel drops the batch marks", model.items().any { it.batched })
+	}
+
+	@Test
+	fun `a list reload ends a running drag, so its next step keeps the batch`() {
+		val (aId, _) = seed()
+		ItemRepository.createChapter(aId, "c2", null, 1)
+		ItemRepository.createChapter(aId, "c3", null, 2)
+		val model = vmIn("A")
+		model.setSelected(model.items().single { it.item.name == "c1" }, true)
+		model.move(true)
+
+		model.selectRange(0, 1)
+		model.load(model.items().toList(), isSearch = false)
+		model.toggleSelect(model.items().single { it.item.name == "c3" })
+		model.selectRange(0, 0)
+
+		// a baseline from before the reload would drop the rows the batch still holds
+		assertEquals(listOf("c1", "c2", "c3"), model.batchRows().map { it.item.name }.sorted())
+	}
+
+	@Test
+	fun `a batch the opened folder already holds keeps the paste muted`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		val c2 = ItemRepository.createChapter(aId, "c2", null, 1)
+		val w1 = ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
+		val w2 = ItemRepository.createWord(c1.id, "w2", null, listOf("t2" to null))
+		ItemRepository.reference(w1.id, c2.id)
+		ItemRepository.reference(w2.id, c2.id)
+		val model = vmInSet("c1")
+		model.setSelected(model.items().single { it.item.name == "w1" }, true)
+		model.setSelected(model.items().single { it.item.name == "w2" }, true)
+		model.move(true)
+
+		model.onBackRequested()
+		model.onItemClick(model.items().single { it.item.name == "c2" })
+
+		// the target holds a reference to both rows, so the paste could only lose them
+		assertEquals(R.string.fail_paste_present, model.pasteBlockedReason)
 	}
 
 	@Test
@@ -963,19 +1016,89 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
-	fun `an armed paste blocks the drag-select over the results`() {
+	fun `a press and a drag grow and shrink the armed batch without a selection`() {
 		val (aId, _) = seed()
+		ItemRepository.createChapter(aId, "c2", null, 1)
+		ItemRepository.createChapter(aId, "c3", null, 2)
 		val model = vmIn("A")
-		val word = ItemRepository.createWord(aId, "w", null, listOf("t" to null))
-		val row = ItemRow.ofSearchHit(word, listOf(ItemRepository.get(aId)!!), 1, emptyList())
-		model.load(listOf(row), isSearch = true)
-		model.setSelected(model.items().single { it.item.id == word.id }, true)
-		model.move(false)
-		assertTrue(model.pasteArmed)
+		model.setSelected(model.items().single { it.item.name == "c1" }, true)
+		model.move(true)
+		fun armed() = model.items().filter { it.batched }.map { it.item.name }
 
-		model.selectRange(0, 0)
-		assertFalse("no row selected under the paste strip",
-			model.items().any { it.selected })
+		model.onItemLongClick(model.items().single { it.item.name == "c2" })
+		assertEquals("the press adds its row", listOf("c1", "c2"), armed())
+		assertEquals("the batch is no selection", 0, model.selectionCount())
+		model.onItemLongClick(model.items().single { it.item.name == "c2" })
+		assertEquals("a second press takes it out", listOf("c1"), armed())
+		assertTrue("the list lends the icons to the paste", model.listState.value.gathering)
+		model.toggleSelect(model.items().single { it.item.name == "c3" })
+		assertEquals("the icon adds its row", listOf("c1", "c3"), armed())
+		model.toggleSelect(model.items().single { it.item.name == "c3" })
+		assertEquals("a second icon tap takes it out", listOf("c1"), armed())
+
+		model.selectRange(1, 2)
+		assertEquals("the drag adds its range", listOf("c1", "c2", "c3"), armed())
+		model.selectRange(1, 1)
+		assertEquals("a pulled-back row returns to the drag start", listOf("c1", "c2"), armed())
+		model.endRangeSelect()
+		assertEquals(2, model.armedCount)
+	}
+
+	@Test
+	fun `an emptied batch ends the paste and its marks`() {
+		seed()
+		val model = vmIn("A")
+		val c1 = model.items().single { it.item.name == "c1" }
+		model.setSelected(c1, true)
+		model.move(false)
+		assertTrue(c1.batched)
+
+		model.onItemLongClick(c1)
+
+		assertFalse(model.pasteArmed)
+		assertFalse(c1.batched)
+		assertFalse("the icons return to the selection", model.listState.value.gathering)
+	}
+
+	@Test
+	fun `select all mutes while a paste waits`() {
+		seed()
+		val model = vmIn("A")
+		model.setSelected(model.items().single { it.item.name == "c1" }, true)
+		model.move(true)
+
+		model.onSelectAllToggle()
+
+		assertEquals(0, model.selectionCount())
+		assertEquals(R.string.unavailable_paste_armed, model.selectAllBlockedReason)
+	}
+
+	@Test
+	fun `the batch gathers rows of several folders and marks them again on return`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		val c2 = ItemRepository.createChapter(aId, "c2", null, 1)
+		val c3 = ItemRepository.createChapter(aId, "c3", null, 2)
+		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
+		ItemRepository.createWord(c2.id, "w2", null, listOf("t2" to null))
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		model.setSelected(model.items().single { it.item.name == "w1" }, true)
+		model.move(true)
+		model.onBackRequested()
+		model.onItemClick(model.items().single { it.item.name == "c2" })
+		model.onItemLongClick(model.items().single { it.item.name == "w2" })
+		model.onBackRequested()
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+
+		assertTrue("a fresh row of the batch shows armed", model.items().single { it.item.name == "w1" }.batched)
+		model.onBackRequested()
+		model.onItemClick(model.items().single { it.item.name == "c3" })
+		model.doPaste()
+
+		assertEquals(listOf("w1", "w2"), ItemRepository.children(c3.id).map { it.name }.sorted())
+		assertTrue(ItemRepository.children(c3.id).all { ItemRepository.linkIsReference(c3.id, it.id) })
+		assertFalse("the paste drops its marks", model.items().any { it.batched })
 	}
 
 	@Test

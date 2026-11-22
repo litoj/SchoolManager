@@ -76,7 +76,7 @@ class ItemListCallbacks(
 	 * opposite the majority.
 	 */
 	val onItemDoubleTap: () -> Unit = {},
-	/** The type icon of a row tapped, the host selects the row with it. */
+	/** The type icon of a row tapped, the host selects the row or gathers it. */
 	val onItemIconClick: (Int) -> Unit = {},
 	/**
 	 * A long-press on a row starts its selection, and a selected row keeps it.
@@ -291,8 +291,8 @@ fun ItemList(
 					callbacks.onItemLongClick(index)
 					if (mode == ListDragMode.Reorder) callbacks.onPressHeld(true)
 				},
-				// the icon selects while a selection runs or the picker shows
-				onIconClick = if (state.selectionActive || state.pickerMode) {
+				// the icon marks while a selection runs or a batch gathers
+				onIconClick = if (state.selectionActive || state.gathering) {
 					{ callbacks.onItemIconClick(index) }
 				} else null,
 				descVisible = !state.pickerMode,

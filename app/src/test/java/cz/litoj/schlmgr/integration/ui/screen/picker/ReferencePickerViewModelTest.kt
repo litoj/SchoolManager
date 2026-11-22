@@ -64,6 +64,26 @@ class ReferencePickerViewModelTest {
 	}
 
 	@Test
+	fun `one pick links rows of two chapters`() {
+		val subject = ItemRepository.createSubject("A", null)
+		val target = ItemRepository.createChapter(subject.id, "target", null, 0)
+		val c1 = ItemRepository.createChapter(subject.id, "c1", null, 1)
+		val c2 = ItemRepository.createChapter(subject.id, "c2", null, 2)
+		val first = ItemRepository.createWord(c1.id, "one", null, listOf("1" to null))
+		val second = ItemRepository.createWord(c2.id, "two", null, listOf("2" to null))
+		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined, target)
+		model.onItemClick(model.items().single { it.item.type == ItemKind.CHAPTER && it.item.name == "A" })
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		model.onItemLongClick(model.items().single { it.item.id == first.id })
+		model.onBackRequested()
+		model.onItemClick(model.items().single { it.item.name == "c2" })
+		model.toggleSelect(model.items().single { it.item.id == second.id })
+		model.onSelect()
+
+		assertEquals(setOf(first.id, second.id), ItemRepository.children(target.id).map { it.id }.toSet())
+	}
+
+	@Test
 	fun `a cycle refuses the whole pick and leaves no earlier links behind`() {
 		val subject = ItemRepository.createSubject("A", null)
 		val target = ItemRepository.createChapter(subject.id, "target", null, 0)

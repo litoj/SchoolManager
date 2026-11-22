@@ -107,8 +107,31 @@ abstract class ExplorerViewModel<R>(
 
 	private val selection = Selection(SelectionHost())
 
-	/** An armed paste freezes reorder, drag-select and navigation. */
+	/** An armed paste freezes reorder. */
 	protected open fun pasteArmed() = false
+
+	private val batch = RowBatch(BatchHost())
+
+	/** Whether the row gestures gather the batch across folders instead of selecting. */
+	protected open fun gathering() = false
+
+	/** The batch changed, an emptied one included. */
+	protected open fun batchChanged() {}
+
+	/** The gathered rows, whichever folders they came from. */
+	fun batchRows(): List<ItemRow> = batch.rows
+
+	/** Whether a drag is adding its range right now. */
+	protected fun batchDragging(): Boolean = batch.dragging
+
+	protected fun startBatch(rows: List<ItemRow>) = batch.start(rows)
+
+	protected fun clearBatch() = batch.clear()
+
+	private inner class BatchHost : RowBatch.Host {
+		override val models get() = list.items()
+		override fun batchChanged() = this@ExplorerViewModel.batchChanged()
+	}
 
 	fun refreshReorderable() = list.refreshReorderable()
 
@@ -149,11 +172,12 @@ abstract class ExplorerViewModel<R>(
 	}
 
 	/**
-	 * The shared menu door: the sort family and the clear filter.
+	 * The shared menu door: select all, the sort family and the clear filter.
 	 * - a host answers its own actions first, then falls back here.
 	 */
 	open fun onMenuItemClick(itemId: Int): Boolean = when (itemId) {
 		MenuId.CLEAR_FILTER -> { clearFilters(); true }
+		MenuId.SELECT_ALL -> { onSelectAllToggle(); true }
 		else -> sortItem(itemId)
 	}
 
@@ -463,25 +487,40 @@ abstract class ExplorerViewModel<R>(
 
 	/**
 	 * The long-press starts a selection and keeps one, so the same press can drag it.
-	 * - an armed paste owns the bottom, so its list refuses the press.
+	 * - a gathering list toggles the row in its batch instead.
 	 */
-	open fun onItemLongClick(item: ItemRow?) {
+	fun onItemLongClick(item: ItemRow?) {
 		val row = item ?: return
-		if (!pasteArmed() && !row.selected) setSelected(row, true)
+		if (gathering()) batch.toggle(row)
+		else if (!row.selected) setSelected(row, true)
 	}
 
 	private inner class SelectionHost : Selection.Host {
 		override val models get() = list.items()
-		override fun pasteArmed() = this@ExplorerViewModel.pasteArmed()
 	}
 
-	fun toggleSelect(item: ItemRow?) = selection.toggleSelect(item)
+	// a gathering list sends every mark gesture to its batch.
 
-	fun setSelected(item: ItemRow?, selected: Boolean) = selection.setSelected(item, selected)
+	fun toggleSelect(item: ItemRow?) {
+		val row = item ?: return
+		if (gathering()) batch.toggle(row) else selection.toggleSelect(row)
+	}
 
-	fun selectRange(from: Int, to: Int) = selection.selectRange(from, to)
+	fun setSelected(item: ItemRow?, selected: Boolean) {
+		val row = item ?: return
+		if (gathering()) batch.hold(row, selected) else selection.setSelected(row, selected)
+	}
 
-	fun endRangeSelect() = selection.endRangeSelect()
+	fun selectRange(from: Int, to: Int) =
+		if (gathering()) batch.range(from, to) else selection.setRangeSelected(from, to)
+
+	fun endRangeSelect() {
+		val dragged = batch.dragging
+		batch.endRange()
+		selection.endRangeSelect()
+		// a drag step skips its block read, so the paste reads once at the end
+		if (dragged) batchChanged()
+	}
 
 	fun setRangeSelected(anchor: Int, to: Int) = selection.setRangeSelected(anchor, to)
 
@@ -489,7 +528,7 @@ abstract class ExplorerViewModel<R>(
 
 	fun selectAll(on: Boolean) = selection.selectAll(on)
 
-	fun onSelectAllToggle() = selection.onSelectAllToggle()
+	open fun onSelectAllToggle() = if (gathering()) batch.toggleAll() else selection.onSelectAllToggle()
 
 	fun clearSelection() = selection.clearSelection()
 
@@ -497,7 +536,14 @@ abstract class ExplorerViewModel<R>(
 		override val picker get() = this@ExplorerViewModel.picker
 		override fun pasteArmed() = this@ExplorerViewModel.pasteArmed()
 
-		override fun resetDragSelect() = selection.reset()
+		override fun gathering() = this@ExplorerViewModel.gathering()
+
+		override fun resetDragSelect() {
+			batch.endRange()
+			selection.reset()
+		}
+
+		override fun rowsShown(rows: List<ItemRow>) = batch.markShown(rows)
 
 		override fun publishChrome(reorderable: Boolean) {
 			_state.update {

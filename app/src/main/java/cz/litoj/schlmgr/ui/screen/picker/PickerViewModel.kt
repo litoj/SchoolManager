@@ -7,7 +7,6 @@ import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.ui.screen.test.TestSetupState
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
-import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -15,7 +14,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * The test-source picker: the explorer core that selects like the subjects screen.
+ * The test-source picker: the explorer core that gathers like an armed paste.
  * - it starts at the position of the main explorer, on a copy it navigates alone.
  * - a test pick fills the source list, a reference pick links into its initial chapter. */
 class PickerViewModel(
@@ -37,18 +36,19 @@ class PickerViewModel(
 		setContent(history.path.lastOrNull())
 	}
 
+	/** The picks gather across folders, so one Select takes rows of several. */
+	override fun gathering() = true
+
 	/**
-	 * The strip Select: collects the selected rows into the source list of the test.
+	 * The strip Select: collects the gathered rows into the source list of the test.
 	 * - it closes the picker, and a refused pick reports and stays open.
 	 * - chain building reads the database, so it runs on IO.
 	 * - the close follows on main once the sources land.
 	 */
 	fun onSelect() {
-		// browse rows and search-hit rows share the live models.
-		// - a hit carries its own chain.
-		// - a browse row rebuilds it from the parent it was selected under.
+		// a hit carries its own chain, a browse row rebuilds it from the parent it was picked under.
 		// - read on the main thread, before the dispatcher switch
-		val picked = items().filter(ItemRow::selected).map(TestSetupState::seedOf)
+		val picked = batchRows().map(TestSetupState::seedOf)
 		viewModelScope.launch {
 			if (referenceTarget != null) {
 				val accepted = withContext(io) {

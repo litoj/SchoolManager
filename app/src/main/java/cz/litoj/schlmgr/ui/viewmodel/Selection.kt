@@ -10,8 +10,6 @@ internal class Selection(private val host: Host) {
 	interface Host {
 
 		val models: List<ItemRow>
-
-		fun pasteArmed(): Boolean
 	}
 
 	private var dragSelect: Pair<Int, BooleanArray>? = null
@@ -30,12 +28,6 @@ internal class Selection(private val host: Host) {
 
 	fun setSelected(item: ItemRow?, selected: Boolean) {
 		setRowSelected(item, selected)
-	}
-
-	fun selectRange(from: Int, to: Int) {
-		// a drag over the results would select under the paste strip.
-		if (host.pasteArmed()) return
-		setRangeSelected(from, to)
 	}
 
 	fun endRangeSelect() {

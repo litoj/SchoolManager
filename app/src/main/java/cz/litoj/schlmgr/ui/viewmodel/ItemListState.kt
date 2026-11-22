@@ -14,6 +14,7 @@ import cz.litoj.schlmgr.data.db.ROOT_ID
  * @property containerId the container whose children show, the root id at the subjects screen
  * @property anchor where a container load re-anchors the list, null keeps the position
  * @property pulse the row a jump landed on, which flashes once
+ * @property gathering the row gestures gather a batch across folders instead of selecting
  */
 data class ItemListState(
 	val items: List<RowView> = emptyList(),
@@ -26,6 +27,7 @@ data class ItemListState(
 	val containerId: Int = ROOT_ID,
 	val anchor: ScrollAnchor? = null,
 	val pulse: ItemPulse? = null,
+	val gathering: Boolean = false,
 ) {
 	/** Selection mode is on, derived from the selected rows. */
 	val selectionActive: Boolean get() = items.any { it.selected }

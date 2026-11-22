@@ -22,6 +22,7 @@ import cz.litoj.schlmgr.ui.shell.TopBar
 import cz.litoj.schlmgr.ui.shell.TopBarNav
 import cz.litoj.schlmgr.ui.shell.explorerBack
 import cz.litoj.schlmgr.ui.shell.headerShadow
+import cz.litoj.schlmgr.ui.shell.pickExplorerMenu
 import cz.litoj.schlmgr.ui.viewmodel.ActionConfig
 import cz.litoj.schlmgr.ui.viewmodel.explorerMenu
 import cz.litoj.schlmgr.ui.viewmodel.InfoBar
@@ -30,7 +31,7 @@ import cz.litoj.schlmgr.ui.viewmodel.SearchUi
 /**
  * The source picker screen: a pushed destination, not a drawer sibling.
  * - the top bar holds the up arrow and the search field in the title slot.
- * - the corner holds the select-all button, where an explorer holds its more menu.
+ * - the header menu carries select all and the filter, as an explorer header does.
  * - the explorer content sits below, with the back chain over it.
  * - the exit pops back to the test setup.
  *
@@ -64,7 +65,7 @@ fun PickerScreen(
 	BoxWithConstraints(Modifier.fillMaxSize()) {
 		Column(Modifier.fillMaxSize()) {
 		TopBar {
-			// the arrow walks the back chain, so a search or a selection ends before the picker
+			// the arrow ends a search, then walks up the folder chain, and the picks stay
 			TopBarNav(
 				up = true,
 				onNavigate = { explorerBack(viewModel, onExit, context) },
@@ -79,15 +80,14 @@ fun PickerScreen(
 				viewModel.menuKind, selecting = false, singleSelected = false,
 				ActionConfig.load(),
 				filterActive = (state.info as? InfoBar.Search)?.criteria?.isNotEmpty() == true,
+				searchBlockedReason = searchBlockedReason,
 			),
 			width = this@BoxWithConstraints.maxWidth,
 			onOpenSearch = viewModel::openSearchField,
 			onQueryChange = viewModel::onQueryChange,
 			onQuerySubmit = viewModel::onQuerySubmit,
 			onDismissSearch = viewModel::dismissSearch,
-			onFilter = { editFilter(viewModel, null) },
-			onToggleSelectAll = viewModel::onSelectAllToggle,
-			onMenuPick = { viewModel.onMenuItemClick(it) },
+			onMenuPick = { pickExplorerMenu(viewModel, it) },
 		)
 		}
 		PickerContent(viewModel, Modifier.weight(1f).headerShadow())
@@ -98,12 +98,13 @@ fun PickerScreen(
 /**
  * The explorer content of the picker: the scaffold with the bottom strip of the picker.
  * - the scaffold holds the breadcrumbs, the info strip and the item list.
- * - the strip shows only while rows are selected, like the subjects screen.
+ * - the strip shows only while rows are picked, in this folder or any other.
  */
 @Composable
 private fun PickerContent(viewModel: PickerViewModel, modifier: Modifier = Modifier) {
 	val state by viewModel.state.collectAsStateWithLifecycle()
 	val listState by viewModel.listState.collectAsStateWithLifecycle()
+	val picked = viewModel.batchRows().size
 	ExplorerScaffold(
 		state = state,
 		listState = listState,
@@ -112,28 +113,21 @@ private fun PickerContent(viewModel: PickerViewModel, modifier: Modifier = Modif
 		onFilterEdit = { editFilter(viewModel, it) },
 		onFilterDrop = viewModel::dropFilter,
 		onParentClick = { viewModel.onBackRequested() },
-		callbacks = pickerCallbacks(viewModel, listState.selectionActive),
+		callbacks = pickerCallbacks(viewModel),
 		onScrollPosition = viewModel::onScrollPosition,
 		modifier = modifier,
-		statusLine = if (listState.selectionActive)
-			stringResource(R.string.data_selected, listState.selectionCount)
-		else null,
+		statusLine = if (picked > 0) stringResource(R.string.data_selected, picked) else null,
 	) {
-		if (listState.selectionActive) PickerActionBar(
+		if (picked > 0) PickerActionBar(
 			onCancel = viewModel::cancel,
 			onSelect = viewModel::onSelect,
 		)
 	}
 }
 
-/** The row intents, where a selection tap toggles like on the subjects screen. */
-private fun pickerCallbacks(viewModel: PickerViewModel, selectionActive: Boolean): ItemListCallbacks = ItemListCallbacks(
-	onItemClick = { index ->
-		viewModel.rowAt(index)?.let { row ->
-			if (selectionActive) viewModel.setSelected(row, !row.selected)
-			else viewModel.onItemClick(row)
-		}
-	},
+/** The row intents, where a tap keeps its meaning so the picks can span folders. */
+private fun pickerCallbacks(viewModel: PickerViewModel): ItemListCallbacks = ItemListCallbacks(
+	onItemClick = { index -> viewModel.onItemClick(viewModel.rowAt(index)) },
 	onItemDoubleTap = viewModel::onItemDoubleTap,
 	onItemIconClick = { index -> viewModel.toggleSelect(viewModel.rowAt(index)) },
 	onItemLongClick = { index -> viewModel.onItemLongClick(viewModel.rowAt(index)) },

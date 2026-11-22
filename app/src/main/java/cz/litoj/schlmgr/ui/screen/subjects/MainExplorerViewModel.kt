@@ -125,10 +125,26 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 	override fun pasteArmed() = pasteArmed
 
+	/** The armed paste carries the batch, so its rows gather across folders. */
+	override fun gathering() = pasteArmed
+
+	override fun batchChanged() = paste.onBatchChanged()
+
+	/** Why Select all is muted, 0 when it may run. */
+	val selectAllBlockedReason: Int get() = if (pasteArmed) R.string.unavailable_paste_armed else 0
+
+	override fun onSelectAllToggle() {
+		if (selectAllBlockedReason == 0) super.onSelectAllToggle()
+	}
+
 	private inner class PasteHost : SubjectsPaste.Host, SubjectsHost by shared {
 		override fun selectionCount() = this@MainExplorerViewModel.selectionCount()
 		override fun notifyChanged() = this@MainExplorerViewModel.notifyChanged()
 		override fun refreshReorderable() = this@MainExplorerViewModel.refreshReorderable()
+		override fun batchRows() = this@MainExplorerViewModel.batchRows()
+		override fun startBatch(rows: List<ItemRow>) = this@MainExplorerViewModel.startBatch(rows)
+		override fun clearBatch() = this@MainExplorerViewModel.clearBatch()
+		override fun batchDragging() = this@MainExplorerViewModel.batchDragging()
 	}
 
 	private val wordEdit = SubjectsWordEdit(viewModelScope, io, WordEditHost())

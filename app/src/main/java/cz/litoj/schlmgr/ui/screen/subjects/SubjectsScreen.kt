@@ -26,13 +26,13 @@ import cz.litoj.schlmgr.ui.popup.CreatorContent
 import cz.litoj.schlmgr.ui.popup.CreatorPopup
 import cz.litoj.schlmgr.ui.popup.FlipConflictPopup
 import cz.litoj.schlmgr.ui.popup.ReferencePopup
-import cz.litoj.schlmgr.ui.shell.editFilter
 import cz.litoj.schlmgr.ui.popup.SourcePickPopup
 import cz.litoj.schlmgr.ui.shell.ExplorerBackHandler
 import cz.litoj.schlmgr.ui.shell.MainLaunchTarget
 import cz.litoj.schlmgr.ui.shell.TopBar
 import cz.litoj.schlmgr.ui.shell.TopBarNav
 import cz.litoj.schlmgr.ui.shell.headerShadow
+import cz.litoj.schlmgr.ui.shell.pickExplorerMenu
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
 import cz.litoj.schlmgr.ui.viewmodel.explorerMenu
 import cz.litoj.schlmgr.ui.viewmodel.InfoBar
@@ -180,15 +180,15 @@ fun SubjectsScreen(
 				viewModel.menuKind, selecting = false, listState.singleSelected,
 				ActionConfig.load(), exportBlockedReason,
 				filterActive = (state.info as? InfoBar.Search)?.criteria?.isNotEmpty() == true,
+				searchBlockedReason = searchBlockedReason,
+				selectAllBlockedReason = viewModel.selectAllBlockedReason,
 			),
 			width = this@BoxWithConstraints.maxWidth,
 			onOpenSearch = viewModel::openSearchField,
 			onQueryChange = viewModel::onQueryChange,
 			onQuerySubmit = viewModel::onQuerySubmit,
 			onDismissSearch = viewModel::dismissSearch,
-			onFilter = { editFilter(viewModel, null) },
-			onToggleSelectAll = viewModel::onSelectAllToggle,
-			onMenuPick = { viewModel.onMenuItemClick(it) },
+			onMenuPick = { pickExplorerMenu(viewModel, it) },
 		)
 		}
 		SubjectsContent(viewModel, exportBlockedReason, Modifier.weight(1f).headerShadow())

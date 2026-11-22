@@ -35,6 +35,9 @@ interface RowView {
 
 	val selected: Boolean
 
+	/** Whether the gathered batch holds the row, which shows like a selection. */
+	val batched: Boolean
+
 	/** The displayed trail below the search root, null outside a search. */
 	val trackPath: List<DbItem>?
 
@@ -56,6 +59,7 @@ data class StaticRow(
 	override val isReference: Boolean = false,
 	override val hasSource: Boolean = false,
 	override val selected: Boolean = false,
+	override val batched: Boolean = false,
 	override val trackPath: List<DbItem>? = null,
 	override val translations: List<TranslationLine> = emptyList(),
 ) : RowView

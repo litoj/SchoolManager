@@ -33,7 +33,12 @@ internal class ExplorerList(
 
 		fun pasteArmed(): Boolean
 
+		fun gathering(): Boolean
+
 		fun resetDragSelect()
+
+		/** Every row the list starts to show, a full load or a search batch. */
+		fun rowsShown(rows: List<ItemRow>)
 
 		fun publishChrome(reorderable: Boolean)
 
@@ -144,6 +149,7 @@ internal class ExplorerList(
 		pickerMode = isPicker || host.picker
 		host.resetDragSelect()
 		models = content.toMutableList()
+		host.rowsShown(models)
 		val bottomRequested = scrollToBottomPending
 		val scroll = if (bottomRequested) {
 			scrollToBottomPending = false
@@ -166,6 +172,7 @@ internal class ExplorerList(
 				containerId = landedContainer ?: it.containerId,
 				anchor = anchored ?: it.anchor,
 				pulse = pulse,
+				gathering = host.gathering(),
 			)
 		}
 		host.publishChrome(reorderableNow(isSearch))
@@ -266,6 +273,7 @@ internal class ExplorerList(
 	fun append(batch: List<ItemRow>) {
 		batch.forEachIndexed { index, row -> row.renumber(models.size + 1 + index) }
 		models.addAll(batch)
+		host.rowsShown(batch)
 		_listState.update {
 			it.copy(
 				items = models.toList(),
@@ -287,7 +295,9 @@ internal class ExplorerList(
 
 	fun items(): List<ItemRow> = models
 
+	/** The armed paste freezes the reorder and gathers with the row icons. */
 	fun refreshReorderable() {
+		_listState.update { it.copy(gathering = host.gathering()) }
 		host.publishReorderable(reorderableNow(searching))
 	}
 

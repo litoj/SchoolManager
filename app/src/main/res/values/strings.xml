@@ -265,7 +265,8 @@
         \nA drag of a selected row moves it where the list has an order.
         \nThe top-right check selects all or ends the selection. Back ends it too.</string>
     <string name="help_select_move">Cut takes the selected rows and shows the paste strip. Open the target and press Paste.
-        \nThe armed move survives a chapter switch.</string>
+        \nThe armed move survives a chapter switch.
+        \nA long press or the row icon in any chapter adds a row to the move or takes it out, and Add reference works the same.</string>
     <string name="help_test">Tests</string>
     <string name="help_test_how">The test asks for the words of the picked sources.</string>
     <string name="help_test_results">Test results</string>
@@ -462,6 +463,7 @@
     <string name="unavailable_add_source_full">The whole subject is already a source.</string>
     <string name="unavailable_export_empty">Translations cannot be exported.</string>
     <string name="unavailable_import_busy">The import is running.</string>
+    <string name="unavailable_paste_armed">Paste or cancel the waiting items first.</string>
     <string name="unavailable_search_root">Search needs an open subject.</string>
     <string name="unavailable_single_row">Select exactly one row.</string>
 </resources>

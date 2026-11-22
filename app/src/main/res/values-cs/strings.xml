@@ -252,7 +252,8 @@
         \nTažením vybraného řádku ho přesunete tam, kde má seznam pořadí.
         \nZaškrtnutí vpravo nahoře vybere vše nebo výběr ukončí. Ukončí ho i zpět.</string>
     <string name="help_select_move">Vyjmout vezme vybrané řádky a zobrazí vkládací lištu. Otevřete cíl a stiskněte Vložit.
-        \nPřesun přežije přepnutí kapitoly.</string>
+        \nPřesun přežije přepnutí kapitoly.
+        \nDlouhý stisk nebo ikona řádku v libovolné kapitole přidá řádek k přesunu nebo ho odebere, Přidat odkaz funguje stejně.</string>
     <string name="help_test">Testy</string>
     <string name="help_test_how">Test se ptá na slovíčka ze zvolených zdrojů.</string>
     <string name="help_test_results">Výsledky testu</string>
@@ -461,6 +462,7 @@
     <string name="unavailable_add_source_full">Celý předmět už je zdrojem.</string>
     <string name="unavailable_export_empty">Překlady nelze exportovat.</string>
     <string name="unavailable_import_busy">Import právě probíhá.</string>
+    <string name="unavailable_paste_armed">Nejdřív čekající položky vložte, nebo zrušte.</string>
     <string name="unavailable_search_root">Hledání vyžaduje otevřený předmět.</string>
     <string name="unavailable_single_row">Vyberte právě jeden řádek.</string>
 </resources>

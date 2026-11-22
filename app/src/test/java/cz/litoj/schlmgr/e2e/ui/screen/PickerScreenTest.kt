@@ -1,14 +1,11 @@
 package cz.litoj.schlmgr.e2e.ui.screen
 
 import android.os.Looper
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.unit.dp
 import androidx.room.Room
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.GlobalDependencies
@@ -32,14 +29,15 @@ import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 
 /**
- * The picker chrome against the selection state, the subjects screen shapes.
- * - the select strip shows only while rows are selected.
- * - the corner button is the select-all of the picker, always present.
- * - a tap while selecting toggles the row, no click-through like the explorer.
+ * The picker chrome against its gathered picks.
+ * - the select strip shows only while rows are picked, in any folder.
+ * - select all picks every row of the folder.
+ * - a tap keeps its meaning while picking, so the picks can span folders.
  * - the heading names the task at every level, the crumbs name the location.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35])
+// a phone wide enough for every list icon
+@Config(sdk = [35], qualifiers = "w411dp-h891dp")
 class PickerScreenTest {
 
 	@get:Rule
@@ -67,7 +65,7 @@ class PickerScreenTest {
 
 	private fun text(res: Int): String = RuntimeEnvironment.getApplication().getString(res)
 
-	/** Long-presses a row, which selects it like the explorer long-press. */
+	/** Long-presses a row, which picks it like the explorer long-press. */
 	private fun selectTheRow() {
 		rule.mainClock.autoAdvance = false
 		rule.onNodeWithText("A").performTouchInput {
@@ -80,13 +78,9 @@ class PickerScreenTest {
 		rule.waitForIdle()
 	}
 
-	/** Taps the corner button, the select-all slot of the top bar. */
-	private fun tapCornerButton() {
-		rule.onRoot().performTouchInput {
-			val x = width - with(rule.density) { 25.dp.toPx() }
-			val y = with(rule.density) { 27.5.dp.toPx() }
-			click(Offset(x, y))
-		}
+	/** Taps the select-all icon of the top bar. */
+	private fun tapSelectAll() {
+		rule.onNodeWithContentDescription(text(R.string.select_all)).performClick()
 		rule.waitForIdle()
 	}
 
@@ -108,7 +102,7 @@ class PickerScreenTest {
 	}
 
 	@Test
-	fun `the strip follows the selection and the corner button selects all`() {
+	fun `the strip follows the picks and select all picks all`() {
 		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
 		rule.setContent { PickerScreen(model, {}) }
 		rule.waitForIdle()
@@ -119,16 +113,16 @@ class PickerScreenTest {
 		rule.onNodeWithText(text(R.string.select)).assertExists()
 		rule.onNodeWithText(text(R.string.objects_cancel)).assertExists()
 
-		tapCornerButton()
-		rule.runOnIdle { assertTrue(model.items().all { it.selected }) }
+		tapSelectAll()
+		rule.runOnIdle { assertTrue(model.items().all { it.batched }) }
 
-		tapCornerButton()
-		rule.runOnIdle { assertFalse(model.items().any { it.selected }) }
+		tapSelectAll()
+		rule.runOnIdle { assertFalse(model.items().any { it.batched }) }
 		rule.onNodeWithText(text(R.string.select)).assertDoesNotExist()
 	}
 
 	@Test
-	fun `a tap while selecting toggles the row instead of opening it`() {
+	fun `a tap while picking opens the folder and the strip stays`() {
 		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
 		rule.setContent { PickerScreen(model, {}) }
 		rule.waitForIdle()
@@ -136,22 +130,11 @@ class PickerScreenTest {
 		selectTheRow()
 
 		rule.onNodeWithText("B").performClick()
+		rule.waitForIdle()
 		rule.runOnIdle {
-			assertTrue("the tap selected the other row",
-				model.items().single { it.item.name == "B" }.selected)
-			assertTrue("the long-pressed row stays selected",
-				model.items().single { it.item.name == "A" }.selected)
+			assertTrue("the tap opened the folder", model.history.path.single().name == "B")
+			assertTrue("the pick of the left folder stays", model.batchRows().single().item.name == "A")
 		}
-		// the tap opened nothing, both rows still stand
-		rule.onNodeWithText("A").assertExists()
-		rule.onNodeWithText("B").assertExists()
-
-		rule.onNodeWithText("A").performClick()
-		rule.runOnIdle {
-			assertFalse("the second tap dropped the first row",
-				model.items().single { it.item.name == "A" }.selected)
-			assertTrue("the other row keeps its selection",
-				model.items().single { it.item.name == "B" }.selected)
-		}
+		rule.onNodeWithText(text(R.string.select)).assertExists()
 	}
 }

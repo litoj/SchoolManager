@@ -40,6 +40,8 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		private set
 	override var selected: Boolean by mutableStateOf(false)
 		private set
+	override var batched: Boolean by mutableStateOf(false)
+		private set
 	var toShow: String by mutableStateOf("")
 		private set
 	var info: String by mutableStateOf("")
@@ -104,6 +106,11 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	/** The mark write of the selection machine, see [Selection]. */
 	fun select(on: Boolean) {
 		selected = on
+	}
+
+	/** The mark write of the gathered batch, see [RowBatch]. */
+	fun batch(on: Boolean) {
+		batched = on
 	}
 
 	/** The renumber write of the list, which every insert, move and sort runs. */
