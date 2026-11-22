@@ -63,30 +63,40 @@ class SearchEngine(query: SearchQuery, private val foldDiacritics: Boolean = fal
 
 	/**
 	 * The parts a translation may answer for its word: the typed text, names and descriptions.
-	 * - a type or a counter belongs to the row itself, so no translation answers one.
+	 * - the counters belong to the word, so a translation cannot invent them.
 	 */
 	private val textParts: Correct
 
-	/** The parts only the row itself answers, so a word retried through a translation keeps them. */
+	/** The counters only the word itself answers, so a translation cannot invent them. */
 	private val ownParts: Correct
+
+	/** The kind of a row, applied to the candidate row, never assumed from its parent word. */
+	private val typePart: (DbItem) -> Boolean
 
 	init {
 		val text = ArrayList<Correct>()
 		val own = ArrayList<Correct>()
+		val types = ArrayList<Correct>()
 		val typed = query.text.trim()
 		// the typed text is a name search, the criteria add their own comparisons
 		if (typed.isNotEmpty()) text.add(nameTest(FilterOperator.CONTAINS, typed))
 		for (criterion in query.criteria) {
 			val test = criterionTest(criterion)
-			if (criterion.tag == SearchTag.NAME || criterion.tag == SearchTag.DESCRIPTION) text.add(test)
-			else own.add(test)
+			when (criterion.tag) {
+				SearchTag.TYPE -> types.add(test)
+				SearchTag.NAME, SearchTag.DESCRIPTION -> text.add(test)
+				else -> own.add(test)
+			}
 		}
 		textParts = Correct { item -> text.all { it.verify(item) } }
 		ownParts = Correct { item -> own.all { it.verify(item) } }
+		typePart = { item -> types.all { it.verify(item) } }
 	}
 
 	/** Every part of the query must hold, so the run answers to all of them. */
-	private val matcher: Correct = Correct { item -> ownParts.verify(item) && textParts.verify(item) }
+	private val matcher: Correct = Correct { item ->
+		ownParts.verify(item) && typePart(item) && textParts.verify(item)
+	}
 
 	private fun criterionTest(criterion: Criterion): Correct {
 		val value = criterion.value
@@ -244,7 +254,7 @@ class SearchEngine(query: SearchQuery, private val foldDiacritics: Boolean = fal
 				ItemKind.WORD -> if (!yes && inScope(item) && ownParts.verify(item)) {
 					// a word that missed its own text is retried through its translations.
 					// the WORD is the hit, so its own row and path show
-					if (index.childrenOf(item.id).any { textParts.verify(it) } && found.add(item.id))
+					if (index.childrenOf(item.id).any { typePart(it) && textParts.verify(it) } && found.add(item.id))
 						onMatch(item, ArrayList(path), true)
 				}
 				else -> {}

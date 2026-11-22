@@ -276,6 +276,21 @@ class FileWorkerTest {
 	}
 
 	@Test
+	fun `a wrapped import fills a target that only references hold`() = runBlocking {
+		val deutsch = ItemRepository.createSubject("Deutsch", null)
+		val lektion = ItemRepository.createChapter(deutsch.id, "Lektion 1", null)
+		val outer = ItemRepository.createChapter(deutsch.id, "outer", null)
+		ItemRepository.reference(lektion.id, outer.id)
+		db.itemDao().deleteLink(deutsch.id, lektion.id)
+
+		importPicked("anything.txt", { lektion }, "Lektion 1 {\nHaus;home\n}")
+
+		// the reference is the same row, so the file fills it like any plain child
+		assertEquals(listOf(lektion.id), ItemRepository.children(outer.id).map { it.id })
+		assertEquals(listOf("Haus"), ItemRepository.children(lektion.id).map { it.name })
+	}
+
+	@Test
 	fun `a word list wrapped in the name of the open chapter fills that chapter`() {
 		val deutsch = ItemRepository.createSubject("Deutsch", null)
 		val lektion = ItemRepository.createChapter(deutsch.id, "Lektion 1", null)

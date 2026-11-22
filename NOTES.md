@@ -208,7 +208,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Every import door opens the picker, which accepts text files in the word format.
 - A word list with anything but chapters at its top level lands in one chapter named after the file.
 - At the root that chapter is a subject.
-- A target already of that name takes the content itself.
+- A target already of that name takes the content itself, and a reference to that row counts as the same target.
 - A file whose one top-level container bears the target name merges into the target, in both formats.
 - The New palette centre carries the download icon, since it is the only import door.
 - Shared files open the import mover.

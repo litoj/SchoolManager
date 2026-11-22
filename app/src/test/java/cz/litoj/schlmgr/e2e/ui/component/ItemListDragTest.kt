@@ -456,12 +456,6 @@ class ItemListDragTest {
 		assertFalse("the clear reached the composed state", published.selectionActive)
 	}
 
-	/**
-	 * The reorder flicker over a tall row.
-	 * - the drag holds the finger in the top of a row several lines tall.
-	 * - the finger never crosses that row's middle, so no swap may fire.
-	 * - a held finger still emits small moves, which the drag replays as wiggles.
-	 */
 	@Test
 	fun `a drop onto a moving row changes nothing`() {
 		var drops = 0
@@ -487,6 +481,12 @@ class ItemListDragTest {
 		assertEquals(before, items.map { it.name })
 	}
 
+	/**
+	 * The reorder flicker over a tall row.
+	 * - the drag holds the finger in the top of a row several lines tall.
+	 * - the finger never crosses that row's middle, so no swap may fire.
+	 * - a held finger still emits small moves, which the drag replays as wiggles.
+	 */
 	@Test
 	fun `a finger held in the top of a tall row does not flip the order back and forth`() {
 		items += rows(4, selected = 0).mapIndexed { i, item -> if (i == 1) tallRow(2) else item }

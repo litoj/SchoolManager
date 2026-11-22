@@ -163,7 +163,8 @@ private fun importAnchor(importer: DataImporter, target: DbItem?): Int {
 	val self = target ?: return ROOT_ID
 	val top = importer.items.filter { it.parent == null }.singleOrNull()?.item
 	if (top == null || top.type != self.type || top.name != self.name) return self.id
-	return ItemRepository.plainParentOf(self.id) ?: self.id
+	// a reference-only target needs its occurrence parent, so the file never nests in that target
+	return ItemRepository.plainParentOf(self.id) ?: ItemRepository.parentIds(self.id).firstOrNull { it != self.id } ?: self.id
 }
 
 /**

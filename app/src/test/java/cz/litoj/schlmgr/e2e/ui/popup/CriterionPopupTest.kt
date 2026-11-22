@@ -135,6 +135,45 @@ class CriterionPopupTest {
 	}
 
 	@Test
+	fun `a negative number holds the filter back`() {
+		var applied: Criterion? = null
+		show(onApply = { applied = it })
+		rule.onNodeWithText("Success rate").performClick()
+		rule.onNode(hasSetTextAction()).performTextInput("-1")
+		rule.onNodeWithText("Enter a number 0 or higher.").assertExists()
+		rule.onNodeWithText("Apply").performClick()
+
+		rule.runOnIdle { assertNull(applied) }
+	}
+
+	@Test
+	fun `a rate above one hundred holds the filter back`() {
+		var applied: Criterion? = null
+		show(onApply = { applied = it })
+		rule.onNodeWithText("Success rate").performClick()
+		rule.onNode(hasSetTextAction()).performTextInput("101")
+		rule.onNodeWithText("A success rate runs from 0 to 100.").assertExists()
+		rule.onNodeWithText("Apply").performClick()
+
+		rule.runOnIdle { assertNull(applied) }
+	}
+
+	@Test
+	fun `the highest rate still applies`() {
+		var applied: Criterion? = null
+		show(onApply = { applied = it })
+		rule.onNodeWithText("Success rate").performClick()
+		rule.onNode(hasSetTextAction()).performTextInput("100")
+		rule.onNodeWithText("Apply").performClick()
+
+		rule.runOnIdle {
+			assertEquals(
+				Criterion(SearchTag.RATE, FilterOperator.GREATER, CriterionValue.Rate(100)), applied,
+			)
+		}
+	}
+
+	@Test
 	fun `an empty text value holds the filter back`() {
 		var applied: Criterion? = null
 		show(onApply = { applied = it })

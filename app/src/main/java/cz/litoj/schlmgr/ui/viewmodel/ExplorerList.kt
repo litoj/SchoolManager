@@ -106,7 +106,7 @@ internal class ExplorerList(
 	/** Sibling order of the current view, falling back to repository order on a first visit. */
 	fun sortedChildren(parentId: Int): List<DbItem> {
 		val children = ItemRepository.children(parentId)
-		val order = viewStates.orderOf(parentId) ?: return children
+		val order = (if (parentId == ROOT_ID) viewStates.rootOrder else viewStates.orderOf(parentId)) ?: return children
 		val position = HashMap<Int, Int>()
 		for ((index, id) in order.withIndex()) position[id] = index
 		return children.sortedBy { position[it.id] ?: Int.MAX_VALUE }
@@ -259,6 +259,8 @@ internal class ExplorerList(
 		val at = index.coerceIn(0, models.size)
 		models.add(at, item)
 		models.forEachIndexed { i, row -> row.renumber(i + 1) }
+		host.resetDragSelect()
+		host.rowsShown(listOf(item))
 		_listState.update {
 			it.copy(
 				contentStep = it.contentStep + 1,

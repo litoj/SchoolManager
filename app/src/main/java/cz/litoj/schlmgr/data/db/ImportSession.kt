@@ -111,8 +111,9 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 	 * The plain children of [parentId] in link order.
 	 * A reference holds no name in its parent, since the shown content is not its own.
 	 */
-	private fun plainChildren(parentId: Int): List<DbItem> =
-		children[parentId]?.filter { !it.isReference }?.mapNotNull { rows[it.childId] } ?: emptyList()
+	/** Every child of a parent for a by-name merge, where a reference shares the same row and content. */
+	private fun mergeChildren(parentId: Int): List<DbItem> =
+		children[parentId]?.mapNotNull { rows[it.childId] } ?: emptyList()
 
 	/**
 	 * The pending rows of an import answer before the flush.
@@ -180,7 +181,7 @@ internal class ImportSession private constructor(private val dao: ItemDao) : Ite
 	 * - a reference shows content but holds no name in the parent.
 	 */
 	suspend fun insertContainer(parentId: Int, item: DbItem): DbItem {
-		val existing = plainChildren(parentId)
+		val existing = mergeChildren(parentId)
 			.firstOrNull { it.type == item.type && it.name == item.name }
 		if (existing != null) {
 			// a same-import placeholder has no scope to load, since the flush

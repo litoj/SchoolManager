@@ -1,6 +1,7 @@
 package cz.litoj.schlmgr.ui.viewmodel
 
 import cz.litoj.schlmgr.data.db.ItemKind
+import cz.litoj.schlmgr.data.db.ROOT_ID
 
 /**
  * The remembered view state of the current level and its parents.
@@ -74,6 +75,14 @@ internal class ViewStateStore {
 
 	/** The remembered sibling order of a container, null when no order was captured yet. */
 	fun orderOf(containerId: Int): List<Int>? = level[containerId]?.order
+
+	/**
+	 * The order of the root, whose captured state can be above the open container.
+	 * - the root is the one level a descent can leave behind before the child restores it.
+	 */
+	val rootOrder: List<Int>? get() = level[ROOT_ID]?.order
+		?: parents.firstNotNullOfOrNull { it?.order }
+
 
 	/** Clears only the sort memory of a container, so scroll and flip sides survive. */
 	fun clearOrder(containerId: Int) {

@@ -3,8 +3,8 @@ package cz.litoj.schlmgr.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.data.db.ROOT_ID
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.db.ratio
 import cz.litoj.schlmgr.ui.search.Criterion
@@ -39,8 +39,11 @@ abstract class ExplorerViewModel<R>(
 ) : ViewModel() {
 
 	/** The content switch that every navigation funnels through. */
-	protected open fun setContent(container: DbItem?, pulseItemId: Int? = null) =
+	protected open fun setContent(container: DbItem?, pulseItemId: Int? = null) {
+		// any newer navigation supersedes a pending sibling read, even over the same row
+		siblingGeneration++
 		loadContent(container, pulseItemId = pulseItemId)
+	}
 
 	/**
 	 * Restores the screens after popping hops.
@@ -77,7 +80,7 @@ abstract class ExplorerViewModel<R>(
 		val generation = ++siblingGeneration
 		siblingJob = viewModelScope.launch {
 			val siblings = withContext(io) {
-				if (parent != null) orderedChildren(parent.id) else ItemRepository.subjects()
+				orderedChildren(parent?.id ?: ROOT_ID)
 			}
 			val index = siblings.indexOfFirst { it.id == current.id }
 			if (index < 0) return@launch
@@ -565,7 +568,7 @@ abstract class ExplorerViewModel<R>(
 
 	/** A drag that began on the batch keeps it, even when the drag emptied the paste. */
 	fun selectRange(from: Int, to: Int) =
-		if (gathering() || batch.armed) batch.range(from, to) else selection.setRangeSelected(from, to)
+		if (batch.armed) batch.range(from, to) else selection.setRangeSelected(from, to)
 
 	fun endRangeSelect() {
 		val dragged = batch.dragging

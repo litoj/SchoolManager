@@ -58,6 +58,9 @@ internal class SubjectsPaste(
 	/** The open block read, the newest one only. */
 	private var blockJob: Job? = null
 
+	/** The newest block read only, so an old answer cannot land after a newer one. */
+	private var blockGeneration = 0
+
 	val armed: Boolean get() = referencing != null
 
 	private fun armPaste(kind: Boolean?, rows: List<ItemRow>) {
@@ -82,6 +85,7 @@ internal class SubjectsPaste(
 	fun refreshBlock() {
 		blockJob?.cancel()
 		blockJob = null
+		val generation = ++blockGeneration
 		val kind = referencing
 		if (kind == null) {
 			blockedReason = 0
@@ -99,7 +103,10 @@ internal class SubjectsPaste(
 			// the read costs a graph walk per row, so a superseded one must not answer
 			if (!isActive) return@launch
 			// the posted write lands later, so the paste may have ended meanwhile
-			host.postToUi { if (referencing == kind) blockedReason = blockOf(kind, src, facts) }
+			host.postToUi {
+				if (generation == blockGeneration && referencing == kind)
+					blockedReason = blockOf(kind, src, facts)
+			}
 		}
 	}
 

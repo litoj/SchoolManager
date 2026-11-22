@@ -48,7 +48,10 @@ internal class RowBatch(private val host: Host) {
 		host.batchChanged()
 	}
 
-	fun start(picked: List<ItemRow>) = set(picked)
+	fun start(picked: List<ItemRow>) {
+		armed = true
+		set(picked)
+	}
 
 	fun clear() = set(emptyList())
 

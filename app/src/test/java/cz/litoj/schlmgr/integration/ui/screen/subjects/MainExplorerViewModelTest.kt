@@ -247,6 +247,34 @@ class MainExplorerViewModelTest {
 	private class Stored(val awayFrom: Int, val stored: List<String>)
 
 	@Test
+	fun `subject siblings follow the stored root order`() {
+		ItemRepository.createSubject("A", null)
+		ItemRepository.createSubject("B", null)
+		val model = vm()
+		model.onMenuItemClick(MenuId.SORT_ALPHA_ZA)
+		assertEquals(listOf("B", "A"), model.items().map { it.item.name })
+		model.onItemClick(model.items().single { it.item.name == "B" })
+		assertEquals("B", model.history.path.single().name)
+
+		model.openSibling(1)
+
+		assertEquals("A", model.history.path.single().name)
+	}
+
+	@Test
+	fun `an inserted row keeps its batch mark`() {
+		seed()
+		val model = vmIn("A")
+		val c1 = model.items().single { it.item.name == "c1" }
+		model.setSelected(c1, true)
+		model.move(true)
+
+		model.addItem(ItemRow(c1.item, c1.parentId, c1.position))
+
+		assertTrue("the fresh row shows the mark", model.items().last().batched)
+	}
+
+	@Test
 	fun `the original order reloads the stored order`() {
 		val returns = mapOf(
 			"a descending sort before it" to Stored(MenuId.SORT_ALPHA_ZA, listOf("alpha", "zulu", "mid")),
@@ -1094,7 +1122,6 @@ class MainExplorerViewModelTest {
 		model.endRangeSelect()
 		assertEquals(listOf("c1", "c2", "c3"), armed())
 		model.onItemLongClick(row("c1"))
-		model.endRangeSelect()
 		model.selectRange(0, 1)
 		assertEquals("the drag clears its run", listOf("c3"), armed())
 	}

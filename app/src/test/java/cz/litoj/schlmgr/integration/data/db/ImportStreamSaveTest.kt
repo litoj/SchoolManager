@@ -75,7 +75,7 @@ class ImportStreamSaveTest {
 	}
 
 	@Test
-	fun `a reference holds no name in its parent - the plain child saves as its own row`() {
+	fun `a reference child takes the imported content like its own row`() {
 		val subject = ItemRepository.createSubject("S", null)
 		val home = ItemRepository.createChapter(subject.id, "home", null)
 		val holder = ItemRepository.createChapter(subject.id, "holder", null)
@@ -90,14 +90,11 @@ class ImportStreamSaveTest {
 			override val references: List<StreamReference> = emptyList()
 		}, holder.id)
 
+		// the reference is the same row as the plain child, so no copy appears beside it
 		val kids = ItemRepository.children(holder.id).filter { it.name == "c1" }
-		assertEquals(2, kids.size)
-		// the reference still points at the chapter of the home, while the plain
-		// row belongs to the holder
+		assertEquals(1, kids.size)
 		assertTrue(ItemRepository.linkIsReference(holder.id, chapter.id))
-		val own = kids.single { it.id != chapter.id }
-		assertFalse(ItemRepository.linkIsReference(holder.id, own.id))
-		assertEquals(listOf("w"), ItemRepository.children(own.id).map { it.name })
+		assertEquals(listOf("w"), ItemRepository.children(chapter.id).map { it.name })
 	}
 
 	@Test
