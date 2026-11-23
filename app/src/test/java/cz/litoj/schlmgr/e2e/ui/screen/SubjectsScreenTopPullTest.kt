@@ -81,6 +81,23 @@ class SubjectsScreenTopPullTest {
 		rule.waitForIdle()
 	}
 
+	/** A pull past the threshold, then the same finger back up before the lift. */
+	private fun pullAndReverse(name: String) {
+		val b = rule.onNodeWithText(name).getBoundsInRoot()
+		val px = with(rule.density) { ((b.left + b.right) / 2).toPx() }
+		val y = with(rule.density) { ((b.top + b.bottom) / 2).toPx() }
+		val by = with(rule.density) { 200.dp.toPx() }
+		rule.onRoot().performTouchInput {
+			down(Offset(px, y))
+			moveTo(Offset(px, y + 10f))
+			// the field opens on this step
+			moveTo(Offset(px, y + by))
+			moveTo(Offset(px, y - by))
+			up()
+		}
+		rule.waitForIdle()
+	}
+
 	@Test
 	fun `a swipe down at the top opens the search field`() {
 		val model = show()
@@ -148,6 +165,35 @@ class SubjectsScreenTopPullTest {
 
 		rule.runOnIdle {
 			assertEquals(SearchUi.OFF, model.state.value.searchUi)
+		}
+	}
+
+	@Test
+	fun `a reversal before the lift closes the pulled field`() {
+		val model = show()
+		rule.onNodeWithText("A").performClick()
+		rule.waitForIdle()
+
+		pullAndReverse("c1")
+
+		rule.runOnIdle {
+			assertEquals(SearchUi.OFF, model.state.value.searchUi)
+		}
+		rule.onNode(hasSetTextAction()).assertDoesNotExist()
+	}
+
+	@Test
+	fun `a reversal leaves a field the pull did not open`() {
+		val model = show()
+		rule.onNodeWithText("A").performClick()
+		rule.waitForIdle()
+		rule.runOnIdle { model.openSearchField() }
+		rule.waitForIdle()
+
+		pullAndReverse("c1")
+
+		rule.runOnIdle {
+			assertEquals(SearchUi.TYPING, model.state.value.searchUi)
 		}
 	}
 }

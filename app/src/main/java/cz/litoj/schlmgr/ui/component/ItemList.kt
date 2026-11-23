@@ -104,8 +104,13 @@ class ItemListCallbacks(
 	 * A reorder drag changed the order, so persist it and end the selection.
 	 */
 	val onReorderDrop: () -> Unit = {},
-	/** A pull down at the very top of the list, where the host opens its search field. */
-	val onTopPull: () -> Unit = {},
+	/**
+	 * A pull down at the very top of the list, where the host opens its search field.
+	 * - true when the field opened now, so a reverse can take it back.
+	 */
+	val onTopPull: () -> Boolean = { false },
+	/** The pull reversed before the lift, so the host closes the field this pull opened. */
+	val onTopPullReversed: () -> Unit = {},
 	/**
 	 * A reorder long-press holds the finger down, so the host hides its strip until the lift.
 	 * - a selection press never holds, so its strip shows at once.
@@ -240,7 +245,8 @@ fun ItemList(
 			}
 		},
 	)
-	val pullModifier = Modifier.rememberTopPullModifier(listState, callbacks.onTopPull)
+	val pullModifier = Modifier.rememberTopPullModifier(
+		listState, callbacks.onTopPull, callbacks.onTopPullReversed)
 	// the setting rebuilds the detector, its change applies to the next gesture
 	val doubleTap = remember(density, ItemRow.doubleTapMs) {
 		DoubleTapDetector(with(density) { DoubleTapSpan.toPx() }, ItemRow.doubleTapMs.toLong())

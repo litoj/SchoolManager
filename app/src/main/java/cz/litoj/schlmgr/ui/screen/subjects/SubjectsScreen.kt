@@ -184,7 +184,7 @@ fun SubjectsScreen(
 				selectAllBlockedReason = viewModel.selectAllBlockedReason,
 			),
 			width = this@BoxWithConstraints.maxWidth,
-			onOpenSearch = viewModel::openSearchField,
+			onOpenSearch = { viewModel.openSearchField() },
 			onQueryChange = viewModel::onQueryChange,
 			onQuerySubmit = viewModel::onQuerySubmit,
 			onDismissSearch = viewModel::dismissSearch,

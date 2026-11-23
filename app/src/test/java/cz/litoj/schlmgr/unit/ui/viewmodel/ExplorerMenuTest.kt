@@ -184,12 +184,12 @@ class ExplorerMenuTest {
 	}
 
 	@Test
-	fun `the sort rows put original first and each descending choice before ascending`() {
+	fun `the sort rows put original first and each ascending choice before descending`() {
 		assertEquals(
 			listOf(
-				MenuId.SORT_DEFAULT, MenuId.SORT_ALPHA_ZA, MenuId.SORT_ALPHA_AZ,
-				MenuId.SORT_SF_10, MenuId.SORT_SF_01, MenuId.SORT_PRIORITY,
-				MenuId.SORT_LENGTH_10, MenuId.SORT_LENGTH_01,
+				MenuId.SORT_DEFAULT, MenuId.SORT_ALPHA_AZ, MenuId.SORT_ALPHA_ZA,
+				MenuId.SORT_SF_01, MenuId.SORT_SF_10, MenuId.SORT_PRIORITY,
+				MenuId.SORT_LENGTH_01, MenuId.SORT_LENGTH_10, MenuId.SORT_RANDOM,
 			),
 			sortRows(ExplorerMenuKind.ROOT).children.map { it.id },
 		)

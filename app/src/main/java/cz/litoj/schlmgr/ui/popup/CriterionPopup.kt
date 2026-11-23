@@ -81,7 +81,7 @@ class CriterionPopup(
 	/** the criterion the choices describe, null while the value does not fit the tag */
 	private fun current(): Criterion? {
 		if (validation() != null) return null
-		val text = value.trim()
+		val text = fieldValue()
 		val built = when (tag) {
 			SearchTag.TYPE -> CriterionValue.Kind(kind)
 			SearchTag.RATE -> text.toIntOrNull()?.let { CriterionValue.Rate(it, untested) } ?: return null
@@ -91,8 +91,12 @@ class CriterionPopup(
 		return Criterion(tag, operator, built)
 	}
 
+	/** The exact-case contains keeps its field whitespace, every other value ignores it. */
+	private fun fieldValue(): String =
+		if (operator == FilterOperator.CONTAINS_CASE && !tag.numeric) value else value.trim()
+
 	private fun validation(): Int? {
-		val text = value.trim()
+		val text = fieldValue()
 		if (tag == SearchTag.TYPE) return null
 		if (tag.numeric) {
 			val number = text.toIntOrNull() ?: return R.string.filter_number_error

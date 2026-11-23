@@ -95,7 +95,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Cut applies only to a browse list.
 - The settings editor names the strips that show each action at the current width.
 - Top actions estimate capacity at 1.2 per slot, while titles and search keep 96 dp of intrinsic minimum space.
-- Search stays pinned and never becomes a More entry.
+- One pinned top-bar slot switches from Search to Filter while the field is open.
 - The top arrow cancels the selection and an armed move.
 - An armed move occupies the top line, with cancel and paste in its strip.
 - An armed paste and the picker gather one `RowBatch` across folders instead of selecting.
@@ -114,13 +114,15 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - An unavailable action keeps its place and mutes, with the reason in a notice.
 - Only a mode takeover may replace a control.
 - A reference jump opens its source without a pulse.
+- A breadcrumb click keeps only the clicked ancestor chain, so back walks its levels and never returns to an unrelated branch.
 - A view keeps its scroll, sort order and flip sides.
 - Going back restores the parent view state.
 - A sibling swipe restores that sibling's view state.
 - Going up forgets the level left behind, so its child reopens at the top.
 - An explicit `Original order` clears only the sort memory.
 - Every host offers `Original order` on the browse lists it sorts itself.
-- The sort menu puts original order first, then descending before ascending, with ▲ and ▼ naming direction.
+- The sort menu puts original order first, then each pair ascending before descending, with ▲ and ▼ naming direction.
+- Random gives the shown rows a fresh order on every pick.
 - A small up button stays fixed at the right of the breadcrumbs, including before the first crumb.
 - The breadcrumb presets use fixed heights, with horizontal padding added only in spacious mode.
 - Sibling swipes follow the parent view's sort order, not raw database order.
@@ -141,7 +143,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A query matches names and translations, and a typed translation finds its words.
 - A translation answers only the text parts, the type and the counters are read from its word.
 - Only a word answers a number, so no chapter or note matches a rate or a count.
-- Queries and candidate text are trimmed.
+- Queries and candidate text are trimmed, except the exact-case contains filter, which keeps both.
 - A new query cancels the pending run, with results published in batches.
 - Every non-empty query runs after typing pauses, whatever its length.
 - The filter editor builds one criterion at a time: a tag, a comparison and a value.
@@ -155,17 +157,20 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A rate stays within 0 and 100 and a count never goes negative.
 - An unfinished run reads as searching, an empty finished run names the next step.
 - A filter shows as a chip under the header, its body opens the editor, its mark drops it.
-- The filter icon sits beside sort, its dropdown lists the tags, so the success rate shows before any search.
-- The header order is search, select all, sort, filter, only search is pinned.
-- The list icons show together or all wait in More, so a narrow phone shows only search.
+- The closed filter icon sits beside sort, and its dropdown lists the tags.
+- An open search field puts that parent in the search slot and removes its overflow copy.
+- The list icons show together or all wait in More, so a narrow phone shows only the pinned control.
 - A tag pick opens the editor on that tag, or on its set filter.
 - Description stays in the editor only, the dropdown keeps the important tags.
-- A filter applied from a plain list shows its results like a search.
+- A filter applied from a plain list shows its results without opening the field, while an open field keeps its mode and regains focus.
 - The info strip names the result count and the rows a limited run read.
 - The search menu drops every filter and leaves the typed text running.
 - The field stays while it holds text, with or without the keyboard.
 - A keyboard drop on an empty field closes it.
+- A pull at the top opens the field, and a reverse before the lift closes it again.
+- The rest of that gesture cannot open it again.
 - The nav arrow and system back cancel the search, clear the query and restore the cached browse rows.
+- Cancellation only deactivates filters, which the next query or Apply reuses in another directory.
 - A word hit starts on its translations through the search translate setting.
 - Go-to is search-only, opens the hit's parent and pulses the landed row once.
 - Live results keep their state across settings changes, which take effect on a new run.
@@ -397,3 +402,6 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 
 - The fix editor of a failed file waits for a phone check of its marked line and its no-wrap view.
 - The physical keyboard behaviour waits for an emulator or a device to drive it.
+- The reorder drop that cancels on a moving row edge waits for a phone check.
+- The top pull that a reverse closes waits for a phone check with the keyboard up.
+- The picker swap of a chapter and its rows waits for a phone check of its tick ladder.

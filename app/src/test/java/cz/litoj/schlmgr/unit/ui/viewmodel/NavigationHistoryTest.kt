@@ -109,6 +109,25 @@ class NavigationHistoryTest {
 	}
 
 	@Test
+	fun `a rebase keeps only the new path as its ancestor chain`() {
+		val history = NavigationHistory()
+		val a = item(1, "a")
+		val b = item(2, "b")
+		history.hop(a)
+		history.push(pathOf(a, b))
+		history.hop(item(3, "c"))
+
+		history.rebaseTo(pathOf(a, b))
+
+		assertEquals("the old branch is gone", listOf(a.id, b.id), history.path.map { it.id })
+		assertTrue("back pops the last ancestor", history.remove())
+		assertEquals(listOf(a.id), history.path.map { it.id })
+		assertTrue("back pops the next ancestor", history.remove())
+		assertTrue("the root follows the last ancestor", history.path.isEmpty())
+		assertFalse("the fresh base asks for the exit press", history.remove())
+	}
+
+	@Test
 	fun `a reset drops every step to the fresh root`() {
 		val history = NavigationHistory()
 		history.push(pathOf(item(1, "a")))

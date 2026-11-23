@@ -3,6 +3,7 @@ package cz.litoj.schlmgr.e2e.ui.component
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -12,6 +13,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.ui.component.ExplorerSearchControls
 import cz.litoj.schlmgr.ui.shell.MenuEntry
 import cz.litoj.schlmgr.ui.shell.TopBarActions
 import org.junit.Assert.assertEquals
@@ -38,6 +40,38 @@ class TopBarActionsTest {
 
 	private fun openMore() {
 		rule.onNode(hasContentDescription("More") and hasClickAction()).performClick()
+	}
+
+	private fun showOpenSearchControls() {
+		val filter = MenuEntry(
+			0, R.string.filter_tag, icon = R.drawable.ic_filter,
+			children = listOf(MenuEntry(1, R.string.search_filter)),
+		)
+		rule.setContent {
+			Row(Modifier.height(55.dp)) {
+				ExplorerSearchControls(
+					title = "Items", query = "", fieldOpen = true, searchBlockedReason = 0,
+					entries = listOf(
+						MenuEntry(2, R.string.sort, icon = R.drawable.ic_sort_black),
+						MenuEntry(3, R.string.more_import, icon = R.drawable.ic_download),
+						filter,
+					),
+					width = 150.dp,
+					onOpenSearch = {}, onQueryChange = {}, onQuerySubmit = {},
+					onDismissSearch = {}, onMenuPick = {},
+				)
+			}
+		}
+	}
+
+	@Test
+	fun `the open field pins the filter without a second overflow entry`() {
+		showOpenSearchControls()
+
+		rule.onAllNodesWithContentDescription("Filter by").assertCountEquals(1)
+		rule.onNodeWithContentDescription("Search").assertDoesNotExist()
+		openMore()
+		rule.onNodeWithText("Filter by").assertDoesNotExist()
 	}
 
 	@Test

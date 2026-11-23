@@ -1,15 +1,24 @@
 package cz.litoj.schlmgr.integration.ui.viewmodel
 
+import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.support.TestExplorerViewModel
+import cz.litoj.schlmgr.ui.search.Criterion
+import cz.litoj.schlmgr.ui.search.CriterionValue
+import cz.litoj.schlmgr.ui.search.FilterOperator
+import cz.litoj.schlmgr.ui.search.SearchTag
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import cz.litoj.schlmgr.ui.viewmodel.SearchUi
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -19,6 +28,24 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class SearchModeLadderTest {
+
+	private lateinit var db: ItemDatabase
+
+	@Before
+	fun setUp() {
+		db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
+			.allowMainThreadQueries()
+			.build()
+		ItemRepository.initForTest(db)
+		ItemRepository.ensureRoot()
+		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
+	}
+
+	@After
+	fun tearDown() {
+		db.close()
+		ItemRepository.resetForTest()
+	}
 
 	/** The test screen: counts the content switches the doors drive, the rest stays inert. */
 	private class RecordingVm(history: NavigationHistory) : TestExplorerViewModel(history) {
@@ -32,7 +59,6 @@ class SearchModeLadderTest {
 		ItemRow(DbItem(name = name, description = "", type = ItemKind.WORD), null, 1, false)
 
 	private fun recordingVm(): RecordingVm {
-		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
 		// the field opens only inside a container, so seed one into the path
 		return RecordingVm(NavigationHistory()).apply {
 			history.push(mutableListOf(DbItem(name = "c", description = "", type = ItemKind.CHAPTER)))
@@ -57,6 +83,17 @@ class SearchModeLadderTest {
 		// nothing ended, so the stacked search hop stays for back
 		assertTrue(vm.history.onSearchHop())
 		assertEquals("nothing reloaded", 0, vm.contentReloads)
+	}
+
+	@Test
+	fun `a filter keeps the results field open`() {
+		val vm = vmWithSearchShown(recordingVm())
+		vm.closeSearchField()
+		assertEquals(SearchUi.RESULTS, vm.state.value.searchUi)
+
+		vm.applyFilter(Criterion(SearchTag.TYPE, FilterOperator.IS, CriterionValue.Kind(ItemKind.CHAPTER)))
+
+		assertEquals(SearchUi.RESULTS, vm.state.value.searchUi)
 	}
 
 	@Test

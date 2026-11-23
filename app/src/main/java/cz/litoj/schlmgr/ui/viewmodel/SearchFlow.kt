@@ -125,10 +125,10 @@ internal class SearchFlow(
 	/**
 	 * [criterion] replaces the one of its tag and runs again.
 	 * - a filter picked from a plain list starts it, and the list then shows the results.
+	 * - Apply changes no field mode, so a closed field never appears to claim focus.
 	 */
 	fun applyFilter(criterion: Criterion) {
 		criteria = currentQuery().with(criterion).criteria
-		if (host.searchUi() == SearchUi.OFF) host.setSearchUi(SearchUi.RESULTS)
 		runFilters()
 	}
 
@@ -174,13 +174,13 @@ internal class SearchFlow(
 
 	/**
 	 * A false [reload] skips the load, since the caller loads itself.
+	 * - criteria survive, so a later search can reuse them in another directory.
 	 */
 	internal fun leaveSearchFlow(reload: Boolean = true) {
 		searchInput.cancelPending()
 		run.abort()
 		lastSearchRows = emptyList()
 		lastSearchAnchor = null
-		criteria = emptyList()
 		selection = emptySet()
 		history.removeSearchHops()
 		if (reload) host.setContent(history.path.lastOrNull())

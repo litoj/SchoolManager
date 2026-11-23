@@ -111,4 +111,14 @@ class NavigationHistory() {
 		onePath.add(0)
 		hopDescents.clear()
 	}
+
+	/**
+	 * Replaces the whole history with [newPath] as its only ancestor chain.
+	 * - every element counts as a descent, so back unwinds the path level by level.
+	 * - older entries and unrelated branches are dropped.
+	 */
+	fun rebaseTo(newPath: List<DbItem>) {
+		reset()
+		for (element in newPath) hop(element)
+	}
 }

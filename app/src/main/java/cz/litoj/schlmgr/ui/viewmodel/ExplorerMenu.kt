@@ -32,6 +32,7 @@ object MenuId {
 	const val SORT_LENGTH_10 = 16
 	const val SORT_DEFAULT = 17
 	const val SORT_PRIORITY = 19
+	const val SORT_RANDOM = 31
 	const val TEST = 20
 	const val CUT = 21
 	const val EDIT = 22
@@ -109,13 +110,14 @@ fun explorerMenu(
 
 private val sortMenu = listOf(
 	MenuEntry(MenuId.SORT_DEFAULT, R.string.sort_default),
-	MenuEntry(MenuId.SORT_ALPHA_ZA, R.string.sort_alpha_ZA),
 	MenuEntry(MenuId.SORT_ALPHA_AZ, R.string.sort_alpha_AZ),
-	MenuEntry(MenuId.SORT_SF_10, R.string.sort_sf_10),
+	MenuEntry(MenuId.SORT_ALPHA_ZA, R.string.sort_alpha_ZA),
 	MenuEntry(MenuId.SORT_SF_01, R.string.sort_sf_01),
+	MenuEntry(MenuId.SORT_SF_10, R.string.sort_sf_10),
 	MenuEntry(MenuId.SORT_PRIORITY, R.string.sort_priority),
-	MenuEntry(MenuId.SORT_LENGTH_10, R.string.sort_length_10),
 	MenuEntry(MenuId.SORT_LENGTH_01, R.string.sort_length_01),
+	MenuEntry(MenuId.SORT_LENGTH_10, R.string.sort_length_10),
+	MenuEntry(MenuId.SORT_RANDOM, R.string.sort_random),
 )
 
 /** The browse menu rows, where import belongs to the New palette instead. */

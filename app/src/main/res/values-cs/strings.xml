@@ -398,6 +398,7 @@
     <string name="sort_sf_01">Úspěšnost ▲</string>
     <string name="sort_sf_10">Úspěšnost ▼</string>
     <string name="sort_priority">Nejdřív k procvičení</string>
+    <string name="sort_random">Náhodně</string>
     <string name="start">Začít</string>
     <string name="test_abort">ZRUŠIT</string>
     <string name="test_abort_question">Zrušit tento test? Odpovědi se zahodí a statistiky zůstanou beze změny.</string>

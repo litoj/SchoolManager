@@ -1,7 +1,12 @@
 package cz.litoj.schlmgr.e2e.ui.screen
 
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
@@ -70,5 +75,26 @@ class SubjectsTopBarModeTest {
 		rule.onNodeWithContentDescription("Sort by").assertExists()
 		rule.onNodeWithContentDescription("Select all").assertExists()
 		rule.onNodeWithContentDescription("Filter by").assertExists()
+	}
+
+	@Test
+	fun `the open field swaps search for the one filter pin`() {
+		val a = ItemRepository.createSubject("A", null)
+		val c1 = ItemRepository.createChapter(a.id, "c1", null)
+		ItemRepository.createWord(c1.id, "xyz", null, listOf("t1" to null))
+		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		rule.setContent { SubjectsScreen(model, {}, {}, {}) }
+		rule.waitForIdle()
+		rule.onNodeWithText("A").performClick()
+		rule.waitForIdle()
+		rule.onNodeWithContentDescription("Search").assertExists()
+		rule.onAllNodesWithContentDescription("Filter by").assertCountEquals(1)
+
+		rule.onNodeWithContentDescription("Search").performClick()
+		rule.waitForIdle()
+
+		rule.onNode(hasSetTextAction()).assertExists()
+		rule.onNodeWithContentDescription("Search").assertDoesNotExist()
+		rule.onAllNodesWithContentDescription("Filter by").assertCountEquals(1)
 	}
 }

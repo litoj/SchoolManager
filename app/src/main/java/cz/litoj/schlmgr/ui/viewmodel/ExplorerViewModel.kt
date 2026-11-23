@@ -54,8 +54,8 @@ abstract class ExplorerViewModel<R>(
 		updateBackPath(skip, refreshStrip = false)
 		// a back hop onto a search run restores the filtered list.
 		if (restoreSearch()) return
-		// leaving the search ends the flow without a reload.
-		if (searching && history.onSearchHop()) {
+		// a closed field has no search mode left, but its producer still needs aborting
+		if (searching) {
 			searchFlow.leaveSearchFlow(reload = false)
 			setSearchUi(SearchUi.OFF)
 		}
@@ -194,11 +194,14 @@ abstract class ExplorerViewModel<R>(
 	fun applyOrder(items: List<ItemRow>) = list.applyOrder(items)
 
 	/** A pending navigation read refuses a reorder. */
-	protected fun sort(comparator: Comparator<ItemRow>) {
+	protected fun sort(comparator: Comparator<ItemRow>) = reorder(items().sortedWith(comparator))
+
+	/** A random order of the shown rows, fresh on every pick. */
+	protected fun random() = reorder(items().shuffled())
+
+	private fun reorder(sorted: List<ItemRow>) {
 		if (loadJob?.isActive == true) return
-		val items = items().toMutableList()
-		items.sortWith(comparator)
-		applyOrder(items)
+		applyOrder(sorted)
 		refreshInfo()
 	}
 
@@ -211,6 +214,7 @@ abstract class ExplorerViewModel<R>(
 		MenuId.SORT_PRIORITY -> { sort(compareByDescending { TestEngine.urgency(it.item) }); true }
 		MenuId.SORT_LENGTH_01 -> { sort(compareBy { it.toShow.length }); true }
 		MenuId.SORT_LENGTH_10 -> { sort(compareBy<ItemRow> { it.toShow.length }.reversed()); true }
+		MenuId.SORT_RANDOM -> { random(); true }
 		MenuId.SORT_DEFAULT -> { reloadDefaultOrder(); true }
 		else -> false
 	}
@@ -272,8 +276,9 @@ abstract class ExplorerViewModel<R>(
 	}
 
 	/**
-	 * Jumps to a breadcrumb, popping [NavigationHistory.onePath] hops if they cover distance.
-	 * - otherwise it pushes the truncated path as a new entry.
+	 * Jumps to a breadcrumb, whose path becomes the only ancestor chain of the view.
+	 * - a jump from an unrelated branch drops that branch and the levels between them.
+	 * - a stacked search hop consumes one pop, so drop it first.
 	 */
 	fun breadcrumbClick(index: Int) {
 		val container = history.path.getOrNull(index) ?: return
@@ -283,22 +288,14 @@ abstract class ExplorerViewModel<R>(
 			path.add(e)
 			if (e === container) break
 		}
-		// a stacked search hop consumes one pop, so drop it first.
 		if (history.onSearchHop()) {
 			// the abort also stops the run, so the abort guard can still fire.
 			searchFlow.leaveSearchFlow(reload = false)
 			setSearchUi(SearchUi.OFF)
 		}
-		val diff = history.path.size - path.size
-		// the hops cover the distance, so only the strip refresh is added.
-		if (diff <= history.onePath.last()) {
-			changedPath(diff)
-			setInfo(history.path.lastOrNull())
-		} else {
-			history.push(path)
-			setContent(container)
-			onChange()
-		}
+		history.rebaseTo(path)
+		setContent(container)
+		onChange()
 	}
 
 	// the policy lives in [InfoStrip].
@@ -341,10 +338,16 @@ abstract class ExplorerViewModel<R>(
 
 	// the policy lives in [SearchFlow].
 
-	/** Opens the search field, where [searchBlockedReason] keeps the door shut. */
-	fun openSearchField() {
-		if (searchBlockedReason != 0) return
+	/**
+	 * Opens the search field, where [searchBlockedReason] keeps the door shut.
+	 * @return true when the field opened now, so the pull reverse can hide it again
+	 */
+	fun openSearchField(): Boolean {
+		if (searchBlockedReason != 0) return false
+		// a field that already shows keeps its mode, so the pull reverse leaves it alone
+		if (state.value.searchUi == SearchUi.TYPING) return false
 		searchFlow.openField()
+		return true
 	}
 
 	fun closeSearchField() = searchFlow.closeField()

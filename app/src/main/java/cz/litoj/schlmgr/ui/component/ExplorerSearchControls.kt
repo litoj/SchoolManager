@@ -8,12 +8,13 @@ import androidx.compose.ui.unit.Dp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.shell.MenuEntry
 import cz.litoj.schlmgr.ui.shell.TopBarActions
+import cz.litoj.schlmgr.ui.shell.TopBarEntryAction
 import cz.litoj.schlmgr.ui.shell.TopBarIconButton
 import cz.litoj.schlmgr.ui.shell.TopBarTitle
 
 /**
  * The shared search and overflow controls of an explorer header.
- * - search is the one pinned icon, the menu entries take the room left and spill into More.
+ * - the one pinned icon is search while closed and the filter parent while the field is open.
  * - the list actions stay while a selection runs, since the strip only owns the row actions.
  */
 @Composable
@@ -35,13 +36,15 @@ fun RowScope.ExplorerSearchControls(
 		Modifier.weight(1f),
 	)
 	else TopBarTitle(title)
-	TopBarIconButton(
+	val filter = entries.single { it.label == R.string.filter_tag }
+	if (fieldOpen) TopBarEntryAction(filter, onMenuPick)
+	else TopBarIconButton(
 		icon = R.drawable.ic_search,
 		contentDescription = stringResource(R.string.search),
-		visible = !fieldOpen,
 		enabled = searchBlockedReason == 0,
 		blockedReason = searchBlockedReason,
 		onClick = onOpenSearch,
 	)
-	TopBarActions(entries, width, onMenuPick, pinned = 1)
+	val unpinned = if (fieldOpen) entries.filterNot { it === filter } else entries
+	TopBarActions(unpinned, width, onMenuPick, pinned = 1)
 }

@@ -299,6 +299,21 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
+	fun `the random order keeps every row and renumbers them`() {
+		val a = ItemRepository.createSubject("A", null)
+		val names = listOf("alpha", "zulu", "mid", "beta")
+		for (name in names) ItemRepository.createChapter(a.id, name, null)
+		val model = vmIn("A")
+
+		assertTrue(model.onMenuItemClick(MenuId.SORT_RANDOM))
+
+		assertEquals("the random order keeps every row",
+			names.toSet(), model.items().map { it.item.name }.toSet())
+		assertEquals("the random order renumbers the rows",
+			listOf(1, 2, 3, 4), model.items().map { it.position })
+	}
+
+	@Test
 	fun `a long-press starts the selection and a second press keeps it`() {
 		seed()
 		val model = vmIn("A")
@@ -393,6 +408,7 @@ class MainExplorerViewModelTest {
 		model.applyFilter(notesOnly)
 
 		assertTrue("the old results do not stay", model.items().isEmpty())
+		assertEquals("the open field stays in typing mode", SearchUi.TYPING, model.state.value.searchUi)
 		val info = model.state.value.info as InfoBar.Search
 		assertEquals("the strip names the filter", listOf(notesOnly), info.criteria)
 		model.refreshInfo()
@@ -412,16 +428,66 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
-	fun `a filter from the plain list shows its results like a search`() {
+	fun `a filter from the plain list shows results without opening the field`() {
 		seed()
 		val model = vmIn("A")
+		val chapters = Criterion(SearchTag.TYPE, FilterOperator.IS, CriterionValue.Kind(ItemKind.CHAPTER))
 
-		model.applyFilter(Criterion(SearchTag.TYPE, FilterOperator.IS, CriterionValue.Kind(ItemKind.CHAPTER)))
+		model.applyFilter(chapters)
 
-		assertEquals(SearchUi.RESULTS, model.state.value.searchUi)
+		assertEquals(SearchUi.OFF, model.state.value.searchUi)
 		assertEquals(listOf("c1"), model.items().map { it.item.name })
 		model.cancelSearch()
 		assertEquals("the nav arrow leaves it like a search", SearchUi.OFF, model.state.value.searchUi)
+
+		val named = Criterion(SearchTag.NAME, FilterOperator.STARTS, CriterionValue.Text("c"))
+		model.applyFilter(named)
+		val criteria = (model.state.value.info as InfoBar.Search).criteria.toSet()
+		assertEquals("cancellation only deactivated the first filter", setOf(chapters, named), criteria)
+	}
+
+	@Test
+	fun `a cancelled filter is reused in another directory`() {
+		val (_, bId) = seed()
+		ItemRepository.createChapter(bId, "beta", null)
+		val model = vmIn("A")
+		val chapters = Criterion(SearchTag.TYPE, FilterOperator.IS, CriterionValue.Kind(ItemKind.CHAPTER))
+		model.openSearchField()
+		model.applyFilter(chapters)
+		model.cancelSearch()
+		model.onBackRequested()
+		model.onItemClick(model.items().single { it.item.id == bId })
+		val named = Criterion(SearchTag.NAME, FilterOperator.STARTS, CriterionValue.Text("be"))
+
+		model.applyFilter(named)
+
+		assertEquals(listOf("beta"), model.items().map { it.item.name })
+		val criteria = (model.state.value.info as InfoBar.Search).criteria.toSet()
+		assertEquals(setOf(chapters, named), criteria)
+	}
+
+	@Test
+	fun `back from a closed-field filter aborts its producer before browsing`() {
+		val io = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+		try {
+			seed()
+			val model = MainExplorerViewModel(NavigationHistory(), io)
+			model.clock = { now }
+			settle(io)
+			model.onItemClick(model.items().single { it.item.name == "A" })
+			settle(io)
+			val chapters = Criterion(SearchTag.TYPE, FilterOperator.IS, CriterionValue.Kind(ItemKind.CHAPTER))
+
+			model.applyFilter(chapters)
+			assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
+			settle(io)
+
+			assertEquals(ExplorerRowVariant.Browse, model.listState.value.variant)
+			assertEquals(listOf("c1"), model.items().map { it.item.name })
+			assertTrue(model.state.value.info !is InfoBar.Search)
+		} finally {
+			io.close()
+		}
 	}
 
 	@Test
@@ -539,6 +605,29 @@ class MainExplorerViewModelTest {
 
 		assertEquals(listOf("A"), model.history.path.map { it.name })
 		assertEquals(SearchUi.OFF, model.state.value.searchUi)
+	}
+
+	@Test
+	fun `a breadcrumb click after a link jump keeps only the clicked ancestor chain`() {
+		val a = ItemRepository.createSubject("A", null)
+		val b = ItemRepository.createChapter(a.id, "B", null)
+		ItemRepository.createChapter(b.id, "C", null)
+		val y = ItemRepository.createChapter(b.id, "Y", null)
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == "B" })
+		model.onItemClick(model.items().single { it.item.name == "C" })
+		// the link jumps to a sibling branch of the shared B
+		model.navigateToSource(listOf(a, b, y))
+		assertEquals(listOf("A", "B", "Y"), model.state.value.breadcrumbs)
+
+		model.breadcrumbClick(1)
+
+		assertEquals(listOf("A", "B"), model.state.value.breadcrumbs)
+		assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
+		assertEquals("back pops the default ancestors", listOf("A"), model.state.value.breadcrumbs)
+		assertEquals(ExplorerViewModel.BackOutcome.HANDLED, model.onBackRequested())
+		assertTrue("the old branch is gone", model.history.path.isEmpty())
+		assertEquals(ExplorerViewModel.BackOutcome.EXIT_HINT, model.onBackRequested())
 	}
 
 	@Test

@@ -119,14 +119,16 @@ class SearchEngine(query: SearchQuery, private val foldDiacritics: Boolean = fal
 	/** A name search reads the row name and the names its variants hide. */
 	private fun nameTest(operator: FilterOperator, value: String): Correct {
 		val finder = stringFinder(operator, value) ?: return none()
-		return nameMatcher(finder)
+		return nameMatcher(finder, exact = operator == FilterOperator.CONTAINS_CASE)
 	}
 
 	/** A description search skips the rows without one. */
 	private fun descriptionTest(operator: FilterOperator, value: String): Correct {
 		val finder = stringFinder(operator, value) ?: return none()
+		// the exact-case contains reads the stored whitespace too
+		val exact = operator == FilterOperator.CONTAINS_CASE
 		return Correct { item ->
-			val text = item.description.trim()
+			val text = if (exact) item.description else item.description.trim()
 			text.isNotEmpty() && finder.verify(text)
 		}
 	}
@@ -199,9 +201,12 @@ class SearchEngine(query: SearchQuery, private val foldDiacritics: Boolean = fal
 		else -> null
 	}
 
-	private fun nameMatcher(sc: StringFinder): Correct = Correct { item ->
-		if (sc.verify(item.name.trim())) return@Correct true
-		for (name in WordNames.parseVariants(item.name.trim())) if (sc.verify(name.trim())) return@Correct true
+	private fun nameMatcher(sc: StringFinder, exact: Boolean): Correct = Correct { item ->
+		val name = if (exact) item.name else item.name.trim()
+		if (sc.verify(name)) return@Correct true
+		for (variant in WordNames.parseVariants(name)) {
+			if (sc.verify(if (exact) variant else variant.trim())) return@Correct true
+		}
 		false
 	}
 

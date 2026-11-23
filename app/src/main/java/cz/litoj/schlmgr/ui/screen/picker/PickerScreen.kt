@@ -83,7 +83,7 @@ fun PickerScreen(
 				searchBlockedReason = searchBlockedReason,
 			),
 			width = this@BoxWithConstraints.maxWidth,
-			onOpenSearch = viewModel::openSearchField,
+			onOpenSearch = { viewModel.openSearchField() },
 			onQueryChange = viewModel::onQueryChange,
 			onQuerySubmit = viewModel::onQuerySubmit,
 			onDismissSearch = viewModel::dismissSearch,
@@ -135,4 +135,5 @@ private fun pickerCallbacks(viewModel: PickerViewModel): ItemListCallbacks = Ite
 	onSelectRange = viewModel::selectRange,
 	onSelectEnd = viewModel::endRangeSelect,
 	onTopPull = viewModel::openSearchField,
+	onTopPullReversed = viewModel::closeSearchField,
 )

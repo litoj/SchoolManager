@@ -183,6 +183,7 @@ internal fun Modifier.rememberListDragModifier(
 /**
  * The pull-at-top handler of the list.
  * - a downward drag at the very top fires [onPull] once per gesture, past [TopPullThreshold].
+ * - a drag the other way after a fire fires [onPullReversed] once, so the pull can undo its effect.
  * - only a gesture that began at the top counts, so a scroll from mid-list never fires.
  * - only the own input of the finger counts, so a fling or an auto-scroll never fires.
  * - consumes nothing, so the scroll and the stretch stay untouched.
@@ -190,9 +191,11 @@ internal fun Modifier.rememberListDragModifier(
 @Composable
 internal fun Modifier.rememberTopPullModifier(
 	listState: LazyListState,
-	onPull: () -> Unit,
+	onPull: () -> Boolean,
+	onPullReversed: () -> Unit,
 ): Modifier {
 	val currentPull by rememberUpdatedState(onPull)
+	val currentPullReversed by rememberUpdatedState(onPullReversed)
 	val threshold = with(LocalDensity.current) { TopPullThreshold.toPx() }
 	// the start position decides whether a pull can count.
 	// the down lands before any scroll moves the list, so the position read is the true start.
@@ -213,20 +216,28 @@ internal fun Modifier.rememberTopPullModifier(
 		remember(threshold) {
 			object : NestedScrollConnection {
 				private val pull = TopPullAccumulator(threshold)
+				// only a field this pull opened is taken back on its reverse
+				private var opened = false
 
 				override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
 					// the user input source covers the finger and the wheel.
 					// flings and programmatic scrolls never fire.
 					if (!finger) beganAtTop = !listState.canScrollBackward
 					val pullable = !listState.canScrollBackward && beganAtTop
-					if (pull.scroll(available.y, !pullable, source == NestedScrollSource.UserInput)) {
-						currentPull()
+					when (pull.scroll(available.y, !pullable, source == NestedScrollSource.UserInput)) {
+						TopPullEvent.Fired -> opened = currentPull()
+						TopPullEvent.Reversed -> {
+							if (opened) currentPullReversed()
+							opened = false
+						}
+						TopPullEvent.None -> {}
 					}
 					return Offset.Zero
 				}
 
 				override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
 					pull.gestureEnded()
+					opened = false
 					finger = false
 					return Velocity.Zero
 				}
@@ -236,36 +247,53 @@ internal fun Modifier.rememberTopPullModifier(
 }
 
 /**
+ * What one pull step asks the host to do.
+ * - [Fired] crossed the threshold downward, so the pull applies.
+ * - [Reversed] switched direction after a fire, so the pull takes its effect back.
+ */
+internal enum class TopPullEvent { None, Fired, Reversed }
+
+/**
  * The pull-at-top arithmetic behind [rememberTopPullModifier], free of [LazyListState]
  * so it stays unit-testable.
  * - sums the pull-down distance while the list cannot scroll back, where a pull-down is positive.
- * - any scroll the other way, or room to scroll back, clears the pull.
- * - fires once per gesture, at the threshold.
+ * - fires once per gesture at the threshold, and a drag the other way after it reverses once.
+ * - any scroll the other way, or room to scroll back, clears the sum.
  */
 internal class TopPullAccumulator(private val threshold: Float) {
 	private var pulled = 0f
 	private var fired = false
+	// the fire stands for the whole gesture, so a later pull cannot open again
+	private var reversed = false
 
 	/**
-	 * True when the pull crosses the threshold just now.
+	 * The event of this pull step.
 	 * - [canScrollBackward] is the backward room of the list.
 	 * - [drag] marks the own movement of the finger.
 	 */
-	fun scroll(deltaY: Float, canScrollBackward: Boolean, drag: Boolean): Boolean {
-		if (deltaY <= 0f || canScrollBackward) {
+	fun scroll(deltaY: Float, canScrollBackward: Boolean, drag: Boolean): TopPullEvent {
+		if (deltaY < 0f) {
 			pulled = 0f
-			return false
+			if (!fired || reversed || !drag) return TopPullEvent.None
+			reversed = true
+			return TopPullEvent.Reversed
 		}
-		if (fired || !drag) return false
+		if (deltaY == 0f || canScrollBackward) {
+			pulled = 0f
+			return TopPullEvent.None
+		}
+		if (fired || !drag) return TopPullEvent.None
 		pulled += deltaY
-		if (pulled < threshold) return false
+		if (pulled < threshold) return TopPullEvent.None
+		pulled = 0f
 		fired = true
-		return true
+		return TopPullEvent.Fired
 	}
 
 	fun gestureEnded() {
 		pulled = 0f
 		fired = false
+		reversed = false
 	}
 }
 

@@ -15,6 +15,14 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+internal typealias ExportStarter = (
+	Context, (Runnable) -> Unit, ExportDestination, ExportFormat, () -> List<DbItem>, () -> Unit,
+) -> Unit
+
+private val startExportPipeline: ExportStarter = { ctx, post, destination, format, selected, onStart ->
+	ExportPipeline(ctx, post, destination, format, selected, onStart).start()
+}
+
 /**
  * The import and export of the subjects screen.
  * - it covers the target picks, the dispatch and the landing.
@@ -23,6 +31,7 @@ internal class SubjectsTransfer(
 	private val scope: CoroutineScope,
 	private val io: CoroutineDispatcher,
 	private val host: Host,
+	private val startExport: ExportStarter = startExportPipeline,
 ) {
 
 	interface Host : SubjectsHost {
@@ -33,14 +42,21 @@ internal class SubjectsTransfer(
 		fun requestScrollToBottom()
 	}
 
+	private data class ExportSession(val rows: List<DbItem>, val container: DbItem?)
+
+	private var exportSession: ExportSession? = null
+
 	/** The sheet where the user picks the format and its destination. */
 	fun openExportSheet() {
+		// the strip clears its selection next, so the callbacks own their own snapshot
+		exportSession = ExportSession(exportRows(), host.path.lastOrNull())
 		ExportPopup(::saveFile, ::shareFile)
 	}
 
 	/** The save dialog of the format, the picked document receives the rows. */
 	fun saveFile(format: ExportFormat) {
-		val name = exportFileName(format, exportRows(), host.path.lastOrNull()) ?: return
+		val session = exportSession ?: return
+		val name = exportFileName(format, session.rows, session.container) ?: return
 		host.emitRequest(
 			if (format == ExportFormat.WORD) Request.PickWordExport(name)
 			else Request.PickJsonExport(name)
@@ -49,12 +65,13 @@ internal class SubjectsTransfer(
 
 	/** The cache copy of the format, straight into the share sheet of the system. */
 	fun shareFile(format: ExportFormat) {
-		val selected = exportRows()
-		val name = exportFileName(format, selected, host.path.lastOrNull()) ?: return
-		ExportPipeline(
+		val session = exportSession ?: return
+		val name = exportFileName(format, session.rows, session.container) ?: return
+		exportSession = null
+		startExport(
 			host.ctx, host::postToUi, ExportDestination.Share(name), format,
-			{ selected }, host::clearSelection,
-		).start()
+			{ session.rows }, host::clearSelection,
+		)
 	}
 
 	/**
@@ -95,15 +112,17 @@ internal class SubjectsTransfer(
 	}
 
 	fun onWordTargetPicked(uri: Uri) {
-		val selected = exportRows()
-		ExportPipeline(host.ctx, host::postToUi, ExportDestination.Document(uri), ExportFormat.WORD,
-			{ selected }, host::clearSelection).start()
+		val session = exportSession ?: return
+		exportSession = null
+		startExport(host.ctx, host::postToUi, ExportDestination.Document(uri), ExportFormat.WORD,
+			{ session.rows }, host::clearSelection)
 	}
 
 	fun onJsonTargetPicked(uri: Uri) {
-		val selected = exportRows()
-		ExportPipeline(host.ctx, host::postToUi, ExportDestination.Document(uri), ExportFormat.JSON,
-			{ selected }, host::clearSelection).start()
+		val session = exportSession ?: return
+		exportSession = null
+		startExport(host.ctx, host::postToUi, ExportDestination.Document(uri), ExportFormat.JSON,
+			{ session.rows }, host::clearSelection)
 	}
 }
 

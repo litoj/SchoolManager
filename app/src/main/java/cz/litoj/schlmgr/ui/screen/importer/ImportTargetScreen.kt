@@ -90,7 +90,7 @@ fun ImportTargetScreen(
 						selectAll = false,
 					),
 					width = this@BoxWithConstraints.maxWidth,
-					onOpenSearch = viewModel::openSearchField,
+					onOpenSearch = { viewModel.openSearchField() },
 					onQueryChange = viewModel::onQueryChange,
 					onQuerySubmit = viewModel::onQuerySubmit,
 					onDismissSearch = viewModel::dismissSearch,
@@ -141,5 +141,6 @@ fun ImportTargetScreen(
 private fun importCallbacks(viewModel: ImportTargetViewModel, busy: Boolean): ItemListCallbacks =
 	ItemListCallbacks(
 		onItemClick = { index -> if (!busy) viewModel.onItemClick(viewModel.rowAt(index)) },
-		onTopPull = { if (!busy) viewModel.openSearchField() },
+		onTopPull = { !busy && viewModel.openSearchField() },
+		onTopPullReversed = viewModel::closeSearchField,
 	)

@@ -126,5 +126,6 @@ private fun mainCallbacks(
 		onReorderMove = viewModel::moveRow,
 		onReorderDrop = viewModel::persistOrder,
 		onTopPull = viewModel::openSearchField,
+		onTopPullReversed = viewModel::closeSearchField,
 		onPressHeld = onPressHeld,
 	)

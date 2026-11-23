@@ -94,6 +94,12 @@ class SearchEngineMatchTest {
 	}
 
 	@Test
+	fun `the exact-case contains keeps the name whitespace`() {
+		val spaced = nameCriterion(FilterOperator.CONTAINS_CASE, " w ").query()
+		assertEquals(listOf(" w "), hits(spaced, " w ", "w"))
+	}
+
+	@Test
 	fun `a type criterion keeps one kind`() {
 		val rows = arrayOf(item("slovo", ItemKind.WORD), item("kapitola", ItemKind.CHAPTER))
 		val words = Criterion(SearchTag.TYPE, FilterOperator.IS, CriterionValue.Kind(ItemKind.WORD)).query()
@@ -113,6 +119,14 @@ class SearchEngineMatchTest {
 	fun `a description criterion trims the stored description`() {
 		val note = Criterion(SearchTag.DESCRIPTION, FilterOperator.CONTAINS, CriterionValue.Text("note")).query()
 		assertEquals(listOf("w"), answers(note, item("w", description = " note ")))
+	}
+
+	@Test
+	fun `the exact-case contains keeps the description whitespace`() {
+		val note = Criterion(SearchTag.DESCRIPTION, FilterOperator.CONTAINS_CASE,
+			CriterionValue.Text(" note ")).query()
+		val rows = arrayOf(item("w", description = " note "), item("e", description = "note"))
+		assertEquals(listOf("w"), answers(note, *rows))
 	}
 
 	@Test

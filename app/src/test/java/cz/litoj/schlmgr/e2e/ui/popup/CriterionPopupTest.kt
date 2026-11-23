@@ -188,6 +188,24 @@ class CriterionPopupTest {
 	}
 
 	@Test
+	fun `the exact-case contains keeps its field whitespace`() {
+		var applied: Criterion? = null
+		show(onApply = { applied = it })
+
+		rule.onNodeWithText("Name").performScrollTo().performClick()
+		rule.onNodeWithText("contains, exact case").performScrollTo().performClick()
+		rule.onNode(hasSetTextAction()).performTextInput(" dog ")
+		rule.onNodeWithText("Apply").performClick()
+
+		rule.runOnIdle {
+			assertEquals(
+				criterion(SearchTag.NAME, FilterOperator.CONTAINS_CASE, CriterionValue.Text(" dog ")),
+				applied,
+			)
+		}
+	}
+
+	@Test
 	fun `an open filter reopens on its choices`() {
 		var dropped: SearchTag? = null
 		val open = criterion(SearchTag.RATE, FilterOperator.AT_MOST, CriterionValue.Rate(50, UntestedRows.EXCLUDE))

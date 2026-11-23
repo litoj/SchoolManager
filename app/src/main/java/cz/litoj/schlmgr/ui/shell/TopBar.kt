@@ -189,7 +189,7 @@ fun RowScope.TopBarActions(
 }
 
 @Composable
-private fun RowScope.TopBarEntryAction(entry: MenuEntry, onPick: (Int) -> Unit) {
+internal fun RowScope.TopBarEntryAction(entry: MenuEntry, onPick: (Int) -> Unit) {
 	if (entry.children.isEmpty()) {
 		TopBarIconButton(
 			icon = entry.icon,
