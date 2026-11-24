@@ -149,19 +149,21 @@ class TestEngine {
 		// - plain ancestors only, since a reference never counts.
 		// - the translations take only the knowledge that the answer demonstrated.
 		ItemRepository.bumpWordCounters(entry.word.id, correct)
-		bumpTranslations(translations, texts.firstOrNull(), correct)
+		bumpTranslations(translations, texts, correct)
 		return correct
 	}
 
 	/**
 	 * Records the answer on the translations of the word.
-	 * - on success it records the ones that the answer demonstrated.
+	 * - on success it records the ones that any supplied answer demonstrated.
 	 * - see [creditedTranslations] for that pick.
 	 * - on a fail it records all of them, since the answer named no correct translation.
 	 */
-	private fun bumpTranslations(translations: List<DbItem>, answer: String?, correct: Boolean) {
-		if (correct) ItemRepository.bumpCounters(creditedTranslations(translations, answer).map { it.id }, true)
-		else ItemRepository.bumpCounters(translations.map { it.id }, false)
+	private fun bumpTranslations(translations: List<DbItem>, answers: List<String>, correct: Boolean) {
+		if (correct) {
+			val demonstrated = answers.flatMap { creditedTranslations(translations, it) }.distinctBy { it.id }
+			ItemRepository.bumpCounters(demonstrated.map { it.id }, true)
+		} else ItemRepository.bumpCounters(translations.map { it.id }, false)
 	}
 
 	/** The tested entries of the run, as a defensive copy. */

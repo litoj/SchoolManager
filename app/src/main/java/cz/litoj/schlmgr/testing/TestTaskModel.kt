@@ -88,10 +88,12 @@ class TestTaskModel(
 		/** Maps engine groups onto models while keeping their absolute answer indices. */
 		fun flatten(models: List<TestItemModel>, groups: List<TestTask>): List<TestTaskModel> {
 			val tasks = ArrayList<TestTaskModel>(groups.size)
-			var next = 0
+			var nextMember = 0
+			var nextAnswer = 0
 			for (group in groups) {
-				val first = next
-				tasks.add(TestTaskModel(group.entries.map { models[next++] }, first))
+				val task = TestTaskModel(group.entries.map { models[nextMember++] }, nextAnswer)
+				tasks.add(task)
+				nextAnswer += task.answerFields.size
 			}
 			return tasks
 		}

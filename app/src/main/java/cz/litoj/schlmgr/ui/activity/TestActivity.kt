@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.compose.foundation.background
@@ -79,6 +80,8 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 
 	override fun isAlive(): Boolean = !isFinishing && !isDestroyed
 
+	override fun isForeground(): Boolean = lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+
 	override fun onNoObjects() {
 		Toast.makeText(applicationContext, R.string.fail_no_objects, Toast.LENGTH_SHORT).show()
 		finish()
@@ -148,9 +151,10 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 			var pendingAnswer by remember { mutableIntStateOf(-1) }
 			LazyColumn(Modifier.weight(1f).fillMaxSize(), state = listState) {
 				itemsIndexed(TestRunState.taskGroups, key = { i, _ -> i }) { index, task ->
+					val lastTask = index == TestRunState.taskGroups.lastIndex
 					if (task.answerFields.size > 1) {
-						SharedPromptRow(task, pendingAnswer, answerFocus, task.startIndex + task.members.lastIndex == TestRunState.items.lastIndex,
-							listState, { pendingAnswer = it })
+						SharedPromptRow(task, pendingAnswer, answerFocus, lastTask,
+							listState, { pendingAnswer = it }, listIndex = index)
 					} else {
 						val item = task.members.single()
 						LaunchedEffect(task.startIndex, pendingAnswer) {
@@ -159,8 +163,8 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 								runCatching { answerFocus[task.startIndex]?.requestFocus() }
 							}
 						}
-						WordTestRow(item, task.startIndex, answerFocus, task.startIndex == TestRunState.items.lastIndex,
-							listState, { pendingAnswer = it })
+						WordTestRow(item, task.startIndex, answerFocus, lastTask,
+							listState, { pendingAnswer = it }, listIndex = index)
 					}
 				}
 				item {
@@ -232,7 +236,7 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 				// the header states the progress, since the countdown alone hides it
 				val answered = TestRunState.answers.count { it.value.isNotBlank() }
 				Text(
-					pluralStringResource(R.plurals.test_answered, answered, answered, TestRunState.items.size),
+					pluralStringResource(R.plurals.test_answered, answered, answered, TestRunState.answerCount),
 					Modifier.fillMaxWidth(),
 					style = TextStyle(fontSize = 15.sp, color = colorResource(R.color.colorOnHeader)),
 					textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -262,6 +266,7 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 		item: TestItemModel, index: Int,
 		answerFocus: HashMap<Int, FocusRequester>, isLast: Boolean,
 		listState: LazyListState, setPendingAnswer: (Int) -> Unit,
+		listIndex: Int,
 	) {
 		Column(Modifier.fillMaxWidth()) {
 			Column(Modifier.fillMaxWidth().padding(5.dp)) {
@@ -276,7 +281,7 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 						else -> R.string.data_word
 					},
 					answerFocus, isLast,
-					listState, setPendingAnswer,
+					listState, setPendingAnswer, listIndex + 1,
 				)
 			}
 			// the line sits outside the content padding, so it reads clearly between items.

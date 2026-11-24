@@ -77,6 +77,7 @@ internal fun SharedPromptRow(
 	pendingAnswer: Int,
 	answerFocus: HashMap<Int, FocusRequester>, isLast: Boolean,
 	listState: LazyListState, setPendingAnswer: (Int) -> Unit,
+	listIndex: Int = 0,
 ) {
 	Column(Modifier.fillMaxWidth()) {
 		Column(Modifier.fillMaxWidth().padding(5.dp)) {
@@ -110,20 +111,23 @@ internal fun SharedPromptRow(
 					TestEngine.requireAllVariants -> R.string.test_variants_word
 					else -> R.string.data_word
 				},
-				answerFocus, index == TestRunState.items.lastIndex,
-				listState, setPendingAnswer,
+				answerFocus, isLast && offset == task.answerFields.lastIndex,
+				listState, setPendingAnswer, nextTaskRow(listIndex, offset, task.answerFields.size),
 			)
 		}
 		if (!isLast) HairlineDivider(Modifier.padding(top = 2.dp))
 	}
 }
 
+internal fun nextTaskRow(taskIndex: Int, fieldOffset: Int, fieldCount: Int): Int =
+	if (fieldOffset + 1 < fieldCount) taskIndex else taskIndex + 1
+
 /** One answer field. [isLast] hides the keyboard on submit instead of advancing focus. */
 @Composable
 internal fun AnswerField(
 	index: Int, hintRes: Int,
 	answerFocus: HashMap<Int, FocusRequester>, isLast: Boolean,
-	listState: LazyListState, setPendingAnswer: (Int) -> Unit,
+	listState: LazyListState, setPendingAnswer: (Int) -> Unit, nextScrollIndex: Int,
 ) {
 	val focusRequester = remember(index) { answerFocus.getOrPut(index) { FocusRequester() } }
 	val keyboard = LocalSoftwareKeyboardController.current
@@ -142,7 +146,7 @@ internal fun AnswerField(
 				val landed = next != null && runCatching { next.requestFocus() }.isSuccess
 				if (!landed) {
 					setPendingAnswer(index + 1)
-					scope.launch { listState.animateScrollToItem(index + 1) }
+					scope.launch { listState.animateScrollToItem(nextScrollIndex) }
 				}
 			}
 		},

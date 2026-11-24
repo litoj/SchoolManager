@@ -36,6 +36,9 @@ object TestRunState {
 
 		fun isAlive(): Boolean
 
+		/** A living host may still be paused, which holds the countdown. */
+		fun isForeground(): Boolean = isAlive()
+
 		/** The walk found nothing testable, so the screen reports and leaves. */
 		fun onNoObjects()
 
@@ -62,9 +65,13 @@ object TestRunState {
 	var taskGroups by mutableStateOf(emptyList<TestTaskModel>())
 		private set
 
+	/** Total flattened answer fields, computed once per run. */
+	var answerCount by mutableIntStateOf(0)
+		private set
+
 	private val _answers = mutableStateMapOf<Int, String>()
 
-	/** The typed answers, keyed by item index, which survive scrolling. */
+	/** The typed answers, keyed by flattened answer-field index, which survive scrolling. */
 	val answers: Map<Int, String> = _answers
 
 	var secondsLeft by mutableIntStateOf(0)
@@ -81,8 +88,8 @@ object TestRunState {
 		_answers[index] = text
 	}
 
-	/** The items a submit would fail for having no answer. */
-	fun blankAnswers(): Int = _items.indices.count { _answers[it].isNullOrBlank() }
+	/** The answer fields a submit would fail for having no answer. */
+	fun blankAnswers(): Int = blankAnswerCount(_answers, answerCount)
 
 	/** The living screen, which a rotation replaces while the question stays on the stack. */
 	private var host: Host? = null
@@ -154,6 +161,7 @@ object TestRunState {
 					if (walking !== host) return@post
 					walking = null
 					taskGroups = emptyList()
+					answerCount = 0
 					host.onNoObjects()
 				}
 				return@launch
@@ -162,8 +170,9 @@ object TestRunState {
 			newTest.setTested(
 				amount,
 				{ sl ->
-					if (test == null) return@setTested false
+					if (test !== newTest) return@setTested false
 					mainHandler.post {
+						if (test !== newTest) return@post
 						if (sl > 0) secondsLeft = sl
 						else {
 							// a rotation replaced the host that started the countdown
@@ -188,8 +197,10 @@ object TestRunState {
 				_answers.clear()
 				_items.addAll(models)
 				taskGroups = tasks
+				answerCount = tasks.sumOf { it.answerFields.size }
 				test = newTest
 				newTest.startTest()
+				if (!host.isForeground()) newTest.pauseTest()
 			}
 		}
 	}
@@ -269,5 +280,9 @@ object TestRunState {
 		_answers.clear()
 		_items.clear()
 		taskGroups = emptyList()
+		answerCount = 0
 	}
 }
+
+internal fun blankAnswerCount(answers: Map<Int, String>, answerCount: Int): Int =
+	(0 until answerCount).count { answers[it].isNullOrBlank() }

@@ -4,10 +4,12 @@ import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
+import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestEntry
 import cz.litoj.schlmgr.testing.TestItemModel
 import cz.litoj.schlmgr.testing.TestTask
 import cz.litoj.schlmgr.testing.TestTaskModel
+import cz.litoj.schlmgr.ui.component.nextTaskRow
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -56,5 +58,34 @@ class TestTaskModelTest {
 		assertEquals(listOf(0, 2), tasks.map { it.startIndex })
 		assertEquals(listOf("hund", "hond"), tasks[0].members.map { it.entry.word.name })
 		assertEquals(listOf("hunt"), tasks[1].members.map { it.entry.word.name })
+	}
+
+	@Test
+	fun `an expanded task advances the next answer by its field count`() {
+		val subject = ItemRepository.createSubject("s", null)
+		val chapter = ItemRepository.createChapter(subject.id, "c", null)
+		val expanded = ItemRepository.createWord(chapter.id, "/I/You smile.", null, listOf("laugh" to null))
+		val ordinary = ItemRepository.createWord(chapter.id, "house", null, listOf("dům" to null))
+		val models = listOf(expanded, ordinary).map {
+			TestItemModel(TestEntry(it, listOf(subject, chapter, it)))
+		}
+		TestEngine.applyRequireAllVariants(true)
+		try {
+			val tasks = TestTaskModel.flatten(models, listOf(
+				TestTask(listOf(models[0].entry)),
+				TestTask(listOf(models[1].entry)),
+			))
+
+			assertEquals(listOf(3, 1), tasks.map { it.answerFields.size })
+			assertEquals(listOf(0, 3), tasks.map { it.startIndex })
+		} finally {
+			TestEngine.applyRequireAllVariants(false)
+		}
+	}
+
+	@Test
+	fun `next scrolls within a task before advancing to the following task row`() {
+		assertEquals(0, nextTaskRow(0, 0, 2))
+		assertEquals(1, nextTaskRow(0, 1, 2))
 	}
 }

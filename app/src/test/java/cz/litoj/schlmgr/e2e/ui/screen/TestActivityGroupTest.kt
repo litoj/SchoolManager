@@ -4,7 +4,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.performImeAction
 import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
@@ -74,10 +76,12 @@ class TestActivityGroupTest {
 		try {
 			val task = TestTaskModel(listOf(TestItemModel(TestEntry(word, listOf(subject, chapter, word)))), 0)
 			rule.setContent {
-				SharedPromptRow(task, -1, hashMapOf(), false, rememberLazyListState(), {})
+				SharedPromptRow(task, -1, hashMapOf(), true, rememberLazyListState(), {})
 			}
 
 			rule.onAllNodes(hasSetTextAction()).assertCountEquals(3)
+			rule.onAllNodes(hasSetTextAction())[0].performImeAction()
+			rule.onAllNodes(hasSetTextAction())[1].assertIsFocused()
 		} finally {
 			TestEngine.applyRequireAllVariants(false)
 		}

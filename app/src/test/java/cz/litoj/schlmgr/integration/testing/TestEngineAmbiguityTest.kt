@@ -434,6 +434,29 @@ class TestEngineAmbiguityTest {
 	}
 
 	@Test
+	fun `reversed all-variant answers credit every demonstrated translation`() {
+		val (_, chapter) = subjectWith("c", listOf("house" to listOf("dům", "domov")))
+		TestEngine.applyReversed(true)
+		TestEngine.applyRequireAllVariants(true)
+		try {
+			val entries = entries(chapter)
+			val engine = TestEngine()
+			engine.setTested(1, null, 1f, entries)
+
+			assertTrue(engine.isAnswer(0, listOf("dům", "domov"), entries[0].translations()))
+
+			for (translation in entries[0].translations()) {
+				val fresh = ItemRepository.get(translation.id)!!
+				assertEquals("${translation.name} earned its pass", 1, fresh.passedTests)
+				assertEquals(0, fresh.failedTests)
+			}
+		} finally {
+			TestEngine.applyRequireAllVariants(false)
+			TestEngine.applyReversed(false)
+		}
+	}
+
+	@Test
 	fun `a matching word for only one shown translation still fails`() {
 		val (_, chapter) = subjectWith("c", listOf(
 			"target" to listOf("same", "other"),
