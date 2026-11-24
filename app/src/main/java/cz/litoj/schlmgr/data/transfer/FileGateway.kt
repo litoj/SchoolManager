@@ -89,9 +89,9 @@ object FileGateway {
 	 * - a failure already went out through onSaveFail.
 	 */
 	fun writeExport(
-		uri: Uri, name: String, text: String, words: Int, chapters: Int, mime: String,
+		ctx: Context, uri: Uri, name: String, text: String, words: Int, chapters: Int, mime: String,
 	) {
-		if (FileText.writeText(uri, text)) {
+		if (FileText.writeText(ctx, uri, text)) {
 			Startup.onExportSuccess(uri, name, words, chapters, mime)
 		}
 	}

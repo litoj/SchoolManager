@@ -1,6 +1,7 @@
 package cz.litoj.schlmgr.integration.ui.screen.picker
 
 import androidx.room.Room
+import cz.litoj.schlmgr.app.AppDependencies
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
@@ -34,7 +35,10 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 class PickClumpTest {
 
+	private val testSetup get() = TestSetupState.shared
+
 	private lateinit var db: ItemDatabase
+	private lateinit var dependencies: AppDependencies
 	private lateinit var subjectA: DbItem
 	private lateinit var chapterC1: DbItem
 	private lateinit var wordW1: DbItem
@@ -43,10 +47,14 @@ class PickClumpTest {
 	/** A holds c1 with two words and c2 with one nested chapter, plus an empty c3 and subject B. */
 	@Before
 	fun setUp() {
-		TestSetupState.reset()
+		testSetup.reset()
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
 		db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
-			.allowMainThreadQueries().build()
+			.allowMainThreadQueries()
+			.setQueryExecutor(Runnable::run)
+			.setTransactionExecutor(Runnable::run)
+			.build()
+		dependencies = AppDependencies(RuntimeEnvironment.getApplication(), db)
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 		subjectA = ItemRepository.createSubject("A", null)
@@ -62,7 +70,7 @@ class PickClumpTest {
 
 	@After
 	fun tearDown() {
-		TestSetupState.reset()
+		testSetup.reset()
 		db.close()
 		ItemRepository.resetForTest()
 	}
@@ -70,10 +78,23 @@ class PickClumpTest {
 	private fun picker(reference: Boolean = false): PickerViewModel {
 		val target = if (!reference) null
 		else ItemRepository.subjects().first().let { ItemRepository.children(it.id).last() }
-		return PickerViewModel(NavigationHistory(), Dispatchers.Unconfined, target)
+		return PickerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined, target,
+			graphs = dependencies.graphQueries,
+			transfer = dependencies.itemTransfer,
+			userMessages = dependencies.userMessages,
+		)
 	}
 
-	private fun explorer() = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+	private fun explorer() = MainExplorerViewModel(
+		NavigationHistory(), Dispatchers.Unconfined,
+		graphs = dependencies.graphQueries,
+		editor = dependencies.itemEditor,
+		itemTransferService = dependencies.itemTransfer,
+		flipper = dependencies.flipper,
+		settings = dependencies.settings,
+		userMessages = dependencies.userMessages,
+	)
 
 	/** Walks from the picker root into the subject A. */
 	private fun enterSubject(model: PickerViewModel) {
@@ -304,8 +325,8 @@ class PickClumpTest {
 		model.openSibling(-1)
 		model.onSelect()
 
-		assertEquals(listOf(listOf(subjectA.id)), TestSetupState.list.map { it.map(DbItem::id) })
-		assertTrue(TestSetupState.hierarchyPicked())
+		assertEquals(listOf(listOf(subjectA.id)), testSetup.list.map { it.map(DbItem::id) })
+		assertTrue(testSetup.hierarchyPicked())
 	}
 
 	@Test

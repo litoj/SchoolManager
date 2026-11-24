@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import cz.litoj.schlmgr.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cz.litoj.schlmgr.app.Settings
+import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.ui.component.ExplorerScaffold
 import cz.litoj.schlmgr.ui.component.ItemListCallbacks
 import cz.litoj.schlmgr.ui.component.PasteActionBar
@@ -32,6 +34,8 @@ import cz.litoj.schlmgr.ui.viewmodel.selectionOverflowMenu
 @Composable
 internal fun SubjectsContent(
 	viewModel: MainExplorerViewModel,
+	settings: Settings,
+	userMessages: UserMessages,
 	exportBlockedReason: Int,
 	modifier: Modifier = Modifier,
 ) {
@@ -75,12 +79,14 @@ internal fun SubjectsContent(
 					onCancel = viewModel::cancelPaste,
 					onPaste = viewModel::doPaste,
 					blockedReason = viewModel.pasteBlockedReason,
+					userMessages = userMessages,
 				)
 				// the row shows its selection tint at once, the strip only after the lift
 				listState.selectionActive && !pressHeld -> {
 					// the read lands on every recomposition, so a settings change reaches the next selection
-					val config = ActionConfig.load()
+					val config = ActionConfig.load(settings)
 					SelectionActionBar(
+						userMessages = userMessages,
 						config = config,
 						search = searching,
 						singleSelected = listState.singleSelected,

@@ -1,7 +1,8 @@
 package cz.litoj.schlmgr.ui.screen.subjects
 
 import cz.litoj.schlmgr.app.FileProgress
-import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.data.ItemTransferService
+import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel.Request
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
@@ -17,6 +18,8 @@ internal class SubjectsDelete(
 	private val scope: CoroutineScope,
 	private val io: CoroutineDispatcher,
 	private val host: Host,
+	private val transfer: ItemTransferService? = null,
+	private val graphs: GraphQueries? = null,
 ) {
 
 	interface Host : SubjectsHost {
@@ -43,20 +46,22 @@ internal class SubjectsDelete(
 		val regionRoot = if (searchNow) host.path.lastOrNull() else null
 		val marks = doomed.map { it.item.id to it.parentId }
 		scope.launch(io) {
+			val graphs = checkNotNull(graphs)
+			val transfer = checkNotNull(transfer)
 			val links = if (regionRoot == null) marks
 			else {
 				// every parent inside the searched region: one subgraph read.
 				// then the own parent links of the doomed rows
-				val region = ItemRepository.subgraph(regionRoot.id).mapTo(HashSet()) { it.id }
+				val region = graphs.snapshot(regionRoot.id).items.mapTo(HashSet()) { it.id }
 				marks.flatMap { (id, _) ->
-					ItemRepository.parentIds(id).filter { it in region }.map { id to it }
+					graphs.parentIds(id).filter { it in region }.map { id to it }
 				}
 			}
-			if (title == null) for ((id, parent) in links) ItemRepository.remove(id, parent)
+			if (title == null) for ((id, parent) in links) transfer.remove(id, parent)
 			else FileProgress(title).use { progress ->
 				// the count is unknown before the walk, so the bar shows the running count.
 				progress.rows(0)
-				for ((id, parent) in links) ItemRepository.remove(id, parent, progress)
+				for ((id, parent) in links) transfer.remove(id, parent, progress)
 			}
 			host.postToUi {
 				// a search re-reads, since the region deletion takes more than the selection.

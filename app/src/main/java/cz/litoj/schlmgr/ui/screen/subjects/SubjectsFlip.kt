@@ -2,7 +2,7 @@ package cz.litoj.schlmgr.ui.screen.subjects
 
 import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.app.UserMessages
-import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.data.FlipRunner
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.FlipAnalysis
 import cz.litoj.schlmgr.data.db.FlipResolution
@@ -22,6 +22,8 @@ internal class SubjectsFlip(
 	private val scope: CoroutineScope,
 	private val io: CoroutineDispatcher,
 	private val host: Host,
+	private val userMessages: UserMessages,
+	private val flipper: FlipRunner? = null,
 ) {
 
 	/** The shared doors, see [SubjectsHost]. */
@@ -46,7 +48,7 @@ internal class SubjectsFlip(
 		val actingParents = if (host.searching) selected.mapNotNull { it.parentId }.distinct()
 		else listOf(host.path.lastOrNull()?.id ?: ROOT_ID)
 		scope.launch(io) {
-			val analysis = ItemRepository.startFlip(actingParents, ids)
+			val analysis = checkNotNull(flipper).start(actingParents, ids)
 			host.postToUi { continueFlip(analysis) }
 		}
 	}
@@ -55,7 +57,7 @@ internal class SubjectsFlip(
 		if (analysis.conflicts.isEmpty()) {
 			running = false
 			scope.launch(io) {
-				ItemRepository.commitFlip(analysis)
+				checkNotNull(flipper).commit(analysis)
 				host.postToUi {
 					host.clearSelection()
 					host.reloadContent()
@@ -73,11 +75,11 @@ internal class SubjectsFlip(
 	 */
 	fun commitFlipResolutions(analysis: FlipAnalysis, resolutions: List<FlipResolution>): Boolean {
 		if (resolutions.any { !it.removed && it.name.trim().isEmpty() }) {
-			UserMessages.showNotice(UiNotice.FlipBlankName)
+			userMessages.showNotice(UiNotice.FlipBlankName)
 			return false
 		}
 		scope.launch(io) {
-			val next = ItemRepository.advanceFlip(analysis, resolutions)
+			val next = checkNotNull(flipper).advance(analysis, resolutions)
 			host.postToUi { continueFlip(next) }
 		}
 		return true

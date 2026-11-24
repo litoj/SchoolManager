@@ -1,8 +1,8 @@
 package cz.litoj.schlmgr.unit.app
 
 import android.net.Uri
-import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.app.UserMessages
+import cz.litoj.schlmgr.app.UserMessages.UiMessage
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
@@ -21,21 +21,23 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 class UserMessagesExportTest {
 
+	private lateinit var userMessages: UserMessages
+
 	@Before
 	fun setUp() {
-		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
+		userMessages = UserMessages(RuntimeEnvironment.getApplication())
 	}
 
 	@Test
 	fun `an export result offers the saved document for sharing`() = runBlocking {
 		val uri = Uri.parse("content://schlmgr.test/out/1")
 		val message = async(start = CoroutineStart.UNDISPATCHED) {
-			withTimeout(1_000) { GlobalDependencies.messages.first() }
+			withTimeout(1_000) { userMessages.messages.first() }
 		}
 
-		UserMessages.onExportSuccess(uri, "words.txt", 2, 1, "text/plain")
+		userMessages.onExportSuccess(uri, "words.txt", 2, 1, "text/plain")
 
-		val share = message.await() as GlobalDependencies.UiMessage.ShareFile
+		val share = message.await() as UiMessage.ShareFile
 		assertEquals(uri, share.uri)
 		assertEquals("text/plain", share.mime)
 		assertTrue(share.text.contains("words.txt"))

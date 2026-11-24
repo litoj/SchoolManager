@@ -35,7 +35,7 @@ class ItemRowFlipTest {
 
 	@Test
 	fun `an older flip completion cannot undo a newer target`() {
-		val row = ItemRow(DbItem(name = "word", description = "", type = ItemKind.WORD), null, 1, false)
+		val row = ItemRow(DbItem(name = "word", description = "", type = ItemKind.WORD), null, 1)
 		val older = checkNotNull(row.reserveFlip(true))
 		val newer = checkNotNull(row.reserveFlip(false))
 
@@ -47,7 +47,7 @@ class ItemRowFlipTest {
 	@Test
 	fun `fresh content invalidates a pending flip`() {
 		val word = DbItem(name = "word", description = "", type = ItemKind.WORD)
-		val row = ItemRow(word, null, 1, false)
+		val row = ItemRow(word, null, 1)
 		val pending = checkNotNull(row.reserveFlip(true))
 
 		row.applyFresh(word.copy(name = "edited"), listOf(trl("new")))

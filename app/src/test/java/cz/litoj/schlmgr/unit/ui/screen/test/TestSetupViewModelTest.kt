@@ -1,6 +1,8 @@
 package cz.litoj.schlmgr.unit.ui.screen.test
 
-import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.app.Settings
+import cz.litoj.schlmgr.app.UserMessages
+import cz.litoj.schlmgr.app.UserMessages.UiMessage
 import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
@@ -23,25 +25,38 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class TestSetupViewModelTest {
+
+	private val testSetup get() = TestSetupState.shared
+	private lateinit var settings: Settings
+	private lateinit var userMessages: UserMessages
 
 	@After
 	fun resetState() {
-		TestSetupState.reset()
-		TestSetupState.childrenLookup = ItemRepository::children
+		testSetup.reset()
+		testSetup.childrenLookup = ItemRepository::children
 	}
 
 	/** The doors refresh the counts, which read the database. */
 	@Before
 	fun fakeTree() {
-		TestSetupState.childrenLookup = { emptyList() }
+		val app = RuntimeEnvironment.getApplication()
+		settings = Settings(app)
+		userMessages = UserMessages(app)
+		testSetup.childrenLookup = { emptyList() }
 	}
 
 	@Test
 	fun `start without sources sends nothing`() = runBlocking {
-		assertFalse(TestSetupState.hasSources())
-		val model = TestSetupViewModel()
+		assertFalse(testSetup.hasSources())
+		val model = TestSetupViewModel(settings = settings, userMessages = userMessages)
 
 		model.startTest()
 
@@ -51,11 +66,11 @@ class TestSetupViewModelTest {
 
 	@Test
 	fun `start with sources opens the running test`() = runBlocking {
-		TestSetupState.addPicked(listOf(
-			TestSetupState.seedOf(ItemRow(DbItem(id = 1, name = "subject", description = "", type = ItemKind.CHAPTER),
+		testSetup.addPicked(listOf(
+			testSetup.seedOf(ItemRow(DbItem(id = 1, name = "subject", description = "", type = ItemKind.CHAPTER),
 				null, 1))))
-		assertTrue(TestSetupState.hasSources())
-		val model = TestSetupViewModel()
+		assertTrue(testSetup.hasSources())
+		val model = TestSetupViewModel(settings = settings, userMessages = userMessages)
 		val notice = async(start = CoroutineStart.UNDISPATCHED) { model.requests.first() }
 
 		model.startTest()
@@ -67,13 +82,13 @@ class TestSetupViewModelTest {
 		DbItem(id = id, name = "i$id", description = "", type = ItemKind.CHAPTER)
 
 	private fun pick(chain: List<DbItem>) {
-		TestSetupState.addPicked(listOf(TestSetupState.seedOf(
+		testSetup.addPicked(listOf(testSetup.seedOf(
 			ItemRow.ofSearchHit(chain.last(), chain.dropLast(1), 1, emptyList()))))
 	}
 
 	/** Runs [action] and returns the message it reported. */
-	private suspend fun reported(action: () -> Unit): GlobalDependencies.UiMessage = coroutineScope {
-		val message = async(start = CoroutineStart.UNDISPATCHED) { GlobalDependencies.messages.first() }
+	private suspend fun reported(action: () -> Unit): UiMessage = coroutineScope {
+		val message = async(start = CoroutineStart.UNDISPATCHED) { userMessages.messages.first() }
 		action()
 		withTimeout(1_000) { message.await() }
 	}
@@ -82,35 +97,35 @@ class TestSetupViewModelTest {
 	fun `a removal offers its undo, which brings the source back`() = runBlocking {
 		val chain = listOf(item(1), item(2))
 		pick(chain)
-		val model = TestSetupViewModel(Dispatchers.Unconfined)
+		val model = TestSetupViewModel(Dispatchers.Unconfined, settings = settings, userMessages = userMessages)
 
-		val message = reported { model.removeSource(chain) } as GlobalDependencies.UiMessage.Undoable
+		val message = reported { model.removeSource(chain) } as UiMessage.Undoable
 
-		assertFalse(TestSetupState.hasSources())
+		assertFalse(testSetup.hasSources())
 		assertEquals(UiNotice.SourceRemoved("i2"), message.notice)
 		message.onUndo()
-		assertEquals(listOf(chain), TestSetupState.list)
+		assertEquals(listOf(chain), testSetup.list)
 	}
 
 	@Test
 	fun `a refused undo says which subject is picked`() = runBlocking {
 		val chain = listOf(item(1), item(2))
 		pick(chain)
-		val model = TestSetupViewModel(Dispatchers.Unconfined)
-		val message = reported { model.removeSource(chain) } as GlobalDependencies.UiMessage.Undoable
+		val model = TestSetupViewModel(Dispatchers.Unconfined, settings = settings, userMessages = userMessages)
+		val message = reported { model.removeSource(chain) } as UiMessage.Undoable
 		pick(listOf(item(3), item(4)))
 
 		val notice = reported { message.onUndo() }
 
-		assertEquals(GlobalDependencies.UiMessage.Notice(UiNotice.OneSubjectOnly("i3")), notice)
+		assertEquals(UiMessage.Notice(UiNotice.OneSubjectOnly("i3")), notice)
 	}
 
 	@Test
 	fun `a repeated removal tap reports nothing`() = runBlocking {
 		val chain = listOf(item(1), item(2))
-		val model = TestSetupViewModel(Dispatchers.Unconfined)
+		val model = TestSetupViewModel(Dispatchers.Unconfined, settings = settings, userMessages = userMessages)
 		val message = async(start = CoroutineStart.UNDISPATCHED) {
-			withTimeoutOrNull(100) { GlobalDependencies.messages.first() }
+			withTimeoutOrNull(100) { userMessages.messages.first() }
 		}
 
 		model.removeSource(chain)

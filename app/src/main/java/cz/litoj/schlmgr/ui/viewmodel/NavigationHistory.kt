@@ -2,8 +2,6 @@ package cz.litoj.schlmgr.ui.viewmodel
 
 import cz.litoj.schlmgr.data.db.DbItem
 
-val mainHistory = NavigationHistory()
-
 /**
  * The navigation history of the explorer list.
  * - [path] holds the displayed container chain, root first and open container last.

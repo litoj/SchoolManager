@@ -6,8 +6,10 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.room.Room
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.app.AppDependencies
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.app.UiNotice
+import cz.litoj.schlmgr.app.UserMessages.UiMessage
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
@@ -43,13 +45,17 @@ class SubjectsScreenNavTest {
 	val rule = createComposeRule()
 
 	private lateinit var db: ItemDatabase
+	private lateinit var dependencies: AppDependencies
 	private var chapterId = 0
 
 	@Before
 	fun setUp() {
 		db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
 			.allowMainThreadQueries()
+			.setQueryExecutor(Runnable::run)
+			.setTransactionExecutor(Runnable::run)
 			.build()
+		dependencies = AppDependencies(RuntimeEnvironment.getApplication(), db)
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
@@ -79,13 +85,21 @@ class SubjectsScreenNavTest {
 	}
 
 	private fun screen(model: MainExplorerViewModel) {
-		rule.setContent { SubjectsScreen(model, {}, {}, {}) }
+		rule.setContent { SubjectsScreen(model, dependencies.settings, dependencies.userMessages, {}, {}, {}) }
 		rule.waitForIdle()
 	}
 
 	@Test
 	fun `a blocked paste keeps its place and refuses the tap`() {
-		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		val model = MainExplorerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			editor = dependencies.itemEditor,
+			itemTransferService = dependencies.itemTransfer,
+			flipper = dependencies.flipper,
+			settings = dependencies.settings,
+			userMessages = dependencies.userMessages,
+		)
 		screen(model)
 		rule.onNodeWithText("A").performClick()
 		rule.waitForIdle()
@@ -99,13 +113,13 @@ class SubjectsScreenNavTest {
 
 		runBlocking {
 			val notice = async(start = CoroutineStart.UNDISPATCHED) {
-				GlobalDependencies.messages.first()
+				dependencies.userMessages.messages.first()
 			}
 			rule.onNodeWithText(text(R.string.paste)).performClick()
 			rule.waitForIdle()
 			withTimeout(1_000) {
 				assertEquals(
-					GlobalDependencies.UiMessage.Notice(
+					UiMessage.Notice(
 						UiNotice.ActionUnavailable(R.string.fail_paste_present)),
 					notice.await())
 			}

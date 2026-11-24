@@ -1,7 +1,6 @@
 package cz.litoj.schlmgr.testing
 
 import cz.litoj.schlmgr.data.db.DbItem
-import cz.litoj.schlmgr.data.ItemRepository
 
 /**
  * The stats re-read after grading, so the results popup shows the just-finished state.
@@ -31,9 +30,9 @@ class TestItemModel(val entry: TestEntry) {
 	var word: DbItem = entry.word
 		private set
 
-	/** Re-reads the word so its tested count and ratio include the just-recorded answer. */
-	fun refreshStats() {
-		ItemRepository.get(entry.word.id)?.let { word = it }
+	/** Applies the refreshed row so its tested count and ratio include the recorded answer. */
+	fun refreshStats(refreshed: DbItem) {
+		word = refreshed
 	}
 
 	override fun toString(): String = entry.toString()

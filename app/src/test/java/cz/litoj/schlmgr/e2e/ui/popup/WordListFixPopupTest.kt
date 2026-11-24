@@ -15,7 +15,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.text.TextRange
 import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.app.ImportFailureExplanation
 import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.data.wordlist.WordListParseException
@@ -56,12 +55,13 @@ class WordListFixPopupTest {
 	private val reimported = mutableListOf<Uri>()
 
 	private lateinit var popup: WordListFixPopup
+	private lateinit var userMessages: UserMessages
 
 	private val field get() = rule.onNode(hasSetTextAction())
 
 	@Before
 	fun setUp() {
-		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
+		userMessages = UserMessages(RuntimeEnvironment.getApplication())
 		shadowOf(rule.activity.contentResolver).registerOutputStream(file, written)
 	}
 
@@ -73,7 +73,7 @@ class WordListFixPopupTest {
 	/** The report of a failed [source] as the worker of the picked [target] sends it. */
 	private fun showFix(target: Uri = file, source: String = SOURCE) {
 		val failure = parseFailure(source)
-		popup = UserMessages.onWordListParseFail(failure, target, source, reimported::add)
+		popup = userMessages.onWordListParseFail(failure, target, source, reimported::add)
 			as WordListFixPopup
 		rule.setContent { popup.Content() }
 	}

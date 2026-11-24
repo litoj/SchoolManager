@@ -5,8 +5,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import cz.litoj.schlmgr.app.AppSettings
-import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.app.Settings
+import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.data.WordNames
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.DbLink
@@ -19,13 +19,15 @@ class Placement(
 	val parentId: Int, val isReference: Boolean, val hasSource: Boolean, val chain: List<DbItem>?,
 )
 
+data class SearchRowOptions(val parse: Boolean, val searchDefFlip: Boolean)
+
 /**
  * One shared row object for composables and the controller.
  * - a reference-linked row keeps its type icon, with a jump to its source.
  * - the mutable fields are main-owned, since an io read snapshots them on main first.
  * - the displayed ones are Compose state, so the row renders itself and no copy travels to the screen.
  */
-class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean = true) : RowView {
+class ItemRow(item: DbItem, parentId: Int?, position: Int) : RowView {
 
 	/** The LazyColumn key, the row's database id. */
 	override val key: Any get() = item.id
@@ -97,6 +99,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	 */
 	private var flipContent: List<DbItem>? = null
 	private var flipGeneration = 0
+	private var searchOptions: SearchRowOptions? = null
 
 	/**
 	 * Whether the referenced row still lives in a container besides this one.
@@ -125,22 +128,18 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	}
 
 	init {
-		setNew(item, parentId, applyDefFlip)
+		setNew(item, parentId)
 	}
 
-	private fun setNew(item: DbItem, parentId: Int?, applyDefFlip: Boolean) {
+	private fun setNew(item: DbItem, parentId: Int?) {
 		this.item = item
 		this.parentId = parentId
 		flipped = false
 		flipContent = null
 		renderName()
-		refreshReferenceFacts(parentId)
-		if (item.type != ItemKind.WORD) return
-		flipped = if (applyDefFlip) defFlip else false
-		if (flipped) toShow = renderTranslations()
 	}
 
-	private fun flipContent(): List<DbItem> = flipContentOf(item)
+	private fun flipContent(): List<DbItem> = flipContent.orEmpty()
 
 	fun applyFlip(items: List<DbItem>) {
 		if (item.type != ItemKind.WORD && item.type != ItemKind.TRANSLATION) return
@@ -189,11 +188,11 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	 * - they hand the fresh row over, and [applyPlacement] lands the result there.
 	 * - so the fields of the row stay main-owned.
 	 */
-	fun readPlacement(parentId: Int, fresh: DbItem): Placement {
-		val reference = ItemRepository.linkIsReference(parentId, fresh.id)
+	suspend fun readPlacement(parentId: Int, fresh: DbItem, graphs: GraphQueries): Placement {
+		val reference = graphs.linkIsReference(parentId, fresh.id)
 		return Placement(parentId, reference,
-			reference && ItemRepository.parentIds(fresh.id).any { it != parentId },
-			path?.let { ItemRepository.pathTo(parentId) + fresh })
+			reference && graphs.parentIds(fresh.id).any { it != parentId },
+			path?.let { graphs.pathTo(parentId) + fresh })
 	}
 
 	fun applyPlacement(placement: Placement) {
@@ -204,15 +203,6 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		chain.clear()
 		chain.addAll(placement.chain ?: return)
 	}
-
-	/**
-	 * A reference is a fact of the link, not of the item.
-	 * - so the same row renders normal in its home.
-	 */
-	private fun refreshReferenceFacts(parentId: Int?) = applyReferenceFacts(
-		parentId != null && ItemRepository.linkIsReference(parentId, item.id),
-		{ ItemRepository.parentIds(item.id).any { it != parentId } },
-	)
 
 	/**
 	 * The one rule behind both fact sources, the per-row read and the preloaded links.
@@ -249,7 +239,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	}
 
 	private fun renderName() {
-		toShow = nameParser(item.name)
+		toShow = nameParser(item.name, searchOptions?.parse ?: parse)
 		info = item.description
 		translationLines = emptyList()
 	}
@@ -257,7 +247,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	private fun renderTranslations(): String = renderTranslations(flipContent())
 
 	private fun renderTranslations(items: List<DbItem>): String {
-		val display = flippedDisplay(items)
+		val display = flippedDisplay(items, searchOptions?.parse ?: parse)
 		// no joint description, since each line carries its own
 		info = ""
 		translationLines = display.lines
@@ -266,17 +256,15 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 
 	companion object {
 
-		/**
-		 * A word shows its translations, and a translation its words.
-		 * - those are the actual words that the translation translates, each in its chapter.
-		 */
-		fun flipContentOf(item: DbItem): List<DbItem> =
-			if (item.type == ItemKind.TRANSLATION) ItemRepository.parentRows(item.id)
-			else ItemRepository.translations(item.id)
+		/** A word reads its translations, while a translation reads its linked words. */
+		@JvmStatic
+		suspend fun readFlipContent(item: DbItem, graphs: GraphQueries): List<DbItem> =
+			if (item.type == ItemKind.TRANSLATION) graphs.parentRows(item.id)
+			else graphs.translations(item.id)
 
 		/**
-		 * The display settings below persist through AppSettings.
-		 * - the toggling code assigns them together with the AppSettings.set call.
+		 * The display settings below persist through Settings.
+		 * - the toggling code assigns them together with the Settings.set call.
 		 */
 		// descLines is Compose state, so a settings change reaches a live list without a reload
 		var descLines by mutableIntStateOf(DEFAULT_DESC_LINES)
@@ -313,14 +301,14 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 
 		/** The app layer applies the rest, while this one reads the ui settings. */
 		@JvmStatic
-		fun applyStoredOptions() {
+		fun applyStoredOptions(settings: Settings) {
 			applyOptions(
-				AppSettings.getBool("parseNames", true),
-				AppSettings.getBool("flipWord", true),
-				AppSettings.getBool("flipSearch", true),
-				AppSettings.getInt("descLines", DEFAULT_DESC_LINES),
-				AppSettings.getInt("doubleTapMs", DEFAULT_DOUBLE_TAP_MS),
-				AppSettings.getBool("searchShowPath", true),
+				settings.getBool("parseNames", true),
+				settings.getBool("flipWord", true),
+				settings.getBool("flipSearch", true),
+				settings.getInt("descLines", DEFAULT_DESC_LINES),
+				settings.getInt("doubleTapMs", DEFAULT_DOUBLE_TAP_MS),
+				settings.getBool("searchShowPath", true),
 			)
 		}
 
@@ -343,8 +331,11 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		}
 
 		@JvmStatic
-		fun nameParser(name: String): String {
-			if (parse && (name.contains("\\/") || name.contains(")") && name.contains("/"))) {
+		fun currentSearchOptions() = SearchRowOptions(parse, searchDefFlip)
+
+		@JvmStatic
+		fun nameParser(name: String, parseNames: Boolean = parse): String {
+			if (parseNames && (name.contains("\\/") || name.contains(")") && name.contains("/"))) {
 				val names = WordNames.parseVariants(name)
 				if (names.size == 1) return names[0]
 				val sb = StringBuilder()
@@ -360,11 +351,11 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 		 * Each line keeps its own description, so no joint description text is assembled.
 		 */
 		@JvmStatic
-		fun flippedDisplay(items: List<DbItem>): FlippedDisplay {
+		fun flippedDisplay(items: List<DbItem>, parseNames: Boolean = parse): FlippedDisplay {
 			val trls = StringBuilder()
 			val lines = ArrayList<TranslationLine>(items.size)
 			for (trl in items) {
-				val name = nameParser(trl.name)
+				val name = nameParser(trl.name, parseNames)
 				trls.append('\n').append(name)
 				lines.add(TranslationLine(name, trl.description))
 			}
@@ -408,7 +399,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 			links: List<DbLink>,
 			translations: List<DbItem>,
 		): ItemRow {
-			val row = ItemRow(item, null, position, applyDefFlip = false)
+			val row = ItemRow(item, null, position)
 			row.parentId = parentId
 			row.applyReferenceFacts(
 				parentId != null && links.any { it.parentId == parentId && it.isReference },
@@ -437,9 +428,11 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 			flipContent: List<DbItem>? = null,
 			matchedTranslation: Boolean = false,
 			shownPath: List<DbItem> = path,
+			options: SearchRowOptions? = null,
 		): ItemRow {
 			val parent = path.lastOrNull()?.id
-			val row = ItemRow(item, null, position, applyDefFlip = false)
+			val row = ItemRow(item, null, position)
+			row.searchOptions = options
 			row.path = ArrayList(path)
 			row.shownPath = ArrayList(shownPath)
 			row.parentId = parent
@@ -450,7 +443,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 			if (flipContent != null) {
 				row.preloadFlip(flipContent)
 				// the result shows the counterpart of the matched query
-				val flip = if (searchDefFlip) !matchedTranslation else false
+				val flip = if (options?.searchDefFlip ?: searchDefFlip) !matchedTranslation else false
 				row.applyDefaultFlip(flipContent, flip)
 			}
 			return row

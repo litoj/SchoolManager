@@ -53,8 +53,10 @@ class TestActivityGroupTest {
 		val second = ItemRepository.createWord(chapter.id, "hond", null, listOf("pes" to null))
 		task = TestTaskModel(
 			listOf(
-				TestItemModel(TestEntry(first, listOf(subject, chapter, first))),
-				TestItemModel(TestEntry(second, listOf(subject, chapter, second))),
+				TestItemModel(TestEntry(
+					first, listOf(subject, chapter, first), ItemRepository.translations(first.id))),
+				TestItemModel(TestEntry(
+					second, listOf(subject, chapter, second), ItemRepository.translations(second.id))),
 			),
 			0,
 		)
@@ -74,7 +76,8 @@ class TestActivityGroupTest {
 		val word = ItemRepository.createWord(chapter.id, "/I/You smile.", null, listOf("laugh" to null))
 		TestEngine.applyRequireAllVariants(true)
 		try {
-			val task = TestTaskModel(listOf(TestItemModel(TestEntry(word, listOf(subject, chapter, word)))), 0)
+			val entry = TestEntry(word, listOf(subject, chapter, word), ItemRepository.translations(word.id))
+			val task = TestTaskModel(listOf(TestItemModel(entry)), 0)
 			rule.setContent {
 				SharedPromptRow(task, -1, hashMapOf(), true, rememberLazyListState(), {})
 			}

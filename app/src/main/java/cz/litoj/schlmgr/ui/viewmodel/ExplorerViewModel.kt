@@ -3,6 +3,8 @@ package cz.litoj.schlmgr.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.app.Settings
+import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ROOT_ID
 import cz.litoj.schlmgr.data.db.ItemKind
@@ -13,7 +15,6 @@ import cz.litoj.schlmgr.ui.search.SearchTag
 import cz.litoj.schlmgr.testing.TestEngine
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,11 +22,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * The explorer state of one screen.
- * - actions arrive here and delegate the work to [cz.litoj.schlmgr.data.ItemRepository].
+ * - actions arrive here and delegate the work to the injected data services.
  * - the chrome shows the published state.
  * - it owns what the top bar offers: the menu kind, the file doors and the search door.
  *
@@ -36,12 +36,14 @@ abstract class ExplorerViewModel<R>(
 	val history: NavigationHistory,
 	private val picker: Boolean = false,
 	protected val io: CoroutineDispatcher = Dispatchers.IO,
+	settings: Settings? = null,
+	protected val graphs: GraphQueries? = null,
 ) : ViewModel() {
 
 	/** The content switch that every navigation funnels through. */
 	protected open fun setContent(container: DbItem?, pulseItemId: Int? = null) {
 		// any newer navigation supersedes a pending sibling read, even over the same row
-		siblingGeneration++
+		navigation.invalidate()
 		loadContent(container, pulseItemId = pulseItemId)
 	}
 
@@ -49,56 +51,9 @@ abstract class ExplorerViewModel<R>(
 	 * Restores the screens after popping hops.
 	 * - it re-shows a stacked search run, and otherwise reloads the browse list.
 	 */
-	fun changedPath(skip: Int) {
-		// the strip refresh follows the load.
-		updateBackPath(skip, refreshStrip = false)
-		// a back hop onto a search run restores the filtered list.
-		if (restoreSearch()) return
-		// a closed field has no search mode left, but its producer still needs aborting
-		if (searching) {
-			searchFlow.leaveSearchFlow(reload = false)
-			setSearchUi(SearchUi.OFF)
-		}
-		setContent(history.path.lastOrNull())
-		onChange()
-	}
+	fun changedPath(skip: Int) = navigation.changedPath(skip)
 
-	/**
-	 * Opens the sibling [delta] away, the horizontal swipe of every explorer.
-	 * - it replaces the entry, so back goes up.
-	 * - the swipe cancels the row selection, while an armed paste stays alive.
-	 */
-	fun openSibling(delta: Int) {
-		val path = history.path
-		if (path.isEmpty() || searching) return
-		clearSelection()
-		val current = path.last()
-		val parent = path.getOrNull(path.size - 2)
-		val newPath = ArrayList(path)
-		siblingJob?.cancel()
-		// a stale swipe must not land over a newer one
-		val generation = ++siblingGeneration
-		siblingJob = viewModelScope.launch {
-			val siblings = withContext(io) {
-				orderedChildren(parent?.id ?: ROOT_ID)
-			}
-			val index = siblings.indexOfFirst { it.id == current.id }
-			if (index < 0) return@launch
-			val target = siblings.getOrNull(index + delta) ?: return@launch
-			// only chapters can open
-			if (target.type != ItemKind.CHAPTER) return@launch
-			// a newer navigation supersedes, and a mid-read search blocks the landing
-			if (generation != siblingGeneration) return@launch
-			if (history.path.lastOrNull() !== current || searching) return@launch
-			newPath[newPath.size - 1] = target
-			history.replaceCurrent(newPath)
-			setContent(history.path.lastOrNull())
-		}
-	}
-
-	private var siblingJob: Job? = null
-
-	private var siblingGeneration = 0
+	fun openSibling(delta: Int) = navigation.openSibling(delta)
 
 	/** Unlimited, so a request survives while the view is stopped. */
 	private val _requests = Channel<R>(Channel.UNLIMITED)
@@ -114,7 +69,7 @@ abstract class ExplorerViewModel<R>(
 
 	protected fun updateState(transform: (ExplorerScreenState) -> ExplorerScreenState) = _state.update(transform)
 
-	private val list = ExplorerList(viewModelScope, io, ListHost())
+	private val list = ExplorerList(viewModelScope, io, ListHost(), graphs)
 
 	val listState: StateFlow<ItemListState> get() = list.listState
 
@@ -139,7 +94,22 @@ abstract class ExplorerViewModel<R>(
 		const val EXIT_WINDOW_MS = 3000L
 	}
 
-	private val searchFlow = SearchFlow(viewModelScope, io, history, SearchFlowHost())
+	private val searchFlow = SearchFlow(viewModelScope, io, history, SearchFlowHost(), settings, graphs)
+
+	private val navigation = ExplorerNavigation(viewModelScope, io, history, NavigationHost())
+
+	private inner class NavigationHost : ExplorerNavigation.Host {
+		override fun searching() = this@ExplorerViewModel.searching
+		override fun clearSelection() = this@ExplorerViewModel.clearSelection()
+		override suspend fun orderedChildren(parentId: Int) = list.sortedChildren(parentId)
+		override fun setContent(container: DbItem?) = this@ExplorerViewModel.setContent(container)
+		override fun leaveSearchFlow() {
+			searchFlow.leaveSearchFlow(reload = false)
+			setSearchUi(SearchUi.OFF)
+		}
+		override fun restoreSearch() = searchFlow.restoreSearch()
+		override fun onChange() = this@ExplorerViewModel.onChange()
+	}
 
 	val query: StateFlow<String> get() = searchFlow.query
 
@@ -149,7 +119,7 @@ abstract class ExplorerViewModel<R>(
 		_state.update { it.copy(searchUi = mode) }
 	}
 
-	private val selection = Selection(SelectionHost())
+	private val selectionController = ExplorerSelectionController(SelectionControllerHost())
 
 	/** An armed paste freezes reorder. */
 	protected open fun pasteArmed() = false
@@ -160,8 +130,6 @@ abstract class ExplorerViewModel<R>(
 	 */
 	protected open fun cancelArmedMove(): Boolean = false
 
-	private val batch = GatheredRows(GatheredHost())
-
 	/** Whether the row gestures gather the batch across folders instead of selecting. */
 	protected open fun gathering() = false
 
@@ -171,28 +139,26 @@ abstract class ExplorerViewModel<R>(
 	/** Whether a wholly held container stands for its rows, the picker of test sources. */
 	protected open fun clumpsContainer() = false
 
-	/** The gathered rows, whichever folders they came from. */
-	fun batchRows(): List<ItemRow> = batch.rows
-
-	/** The gather after a closing action leaves the current container view. */
-	protected fun gatheredRowsForClose(): List<ItemRow> {
-		batch.viewLeft(list.items())
-		return batch.rows
-	}
-
-	/** Whether a drag is adding its range right now. */
-	protected fun batchDragging(): Boolean = batch.dragging
-
-	protected fun startBatch(rows: List<ItemRow>) = batch.start(rows)
-
-	protected fun clearBatch() = batch.clear()
-
-	private inner class GatheredHost : GatheredRows.Host {
+	private inner class SelectionControllerHost : ExplorerSelectionController.Host {
 		override val models get() = list.items()
 		override fun openContainer() = list.containerRow
 		override fun clumpsContainer() = this@ExplorerViewModel.clumpsContainer()
+		override fun gathering() = this@ExplorerViewModel.gathering()
 		override fun batchChanged() = this@ExplorerViewModel.batchChanged()
 	}
+
+	/** The gathered rows, whichever folders they came from. */
+	fun batchRows(): List<ItemRow> = selectionController.rows
+
+	/** The gather after a closing action leaves the current container view. */
+	protected fun gatheredRowsForClose() = selectionController.gatheredRowsForClose()
+
+	/** Whether a drag is adding its range right now. */
+	protected fun batchDragging() = selectionController.dragging
+
+	protected fun startBatch(rows: List<ItemRow>) = selectionController.startBatch(rows)
+
+	protected fun clearBatch() = selectionController.clearBatch()
 
 	fun refreshReorderable() = list.refreshReorderable()
 
@@ -222,17 +188,17 @@ abstract class ExplorerViewModel<R>(
 		refreshInfo()
 	}
 
-	/** The shared menu-id comparator for one sort action. */
-	protected fun sortItem(itemId: Int): Boolean = when (itemId) {
-		MenuId.SORT_ALPHA_AZ -> { sort(compareBy { it.toShow.lowercase() }); true }
-		MenuId.SORT_ALPHA_ZA -> { sort(compareBy<ItemRow> { it.toShow.lowercase() }.reversed()); true }
-		MenuId.SORT_SF_01 -> { sort(compareBy { it.item.ratio }); true }
-		MenuId.SORT_SF_10 -> { sort(compareBy<ItemRow> { it.item.ratio }.reversed()); true }
-		MenuId.SORT_PRIORITY -> { sort(compareByDescending { TestEngine.urgency(it.item) }); true }
-		MenuId.SORT_LENGTH_01 -> { sort(compareBy { it.toShow.length }); true }
-		MenuId.SORT_LENGTH_10 -> { sort(compareBy<ItemRow> { it.toShow.length }.reversed()); true }
-		MenuId.SORT_RANDOM -> { random(); true }
-		MenuId.SORT_DEFAULT -> { reloadDefaultOrder(); true }
+	/** The shared menu action comparator for one sort choice. */
+	protected fun sortItem(itemId: Int): Boolean = when (ExplorerAction.of(itemId)) {
+		ExplorerAction.SORT_ALPHA_AZ -> { sort(compareBy { it.toShow.lowercase() }); true }
+		ExplorerAction.SORT_ALPHA_ZA -> { sort(compareBy<ItemRow> { it.toShow.lowercase() }.reversed()); true }
+		ExplorerAction.SORT_SF_01 -> { sort(compareBy { it.item.ratio }); true }
+		ExplorerAction.SORT_SF_10 -> { sort(compareBy<ItemRow> { it.item.ratio }.reversed()); true }
+		ExplorerAction.SORT_PRIORITY -> { sort(compareByDescending { TestEngine.urgency(it.item) }); true }
+		ExplorerAction.SORT_LENGTH_01 -> { sort(compareBy { it.toShow.length }); true }
+		ExplorerAction.SORT_LENGTH_10 -> { sort(compareBy<ItemRow> { it.toShow.length }.reversed()); true }
+		ExplorerAction.SORT_RANDOM -> { random(); true }
+		ExplorerAction.SORT_DEFAULT -> { reloadDefaultOrder(); true }
 		else -> false
 	}
 
@@ -240,9 +206,9 @@ abstract class ExplorerViewModel<R>(
 	 * The shared menu door: select all, the sort family and the clear filter.
 	 * - a host answers its own actions first, then falls back here.
 	 */
-	open fun onMenuItemClick(itemId: Int): Boolean = when (itemId) {
-		MenuId.CLEAR_FILTER -> { clearFilters(); true }
-		MenuId.SELECT_ALL -> { onSelectAllToggle(); true }
+	open fun onMenuItemClick(itemId: Int): Boolean = when (ExplorerAction.of(itemId)) {
+		ExplorerAction.CLEAR_FILTER -> { clearFilters(); true }
+		ExplorerAction.SELECT_ALL -> { onSelectAllToggle(); true }
 		else -> sortItem(itemId)
 	}
 
@@ -259,7 +225,7 @@ abstract class ExplorerViewModel<R>(
 	}
 
 	/** The sibling order that the parent view displayed, rather than raw database order. */
-	protected fun orderedChildren(parentId: Int): List<DbItem> = list.sortedChildren(parentId)
+	protected suspend fun orderedChildren(parentId: Int): List<DbItem> = list.sortedChildren(parentId)
 
 	internal val loadJob get() = list.loadJob
 
@@ -297,27 +263,11 @@ abstract class ExplorerViewModel<R>(
 	 * - a jump from an unrelated branch drops that branch and the levels between them.
 	 * - a stacked search hop consumes one pop, so drop it first.
 	 */
-	fun breadcrumbClick(index: Int) {
-		val container = history.path.getOrNull(index) ?: return
-		if (history.path.lastOrNull() === container) return
-		val path = mutableListOf<DbItem>()
-		for (e in history.path) {
-			path.add(e)
-			if (e === container) break
-		}
-		if (history.onSearchHop()) {
-			// the abort also stops the run, so the abort guard can still fire.
-			searchFlow.leaveSearchFlow(reload = false)
-			setSearchUi(SearchUi.OFF)
-		}
-		history.rebaseTo(path)
-		setContent(container)
-		onChange()
-	}
+	fun breadcrumbClick(index: Int) = navigation.breadcrumbClick(index)
 
 	// the policy lives in [InfoStrip].
 
-	private val infoStrip = InfoStrip(viewModelScope, io, InfoStripHost())
+	private val infoStrip = InfoStrip(viewModelScope, io, InfoStripHost(), graphs)
 
 	fun refreshInfo() = infoStrip.refreshInfo()
 
@@ -407,7 +357,7 @@ abstract class ExplorerViewModel<R>(
 		override fun appendRows(batch: List<ItemRow>) = list.append(batch)
 		override fun removeRows(items: Collection<ItemRow>) = list.removeItems(items)
 		override fun republish() = list.republish()
-		override fun discardSelection(rows: List<ItemRow>) = selection.discard(rows)
+		override fun discardSelection(rows: List<ItemRow>) = selectionController.discard(rows)
 		override fun load(
 			content: List<ItemRow>,
 			isSearch: Boolean,
@@ -444,14 +394,8 @@ abstract class ExplorerViewModel<R>(
 	/**
 	 * The search rows survive, since they belong to the caller.
 	 */
-	fun updateBackPath(skip: Int, refreshStrip: Boolean = true) {
-		var s = skip
-		while (s > 0) {
-			history.remove()
-			s--
-		}
-		if (refreshStrip) onChange()
-	}
+	fun updateBackPath(skip: Int, refreshStrip: Boolean = true) =
+		navigation.updateBackPath(skip, refreshStrip)
 
 	enum class BackOutcome {
 		HANDLED,
@@ -560,59 +504,32 @@ abstract class ExplorerViewModel<R>(
 	 * The long-press starts a selection and keeps one, so the same press can drag it.
 	 * - a gathering list toggles the row in its batch instead, and owns the gesture that follows.
 	 */
-	fun onItemLongClick(item: ItemRow?) {
-		val row = item ?: return
-		if (gathering()) {
-			batch.begin()
-			batch.toggle(row)
-		} else {
-			// a selection press owns its drag too, so no earlier batch latch survives
-			batch.endRange()
-			if (!row.selected) setSelected(row, true)
-		}
-	}
+	fun onItemLongClick(item: ItemRow?) = selectionController.onItemLongClick(item)
 
-	private inner class SelectionHost : Selection.Host {
-		override val models get() = list.items()
-	}
+	fun toggleSelect(item: ItemRow?) = selectionController.toggleSelect(item, gathering())
 
-	// a gathering list sends every mark gesture to its batch.
-
-	fun toggleSelect(item: ItemRow?) {
-		val row = item ?: return
-		if (gathering()) batch.toggle(row) else selection.toggleSelect(row)
-	}
-
-	fun setSelected(item: ItemRow?, selected: Boolean) {
-		val row = item ?: return
-		if (gathering()) batch.hold(row, selected) else selection.setSelected(row, selected)
-	}
+	fun setSelected(item: ItemRow?, selected: Boolean) =
+		selectionController.setSelected(item, selected, gathering())
 
 	/** A drag that began on the batch keeps it, even when the drag emptied the paste. */
-	fun selectRange(from: Int, to: Int) =
-		if (batch.armed) batch.range(from, to) else selection.setRangeSelected(from, to)
+	fun selectRange(from: Int, to: Int) = selectionController.selectRange(from, to)
 
+	/** A picker carries its own mark, while ordinary selection paints the pressed state. */
 	fun selectRangeTo(from: Int, to: Int, selectedTo: Boolean) =
-		if (gathering()) selectRange(from, to) else selection.setRangeSelected(from, to, selectedTo)
+		if (gathering()) selectRange(from, to) else selectionController.setRangeSelected(from, to, selectedTo)
 
-	fun endRangeSelect() {
-		val dragged = batch.dragging
-		batch.endRange()
-		selection.endRangeSelect()
-		// a drag step skips its block read, so the paste reads once at the end
-		if (dragged) batchChanged()
-	}
+	fun endRangeSelect() = selectionController.endRangeSelect()
 
 	fun setRangeSelected(anchor: Int, to: Int, selectedTo: Boolean? = null) =
-		selection.setRangeSelected(anchor, to, selectedTo)
+		selectionController.setRangeSelected(anchor, to, selectedTo)
 
 	fun moveRow(from: Int, to: Int) = list.move(from, to)
 
-	fun selectAll(on: Boolean) = selection.selectAll(on)
+	fun selectAll(on: Boolean) = selectionController.selectAll(on)
 
-	open fun onSelectAllToggle() = if (gathering()) batch.toggleAll() else selection.onSelectAllToggle()
+	open fun onSelectAllToggle() = selectionController.onSelectAllToggle(gathering())
 
-	fun clearSelection() = selection.clearSelection()
+	fun clearSelection() = selectionController.clearSelection()
 
 	private inner class ListHost : ExplorerList.Host {
 		override val picker get() = this@ExplorerViewModel.picker
@@ -620,16 +537,13 @@ abstract class ExplorerViewModel<R>(
 
 		override fun gathering() = this@ExplorerViewModel.gathering()
 
-		override fun resetDragSelect() {
-			batch.endRange()
-			selection.reset()
-		}
+		override fun resetDragSelect() = selectionController.resetDragSelect()
 
-		override fun rowsMarked(rows: List<ItemRow>) = batch.markShown(rows)
+		override fun rowsMarked(rows: List<ItemRow>) = selectionController.rowsMarked(rows)
 
-		override fun viewShown(rows: List<ItemRow>) = batch.viewShown(rows)
+		override fun viewShown(rows: List<ItemRow>) = selectionController.viewShown(rows)
 
-		override fun viewLeft(rows: List<ItemRow>) = batch.viewLeft(rows)
+		override fun viewLeft(rows: List<ItemRow>) = selectionController.viewLeft(rows)
 
 		override fun publishChrome(reorderable: Boolean) {
 			_state.update {

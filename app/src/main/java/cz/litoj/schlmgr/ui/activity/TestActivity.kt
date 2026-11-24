@@ -6,8 +6,6 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
-import androidx.activity.SystemBarStyle
-import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -33,6 +31,7 @@ import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -54,15 +53,19 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.app.AppDependencies
+import cz.litoj.schlmgr.data.CounterService
+import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.ui.component.AnswerField
 import cz.litoj.schlmgr.ui.component.HairlineDivider
 import cz.litoj.schlmgr.ui.component.PromptLines
 import cz.litoj.schlmgr.ui.component.SharedPromptRow
 import cz.litoj.schlmgr.ui.component.promptItems
-import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestItemModel
+import cz.litoj.schlmgr.testing.TestRunConfig
 import cz.litoj.schlmgr.testing.TestTaskModel
 import cz.litoj.schlmgr.ui.popup.DialogHost
+import cz.litoj.schlmgr.ui.popup.LocalUserMessages
 import cz.litoj.schlmgr.ui.popup.TestResultsPopup
 import cz.litoj.schlmgr.ui.screen.test.TestRunState
 import cz.litoj.schlmgr.ui.shell.MessageSnackbarHost
@@ -76,7 +79,11 @@ import cz.litoj.schlmgr.ui.shell.messageSnackbarHost
  */
 class TestActivity : ComponentActivity(), TestRunState.Host {
 
+	private lateinit var dependencies: AppDependencies
+
 	override val scope get() = lifecycleScope
+	override val graphs: GraphQueries get() = dependencies.graphQueries
+	override val counters: CounterService get() = dependencies.counterService
 
 	override fun isAlive(): Boolean = !isFinishing && !isDestroyed
 
@@ -92,7 +99,7 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 	}
 
 	override fun onResults(items: List<TestItemModel>, ratio: Float) {
-		TestResultsPopup(items, ratio)
+		TestResultsPopup(items, ratio, TestRunState.testConfig.reversed)
 		finish()
 	}
 
@@ -100,8 +107,7 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
-		// the navigation bar stays black under edge-to-edge
-		enableEdgeToEdge(navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.BLACK))
+		dependencies = startAppShell()
 		// a run away from the front holds its countdown, since the user never left on purpose
 		lifecycle.addObserver(object : DefaultLifecycleObserver {
 			override fun onPause(owner: LifecycleOwner) {
@@ -115,21 +121,23 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 		TestRunState.attach(this)
 		if (!TestRunState.hasRun()) TestRunState.start(this)
 		setContent {
-			val snackbar = messageSnackbarHost()
-			Box(Modifier.fillMaxSize()) {
-				TestScreen()
-				// the transient user messages, above the tested words
-				MessageSnackbarHost(
-					hostState = snackbar,
-					// without the insets the bar rests on the raw window bottom,
-					// under the navigation buttons
-					modifier = Modifier
-						.align(Alignment.BottomCenter)
-						.navigationBarsPadding()
-						.imePadding(),
-				)
+			CompositionLocalProvider(LocalUserMessages provides dependencies.userMessages) {
+				val snackbar = messageSnackbarHost(dependencies.userMessages)
+				Box(Modifier.fillMaxSize()) {
+					TestScreen()
+					// the transient user messages, above the tested words
+					MessageSnackbarHost(
+						hostState = snackbar,
+						// without the insets the bar rests on the raw window bottom,
+						// under the navigation buttons
+						modifier = Modifier
+							.align(Alignment.BottomCenter)
+							.navigationBarsPadding()
+							.imePadding(),
+					)
+				}
+				DialogHost()
 			}
-			DialogHost()
 		}
 	}
 
@@ -164,7 +172,7 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 							}
 						}
 						WordTestRow(item, task.startIndex, answerFocus, lastTask,
-							listState, { pendingAnswer = it }, listIndex = index)
+							listState, { pendingAnswer = it }, listIndex = index, config = task.config)
 					}
 				}
 				item {
@@ -267,6 +275,7 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 		answerFocus: HashMap<Int, FocusRequester>, isLast: Boolean,
 		listState: LazyListState, setPendingAnswer: (Int) -> Unit,
 		listIndex: Int,
+		config: TestRunConfig = TestRunState.testConfig,
 	) {
 		Column(Modifier.fillMaxWidth()) {
 			Column(Modifier.fillMaxWidth().padding(5.dp)) {
@@ -275,9 +284,9 @@ class TestActivity : ComponentActivity(), TestRunState.Host {
 				AnswerField(
 					index,
 					when {
-						TestEngine.isReversed && TestEngine.requireAllVariants -> R.string.test_variants_translation
-						TestEngine.isReversed -> R.string.data_translate
-						TestEngine.requireAllVariants -> R.string.test_variants_word
+						config.reversed && config.requireAllVariants -> R.string.test_variants_translation
+						config.reversed -> R.string.data_translate
+						config.requireAllVariants -> R.string.test_variants_word
 						else -> R.string.data_word
 					},
 					answerFocus, isLast,

@@ -1,8 +1,7 @@
 package cz.litoj.schlmgr.unit.app
 
-import cz.litoj.schlmgr.app.AppSettings
+import cz.litoj.schlmgr.app.AppDependencies
 import cz.litoj.schlmgr.app.CrashReporter.boundReport
-import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.app.Startup.migrateStoredSettings
 import cz.litoj.schlmgr.app.Throwables.getFirstCause
 import org.junit.Assert.assertEquals
@@ -21,9 +20,11 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 class StartupTest {
 
+	private lateinit var dependencies: AppDependencies
+
 	@Before
 	fun setUp() {
-		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
+		dependencies = AppDependencies(RuntimeEnvironment.getApplication())
 	}
 
 	@Test
@@ -63,63 +64,63 @@ class StartupTest {
 
 	@Test
 	fun `the old description switch's on state converts to five lines`() {
-		AppSettings.set("doShowDesc", true)
+		dependencies.settings.set("doShowDesc", true)
 
-		migrateStoredSettings()
+		migrateStoredSettings(dependencies.settings)
 
-		assertEquals(5, AppSettings.getInt("descLines", -1))
-		assertFalse("the old key leaves with the conversion", AppSettings.has("doShowDesc"))
+		assertEquals(5, dependencies.settings.getInt("descLines", -1))
+		assertFalse("the old key leaves with the conversion", dependencies.settings.has("doShowDesc"))
 	}
 
 	@Test
 	fun `the old description switch's off state converts to zero lines`() {
-		AppSettings.set("doShowDesc", false)
+		dependencies.settings.set("doShowDesc", false)
 
-		migrateStoredSettings()
+		migrateStoredSettings(dependencies.settings)
 
-		assertEquals(0, AppSettings.getInt("descLines", -1))
+		assertEquals(0, dependencies.settings.getInt("descLines", -1))
 	}
 
 	@Test
 	fun `an absent old switch migrates nothing`() {
-		migrateStoredSettings()
+		migrateStoredSettings(dependencies.settings)
 
-		assertFalse(AppSettings.has("descLines"))
+		assertFalse(dependencies.settings.has("descLines"))
 	}
 
 	@Test
 	fun `the old default time converts to the new one`() {
-		AppSettings.set("defaultTestTime", 18)
+		dependencies.settings.set("defaultTestTime", 18)
 
-		migrateStoredSettings()
+		migrateStoredSettings(dependencies.settings)
 
-		assertEquals(1.5f, AppSettings.getFloat("testSecondsPerChar", 0f), 0f)
-		assertFalse("the old key leaves with the conversion", AppSettings.has("defaultTestTime"))
+		assertEquals(1.5f, dependencies.settings.getFloat("testSecondsPerChar", 0f), 0f)
+		assertFalse("the old key leaves with the conversion", dependencies.settings.has("defaultTestTime"))
 	}
 
 	@Test
 	fun `a changed old time keeps its ratio to the default`() {
-		AppSettings.set("defaultTestTime", 36)
+		dependencies.settings.set("defaultTestTime", 36)
 
-		migrateStoredSettings()
+		migrateStoredSettings(dependencies.settings)
 
 		assertEquals("double the old default stays double", 3.0f,
-			AppSettings.getFloat("testSecondsPerChar", 0f), 0f)
+			dependencies.settings.getFloat("testSecondsPerChar", 0f), 0f)
 	}
 
 	@Test
 	fun `a converted time keeps the one decimal of its field`() {
-		AppSettings.set("defaultTestTime", 9)
+		dependencies.settings.set("defaultTestTime", 9)
 
-		migrateStoredSettings()
+		migrateStoredSettings(dependencies.settings)
 
-		assertEquals(0.8f, AppSettings.getFloat("testSecondsPerChar", 0f), 0f)
+		assertEquals(0.8f, dependencies.settings.getFloat("testSecondsPerChar", 0f), 0f)
 	}
 
 	@Test
 	fun `an absent old time migrates nothing`() {
-		migrateStoredSettings()
+		migrateStoredSettings(dependencies.settings)
 
-		assertFalse(AppSettings.has("testSecondsPerChar"))
+		assertFalse(dependencies.settings.has("testSecondsPerChar"))
 	}
 }

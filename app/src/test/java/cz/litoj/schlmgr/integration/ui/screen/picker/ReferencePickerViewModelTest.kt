@@ -1,6 +1,7 @@
 package cz.litoj.schlmgr.integration.ui.screen.picker
 
 import androidx.room.Room
+import cz.litoj.schlmgr.app.AppDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.db.ItemKind
@@ -24,11 +25,16 @@ import kotlinx.coroutines.Dispatchers
 class ReferencePickerViewModelTest {
 
 	private lateinit var db: ItemDatabase
+	private lateinit var dependencies: AppDependencies
 
 	@Before
 	fun setUp() {
 		db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
-			.allowMainThreadQueries().build()
+			.allowMainThreadQueries()
+			.setQueryExecutor(Runnable::run)
+			.setTransactionExecutor(Runnable::run)
+			.build()
+		dependencies = AppDependencies(RuntimeEnvironment.getApplication(), db)
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 	}
@@ -46,7 +52,12 @@ class ReferencePickerViewModelTest {
 		val source = ItemRepository.createChapter(subject.id, "source", null, 1)
 		val first = ItemRepository.createWord(source.id, "one", null, listOf("1" to null))
 		val second = ItemRepository.createWord(source.id, "two", null, listOf("2" to null))
-		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined, target)
+		val model = PickerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined, target,
+			graphs = dependencies.graphQueries,
+			transfer = dependencies.itemTransfer,
+			userMessages = dependencies.userMessages,
+		)
 		model.onItemClick(model.items().single { it.item.type == ItemKind.CHAPTER && it.item.name == "A" })
 		model.onItemClick(model.items().single { it.item.name == "source" })
 		model.setSelected(model.items().single { it.item.id == first.id }, true)
@@ -71,7 +82,12 @@ class ReferencePickerViewModelTest {
 		val c2 = ItemRepository.createChapter(subject.id, "c2", null, 2)
 		val first = ItemRepository.createWord(c1.id, "one", null, listOf("1" to null))
 		val second = ItemRepository.createWord(c2.id, "two", null, listOf("2" to null))
-		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined, target)
+		val model = PickerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined, target,
+			graphs = dependencies.graphQueries,
+			transfer = dependencies.itemTransfer,
+			userMessages = dependencies.userMessages,
+		)
 		model.onItemClick(model.items().single { it.item.type == ItemKind.CHAPTER && it.item.name == "A" })
 		model.onItemClick(model.items().single { it.item.name == "c1" })
 		model.onItemLongClick(model.items().single { it.item.id == first.id })

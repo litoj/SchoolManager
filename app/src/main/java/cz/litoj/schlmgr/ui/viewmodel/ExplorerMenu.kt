@@ -11,39 +11,36 @@ import cz.litoj.schlmgr.ui.shell.MenuEntry
  */
 enum class ExplorerMenuKind { ROOT, CONTAINER, SEARCH }
 
-/**
- * More-options leaf ids, one table for every explorer host.
- * - each host answers the ids its own door offers.
- */
+/** Legacy integer widget ids, whose values and metadata live in [ExplorerAction]. */
 object MenuId {
-	const val NEW_SUBJECT = 1
-	const val NEW_CHAPTER = 2
-	const val NEW_WORD = 3
-	const val NEW_NOTE = 4
-	const val IMPORT_FILE = 6
-	const val EXPORT = 7
-	const val FLIP = 9
-	const val REFERENCE = 10
-	const val SORT_ALPHA_AZ = 11
-	const val SORT_ALPHA_ZA = 12
-	const val SORT_SF_01 = 13
-	const val SORT_SF_10 = 14
-	const val SORT_LENGTH_01 = 15
-	const val SORT_LENGTH_10 = 16
-	const val SORT_DEFAULT = 17
-	const val SORT_PRIORITY = 19
-	const val SORT_RANDOM = 31
-	const val TEST = 20
-	const val CUT = 21
-	const val EDIT = 22
-	const val GOTO = 23
-	const val DELETE = 24
-	const val CLEAR_FILTER = 25
-	const val FILTER_NAME = 26
-	const val FILTER_TYPE = 27
-	const val FILTER_RATE = 28
-	const val FILTER_TESTED = 29
-	const val SELECT_ALL = 30
+	val NEW_SUBJECT = ExplorerAction.NEW_SUBJECT.menuId
+	val NEW_CHAPTER = ExplorerAction.NEW_CHAPTER.menuId
+	val NEW_WORD = ExplorerAction.NEW_WORD.menuId
+	val NEW_NOTE = ExplorerAction.NEW_NOTE.menuId
+	val IMPORT_FILE = ExplorerAction.IMPORT_FILE.menuId
+	val EXPORT = ExplorerAction.EXPORT.menuId
+	val FLIP = ExplorerAction.FLIP.menuId
+	val REFERENCE = ExplorerAction.REFERENCE.menuId
+	val SORT_ALPHA_AZ = ExplorerAction.SORT_ALPHA_AZ.menuId
+	val SORT_ALPHA_ZA = ExplorerAction.SORT_ALPHA_ZA.menuId
+	val SORT_SF_01 = ExplorerAction.SORT_SF_01.menuId
+	val SORT_SF_10 = ExplorerAction.SORT_SF_10.menuId
+	val SORT_LENGTH_01 = ExplorerAction.SORT_LENGTH_01.menuId
+	val SORT_LENGTH_10 = ExplorerAction.SORT_LENGTH_10.menuId
+	val SORT_DEFAULT = ExplorerAction.SORT_DEFAULT.menuId
+	val SORT_PRIORITY = ExplorerAction.SORT_PRIORITY.menuId
+	val SORT_RANDOM = ExplorerAction.SORT_RANDOM.menuId
+	val TEST = ExplorerAction.TEST.menuId
+	val CUT = ExplorerAction.CUT.menuId
+	val EDIT = ExplorerAction.EDIT.menuId
+	val GOTO = ExplorerAction.GOTO.menuId
+	val DELETE = ExplorerAction.DELETE.menuId
+	val CLEAR_FILTER = ExplorerAction.CLEAR_FILTER.menuId
+	val FILTER_NAME = ExplorerAction.FILTER_NAME.menuId
+	val FILTER_TYPE = ExplorerAction.FILTER_TYPE.menuId
+	val FILTER_RATE = ExplorerAction.FILTER_RATE.menuId
+	val FILTER_TESTED = ExplorerAction.FILTER_TESTED.menuId
+	val SELECT_ALL = ExplorerAction.SELECT_ALL.menuId
 }
 
 /**
@@ -137,7 +134,7 @@ private val filterTags = linkedMapOf(
 )
 
 /** The tag of one filter leaf id, null for any other id. */
-fun filterTagOf(id: Int): SearchTag? = filterTags[id]
+fun filterTagOf(id: Int): SearchTag? = ExplorerAction.of(id)?.filterTag
 
 /** The filter icon of the header, which a blocked search mutes with the same reason. */
 private fun filterMenu(searchBlockedReason: Int) = MenuEntry(
@@ -171,13 +168,4 @@ private fun SelectionAction.menuEntry(
 )
 
 /** The more-options leaf id of one action. */
-fun menuIdOf(action: SelectionAction): Int = when (action) {
-	SelectionAction.TEST -> MenuId.TEST
-	SelectionAction.CUT -> MenuId.CUT
-	SelectionAction.EDIT -> MenuId.EDIT
-	SelectionAction.DELETE -> MenuId.DELETE
-	SelectionAction.REFERENCE -> MenuId.REFERENCE
-	SelectionAction.FLIP -> MenuId.FLIP
-	SelectionAction.GOTO -> MenuId.GOTO
-	SelectionAction.EXPORT -> MenuId.EXPORT
-}
+fun menuIdOf(action: SelectionAction): Int = action.action.menuId

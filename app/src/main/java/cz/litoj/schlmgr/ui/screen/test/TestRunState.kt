@@ -9,8 +9,13 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.Dp
+import cz.litoj.schlmgr.data.CounterService
+import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestItemModel
+import cz.litoj.schlmgr.testing.TestRunConfig
+import cz.litoj.schlmgr.testing.TestRunData
+import cz.litoj.schlmgr.testing.TestRunner
 import cz.litoj.schlmgr.testing.TestTaskModel
 import cz.litoj.schlmgr.ui.component.NumberInput
 import cz.litoj.schlmgr.ui.popup.ContinuePopup
@@ -33,6 +38,8 @@ object TestRunState {
 	/** The screen of the run, which supplies the lifetime and the screen events. */
 	interface Host {
 		val scope: CoroutineScope
+		val graphs: GraphQueries
+		val counters: CounterService
 
 		fun isAlive(): Boolean
 
@@ -52,11 +59,21 @@ object TestRunState {
 		fun onAborted()
 	}
 
-	// the timer thread reads it, so the flag must be visible across threads
+	private class ActiveRun(
+		val engine: TestEngine,
+		val graphs: GraphQueries,
+		val counters: CounterService,
+	)
+
+	// the timer thread reads it, so the run must be visible across threads
 	@Volatile
-	private var test: TestEngine? = null
+	private var run: ActiveRun? = null
+
+	var testConfig = TestRunConfig.current()
 
 	private val _items = mutableStateListOf<TestItemModel>()
+
+	var testSetup = TestSetupState.shared
 
 	/** The items of the run, a snapshot list, so a landing recomposes. */
 	val items: List<TestItemModel> = _items
@@ -79,10 +96,10 @@ object TestRunState {
 
 	// the timer thread posts through it, so the posts must outlive any one screen.
 	// this works like the old runOnUiThread on the activity
-	private val mainHandler = Handler(Looper.getMainLooper())
+	private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
 
 	/** Whether a run is showing, since a fresh screen starts one when not. */
-	fun hasRun(): Boolean = test != null
+	fun hasRun(): Boolean = run != null
 
 	fun setAnswer(index: Int, text: String) {
 		_answers[index] = text
@@ -147,15 +164,19 @@ object TestRunState {
 		if (walking === host) return
 		walking = host
 		// an empty field falls back to the setting of the engine
-		val amount = (TestSetupState.amountText.toIntOrNull() ?: 0)
+		val amount = (testSetup.amountText.toIntOrNull() ?: 0)
 			.takeIf { it >= 1 } ?: TestEngine.amount
-		val perChar = NumberInput.amount(TestSetupState.timeText) ?: TestEngine.getSecondsPerChar()
+		val perChar = NumberInput.amount(testSetup.timeText) ?: TestEngine.getSecondsPerChar()
+		val graphs = host.graphs
+		val counters = host.counters
 		host.scope.launch(Dispatchers.IO) {
 			// the picked sources are container chains, with the root first.
 			// - the selected item comes last.
 			// - the engine turns a selected word into a direct entry.
 			// - it turns a selected chapter into its words
-			val src = TestEngine.convertAll(TestSetupState.sourceSnapshot())
+			val config = TestRunConfig.current()
+			val runData = TestRunData.read(testSetup.sourceSnapshot(), graphs)
+			val src = runData.entries
 			if (src.isEmpty()) {
 				mainHandler.post {
 					if (walking !== host) return@post
@@ -166,13 +187,13 @@ object TestRunState {
 				}
 				return@launch
 			}
-			val newTest = TestEngine()
+			val newTest = TestEngine(runData::parentsOf)
 			newTest.setTested(
 				amount,
 				{ sl ->
-					if (test !== newTest) return@setTested false
+					if (run?.engine !== newTest) return@setTested false
 					mainHandler.post {
-						if (test !== newTest) return@post
+						if (run?.engine !== newTest) return@post
 						if (sl > 0) secondsLeft = sl
 						else {
 							// a rotation replaced the host that started the countdown
@@ -185,9 +206,10 @@ object TestRunState {
 				},
 				perChar,
 				src,
+				config,
 			)
 			val models = newTest.getTestSrc().map { TestItemModel(it) }
-			val tasks = TestTaskModel.flatten(models, newTest.getTestGroups())
+			val tasks = TestTaskModel.flatten(models, newTest.getTestGroups(), config)
 			mainHandler.post {
 				if (walking !== host) return@post
 				walking = null
@@ -198,7 +220,8 @@ object TestRunState {
 				_items.addAll(models)
 				taskGroups = tasks
 				answerCount = tasks.sumOf { it.answerFields.size }
-				test = newTest
+				run = ActiveRun(newTest, graphs, counters)
+				testConfig = config
 				newTest.startTest()
 				if (!host.isForeground()) newTest.pauseTest()
 			}
@@ -208,18 +231,18 @@ object TestRunState {
 	/** The per-item checks and stat re-reads run off the main thread. */
 	fun submit(host: Host) {
 		closeQuestion()
-		val current = test ?: return
+		val current = run ?: return
 		// the run is over for the engine.
 		// so a second submit or a late timer tick finds nothing to grade
-		test = null
-		current.stopTest()
+		run = null
+		current.engine.stopTest()
 		val typed = _answers.toMap()
 		// snapshot on main, since the io grading must not iterate the live list.
 		// a back-press exit during grading clears it here
 		val items = _items.toList()
 		val tasks = taskGroups.toList()
 		host.scope.launch(Dispatchers.IO) {
-			// assignment and grading read the prompt links, so both stay off main
+			val runner = TestRunner(current.engine, current.counters)
 			val answersByOwner = mutableMapOf<TestItemModel, MutableList<String>>()
 			val typedByOwner = mutableMapOf<TestItemModel, MutableList<String>>()
 			for (task in tasks) {
@@ -237,14 +260,14 @@ object TestRunState {
 			var success = 0
 			items.forEachIndexed { index, tim ->
 				val answers = answersByOwner[tim].orEmpty()
-				val correct = current.isAnswer(index, answers, tim.translations)
+				val correct = runner.answer(index, answers, tim.translations)
 				if (correct) success++
 				tim.correct = correct
 				// the results show what was typed, not the grading assignment
 				tim.answers = typedByOwner[tim].orEmpty()
-				// the engine wrote the counter updates of the answer itself.
+				// the runner wrote the counter updates of the answer itself.
 				// so re-read for the results
-				tim.refreshStats()
+				current.graphs.get(tim.entry.word.id)?.let(tim::refreshStats)
 			}
 			mainHandler.post {
 				if (!host.isAlive()) return@post
@@ -256,12 +279,12 @@ object TestRunState {
 
 	/** The app left the front, so the countdown holds its remaining time. */
 	fun pause() {
-		test?.pauseTest()
+		run?.engine?.pauseTest()
 	}
 
 	/** The app returned, so the countdown continues where it held. */
 	fun resume() {
-		test?.resumeTest()
+		run?.engine?.resumeTest()
 	}
 
 	/**
@@ -272,8 +295,8 @@ object TestRunState {
 	fun reset() {
 		closeQuestion()
 		host = null
-		test?.stopTest()
-		test = null
+		run?.engine?.stopTest()
+		run = null
 		// a walk still in flight lands into nothing, an exited screen left it behind
 		walking = null
 		secondsLeft = 0
@@ -281,6 +304,7 @@ object TestRunState {
 		_items.clear()
 		taskGroups = emptyList()
 		answerCount = 0
+		testConfig = TestRunConfig.current()
 	}
 }
 

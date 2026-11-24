@@ -12,8 +12,8 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
-import cz.litoj.schlmgr.app.GlobalDependencies
-import cz.litoj.schlmgr.app.AppSettings
+import cz.litoj.schlmgr.app.Settings
+import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.ui.screen.settings.SettingsScreen
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction.DELETE
@@ -40,17 +40,20 @@ class SettingsScreenTest {
 	val rule = createComposeRule()
 
 	private lateinit var model: SettingsViewModel
+	private lateinit var settings: Settings
+	private lateinit var userMessages: UserMessages
 
 	@Before
 	fun setUp() {
-		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
+		settings = Settings(RuntimeEnvironment.getApplication())
+		userMessages = UserMessages(RuntimeEnvironment.getApplication())
 		// the engine survives between tests, so the direction pin starts from the word
 		TestEngine.applyReversed(false)
 		TestEngine.applyIgnoredMistakes("")
-		AppSettings.set("reverseTest", false)
-		AppSettings.set("testIgnoredMistakes", "")
-		model = SettingsViewModel()
-		rule.setContent { SettingsScreen(model) {} }
+		settings.set("reverseTest", false)
+		settings.set("testIgnoredMistakes", "")
+		model = SettingsViewModel(settings)
+		rule.setContent { SettingsScreen(model, userMessages) {} }
 		rule.waitForIdle()
 	}
 

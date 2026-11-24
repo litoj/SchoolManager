@@ -2,6 +2,9 @@ package cz.litoj.schlmgr.data.transfer
 
 import android.content.Context
 import android.net.Uri
+import cz.litoj.schlmgr.app.Startup
+import cz.litoj.schlmgr.data.DataExchangeService
+import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.data.db.DbItem
 
 enum class ImportKind {
@@ -46,13 +49,15 @@ object ImporterFactory {
 		onRootReload: () -> Unit,
 		onCurrentReload: () -> Unit,
 		onContainerReload: () -> Unit,
+		dataExchange: DataExchangeService = Startup.dependencies.dataExchange,
+		graphs: GraphQueries = Startup.dependencies.graphQueries,
 	): FileWorker {
 		val jsonContent = FileGateway.startsAsJson(appContext, uri)
 		val name = fileName.ifEmpty { FileGateway.displayName(appContext, uri, "") }
 		return create(
 			appContext, postToUi, uri, name, jsonContent,
 			targetFor(openContainer()), openContainer, atRoot,
-			onRootReload, onCurrentReload, onContainerReload,
+			onRootReload, onCurrentReload, onContainerReload, dataExchange, graphs,
 		)
 	}
 
@@ -72,12 +77,18 @@ object ImporterFactory {
 		onRootReload: () -> Unit,
 		onCurrentReload: () -> Unit,
 		onContainerReload: () -> Unit,
+		dataExchange: DataExchangeService = Startup.dependencies.dataExchange,
+		graphs: GraphQueries = Startup.dependencies.graphQueries,
 	): FileWorker = when (decide(jsonContent, target)) {
-		ImportKind.WORD_INTO_CONTAINER ->
-			WordIntoContainerImport(appContext, postToUi, uri, fileName, openContainer, atRoot, onRootReload, onContainerReload)
+		ImportKind.WORD_INTO_CONTAINER -> WordIntoContainerImport(
+			appContext, postToUi, uri, fileName, openContainer, atRoot,
+			onRootReload, onContainerReload, dataExchange, graphs,
+		)
 		ImportKind.WORD_AS_SUBJECT ->
-			WordAsSubjectImport(appContext, postToUi, uri, fileName, onRootReload)
-		ImportKind.JSON_TREE ->
-			JsonTreeImport(appContext, postToUi, uri, openContainer, atRoot, onRootReload, onCurrentReload)
+			WordAsSubjectImport(appContext, postToUi, uri, fileName, onRootReload, dataExchange)
+		ImportKind.JSON_TREE -> JsonTreeImport(
+			appContext, postToUi, uri, openContainer, atRoot,
+			onRootReload, onCurrentReload, dataExchange, graphs,
+		)
 	}
 }

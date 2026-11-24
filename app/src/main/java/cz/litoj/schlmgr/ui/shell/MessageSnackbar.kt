@@ -21,8 +21,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.app.UiNotice
+import cz.litoj.schlmgr.app.UserMessages
+import cz.litoj.schlmgr.app.UserMessages.UiMessage
 import cz.litoj.schlmgr.ui.popup.MessagePopup
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -30,27 +31,27 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 
 /**
- * Renders [GlobalDependencies.messages] as snackbars, with a full text, share or undo action.
+ * Renders [UserMessages.messages] as snackbars, with a full text, share or undo action.
  * - the full text action opens the [MessagePopup] dialog with the whole text.
  * - every activity composes it, so a worker-thread report shows on the foreground screen.
  * - the flow delivers only while it is collected.
  */
 @Composable
-fun messageSnackbarHost(): SnackbarHostState {
+fun messageSnackbarHost(userMessages: UserMessages): SnackbarHostState {
 	val snackbar = remember { SnackbarHostState() }
 	val ctx = LocalContext.current
 	val fullTextLabel = stringResource(R.string.action_full_text)
 	val shareLabel = stringResource(R.string.action_share)
 	val undoLabel = stringResource(R.string.action_undo)
 	val lifecycle = LocalLifecycleOwner.current.lifecycle
-	LaunchedEffect(snackbar, lifecycle) {
+	LaunchedEffect(snackbar, lifecycle, userMessages) {
 		// a paused activity never consumes a message, and it never queues another copy
 		lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
 			// only the last undoable message undoes, while the loop below sits in a showing snackbar.
 			// so it needs its own collector, and the host still queues it behind other messages
 			launch {
-				GlobalDependencies.messages
-					.filterIsInstance<GlobalDependencies.UiMessage.Undoable>()
+				userMessages.messages
+					.filterIsInstance<UiMessage.Undoable>()
 					.collectLatest { msg ->
 						val (text) = noticeMessage(ctx, msg.notice)
 						val action = snackbar.showSnackbar(
@@ -58,10 +59,10 @@ fun messageSnackbarHost(): SnackbarHostState {
 						if (action == SnackbarResult.ActionPerformed) msg.onUndo()
 					}
 			}
-			GlobalDependencies.messages.collect { msg ->
+			userMessages.messages.collect { msg ->
 				// notices resolve here at display time, never at the reporter
 				when (msg) {
-					is GlobalDependencies.UiMessage.Text -> {
+					is UiMessage.Text -> {
 						val action = if (msg.fullText != msg.text)
 							snackbar.showSnackbar(
 								msg.text, msg.actionLabel ?: fullTextLabel,
@@ -69,7 +70,7 @@ fun messageSnackbarHost(): SnackbarHostState {
 						else snackbar.showSnackbar(msg.text, duration = SnackbarDuration.Indefinite)
 						if (action == SnackbarResult.ActionPerformed) MessagePopup(msg.text, msg.fullText)
 					}
-					is GlobalDependencies.UiMessage.Notice -> {
+					is UiMessage.Notice -> {
 						val (text, fullText, actionLabel) = noticeMessage(ctx, msg.notice)
 						val action = if (fullText != text)
 							snackbar.showSnackbar(
@@ -78,9 +79,9 @@ fun messageSnackbarHost(): SnackbarHostState {
 						else snackbar.showSnackbar(text, duration = SnackbarDuration.Indefinite)
 						if (action == SnackbarResult.ActionPerformed) MessagePopup(text, fullText)
 					}
-					is GlobalDependencies.UiMessage.Undoable -> Unit
-					is GlobalDependencies.UiMessage.SendFile -> shareFile(ctx, msg.uri, msg.mime)
-					is GlobalDependencies.UiMessage.ShareFile -> {
+					is UiMessage.Undoable -> Unit
+					is UiMessage.SendFile -> shareFile(ctx, msg.uri, msg.mime)
+					is UiMessage.ShareFile -> {
 						val action = snackbar.showSnackbar(
 							msg.text, shareLabel, duration = SnackbarDuration.Indefinite)
 						if (action == SnackbarResult.ActionPerformed)

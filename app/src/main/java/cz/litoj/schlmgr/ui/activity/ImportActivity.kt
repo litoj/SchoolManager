@@ -9,10 +9,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cz.litoj.schlmgr.app.AppDependencies
 import cz.litoj.schlmgr.ui.popup.DialogHost
+import cz.litoj.schlmgr.ui.popup.LocalUserMessages
 import cz.litoj.schlmgr.ui.screen.importer.ImportTargetScreen
 import cz.litoj.schlmgr.ui.screen.importer.ImportTargetViewModel
 import cz.litoj.schlmgr.ui.shell.NotificationPermissionPrompt
@@ -26,28 +29,39 @@ import cz.litoj.schlmgr.ui.shell.StatusBarBand
 class ImportActivity : ComponentActivity() {
 
 	private val importUri = mutableStateOf<Uri?>(null)
+	private lateinit var dependencies: AppDependencies
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
-		startAppShell()
+		dependencies = startAppShell()
 		importUri.value = sharedUri(intent)
 		if (importUri.value == null) finish()
 		setContent {
 			val uri = importUri.value ?: return@setContent
-			// keyed by the uri, so a second share swaps the mover of the open document
-			val vm: ImportTargetViewModel = viewModel(key = uri.toString()) {
-				ImportTargetViewModel(uri)
+			CompositionLocalProvider(LocalUserMessages provides dependencies.userMessages) {
+				// keyed by the uri, so a second share swaps the mover of the open document
+				val vm: ImportTargetViewModel = viewModel(key = uri.toString()) {
+					ImportTargetViewModel(
+						uri,
+						appContext = dependencies.appContext,
+						settings = dependencies.settings,
+						dataExchange = dependencies.dataExchange,
+						graphs = dependencies.graphQueries,
+					)
+				}
+				Box(Modifier.fillMaxSize()) {
+					ImportTargetScreen(
+						vm,
+						settings = dependencies.settings,
+						userMessages = dependencies.userMessages,
+						onExit = { finish() },
+						onDone = { path -> openMain(path) },
+					)
+					StatusBarBand()
+				}
+				DialogHost()
+				NotificationPermissionPrompt(dependencies.settings)
 			}
-			Box(Modifier.fillMaxSize()) {
-				ImportTargetScreen(
-					vm,
-					onExit = { finish() },
-					onDone = { path -> openMain(path) },
-				)
-				StatusBarBand()
-			}
-			DialogHost()
-			NotificationPermissionPrompt()
 		}
 	}
 

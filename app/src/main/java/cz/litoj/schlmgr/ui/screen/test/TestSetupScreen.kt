@@ -46,6 +46,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.ui.activity.TestActivity
 import cz.litoj.schlmgr.ui.component.HairlineDivider
 import cz.litoj.schlmgr.ui.component.IconSize
@@ -72,6 +73,7 @@ import cz.litoj.schlmgr.ui.shell.headerShadow
 @Composable
 fun TestSetupScreen(
 	viewModel: TestSetupViewModel,
+	userMessages: UserMessages,
 	openPicker: () -> Unit,
 	openDrawer: () -> Unit,
 ) {
@@ -100,12 +102,13 @@ fun TestSetupScreen(
 	Column(Modifier.fillMaxSize()) {
 		TopBar {
 			TopBarNav(
+				userMessages = userMessages,
 				onNavigate = openDrawer,
 				contentDescription = stringResource(R.string.menu_label),
 			)
 			TopBarTitle(stringResource(R.string.select_test))
 		}
-		TestSetupContent(viewModel, Modifier.weight(1f).headerShadow())
+		TestSetupContent(viewModel, userMessages, Modifier.weight(1f).headerShadow())
 	}
 }
 
@@ -114,31 +117,35 @@ fun TestSetupScreen(
  * - answers live in [TestSetupState], and behaviour in [TestSetupViewModel].
  */
 @Composable
-private fun TestSetupContent(viewModel: TestSetupViewModel, modifier: Modifier = Modifier) {
+private fun TestSetupContent(
+	viewModel: TestSetupViewModel,
+	userMessages: UserMessages,
+	modifier: Modifier = Modifier,
+) {
 	val keyboard = LocalSoftwareKeyboardController.current
-	val hasSources = TestSetupState.hasSources()
+	val hasSources = viewModel.testSetup.hasSources()
 	Box(modifier.fillMaxSize()) {
 		Column(Modifier.fillMaxSize()) {
 			SettingNumberRow(
-				stringResource(R.string.test_size), TestSetupState.amountText,
+				stringResource(R.string.test_size), viewModel.testSetup.amountText,
 				viewModel::setAmount,
 				{ viewModel.restoreAmount(); keyboard?.hide() },
-				caption = amountCaption(),
+				caption = amountCaption(viewModel.testSetup),
 			)
 			HairlineDivider()
 			SettingNumberRow(
-				stringResource(R.string.test_time), TestSetupState.timeText,
+				stringResource(R.string.test_time), viewModel.testSetup.timeText,
 				viewModel::setTime,
 				{ viewModel.restoreTime(); keyboard?.hide() },
 				// the caption times the whole run, the field holds one character's share
-				caption = stringResource(R.string.test_total_time, TestSetupState.timeSeconds()),
+				caption = stringResource(R.string.test_total_time, viewModel.testSetup.timeSeconds()),
 				keyboardType = KeyboardType.Decimal,
 			)
 			HairlineDivider()
-			DirectionRow(TestSetupState.reverseTest, viewModel::toggleReverse)
+			DirectionRow(viewModel.testSetup.reverseTest, viewModel::toggleReverse)
 			HairlineDivider()
 			SettingSwitchRow(
-				stringResource(R.string.test_clever), TestSetupState.cleverTest, viewModel::toggleClever,
+				stringResource(R.string.test_clever), viewModel.testSetup.cleverTest, viewModel::toggleClever,
 				caption = stringResource(R.string.test_clever_hint),
 			)
 			HairlineDivider()
@@ -151,22 +158,23 @@ private fun TestSetupContent(viewModel: TestSetupViewModel, modifier: Modifier =
 				// a fully picked hierarchy keeps it, muted, since nothing is left to add
 				item {
 					AddSourceTile(
+						userMessages = userMessages,
 						blockedReason = if (viewModel.hierarchyPicked())
 							R.string.unavailable_add_source_full else 0,
 						onAdd = viewModel::openPicker,
 					)
 				}
 				// the chains are dedup-distinct, so each list is its own collision-free key
-				items(TestSetupState.list, key = { it }) { chain ->
-					SourceRow(chain.toSourceRowUi()) { viewModel.removeSource(chain) }
+				items(viewModel.testSetup.list, key = { it }) { chain ->
+					SourceRow(chain.toSourceRowUi(viewModel.testSetup)) { viewModel.removeSource(chain) }
 				}
 			}
 		}
-		val hasSources = TestSetupState.hasSources()
+		val hasSources = viewModel.testSetup.hasSources()
 		Button(
 			onClick = {
 				if (hasSources) viewModel.startTest()
-				else reportUnavailable(R.string.test_start_blocked)
+				else reportUnavailable(userMessages, R.string.test_start_blocked)
 			},
 			colors = ButtonDefaults.buttonColors(
 				backgroundColor = colorResource(R.color.colorPrimaryHeader),
@@ -210,10 +218,10 @@ private fun SourcesHeader(canClear: Boolean, onClear: () -> Unit) {
 
 /** The pool caption, where a larger default amount still tests only what exists. */
 @Composable
-private fun amountCaption(): String? {
-	val pool = TestSetupState.poolCount
+private fun amountCaption(setup: TestSetupState): String? {
+	val pool = setup.poolCount
 	if (pool <= 0) return null
-	val wanted = TestSetupState.amountText.toIntOrNull() ?: 0
+	val wanted = setup.amountText.toIntOrNull() ?: 0
 	return if (wanted > pool)
 		pluralStringResource(R.plurals.test_available_limited, pool, pool)
 	else pluralStringResource(R.plurals.test_available, pool, pool)
@@ -275,7 +283,7 @@ private fun SourceRow(row: SourceRowUi, onRemove: () -> Unit) {
  * - a fully picked hierarchy mutes it and explains the tap.
  */
 @Composable
-private fun AddSourceTile(blockedReason: Int, onAdd: () -> Unit) {
+private fun AddSourceTile(userMessages: UserMessages, blockedReason: Int, onAdd: () -> Unit) {
 	val enabled = blockedReason == 0
 	val density = LocalDensity.current
 	val border = colorResource(R.color.colorPrimaryFg).copy(alpha = if (enabled) 0.5f else 0.25f)
@@ -298,7 +306,7 @@ private fun AddSourceTile(blockedReason: Int, onAdd: () -> Unit) {
 			.drawBehind {
 				drawRoundRect(color = border, style = stroke, cornerRadius = CornerRadius(corner))
 			}
-			.clickable { if (enabled) onAdd() else reportUnavailable(blockedReason) }
+			.clickable { if (enabled) onAdd() else reportUnavailable(userMessages, blockedReason) }
 			.padding(6.dp),
 		verticalAlignment = Alignment.CenterVertically,
 		horizontalArrangement = Arrangement.Center,

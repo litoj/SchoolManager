@@ -32,7 +32,7 @@ class SearchBatchTest {
 	}
 
 	private fun rows(count: Int) = (1..count).map { i ->
-		ItemRow(DbItem(name = "hit$i", description = "", type = ItemKind.WORD), null, i, false)
+		ItemRow(DbItem(name = "hit$i", description = "", type = ItemKind.WORD), null, i)
 	}
 
 	private fun drain(vm: TestExplorerViewModel, rows: List<ItemRow>) {
@@ -75,7 +75,7 @@ class SearchBatchTest {
 		// continue from the live size, not its stale run-global positions
 		vm.load(rows(2), isSearch = true)
 		val batch = rows(2).map { it.item.copy(id = 100 + it.item.id) }
-			.map { ItemRow(it, null, 99, false) }
+			.map { ItemRow(it, null, 99) }
 
 		drain(vm, batch)
 

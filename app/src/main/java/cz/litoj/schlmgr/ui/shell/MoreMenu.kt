@@ -26,6 +26,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.ui.component.IconSize
 import cz.litoj.schlmgr.ui.component.reportUnavailable
 
@@ -51,12 +52,13 @@ fun MenuHost(
 	entries: List<MenuEntry>,
 	onPick: (Int) -> Unit,
 	modifier: Modifier = Modifier,
+	userMessages: UserMessages,
 	button: @Composable (open: () -> Unit) -> Unit,
 ) {
 	var open by remember { mutableStateOf(false) }
 	Box(modifier) {
 		button { open = true }
-		if (open) MoreMenu(entries, { open = false; onPick(it) }) { open = false }
+		if (open) MoreMenu(entries, { open = false; onPick(it) }, userMessages) { open = false }
 	}
 }
 
@@ -66,7 +68,12 @@ fun MenuHost(
  * - the back row returns to the top level, with a single state and no stacked popups.
  */
 @Composable
-private fun MoreMenu(entries: List<MenuEntry>, onPick: (Int) -> Unit, onDismiss: () -> Unit) {
+private fun MoreMenu(
+	entries: List<MenuEntry>,
+	onPick: (Int) -> Unit,
+	userMessages: UserMessages,
+	onDismiss: () -> Unit,
+) {
 	// the M2 dropdown reads MaterialTheme colours, but the app carries no theme.
 	// so supply the two it reads, and the resources resolve the day/night variant
 	MaterialTheme(
@@ -81,14 +88,14 @@ private fun MoreMenu(entries: List<MenuEntry>, onPick: (Int) -> Unit, onDismiss:
 			if (sub == null) {
 				for (entry in entries) {
 					if (entry.children.isEmpty()) {
-						MenuLeaf(entry) { onDismiss(); onPick(entry.id) }
+						MenuLeaf(entry, userMessages) { onDismiss(); onPick(entry.id) }
 					} else {
-						MenuParentRow(entry) { openSub = entry }
+						MenuParentRow(entry, userMessages) { openSub = entry }
 					}
 				}
 			} else {
 				MenuBackRow(sub) { openSub = null }
-				for (child in sub.children) MenuLeaf(child) {
+				for (child in sub.children) MenuLeaf(child, userMessages) {
 					onDismiss()
 					onPick(child.id)
 				}
@@ -98,9 +105,9 @@ private fun MoreMenu(entries: List<MenuEntry>, onPick: (Int) -> Unit, onDismiss:
 }
 
 @Composable
-private fun MenuLeaf(entry: MenuEntry, onClick: () -> Unit) {
+private fun MenuLeaf(entry: MenuEntry, userMessages: UserMessages, onClick: () -> Unit) {
 	DropdownMenuItem(
-		onClick = { if (entry.enabled) onClick() else reportUnavailable(entry.blockedReason) },
+		onClick = { if (entry.enabled) onClick() else reportUnavailable(userMessages, entry.blockedReason) },
 		enabled = true,
 	) {
 		MenuIcon(entry)
@@ -113,10 +120,10 @@ private fun MenuLeaf(entry: MenuEntry, onClick: () -> Unit) {
 }
 
 @Composable
-private fun MenuParentRow(entry: MenuEntry, onClick: () -> Unit) {
+private fun MenuParentRow(entry: MenuEntry, userMessages: UserMessages, onClick: () -> Unit) {
 	DropdownMenuItem(
 		onClick = {
-			if (entry.enabled) onClick() else reportUnavailable(entry.blockedReason)
+			if (entry.enabled) onClick() else reportUnavailable(userMessages, entry.blockedReason)
 		},
 	) {
 		MenuIcon(entry)

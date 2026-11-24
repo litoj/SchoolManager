@@ -33,7 +33,7 @@ abstract class ItemDatabase : RoomDatabase() {
 				// - the low-RAM fallback uses TRUNCATE with one connection.
 				// - a long import holds the sole connection, and every read waits behind it.
 				.setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
-				.allowMainThreadQueries() // the UI layer is synchronous, see ItemRepository
+				.allowMainThreadQueries() // the startup boundary and test dispatchers may use the main thread
 				.build()
 		}
 	}

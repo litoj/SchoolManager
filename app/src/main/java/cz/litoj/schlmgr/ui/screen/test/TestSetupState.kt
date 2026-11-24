@@ -5,10 +5,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
 import androidx.compose.runtime.toMutableStateList
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
-import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestEntry
 import cz.litoj.schlmgr.ui.component.NumberInput
@@ -16,13 +16,14 @@ import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 
 /**
- * Process-wide state of a test being set up.
- * - it holds the picked source chains and the amount, duration, reverse and content answers.
- * - written only through the doors of this object, so the dedup pass cannot be forgotten.
- * - source doors serialize because the explorer, picker and setup use independent IO coroutines.
- * - reset happens only on a genuine fresh entry.
+ * One setup session, whose lifecycle belongs to the shell navigation owner.
+ * - [TestSetupState.shared] is the compatibility instance for callers outside it.
  */
-object TestSetupState {
+class TestSetupState {
+
+	companion object {
+		val shared = TestSetupState()
+	}
 
 	/**
 	 * Set when the setup screen launches the picker, and consumed by its fresh-entry check.
@@ -123,6 +124,7 @@ object TestSetupState {
 	@Synchronized
 	fun reset() {
 		clearSources()
+		sourceEntries.clear()
 		amountText = TestEngine.amount.toString()
 		timeText = TestEngine.getSecondsPerChar().toString()
 		reverseTest = TestEngine.isReversed
@@ -141,7 +143,7 @@ object TestSetupState {
 	}
 
 	/**
-	 * The counts of the setup captions, which read the database.
+	 * The counts of the setup captions, from the captured source entries.
 	 * - the pool dedups, the single source counts may overlap.
 	 * - the caller keeps it off main, like the mutation doors.
 	 */
@@ -153,7 +155,8 @@ object TestSetupState {
 		val seen = HashSet<Int>()
 		val pool = ArrayList<TestEntry>()
 		_list.forEach { chain ->
-			val entries = TestEngine.convertAll(listOf(chain), childrenLookup)
+			val entries = sourceEntries[chain]
+				?: childrenLookup?.let { lookup -> TestEngine.convertAll(listOf(chain), lookup) }.orEmpty()
 			val ids = entries.mapTo(HashSet()) { it.word.id }
 			sourceWordIds[chain] = ids
 			_sourceCounts[chain] = ids.size
@@ -168,8 +171,11 @@ object TestSetupState {
 	@Synchronized
 	fun sourceSnapshot(): List<List<DbItem>> = _list.toList()
 
-	// the unit tests replace it with a fake tree, since the doors own the count refresh
-	internal var childrenLookup: (Int) -> List<DbItem> = ItemRepository::children
+	/** Entries stay available to an outstanding Undo even after Clear empties the visible sources. */
+	private val sourceEntries = mutableMapOf<List<DbItem>, List<TestEntry>>()
+
+	// the unit tests replace it with a fake tree, production doors supply captured entries instead
+	internal var childrenLookup: ((Int) -> List<DbItem>)? = null
 
 	/**
 	 * The seconds of the total-time caption, where an empty field takes the setting.
@@ -201,18 +207,23 @@ object TestSetupState {
 	/**
 	 * A multi-subject selection is refused whole, and the foreign rows return.
 	 * - a picked chapter covers the words in it, so the chains dedup.
-	 * - [chainOfSeed] reads the database, so callers stay off main with snapshotted seeds.
+	 * - callers supply captured parent paths and entries, so this mutation performs no reads.
 	 */
 	@Synchronized
-	fun fillFromSelection(seeds: List<ChainSeed>): List<ItemRow> {
+	fun fillFromSelection(
+		seeds: List<ChainSeed>, parentPaths: Map<Int, List<DbItem>> = emptyMap(),
+		entries: Map<List<DbItem>, List<TestEntry>> = emptyMap(),
+	): List<ItemRow> {
 		if (seeds.isEmpty()) return emptyList()
-		val chains = seeds.map { it.row to chainOfSeed(it) }
+		val chains = seeds.map { it.row to chainOfSeed(it, parentPaths) }
 		val subject = chains[0].second[0].id
 		val foreign = chains.filter { it.second[0].id != subject }.map { it.first }
 		if (foreign.isNotEmpty()) return foreign
 		_list.clear()
 		_list.addAll(chains.map { it.second })
 		dedup(_list)
+		sourceEntries.clear()
+		sourceEntries.putAll(entries)
 		refreshCounts()
 		return emptyList()
 	}
@@ -221,17 +232,21 @@ object TestSetupState {
 	 * The picker Select: prepends the chains of the selected rows, so new picks lead.
 	 * - the pick is whole or nothing, so other-subject rows are refused with nothing added.
 	 * - the picker then reports and stays open.
-	 * - [chainOfSeed] reads the database, so callers stay off main with snapshotted seeds.
+	 * - callers supply captured parent paths and entries, so this mutation performs no reads.
 	 */
 	@Synchronized
-	fun addPicked(seeds: List<ChainSeed>): List<ItemRow> {
+	fun addPicked(
+		seeds: List<ChainSeed>, parentPaths: Map<Int, List<DbItem>> = emptyMap(),
+		entries: Map<List<DbItem>, List<TestEntry>> = emptyMap(),
+	): List<ItemRow> {
 		if (seeds.isEmpty()) return emptyList()
-		val chains = seeds.map { it.row to chainOfSeed(it) }
+		val chains = seeds.map { it.row to chainOfSeed(it, parentPaths) }
 		val subject = pickedSubject()?.id ?: chains[0].second[0].id
 		val foreign = chains.filter { it.second[0].id != subject }.map { it.first }
 		if (foreign.isNotEmpty()) return foreign
 		_list.addAll(0, chains.map { it.second })
 		dedup(_list)
+		sourceEntries.putAll(entries)
 		refreshCounts()
 		return emptyList()
 	}
@@ -261,6 +276,7 @@ object TestSetupState {
 	 */
 	@Synchronized
 	fun restoreSource(chain: List<DbItem>, index: Int): Boolean {
+		if (chain !in sourceEntries && childrenLookup == null) return false
 		val subject = pickedSubject()
 		if (subject != null && subject.id != chain[0].id) return false
 		_list.add(index.coerceAtMost(_list.size), chain)
@@ -277,13 +293,13 @@ object TestSetupState {
 	/**
 	 * The root comes first and the picked item last.
 	 * - the seed of a search row carries the chain of its hit already.
-	 * - the seed of a browse row rebuilds it from the selected-under parent.
+	 * - the seed of a browse row takes its selected-under parent from [parentPaths].
 	 * - multi-parent items use that parent.
 	 */
-	fun chainOfSeed(seed: ChainSeed): List<DbItem> {
+	fun chainOfSeed(seed: ChainSeed, parentPaths: Map<Int, List<DbItem>> = emptyMap()): List<DbItem> {
 		seed.path?.let { return it + seed.item }
 		val parentId = seed.parentId ?: return listOf(seed.item)
-		return ItemRepository.pathTo(parentId) + seed.item
+		return parentPaths.getValue(parentId) + seed.item
 	}
 
 	/**
@@ -323,6 +339,10 @@ object TestSetupState {
 	}
 }
 
+internal class TestSetupOwner : ViewModel() {
+	val state = TestSetupState()
+}
+
 /**
  * The presentation of one picked source chain, the single mapping place.
  * - so the rows of the setup screen stay free of database imports.
@@ -330,7 +350,7 @@ object TestSetupState {
  */
 data class SourceRowUi(val kind: RowKind, val displayName: String, val words: Int)
 
-fun List<DbItem>.toSourceRowUi() = SourceRowUi(
+fun List<DbItem>.toSourceRowUi(setup: TestSetupState = TestSetupState.shared) = SourceRowUi(
 	kind = when {
 		size == 1 -> RowKind.SUBJECT
 		last().type == ItemKind.WORD -> RowKind.WORD
@@ -338,5 +358,5 @@ fun List<DbItem>.toSourceRowUi() = SourceRowUi(
 		else -> RowKind.CHAPTER
 	},
 	displayName = ItemRow.nameParser(last().name),
-	words = TestSetupState.sourceCounts[this] ?: 0,
+	words = setup.sourceCounts[this] ?: 0,
 )

@@ -1,10 +1,13 @@
 package cz.litoj.schlmgr.ui.screen.picker
 
 import androidx.lifecycle.viewModelScope
+import cz.litoj.schlmgr.app.Settings
 import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.app.UserMessages
-import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.data.GraphQueries
+import cz.litoj.schlmgr.data.ItemTransferService
 import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.testing.TestRunData
 import cz.litoj.schlmgr.ui.screen.test.TestSetupState
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
@@ -21,7 +24,14 @@ class PickerViewModel(
 	start: NavigationHistory,
 	io: CoroutineDispatcher = Dispatchers.IO,
 	private val referenceTarget: DbItem? = null,
-) : ExplorerViewModel<PickerViewModel.Request>(NavigationHistory(start), picker = true, io = io) {
+	settings: Settings? = null,
+	private val userMessages: UserMessages,
+	graphs: GraphQueries? = null,
+	private val transfer: ItemTransferService? = null,
+	private val testSetup: TestSetupState = TestSetupState.shared,
+) : ExplorerViewModel<PickerViewModel.Request>(
+	NavigationHistory(start), picker = true, io = io, settings = settings, graphs = graphs,
+) {
 
 	/** True when the pick wrote references, so the source screen refreshes only then. */
 	var didReference = false
@@ -51,23 +61,31 @@ class PickerViewModel(
 	fun onSelect() {
 		// a hit carries its own chain, a browse row rebuilds it from the parent it was picked under.
 		// - read on the main thread, before the dispatcher switch
-		val picked = gatheredRowsForClose().map(TestSetupState::seedOf)
+		val picked = gatheredRowsForClose().map(testSetup::seedOf)
 		viewModelScope.launch {
 			if (referenceTarget != null) {
 				val accepted = withContext(io) {
-					ItemRepository.referenceAll(picked.map { it.item.id }, referenceTarget.id)
+					checkNotNull(transfer).referenceAll(picked.map { it.item.id }, referenceTarget.id)
 				}
 				if (!accepted) {
-					UserMessages.showNotice(UiNotice.PasteInsideItself)
+					userMessages.showNotice(UiNotice.PasteInsideItself)
 					return@launch
 				}
 				didReference = picked.isNotEmpty()
 				emitRequest(Request.Close)
 				return@launch
 			}
-			val refused = withContext(io) { TestSetupState.addPicked(picked) }
+			val refused = withContext(io) {
+				val graphs = checkNotNull(graphs)
+				val parentPaths = picked.mapNotNull { it.parentId }.distinct().associateWith { graphs.pathTo(it) }
+				val entries = picked.associate { seed ->
+					val chain = testSetup.chainOfSeed(seed, parentPaths)
+					chain to TestRunData.readEntries(listOf(chain), graphs)
+				}
+				testSetup.addPicked(picked, parentPaths, entries)
+			}
 			if (refused.isNotEmpty()) {
-				UserMessages.showNotice(UiNotice.OneSubjectOnly(TestSetupState.pickedSubject()?.name))
+				userMessages.showNotice(UiNotice.OneSubjectOnly(testSetup.pickedSubject()?.name))
 				return@launch
 			}
 			emitRequest(Request.Close)

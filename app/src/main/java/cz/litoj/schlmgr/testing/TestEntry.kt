@@ -1,7 +1,6 @@
 package cz.litoj.schlmgr.testing
 
 import cz.litoj.schlmgr.data.db.DbItem
-import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ratio
 import cz.litoj.schlmgr.data.db.testedCount
 
@@ -11,12 +10,16 @@ import cz.litoj.schlmgr.data.db.testedCount
  * @property testedCount snapshot at pick time, not live
  * @property ratio snapshot success percent, -1 when untested
  */
-class TestEntry(val word: DbItem, val path: List<DbItem>) {
+class TestEntry(
+	val word: DbItem,
+	val path: List<DbItem>,
+	private val translationSnapshot: List<DbItem> = emptyList(),
+) {
 
 	val testedCount: Int = word.testedCount
 	val ratio: Int = word.ratio
 
-	fun translations(): List<DbItem> = ItemRepository.translations(word.id)
+	fun translations(): List<DbItem> = translationSnapshot
 
 	override fun toString(): String = word.name
 }

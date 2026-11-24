@@ -13,6 +13,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
@@ -26,11 +27,14 @@ class MessageSnackbarTest {
 	@get:Rule
 	val rule = createComposeRule()
 
+	private lateinit var userMessages: UserMessages
+
 	// the virtual clock runs by hand, or the shown snackbar times out during an idle wait
 	@Before
 	fun setUp() {
+		userMessages = UserMessages(RuntimeEnvironment.getApplication())
 		rule.mainClock.autoAdvance = false
-		rule.setContent { MessageSnackbarHost(messageSnackbarHost()) }
+		rule.setContent { MessageSnackbarHost(messageSnackbarHost(userMessages)) }
 		settle()
 	}
 
@@ -41,12 +45,12 @@ class MessageSnackbarTest {
 	}
 
 	private fun undoable(name: String, onUndo: () -> Unit = {}) {
-		UserMessages.showUndoable(UiNotice.SourceRemoved(name), onUndo)
+		userMessages.showUndoable(UiNotice.SourceRemoved(name), onUndo)
 		settle()
 	}
 
 	private fun text(msg: String) {
-		UserMessages.showMsg(msg, msg)
+		userMessages.showMsg(msg, msg)
 		settle()
 	}
 

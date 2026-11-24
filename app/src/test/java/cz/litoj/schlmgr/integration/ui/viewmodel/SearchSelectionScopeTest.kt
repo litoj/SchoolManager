@@ -1,6 +1,7 @@
 package cz.litoj.schlmgr.integration.ui.viewmodel
 
 import androidx.room.Room
+import cz.litoj.schlmgr.app.AppDependencies
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
@@ -29,12 +30,16 @@ import org.robolectric.annotation.Config
 class SearchSelectionScopeTest {
 
 	private lateinit var db: ItemDatabase
+	private lateinit var dependencies: AppDependencies
 
 	@Before
 	fun setUp() {
 		db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
 			.allowMainThreadQueries()
+			.setQueryExecutor(Runnable::run)
+			.setTransactionExecutor(Runnable::run)
 			.build()
+		dependencies = AppDependencies(RuntimeEnvironment.getApplication(), db)
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
@@ -54,7 +59,15 @@ class SearchSelectionScopeTest {
 
 	/** The repository reads run inline on an unconfined dispatcher, so a run ends before the asserts. */
 	private fun opened(): MainExplorerViewModel {
-		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		val model = MainExplorerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			editor = dependencies.itemEditor,
+			itemTransferService = dependencies.itemTransfer,
+			flipper = dependencies.flipper,
+			settings = dependencies.settings,
+			userMessages = dependencies.userMessages,
+		)
 		model.onItemClick(model.items().single { it.item.name == "A" })
 		return model
 	}
@@ -116,7 +129,12 @@ class SearchSelectionScopeTest {
 
 	@Test
 	fun `the picker searches its whole container beside its marks`() {
-		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		val model = PickerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			transfer = dependencies.itemTransfer,
+			userMessages = dependencies.userMessages,
+		)
 		model.onItemClick(model.items().single { it.item.name == "A" })
 		model.setSelected(model.items().single { it.item.name == "c1" }, true)
 		model.openSearchField()

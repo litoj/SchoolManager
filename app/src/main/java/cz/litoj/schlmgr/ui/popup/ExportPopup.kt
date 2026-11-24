@@ -8,7 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.app.AppSettings
+import cz.litoj.schlmgr.app.Settings
 import cz.litoj.schlmgr.data.transfer.ExportFormat
 import cz.litoj.schlmgr.ui.component.HairlineDivider
 import cz.litoj.schlmgr.ui.component.SettingSwitchRow
@@ -21,12 +21,13 @@ import cz.litoj.schlmgr.ui.component.SettingSwitchRow
  * @param onShare the share sheet of the chosen format
  */
 class ExportPopup(
+	private val settings: Settings,
 	private val onSave: (ExportFormat) -> Unit,
 	private val onShare: (ExportFormat) -> Unit,
 ) : DialogSpec {
 
 	/** The shown format, the stored one when it names a real format. */
-	var format by mutableStateOf(storedFormat())
+	var format by mutableStateOf(storedFormat(settings))
 		private set
 
 	init {
@@ -68,16 +69,16 @@ class ExportPopup(
 
 	/** The choice outlives the sheet, so the next export opens on the same format. */
 	private fun go(then: (ExportFormat) -> Unit) {
-		AppSettings.set(FORMAT_KEY, format.name)
+		settings.set(FORMAT_KEY, format.name)
 		Dialogs.dismiss(this)
 		then(format)
 	}
 
 	companion object {
 		/** The choice the last export used, the word file when nothing was stored. */
-		private fun storedFormat(): ExportFormat =
+		private fun storedFormat(settings: Settings): ExportFormat =
 			ExportFormat.entries.firstOrNull {
-				it.name == AppSettings.getString(FORMAT_KEY, ExportFormat.WORD.name)
+				it.name == settings.getString(FORMAT_KEY, ExportFormat.WORD.name)
 			} ?: ExportFormat.WORD
 
 		private fun noteRes(format: ExportFormat) =

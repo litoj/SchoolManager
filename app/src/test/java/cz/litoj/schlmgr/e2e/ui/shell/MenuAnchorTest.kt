@@ -19,6 +19,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.ui.shell.MenuEntry
 import cz.litoj.schlmgr.ui.shell.MenuHost
 import org.junit.Assert.assertEquals
@@ -43,10 +44,12 @@ class MenuAnchorTest {
 	val rule = createComposeRule()
 
 	private val entries = listOf(MenuEntry(1, R.string.sort))
+	private lateinit var userMessages: UserMessages
 
 	@Before
 	fun setUp() {
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
+		userMessages = UserMessages(RuntimeEnvironment.getApplication())
 	}
 
 	private fun sortLabel(): String =
@@ -58,7 +61,7 @@ class MenuAnchorTest {
 			Row(Modifier.width(600.dp).height(60.dp)) {
 				Spacer(Modifier.weight(1f))
 				for (tag in listOf("left", "right")) {
-					MenuHost(entries, {}, Modifier.width(60.dp).fillMaxHeight()) { open ->
+					MenuHost(entries, {}, Modifier.width(60.dp).fillMaxHeight(), userMessages = userMessages) { open ->
 						Box(Modifier.fillMaxSize().testTag(tag).clickable { open() })
 					}
 				}
@@ -76,7 +79,7 @@ class MenuAnchorTest {
 		var picked = 0
 		rule.setContent {
 			Row(Modifier.height(60.dp)) {
-				MenuHost(entries, { picked = it }, Modifier.width(60.dp).fillMaxHeight()) { open ->
+				MenuHost(entries, { picked = it }, Modifier.width(60.dp).fillMaxHeight(), userMessages = userMessages) { open ->
 					Box(Modifier.fillMaxSize().testTag("button").clickable { open() })
 				}
 			}
@@ -99,7 +102,7 @@ class MenuAnchorTest {
 		)
 		rule.setContent {
 			Row(Modifier.height(60.dp)) {
-				MenuHost(rows, {}, Modifier.width(60.dp).fillMaxHeight()) { open ->
+				MenuHost(rows, {}, Modifier.width(60.dp).fillMaxHeight(), userMessages = userMessages) { open ->
 					Box(Modifier.fillMaxSize().testTag("button").clickable { open() })
 				}
 			}

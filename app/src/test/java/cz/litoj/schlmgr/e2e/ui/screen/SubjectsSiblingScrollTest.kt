@@ -6,6 +6,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.room.Room
+import cz.litoj.schlmgr.app.AppDependencies
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
@@ -40,12 +41,16 @@ class SubjectsSiblingScrollTest {
 	val rule = createComposeRule()
 
 	private lateinit var db: ItemDatabase
+	private lateinit var dependencies: AppDependencies
 
 	@Before
 	fun setUp() {
 		db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
 			.allowMainThreadQueries()
+			.setQueryExecutor(Runnable::run)
+			.setTransactionExecutor(Runnable::run)
 			.build()
+		dependencies = AppDependencies(RuntimeEnvironment.getApplication(), db)
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
@@ -66,8 +71,16 @@ class SubjectsSiblingScrollTest {
 			ItemRepository.createWord(c1.id, "w$i", null, listOf("t$i" to null))
 			ItemRepository.createWord(c2.id, "v$i", null, listOf("u$i" to null))
 		}
-		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		rule.setContent { SubjectsScreen(model, {}, {}, {}) }
+		val model = MainExplorerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			editor = dependencies.itemEditor,
+			itemTransferService = dependencies.itemTransfer,
+			flipper = dependencies.flipper,
+			settings = dependencies.settings,
+			userMessages = dependencies.userMessages,
+		)
+		rule.setContent { SubjectsScreen(model, dependencies.settings, dependencies.userMessages, {}, {}, {}) }
 		rule.waitForIdle()
 		model.onItemClick(model.items().single { it.item.name == "A" })
 		rule.waitForIdle()

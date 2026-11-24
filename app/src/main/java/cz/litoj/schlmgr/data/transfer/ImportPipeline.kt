@@ -6,15 +6,17 @@ import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.FileProgress
 import cz.litoj.schlmgr.app.FileText
 import cz.litoj.schlmgr.app.Startup
+import cz.litoj.schlmgr.data.DataExchangeService
+import cz.litoj.schlmgr.data.DataImporter
+import cz.litoj.schlmgr.data.GraphQueries
+import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.data.db.ImportResult
+import cz.litoj.schlmgr.data.db.ROOT_ID
 import cz.litoj.schlmgr.data.json.HJsonImporter
 import cz.litoj.schlmgr.data.wordlist.WordListAutoFix
 import cz.litoj.schlmgr.data.wordlist.WordListImporter
 import cz.litoj.schlmgr.data.wordlist.WordListParseException
-import cz.litoj.schlmgr.data.DataImporter
-import cz.litoj.schlmgr.data.db.DbItem
-import cz.litoj.schlmgr.data.db.ImportResult
-import cz.litoj.schlmgr.data.ItemRepository
-import cz.litoj.schlmgr.data.db.ROOT_ID
+import kotlinx.coroutines.runBlocking
 
 /**
  * Template-Method base of the file workers, imports and the shared export.
@@ -24,6 +26,7 @@ abstract class FileWorker(
 	protected val appContext: Context,
 	private val postToUi: (Runnable) -> Unit,
 	private val threadName: String,
+	protected val dataExchange: DataExchangeService,
 ) {
 	/**
 	 * The import result callback, set before start.
@@ -44,7 +47,7 @@ abstract class FileWorker(
 
 	private fun runTemplate() {
 		try {
-			doRun()
+			runBlocking { doRun() }
 		} catch (iae: IllegalArgumentException) {
 			when (iae) {
 				is WordListParseException -> onWordListParseFail(iae)
@@ -59,7 +62,7 @@ abstract class FileWorker(
 	}
 
 	/** Read -> parse -> persist -> refresh/notify. Runs on the worker thread. */
-	protected abstract fun doRun()
+	protected abstract suspend fun doRun()
 
 	/** The document a failure of this worker came from, the file the editor fixes. */
 	protected open val sourceUri: Uri? get() = null
@@ -86,14 +89,14 @@ abstract class FileWorker(
 
 	// reads the whole picked document, and a failure already went out, so skip then
 	protected fun readContent(uri: Uri, progress: FileProgress): String? =
-		FileText.readText(uri, progress).also { sourceText = it }
+		FileText.readText(appContext, uri, progress).also { sourceText = it }
 
 	// the save loop drives the row phase of the bar
-	protected fun persist(
+	protected suspend fun persist(
 		importer: DataImporter, progress: FileProgress,
 		anchorId: Int = ROOT_ID,
 	): ImportResult =
-		ItemRepository.import(progress.importer(importer), anchorId)
+		dataExchange.import(progress.importer(importer), anchorId)
 
 	protected fun notifyImported(result: ImportResult, fixes: List<WordListAutoFix> = emptyList()) {
 		// the stored file needs no editor any more, so its held grant leaves here
@@ -116,9 +119,11 @@ class WordIntoContainerImport(
 	private val atRoot: () -> Boolean,
 	private val onRootReload: () -> Unit,
 	private val onRefreshed: () -> Unit,
-) : FileWorker(appContext, postToUi, "Word list import") {
+	dataExchange: DataExchangeService = Startup.dependencies.dataExchange,
+	private val graphs: GraphQueries = Startup.dependencies.graphQueries,
+) : FileWorker(appContext, postToUi, "Word list import", dataExchange) {
 
-	override fun doRun() {
+	override suspend fun doRun() {
 		// the resolver holds the pick-time snapshot, never null for a container
 		// target. The root anchor below is the defensive default
 		val self = openContainer()
@@ -127,7 +132,7 @@ class WordIntoContainerImport(
 			// wrapped, since the save loop drives the row phase of the bar
 			val importer = WordListImporter(
 				fileName.ifEmpty { uri.toString() }, content, wordListWrapper(fileName, self))
-			val outcome = persist(importer, progress, importAnchor(importer, self))
+			val outcome = persist(importer, progress, importAnchor(importer, self, graphs))
 			post { if (self == null && atRoot()) onRootReload() else onRefreshed() }
 			notifyImported(outcome, importer.autoFixes)
 		}
@@ -159,12 +164,14 @@ private fun wordListWrapper(fileName: String, target: DbItem?): String? {
  * - a file whose one top-level container bears the target name anchors at the target home.
  * - so that container merges into the target by name instead of nesting inside it.
  */
-private fun importAnchor(importer: DataImporter, target: DbItem?): Int {
+private suspend fun importAnchor(
+	importer: DataImporter, target: DbItem?, graphs: GraphQueries,
+): Int {
 	val self = target ?: return ROOT_ID
 	val top = importer.items.filter { it.parent == null }.singleOrNull()?.item
 	if (top == null || top.type != self.type || top.name != self.name) return self.id
 	// a reference-only target needs its occurrence parent, so the file never nests in that target
-	return ItemRepository.plainParentOf(self.id) ?: ItemRepository.parentIds(self.id).firstOrNull { it != self.id } ?: self.id
+	return graphs.plainParentOf(self.id) ?: graphs.parentIds(self.id).firstOrNull { it != self.id } ?: self.id
 }
 
 /**
@@ -178,9 +185,10 @@ class WordAsSubjectImport(
 	private val uri: Uri,
 	private val fileName: String,
 	private val onRootReload: () -> Unit,
-) : FileWorker(appContext, postToUi, "Subject file import") {
+	dataExchange: DataExchangeService = Startup.dependencies.dataExchange,
+) : FileWorker(appContext, postToUi, "Subject file import", dataExchange) {
 
-	override fun doRun() {
+	override suspend fun doRun() {
 		FileGateway.importProgress(appContext, R.string.progress_import, uri).use { progress ->
 			val content = readContent(uri, progress) ?: return
 			val importer = WordListImporter(
@@ -198,7 +206,7 @@ class WordAsSubjectImport(
 
 /**
  * A tree JSON import in HJSON form: the codec parses the text into chapters.
- * - the repository persists the stream in one transaction.
+ * - the exchange service persists the stream in one transaction.
  * - the pick-time open container anchors the top-level chapters.
  * - with none picked, they become subjects of the root.
  * - a subject-level reload re-reads the open content otherwise.
@@ -211,9 +219,11 @@ class JsonTreeImport(
 	private val atRoot: () -> Boolean,
 	private val onRootReload: () -> Unit,
 	private val onCurrentReload: () -> Unit,
-) : FileWorker(appContext, postToUi, "JSON import") {
+	dataExchange: DataExchangeService = Startup.dependencies.dataExchange,
+	private val graphs: GraphQueries = Startup.dependencies.graphQueries,
+) : FileWorker(appContext, postToUi, "JSON import", dataExchange) {
 
-	override fun doRun() {
+	override suspend fun doRun() {
 		FileGateway.importProgress(appContext, R.string.progress_import, uri).use { progress ->
 			val content = readContent(uri, progress) ?: return
 			val fileName = FileGateway.displayName(appContext, uri, uri.toString())
@@ -223,7 +233,7 @@ class JsonTreeImport(
 				throw IllegalArgumentException("$fileName: ${e.message}", e)
 			}
 			// no open container means the root, where the file chapters become subjects
-			val result = persist(importer, progress, importAnchor(importer, openContainer()))
+			val result = persist(importer, progress, importAnchor(importer, openContainer(), graphs))
 			post { if (atRoot()) onRootReload() else onCurrentReload() }
 			notifyImported(result)
 		}
@@ -245,9 +255,10 @@ class ExportPipeline(
 	private val format: ExportFormat,
 	private val selected: () -> List<DbItem>,
 	private val onExportStart: () -> Unit,
-) : FileWorker(appContext, postToUi, format.threadName()) {
+	dataExchange: DataExchangeService = Startup.dependencies.dataExchange,
+) : FileWorker(appContext, postToUi, format.threadName(), dataExchange) {
 
-	override fun doRun() {
+	override suspend fun doRun() {
 		val rows = selected()
 		if (rows.isEmpty()) return
 		// the callback touches UI state, the selection clear, so it runs on
@@ -256,11 +267,12 @@ class ExportPipeline(
 		val name = exportName()
 		FileGateway.titledProgress(appContext, R.string.progress_export, name).use { progress ->
 			// wrapped, since the stream handover targets the bar at the object count
-			val text = ItemRepository.export(progress.exporter(format.exporter()), rows)
+			val text = dataExchange.export(progress.exporter(format.exporter()), rows)
 			when (destination) {
 				is ExportDestination.Document -> {
-					val (words, chapters) = ItemRepository.subgraphStats(rows.map { it.id })
-					FileGateway.writeExport(destination.uri, name, text, words, chapters, format.mimeType())
+					val (words, chapters) = dataExchange.subgraphStats(rows.map { it.id })
+					FileGateway.writeExport(
+						appContext, destination.uri, name, text, words, chapters, format.mimeType())
 				}
 				// a share reports itself through the sheet, so it needs no statistics
 				is ExportDestination.Share -> Startup.onShareReady(

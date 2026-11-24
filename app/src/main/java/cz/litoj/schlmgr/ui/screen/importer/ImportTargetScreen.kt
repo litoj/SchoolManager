@@ -15,6 +15,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.app.Settings
+import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.ui.component.ActionStripHeight
 import cz.litoj.schlmgr.ui.component.ExplorerScaffold
 import cz.litoj.schlmgr.ui.component.ExplorerSearchControls
@@ -46,6 +48,8 @@ import cz.litoj.schlmgr.ui.viewmodel.SearchUi
 @Composable
 fun ImportTargetScreen(
 	viewModel: ImportTargetViewModel,
+	settings: Settings,
+	userMessages: UserMessages,
 	onExit: () -> Unit,
 	onDone: (List<Int>) -> Unit,
 ) {
@@ -54,7 +58,7 @@ fun ImportTargetScreen(
 	val target by viewModel.targetState.collectAsStateWithLifecycle()
 	val query by viewModel.query.collectAsStateWithLifecycle()
 	val context = LocalContext.current
-	val snackbar = messageSnackbarHost()
+	val snackbar = messageSnackbarHost(userMessages)
 	val scrollState = rememberLazyListState()
 	val fieldOpen = state.searchUi != SearchUi.OFF
 	val searchBlockedReason = viewModel.searchBlockedReason
@@ -70,6 +74,7 @@ fun ImportTargetScreen(
 		Column(Modifier.fillMaxSize()) {
 			TopBar {
 				TopBarNav(
+					userMessages = userMessages,
 					up = true,
 					onNavigate = leave,
 					enabled = !target.busy,
@@ -77,13 +82,14 @@ fun ImportTargetScreen(
 					contentDescription = stringResource(R.string.back),
 				)
 				ExplorerSearchControls(
+					userMessages = userMessages,
 					title = stringResource(R.string.import_file_title, target.fileName),
 					query = query,
 					fieldOpen = fieldOpen,
 					searchBlockedReason = searchBlockedReason,
 					entries = explorerMenu(
 						viewModel.menuKind, selecting = false, singleSelected = false,
-						ActionConfig.load(),
+						ActionConfig.load(settings),
 						filterActive = (state.info as? InfoBar.Search)?.criteria?.isNotEmpty() == true,
 						searchBlockedReason = searchBlockedReason,
 						// the mover marks no rows, so it offers no select all
@@ -97,6 +103,7 @@ fun ImportTargetScreen(
 					onMenuPick = { pickExplorerMenu(viewModel, it) },
 				)
 				TopBarIconButton(
+					userMessages = userMessages,
 					icon = R.drawable.ic_help,
 					contentDescription = stringResource(R.string.help),
 					onClick = {
@@ -119,6 +126,7 @@ fun ImportTargetScreen(
 				modifier = Modifier.weight(1f).headerShadow(),
 			) {
 				ImportActionBar(
+					userMessages = userMessages,
 					busy = target.busy,
 					imported = target.imported,
 					onCancel = onExit,

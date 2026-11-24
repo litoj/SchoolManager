@@ -4,6 +4,11 @@ import android.net.Uri
 import androidx.room.Room
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.app.Startup
+import cz.litoj.schlmgr.app.UserMessages
+import cz.litoj.schlmgr.app.UserMessages.UiMessage
+import cz.litoj.schlmgr.data.DataExchangeService
+import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemDatabase
@@ -57,6 +62,9 @@ import org.robolectric.annotation.Config
 class FileWorkerTest {
 
 	private lateinit var db: ItemDatabase
+	private lateinit var dataExchange: DataExchangeService
+	private lateinit var graphs: GraphQueries
+	private lateinit var userMessages: UserMessages
 	private var nextPick = 0
 
 	/** The provider door caches one folder per JVM, so the share tests watch the file. */
@@ -100,9 +108,12 @@ class FileWorkerTest {
 	fun setUp() {
 		val app = RuntimeEnvironment.getApplication()
 		GlobalDependencies.appContext = app
+		userMessages = Startup.init(app).userMessages
 		db = Room.inMemoryDatabaseBuilder(app, ItemDatabase::class.java)
 			.allowMainThreadQueries()
 			.build()
+		dataExchange = DataExchangeService(db)
+		graphs = GraphQueries(db)
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 	}
@@ -142,6 +153,7 @@ class FileWorkerTest {
 			GlobalDependencies.appContext, { it.run() }, uri, fileName,
 			open, { open() == null },
 			{ reloads.root++ }, { reloads.current++ }, { reloads.container++ },
+			dataExchange, graphs,
 		)
 		worker.onReimport = retry
 		worker.start().join()
@@ -155,7 +167,7 @@ class FileWorkerTest {
 		shadowOf(RuntimeEnvironment.getApplication().contentResolver).registerOutputStream(uri, out)
 		var started = false
 		ExportPipeline(GlobalDependencies.appContext, { it.run() }, ExportDestination.Document(uri),
-			format, selected) { started = true }
+			format, selected, { started = true }, dataExchange)
 			.start().join()
 		return String(out.toByteArray(), StandardCharsets.UTF_8) to started
 	}
@@ -415,7 +427,7 @@ class FileWorkerTest {
 		val uri = picked("Kapitel {\nHaus;home\n}")
 		val worker = ImporterFactory.createPickedImport(
 			GlobalDependencies.appContext, { it.run() }, uri, "list.txt",
-			{ lektion }, { false }, {}, {}, {},
+			{ lektion }, { false }, {}, {}, {}, dataExchange, graphs,
 		)
 		worker.onImported = { result -> top = result.topLevel }
 
@@ -439,7 +451,7 @@ class FileWorkerTest {
 	fun `a one-character word list mistake mends itself and reports its line`() = runBlocking {
 		Dialogs.clear()
 		val message = async(start = CoroutineStart.UNDISPATCHED) {
-			withTimeout(2_000) { GlobalDependencies.messages.first() }
+			withTimeout(2_000) { userMessages.messages.first() }
 		}
 
 		importPicked("list.txt", { null }, "Kapitel {\nHaus;home;extra\n}\n")
@@ -447,7 +459,7 @@ class FileWorkerTest {
 		val word = ItemRepository.children(ItemRepository.subjects().single().id).single()
 		assertEquals(listOf("home", "extra"), ItemRepository.translations(word.id).map { it.name })
 
-		val report = message.await() as GlobalDependencies.UiMessage.Text
+		val report = message.await() as UiMessage.Text
 		val fixed = RuntimeEnvironment.getApplication().resources
 			.getQuantityString(R.plurals.import_fixed_lines, 1, 1)
 		assertTrue("The report hides the repair: ${report.text}", report.text.contains(fixed))
@@ -512,13 +524,13 @@ class FileWorkerTest {
 	fun `a malformed tree import reports once and leaves nothing behind`() = runBlocking {
 		Dialogs.clear()
 		val message = async(start = CoroutineStart.UNDISPATCHED) {
-			withTimeout(2_000) { GlobalDependencies.messages.first() }
+			withTimeout(2_000) { userMessages.messages.first() }
 		}
 
 		val reloads = importPicked("tree.hjson", { null }, "{\n  name: \"x\"\n")
 
 		// the snackbar of the load failure: no popup, no half tree, no reload
-		assertTrue((message.await() as GlobalDependencies.UiMessage.Text).text.isNotEmpty())
+		assertTrue((message.await() as UiMessage.Text).text.isNotEmpty())
 		assertFalse(Dialogs.isShowing<MessagePopup>())
 		assertEquals(0, ItemRepository.subjects().size)
 		assertEquals(0, reloads.root)
@@ -533,13 +545,13 @@ class FileWorkerTest {
 		assertFalse(started)
 
 		val message = async(start = CoroutineStart.UNDISPATCHED) {
-			withTimeoutOrNull(300) { GlobalDependencies.messages.first() }
+			withTimeoutOrNull(300) { userMessages.messages.first() }
 		}
 
 		ExportPipeline(
 			GlobalDependencies.appContext, { it.run() },
 			ExportDestination.Share("Kapitel.txt"), ExportFormat.WORD,
-			{ emptyList() }, {},
+			{ emptyList() }, {}, dataExchange,
 		).start().join()
 
 		assertNull("an empty selection shares nothing", message.await())
@@ -549,7 +561,7 @@ class FileWorkerTest {
 	fun `a shared export hands its own copy to the share sheet`() = runBlocking {
 		FileGateway.shareUri = { _, file -> Uri.fromFile(file) }
 		val message = async(start = CoroutineStart.UNDISPATCHED) {
-			withTimeout(2_000) { GlobalDependencies.messages.first() }
+			withTimeout(2_000) { userMessages.messages.first() }
 		}
 		val subject = ItemRepository.createSubject("Kapitel", null)
 		ItemRepository.createWord(subject.id, "w1", null, listOf("t1" to null))
@@ -558,10 +570,10 @@ class FileWorkerTest {
 		ExportPipeline(
 			GlobalDependencies.appContext, { it.run() },
 			ExportDestination.Share("Kapitel.txt"), ExportFormat.WORD,
-			{ ItemRepository.subjects() }, { started = true },
+			{ ItemRepository.subjects() }, { started = true }, dataExchange,
 		).start().join()
 
-		val sent = message.await() as GlobalDependencies.UiMessage.SendFile
+		val sent = message.await() as UiMessage.SendFile
 		assertEquals("Kapitel.txt", sent.uri.lastPathSegment)
 		assertEquals("text/plain", sent.mime)
 		assertTrue(started)

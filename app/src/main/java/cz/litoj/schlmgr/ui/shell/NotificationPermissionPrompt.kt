@@ -13,7 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.app.AppSettings
+import cz.litoj.schlmgr.app.Settings
 import cz.litoj.schlmgr.ui.component.HairlineDivider
 import cz.litoj.schlmgr.ui.popup.DialogSpec
 import cz.litoj.schlmgr.ui.popup.Dialogs
@@ -36,13 +36,13 @@ internal fun shouldAskNotificationPermission(sdk: Int, granted: Boolean, asked: 
  * - Not now leaves the app usable without progress notifications.
  */
 @Composable
-fun NotificationPermissionPrompt() {
-	if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) NotificationPermissionPrompt33()
+fun NotificationPermissionPrompt(settings: Settings) {
+	if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) NotificationPermissionPrompt33(settings)
 }
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
-private fun NotificationPermissionPrompt33() {
+private fun NotificationPermissionPrompt33(settings: Settings) {
 	val context = LocalContext.current
 	val request = rememberLauncherForActivityResult(
 		ActivityResultContracts.RequestPermission(),
@@ -54,10 +54,10 @@ private fun NotificationPermissionPrompt33() {
 		if (!shouldAskNotificationPermission(
 				Build.VERSION.SDK_INT,
 				granted,
-				AppSettings.getBool(NOTIFICATION_PROMPT_SEEN, false),
+				settings.getBool(NOTIFICATION_PROMPT_SEEN, false),
 			)
 		) return@LaunchedEffect
-		AppSettings.set(NOTIFICATION_PROMPT_SEEN, true)
+		settings.set(NOTIFICATION_PROMPT_SEEN, true)
 		NotificationRationalePopup {
 			request.launch(Manifest.permission.POST_NOTIFICATIONS)
 		}

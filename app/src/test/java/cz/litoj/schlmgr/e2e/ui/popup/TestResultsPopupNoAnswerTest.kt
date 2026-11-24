@@ -6,6 +6,7 @@ import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
+import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestEntry
 import cz.litoj.schlmgr.testing.TestItemModel
 import cz.litoj.schlmgr.ui.popup.Dialogs
@@ -53,9 +54,10 @@ class TestResultsPopupNoAnswerTest {
 		val subject = ItemRepository.createSubject("A", null)
 		val chapter = ItemRepository.createChapter(subject.id, "c1", null)
 		ItemRepository.createWord(chapter.id, "house", null, listOf("dům" to null))
-		val model = TestItemModel(TestEntry(ItemRepository.children(chapter.id).single(), emptyList()))
+		val word = ItemRepository.children(chapter.id).single()
+		val model = TestItemModel(TestEntry(word, emptyList(), ItemRepository.translations(word.id)))
 		model.answer = answer
-		val popup = TestResultsPopup(listOf(model), 0f)
+		val popup = TestResultsPopup(listOf(model), 0f, TestEngine.isReversed)
 		rule.setContent { popup.Content() }
 	}
 

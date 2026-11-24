@@ -20,7 +20,7 @@ class IncrementalAddTest {
 	fun `addItem appends one row without rebuilding the mapped items`() {
 		val vm = wordVm(3)
 		val before = vm.listState.value.items
-		val added = ItemRow(DbItem(name = "new", description = "", type = ItemKind.WORD), null, 4, false)
+		val added = ItemRow(DbItem(name = "new", description = "", type = ItemKind.WORD), null, 4)
 		vm.addItem(added)
 		val after = vm.listState.value.items
 		assertEquals(4, after.size)
@@ -33,7 +33,7 @@ class IncrementalAddTest {
 	fun `an inserted row keeps positions sequential`() {
 		val vm = wordVm(3)
 		assertEquals(3, vm.listState.value.maxPosition)
-		val inserted = ItemRow(DbItem(name = "wide", description = "", type = ItemKind.WORD), null, 99, false)
+		val inserted = ItemRow(DbItem(name = "wide", description = "", type = ItemKind.WORD), null, 99)
 		vm.addItem(0, inserted)
 		assertEquals(inserted, vm.listState.value.items.first())
 		assertEquals(listOf(1, 2, 3, 4), vm.listState.value.items.map { it.position })

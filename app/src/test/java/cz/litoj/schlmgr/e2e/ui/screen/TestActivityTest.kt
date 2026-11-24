@@ -5,11 +5,11 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.test.core.app.ActivityScenario
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.room.Room
 import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.app.GlobalDependencies
-import cz.litoj.schlmgr.data.ItemRepository
-import cz.litoj.schlmgr.data.db.ItemDatabase
+import cz.litoj.schlmgr.app.Startup
+import cz.litoj.schlmgr.testing.TestRunData
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.ui.activity.TestActivity
 import cz.litoj.schlmgr.ui.popup.ContinuePopup
@@ -39,6 +39,8 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class TestActivityTest {
+
+	private val testSetup get() = TestSetupState.shared
 
 	@get:Rule
 	val rule = createComposeRule()
@@ -77,7 +79,7 @@ class TestActivityTest {
 		rule.waitUntil { TestRunState.hasRun() }
 		TestRunState.setAnswer(0, "house")
 		// other tests submit the same word, so only the change counts
-		val before = ItemRepository.get(wordId)!!
+		val before = freshWord()!!
 
 		rule.onNodeWithText(activity.getString(R.string.test_abort))
 			.performClick()
@@ -87,8 +89,8 @@ class TestActivityTest {
 		assertTrue(activity.isFinishing)
 		assertFalse(TestRunState.hasRun())
 		assertFalse(Dialogs.isShowing<TestResultsPopup>())
-		assertEquals(1, TestSetupState.list.size)
-		val word = ItemRepository.get(wordId)!!
+		assertEquals(1, testSetup.list.size)
+		val word = freshWord()!!
 		assertEquals(before.passedTests, word.passedTests)
 		assertEquals(before.failedTests, word.failedTests)
 	}
@@ -129,28 +131,27 @@ class TestActivityTest {
 		awaitResults()
 	}
 
-	private lateinit var db: ItemDatabase
 	private var wordId = 0
 
 	@Before
 	fun seed() {
 		TestRunState.reset()
-		TestSetupState.reset()
+		testSetup.reset()
 		TestEngine.applyReversed(false)
 		TestEngine.applyRequireAllVariants(false)
-		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
-		db = Room.inMemoryDatabaseBuilder(
-			RuntimeEnvironment.getApplication(), ItemDatabase::class.java,
-		).allowMainThreadQueries().build()
-		ItemRepository.initForTest(db)
-		ItemRepository.ensureRoot()
-		val a = ItemRepository.createSubject("A", null)
-		val c1 = ItemRepository.createChapter(a.id, "c1", null)
-		ItemRepository.createWord(c1.id, "house", "house info", listOf("dům" to "dům info\nmore info"))
-		val word = ItemRepository.children(c1.id).single()
-		wordId = word.id
-		val row = ItemRow(word, c1.id, 1)
-		TestSetupState.addPicked(listOf(TestSetupState.seedOf(row)))
+		val dependencies = Startup.init(RuntimeEnvironment.getApplication())
+		runBlocking(Dispatchers.IO) {
+			val a = dependencies.itemEditor.createSubject("A", null)
+			val c1 = dependencies.itemEditor.createChapter(a.id, "c1", null)
+			val word = dependencies.itemEditor.createWord(
+				c1.id, "house", "house info", listOf("dům" to "dům info\nmore info"))
+			wordId = word.id
+			val row = ItemRow(word, c1.id, 1)
+			val chain = listOf(a, c1, word)
+			val entries = mapOf(chain to TestRunData.readEntries(listOf(chain), dependencies.graphQueries))
+			testSetup.addPicked(
+				listOf(testSetup.seedOf(row)), mapOf(c1.id to listOf(a, c1)), entries)
+		}
 		scenario = ActivityScenario.launch(TestActivity::class.java)
 			.onActivity { activity = it }
 	}
@@ -160,9 +161,11 @@ class TestActivityTest {
 		TestRunState.reset()
 		Dialogs.clear()
 		scenario.close()
-		TestSetupState.reset()
-		db.close()
-		ItemRepository.resetForTest()
+		testSetup.reset()
+	}
+
+	private fun freshWord() = runBlocking(Dispatchers.IO) {
+		Startup.dependencies.graphQueries.get(wordId)
 	}
 
 	private companion object {

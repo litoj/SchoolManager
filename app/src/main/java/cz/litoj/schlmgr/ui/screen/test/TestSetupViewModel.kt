@@ -2,7 +2,7 @@ package cz.litoj.schlmgr.ui.screen.test
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import cz.litoj.schlmgr.app.AppSettings
+import cz.litoj.schlmgr.app.Settings
 import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.data.db.DbItem
@@ -22,6 +22,9 @@ import kotlinx.coroutines.launch
  */
 class TestSetupViewModel(
 	private val io: CoroutineDispatcher = Dispatchers.IO,
+	val testSetup: TestSetupState = TestSetupState.shared,
+	private val settings: Settings,
+	private val userMessages: UserMessages,
 ) : ViewModel() {
 
 	/**
@@ -39,18 +42,18 @@ class TestSetupViewModel(
 	val requests = _requests.receiveAsFlow()
 
 	fun setAmount(text: String) {
-		TestSetupState.setAmount(text)
+		testSetup.setAmount(text)
 	}
 
 	fun setTime(text: String) {
-		TestSetupState.setTime(text)
+		testSetup.setTime(text)
 	}
 
 	// the count refresh reads the database, so the removal and its undo leave the main thread
 	fun removeSource(chain: List<DbItem>) {
 		viewModelScope.launch(io) {
-			val index = TestSetupState.removeSource(chain) ?: return@launch
-			UserMessages.showUndoable(UiNotice.SourceRemoved(chain.toSourceRowUi().displayName)) {
+			val index = testSetup.removeSource(chain) ?: return@launch
+			userMessages.showUndoable(UiNotice.SourceRemoved(chain.toSourceRowUi(testSetup).displayName)) {
 				restoreSource(chain, index)
 			}
 		}
@@ -58,13 +61,13 @@ class TestSetupViewModel(
 
 	private fun restoreSource(chain: List<DbItem>, index: Int) {
 		viewModelScope.launch(io) {
-			if (!TestSetupState.restoreSource(chain, index))
-				UserMessages.showNotice(UiNotice.OneSubjectOnly(TestSetupState.pickedSubject()?.name))
+			if (!testSetup.restoreSource(chain, index))
+				userMessages.showNotice(UiNotice.OneSubjectOnly(testSetup.pickedSubject()?.name))
 		}
 	}
 
 	/** The Clear list action of the sources header. */
-	fun clearSources() = TestSetupState.clearSources()
+	fun clearSources() = testSetup.clearSources()
 
 	/**
 	 * The fresh-entry check, run once per entry.
@@ -72,50 +75,51 @@ class TestSetupViewModel(
 	 * - only a genuine fresh entry resets the setup.
 	 */
 	fun onEntered() {
-		val (fromPicker, fromSelection) = TestSetupState.consumeEntryMarks()
-		if (!fromPicker && !fromSelection) TestSetupState.reset()
+		val (fromPicker, fromSelection) = testSetup.consumeEntryMarks()
+		if (!fromPicker && !fromSelection) testSetup.reset()
 	}
 
 	fun restoreAmount() {
-		val n = TestSetupState.amountText.toIntOrNull() ?: 0
-		if (n < 1) TestSetupState.setAmount(TestEngine.amount.toString())
+		val n = testSetup.amountText.toIntOrNull() ?: 0
+		if (n < 1) testSetup.setAmount(TestEngine.amount.toString())
 	}
 
 	fun restoreTime() {
-		if (NumberInput.amount(TestSetupState.timeText) == null)
-			TestSetupState.setTime(TestEngine.getSecondsPerChar().toString())
+		if (NumberInput.amount(testSetup.timeText) == null)
+			testSetup.setTime(TestEngine.getSecondsPerChar().toString())
 	}
 
 	fun toggleReverse() {
-		val on = !TestSetupState.reverseTest
-		TestSetupState.setReverse(on)
+		val on = !testSetup.reverseTest
+		testSetup.setReverse(on)
 		TestEngine.applyReversed(on)
-		AppSettings.set("reverseTest", on)
+		settings.set("reverseTest", on)
 	}
 
 	/** The content switch: on ranks by urgency, off lets a random pool through. */
 	fun toggleClever() {
-		val on = !TestSetupState.cleverTest
-		TestSetupState.setClever(on)
+		val on = !testSetup.cleverTest
+		testSetup.setClever(on)
 		TestEngine.applyClever(on)
-		AppSettings.set("isClever", on)
+		settings.set("isClever", on)
 	}
 
 	/**
 	 * The dedup of the picker keeps the list consistent by the time this runs.
 	 */
 	fun startTest() {
-		if (!TestSetupState.hasSources()) return
+		if (!testSetup.hasSources()) return
+		TestRunState.testSetup = testSetup
 		_requests.trySend(Request.StartTest)
 	}
 
 	/** The Add source action, where a whole picked hierarchy leaves nothing to select. */
 	fun openPicker() {
-		if (TestSetupState.hierarchyPicked()) return
+		if (testSetup.hierarchyPicked()) return
 		// a picker return must keep the sources, so declare the origin before navigating
-		TestSetupState.markOpenedPicker()
+		testSetup.markOpenedPicker()
 		_requests.trySend(Request.OpenPicker)
 	}
 
-	fun hierarchyPicked(): Boolean = TestSetupState.hierarchyPicked()
+	fun hierarchyPicked(): Boolean = testSetup.hierarchyPicked()
 }

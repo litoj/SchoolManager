@@ -9,6 +9,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import androidx.room.Room
+import cz.litoj.schlmgr.app.AppDependencies
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
@@ -40,6 +41,7 @@ class SearchClickVariantsTest {
 	val rule = createComposeRule()
 
 	private lateinit var db: ItemDatabase
+	private lateinit var dependencies: AppDependencies
 
 	/** The tap pins run from the word side, the default flip carries its own pins. */
 	private val searchDefFlipWas = ItemRow.searchDefFlip
@@ -50,6 +52,7 @@ class SearchClickVariantsTest {
 		db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
 			.allowMainThreadQueries()
 			.build()
+		dependencies = AppDependencies(RuntimeEnvironment.getApplication(), db)
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
@@ -72,8 +75,16 @@ class SearchClickVariantsTest {
 		val c1 = ItemRepository.children(a.id).single()
 		ItemRepository.createWord(c1.id, "xy2", null, listOf("t2" to null))
 		ItemRepository.createWord(c1.id, "xy3", null, listOf("t3" to null))
-		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		rule.setContent { SubjectsScreen(model, {}, {}, {}) }
+		val model = MainExplorerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			editor = dependencies.itemEditor,
+			itemTransferService = dependencies.itemTransfer,
+			flipper = dependencies.flipper,
+			settings = dependencies.settings,
+			userMessages = dependencies.userMessages,
+		)
+		rule.setContent { SubjectsScreen(model, dependencies.settings, dependencies.userMessages, {}, {}, {}) }
 		rule.waitForIdle()
 		rule.onNodeWithText("A").performClick()
 		rule.waitForIdle()
@@ -119,8 +130,16 @@ class SearchClickVariantsTest {
 		// translation line shrinks it and pulls the row below over the tap
 		ItemRepository.createWord(c1.id, "xyz", "a description\nover three\nlines", listOf("t1" to null))
 		ItemRepository.createWord(c1.id, "xy2", null, listOf("t2" to null))
-		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		rule.setContent { SubjectsScreen(model, {}, {}, {}) }
+		val model = MainExplorerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			editor = dependencies.itemEditor,
+			itemTransferService = dependencies.itemTransfer,
+			flipper = dependencies.flipper,
+			settings = dependencies.settings,
+			userMessages = dependencies.userMessages,
+		)
+		rule.setContent { SubjectsScreen(model, dependencies.settings, dependencies.userMessages, {}, {}, {}) }
 		rule.waitForIdle()
 		rule.onNodeWithText("A").performClick()
 		rule.waitForIdle()

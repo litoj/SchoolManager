@@ -69,7 +69,7 @@ class ItemRowDisplayTest {
 			setRowOptions(defFlip = on)
 			val (parentId, word) = wordWithTranslations()
 
-			val row = ItemRow(word, parentId, 1)
+			val row = ItemRow.ofBrowse(word, parentId, 1, emptyList(), translations(word.id))
 
 			assertEquals("defFlip $on starts on $shown", on, row.flipped)
 			assertEquals("defFlip $on shows $shown", shown, row.toShow)
@@ -111,7 +111,7 @@ class ItemRowDisplayTest {
 		for (on in cases) {
 			setRowOptions(defFlip = on)
 			val (parentId, word) = wordWithTranslations()
-			val row = ItemRow(word, parentId, 1)
+			val row = ItemRow.ofBrowse(word, parentId, 1, emptyList(), translations(word.id))
 			ItemRepository.setDescription(word.id, "changed")
 
 			// the io read of production, landed on main as applyFresh does

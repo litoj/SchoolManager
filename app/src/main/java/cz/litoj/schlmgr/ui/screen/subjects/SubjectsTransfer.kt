@@ -2,6 +2,7 @@ package cz.litoj.schlmgr.ui.screen.subjects
 
 import android.content.Context
 import android.net.Uri
+import cz.litoj.schlmgr.app.Settings
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.transfer.ExportDestination
@@ -31,6 +32,7 @@ internal class SubjectsTransfer(
 	private val scope: CoroutineScope,
 	private val io: CoroutineDispatcher,
 	private val host: Host,
+	private val settings: Settings,
 	private val startExport: ExportStarter = startExportPipeline,
 ) {
 
@@ -50,7 +52,7 @@ internal class SubjectsTransfer(
 	fun openExportSheet() {
 		// the strip clears its selection next, so the callbacks own their own snapshot
 		exportSession = ExportSession(exportRows(), host.path.lastOrNull())
-		ExportPopup(::saveFile, ::shareFile)
+		ExportPopup(settings, ::saveFile, ::shareFile)
 	}
 
 	/** The save dialog of the format, the picked document receives the rows. */

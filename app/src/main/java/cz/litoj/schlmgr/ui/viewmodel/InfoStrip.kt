@@ -3,7 +3,7 @@ package cz.litoj.schlmgr.ui.viewmodel
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.db.ratio
-import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.data.GraphQueries
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -18,6 +18,7 @@ internal class InfoStrip(
 	private val scope: CoroutineScope,
 	private val io: CoroutineDispatcher,
 	private val host: Host,
+	private val graphs: GraphQueries? = null,
 ) {
 
 	interface Host {
@@ -86,9 +87,9 @@ internal class InfoStrip(
 		}
 	}
 
-	private fun infoBarOf(container: DbItem?, kinds: Map<ItemKind, Int>): InfoBar {
+	private suspend fun infoBarOf(container: DbItem?, kinds: Map<ItemKind, Int>): InfoBar {
 		if (container != null) {
-			val fresh = ItemRepository.get(container.id)
+			val fresh = checkNotNull(graphs).get(container.id)
 			return InfoBar.Children(kinds, fresh?.ratio ?: -1, container.description)
 		}
 		return InfoBar.Root(kinds.values.sum())

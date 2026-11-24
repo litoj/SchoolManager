@@ -3,7 +3,7 @@ package cz.litoj.schlmgr.ui.component
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
-import cz.litoj.schlmgr.app.AppSettings
+import cz.litoj.schlmgr.app.Settings
 
 /**
  * The peak opacity of the success band, the base of its alpha ramp.
@@ -15,14 +15,14 @@ object SuccessBand {
 		private set
 
 	/** Reads the stored value, called before the first composition. */
-	fun applyStoredOptions() {
-		intensity = AppSettings.getInt(KEY, DEFAULT_INTENSITY).coerceIn(0, 100)
+	fun applyStoredOptions(settings: Settings) {
+		intensity = settings.getInt(KEY, DEFAULT_INTENSITY).coerceIn(0, 100)
 	}
 
 	/** One mutation door, the settings slider owns it. */
-	fun setPeak(percent: Int) {
+	fun setPeak(settings: Settings, percent: Int) {
 		intensity = percent.coerceIn(0, 100)
-		AppSettings.set(KEY, intensity)
+		settings.set(KEY, intensity)
 	}
 
 	/** The peak alpha of the band, rounded from the percent of full opacity. */

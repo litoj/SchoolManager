@@ -1,6 +1,7 @@
 package cz.litoj.schlmgr.app
 
 import cz.litoj.schlmgr.data.Progress
+import android.content.Context
 import android.net.Uri
 import java.io.FilterInputStream
 import java.io.IOException
@@ -14,7 +15,7 @@ import java.nio.charset.StandardCharsets
  * The SAF text transport of the app: whole documents as UTF-8.
  * - reads count their bytes for the import progress bar.
  * - pure platform I/O, no file format here.
- * - codecs live behind ItemRepository, and the UI hands documents and text across.
+ * - codecs live behind DataExchangeService, and the UI hands documents and text across.
  */
 object FileText {
 
@@ -24,10 +25,10 @@ object FileText {
 	 */
 	@JvmStatic
 	@JvmOverloads
-	fun readText(source: Uri, progress: Progress? = null): String? {
+	fun readText(ctx: Context, source: Uri, progress: Progress? = null): String? {
 		try {
 			val sb = StringBuilder(4096)
-			InputStreamReader(openCounted(source, progress), StandardCharsets.UTF_8).use { isr ->
+			InputStreamReader(openCounted(ctx, source, progress), StandardCharsets.UTF_8).use { isr ->
 				val buffer = CharArray(1024)
 				var amount: Int
 				var first = true
@@ -51,9 +52,9 @@ object FileText {
 	 * Returns false on failure through [Startup.onSaveFail].
 	 */
 	@JvmStatic
-	fun writeText(target: Uri, content: String): Boolean {
+	fun writeText(ctx: Context, target: Uri, content: String): Boolean {
 		try {
-			val stream = GlobalDependencies.appContext.contentResolver.openOutputStream(target, "wt")
+			val stream = ctx.contentResolver.openOutputStream(target, "wt")
 				?: throw IOException("No stream for $target")
 			OutputStreamWriter(stream, StandardCharsets.UTF_8).use { it.write(content) }
 			return true
@@ -63,8 +64,8 @@ object FileText {
 		}
 	}
 
-	private fun openCounted(source: Uri, progress: Progress?): InputStream {
-		val stream = GlobalDependencies.appContext.contentResolver.openInputStream(source)
+	private fun openCounted(ctx: Context, source: Uri, progress: Progress?): InputStream {
+		val stream = ctx.contentResolver.openInputStream(source)
 			?: throw IOException("No stream for $source")
 		return if (progress == null) stream else ProgressInputStream(stream, progress)
 	}

@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.ui.component.DefaultTextColor
+import cz.litoj.schlmgr.ui.viewmodel.SelectionAction
 
 /**
  * One collapsible help section.
@@ -47,17 +48,17 @@ internal val sections = listOf(
 	HelpSection(
 		R.string.help_select, intro = R.string.help_select_how, icon = R.drawable.ic_select_black,
 		children = listOf(
-			HelpSection(R.string.delete, R.string.help_select_delete, icon = R.drawable.ic_delete),
-			HelpSection(R.string.cut, R.string.help_select_move, icon = R.drawable.ic_cut),
-			HelpSection(R.string.action_reference, R.string.setts_act_reference, icon = R.drawable.ic_reference_black),
-			HelpSection(R.string.edit, R.string.help_select_edit, icon = R.drawable.ic_edit),
-			HelpSection(R.string.action_flip, R.string.setts_act_flip, icon = R.drawable.ic_flip_black),
+			SelectionAction.DELETE.action.let { HelpSection(it.label, R.string.help_select_delete, icon = it.icon) },
+			SelectionAction.CUT.action.let { HelpSection(it.label, R.string.help_select_move, icon = it.icon) },
+			SelectionAction.REFERENCE.action.let { HelpSection(it.label, it.description, icon = it.icon) },
+			SelectionAction.EDIT.action.let { HelpSection(it.label, R.string.help_select_edit, icon = it.icon) },
+			SelectionAction.FLIP.action.let { HelpSection(it.label, it.description, icon = it.icon) },
 		),
 	),
 	HelpSection(
 		R.string.help_search, intro = R.string.help_search_how, icon = R.drawable.ic_search,
 		children = listOf(
-			HelpSection(R.string.more_go_to, R.string.setts_act_goto, icon = R.drawable.ic_goto),
+			SelectionAction.GOTO.action.let { HelpSection(it.label, it.description, icon = it.icon) },
 		),
 	),
 	HelpSection(
@@ -81,7 +82,7 @@ internal val sections = listOf(
 			HelpSection(
 				R.string.help_extra_words_export, R.string.help_extra_words_export_how,
 				paths = listOf(R.array.help_path_export),
-				icon = R.drawable.ic_export_black,
+				icon = SelectionAction.EXPORT.action.icon,
 			),
 		),
 	),

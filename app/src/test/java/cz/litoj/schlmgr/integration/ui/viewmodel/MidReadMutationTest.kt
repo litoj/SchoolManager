@@ -3,6 +3,7 @@ package cz.litoj.schlmgr.integration.ui.viewmodel
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemDatabase
@@ -42,8 +43,8 @@ class MidReadMutationTest {
 		}
 	}
 
-	private class ManualLoadViewModel(history: NavigationHistory, io: CoroutineDispatcher) :
-		ExplorerViewModel<Nothing>(history, io = io) {
+	private class ManualLoadViewModel(history: NavigationHistory, io: CoroutineDispatcher, db: ItemDatabase) :
+		ExplorerViewModel<Nothing>(history, io = io, graphs = GraphQueries(db)) {
 		protected override fun setContent(container: DbItem?, pulseItemId: Int?) {}
 	}
 
@@ -55,6 +56,8 @@ class MidReadMutationTest {
 		db = Room.inMemoryDatabaseBuilder(
 			RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
 			.allowMainThreadQueries()
+			.setQueryExecutor(Runnable::run)
+			.setTransactionExecutor(Runnable::run)
 			.build()
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
@@ -71,7 +74,7 @@ class MidReadMutationTest {
 		val subject = ItemRepository.createSubject("english", null)
 		ItemRepository.createChapter(subject.id, "c1", null)
 		val io = ManualDispatcher()
-		val vm = ManualLoadViewModel(NavigationHistory(), io)
+		val vm = ManualLoadViewModel(NavigationHistory(), io, db)
 
 		vm.loadContent(subject)
 
@@ -84,7 +87,7 @@ class MidReadMutationTest {
 		// the create lands mid-read, in the order of commitNewItem, with the
 		// database row first and the UI row second
 		val created = ItemRepository.createChapter(subject.id, "c2", null)
-		vm.addItem(ItemRow(created, subject.id, 2, false))
+		vm.addItem(ItemRow(created, subject.id, 2))
 
 		// the continuation runs, and its snapshot predates the create, so the
 		// read retries and lands the fresh database state
@@ -102,7 +105,7 @@ class MidReadMutationTest {
 		ItemRepository.createChapter(subject.id, "c1", null)
 		ItemRepository.createChapter(subject.id, "c2", null)
 		val io = ManualDispatcher()
-		val vm = ManualLoadViewModel(NavigationHistory(), io)
+		val vm = ManualLoadViewModel(NavigationHistory(), io, db)
 
 		vm.loadContent(subject)
 

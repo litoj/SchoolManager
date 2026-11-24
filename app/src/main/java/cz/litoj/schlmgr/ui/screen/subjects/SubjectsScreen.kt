@@ -19,6 +19,8 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.app.Settings
+import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.data.transfer.FileGateway
 import cz.litoj.schlmgr.ui.component.ExplorerSearchControls
 import cz.litoj.schlmgr.ui.popup.ContinuePopup
@@ -50,6 +52,8 @@ private fun creatorKind(kind: RowKind) = when (kind) {
 @Composable
 fun SubjectsScreen(
 	viewModel: MainExplorerViewModel,
+	settings: Settings,
+	userMessages: UserMessages,
 	openDrawer: () -> Unit,
 	onOpenTest: () -> Unit,
 	onExitApp: () -> Unit,
@@ -159,6 +163,7 @@ fun SubjectsScreen(
 		TopBar {
 			// the arrow leaves the deepest layer: the field, a selection or an armed move
 			TopBarNav(
+				userMessages = userMessages,
 				up = fieldOpen || selecting || viewModel.pasteArmed,
 				onNavigate = when {
 					fieldOpen -> viewModel::cancelSearch
@@ -172,13 +177,14 @@ fun SubjectsScreen(
 				),
 			)
 		ExplorerSearchControls(
+			userMessages = userMessages,
 			title = title,
 			query = query,
 			fieldOpen = fieldOpen,
 			searchBlockedReason = searchBlockedReason,
 			entries = explorerMenu(
 				viewModel.menuKind, selecting = false, listState.singleSelected,
-				ActionConfig.load(), exportBlockedReason,
+				ActionConfig.load(settings), exportBlockedReason,
 				filterActive = (state.info as? InfoBar.Search)?.criteria?.isNotEmpty() == true,
 				searchBlockedReason = searchBlockedReason,
 				selectAllBlockedReason = viewModel.selectAllBlockedReason,
@@ -191,7 +197,7 @@ fun SubjectsScreen(
 			onMenuPick = { pickExplorerMenu(viewModel, it) },
 		)
 		}
-		SubjectsContent(viewModel, exportBlockedReason, Modifier.weight(1f).headerShadow())
+		SubjectsContent(viewModel, settings, userMessages, exportBlockedReason, Modifier.weight(1f).headerShadow())
 		}
 	}
 }

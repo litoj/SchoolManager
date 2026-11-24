@@ -5,6 +5,8 @@ import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestEntry
+import cz.litoj.schlmgr.testing.TestRunner
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -17,7 +19,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
- * [TestEngine.isAnswer] on a real in-memory database.
+ * [TestRunner.answer] on a real in-memory database.
  * - the answer bump covers the word and every container whose sums hold it.
  * - a shared plain holder counts.
  * - a reference holder never counts.
@@ -46,7 +48,9 @@ class TestEngineAnswerTest {
 	private fun answer(entry: TestEntry, text: String?): Boolean {
 		val engine = TestEngine()
 		engine.setTested(1, null, 1f, listOf(entry))
-		return engine.isAnswer(0, text, entry.translations())
+		return runBlocking {
+			TestRunner(engine, ItemRepository.counterService()).answer(0, listOf(text ?: ""), entry.translations())
+		}
 	}
 
 	@Test
@@ -58,7 +62,7 @@ class TestEngineAnswerTest {
 		// the word is shared, so c2 holds it through a second plain link
 		ItemRepository.legacyLinkAtEnd(c2.id, word.id)
 
-		assertTrue(answer(TestEntry(word, listOf(subject, c1, word)), "w"))
+		assertTrue(answer(TestEntry(word, listOf(subject, c1, word), ItemRepository.translations(word.id)), "w"))
 
 		// every container whose sums hold the word grew with it
 		assertEquals(1, ItemRepository.get(word.id)!!.passedTests)
@@ -75,7 +79,7 @@ class TestEngineAnswerTest {
 		val word = ItemRepository.createWord(c1.id, "w", null, listOf("t" to (null as String?)))
 		assertTrue(ItemRepository.reference(word.id, ref.id))
 
-		assertTrue(answer(TestEntry(word, listOf(subject, c1, word)), "w"))
+		assertTrue(answer(TestEntry(word, listOf(subject, c1, word), ItemRepository.translations(word.id)), "w"))
 
 		// the reference shows the word but never counts it
 		assertEquals(0, ItemRepository.get(ref.id)!!.passedTests)
@@ -88,7 +92,7 @@ class TestEngineAnswerTest {
 		val subject = ItemRepository.createSubject("s", null)
 		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
 		val word = ItemRepository.createWord(c1.id, "w", null, listOf("t" to (null as String?)))
-		val entry = TestEntry(word, listOf(subject, c1, word))
+		val entry = TestEntry(word, listOf(subject, c1, word), ItemRepository.translations(word.id))
 
 		assertFalse(answer(entry, "nope"))
 

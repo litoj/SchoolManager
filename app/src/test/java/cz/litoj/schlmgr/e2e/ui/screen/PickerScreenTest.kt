@@ -12,6 +12,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.room.Room
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.app.AppDependencies
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
@@ -49,12 +50,16 @@ class PickerScreenTest {
 	val rule = createComposeRule()
 
 	private lateinit var db: ItemDatabase
+	private lateinit var dependencies: AppDependencies
 
 	@Before
 	fun setUp() {
 		db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
 			.allowMainThreadQueries()
+			.setQueryExecutor(Runnable::run)
+			.setTransactionExecutor(Runnable::run)
 			.build()
+		dependencies = AppDependencies(RuntimeEnvironment.getApplication(), db)
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
@@ -106,8 +111,13 @@ class PickerScreenTest {
 
 	@Test
 	fun `the caller names the pick`() {
-		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		rule.setContent { PickerScreen(model, {}, R.string.action_reference) }
+		val model = PickerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			transfer = dependencies.itemTransfer,
+			userMessages = dependencies.userMessages,
+		)
+		rule.setContent { PickerScreen(model, dependencies.settings, dependencies.userMessages, {}, R.string.action_reference) }
 		rule.waitForIdle()
 
 		rule.onNodeWithText(text(R.string.action_reference)).assertExists()
@@ -116,8 +126,13 @@ class PickerScreenTest {
 
 	@Test
 	fun `the strip follows the picks and select all picks all`() {
-		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		rule.setContent { PickerScreen(model, {}) }
+		val model = PickerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			transfer = dependencies.itemTransfer,
+			userMessages = dependencies.userMessages,
+		)
+		rule.setContent { PickerScreen(model, dependencies.settings, dependencies.userMessages, {}) }
 		rule.waitForIdle()
 
 		rule.onNodeWithText(text(R.string.select)).assertDoesNotExist()
@@ -136,8 +151,13 @@ class PickerScreenTest {
 
 	@Test
 	fun `a horizontal swipe opens the sibling subject`() {
-		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		rule.setContent { PickerScreen(model, {}) }
+		val model = PickerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			transfer = dependencies.itemTransfer,
+			userMessages = dependencies.userMessages,
+		)
+		rule.setContent { PickerScreen(model, dependencies.settings, dependencies.userMessages, {}) }
 		rule.waitForIdle()
 		rule.onNodeWithText("A").performClick()
 		rule.waitForIdle()
@@ -151,8 +171,13 @@ class PickerScreenTest {
 
 	@Test
 	fun `a tap on a picked row takes the pick back`() {
-		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		rule.setContent { PickerScreen(model, {}) }
+		val model = PickerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			transfer = dependencies.itemTransfer,
+			userMessages = dependencies.userMessages,
+		)
+		rule.setContent { PickerScreen(model, dependencies.settings, dependencies.userMessages, {}) }
 		rule.waitForIdle()
 
 		selectTheRow()
@@ -168,8 +193,13 @@ class PickerScreenTest {
 
 	@Test
 	fun `a drag from a picked row clears the run`() {
-		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		rule.setContent { PickerScreen(model, {}) }
+		val model = PickerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			transfer = dependencies.itemTransfer,
+			userMessages = dependencies.userMessages,
+		)
+		rule.setContent { PickerScreen(model, dependencies.settings, dependencies.userMessages, {}) }
 		rule.waitForIdle()
 		rule.runOnIdle { model.items().forEach { model.toggleSelect(it) } }
 		rule.waitForIdle()
@@ -201,8 +231,13 @@ class PickerScreenTest {
 
 	@Test
 	fun `a tap while picking opens the folder and the strip stays`() {
-		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		rule.setContent { PickerScreen(model, {}) }
+		val model = PickerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			transfer = dependencies.itemTransfer,
+			userMessages = dependencies.userMessages,
+		)
+		rule.setContent { PickerScreen(model, dependencies.settings, dependencies.userMessages, {}) }
 		rule.waitForIdle()
 
 		selectTheRow()

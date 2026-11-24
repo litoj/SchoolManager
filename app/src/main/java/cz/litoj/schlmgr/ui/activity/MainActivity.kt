@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.mutableStateOf
+import cz.litoj.schlmgr.app.AppDependencies
 import cz.litoj.schlmgr.ui.shell.MainLaunchTarget
 import cz.litoj.schlmgr.ui.shell.NotificationPermissionPrompt
 import cz.litoj.schlmgr.ui.shell.SchlMgrApp
@@ -17,14 +18,15 @@ import cz.litoj.schlmgr.ui.shell.SchlMgrApp
 class MainActivity : ComponentActivity() {
 
 	private val launchTarget = mutableStateOf<MainLaunchTarget?>(null)
+	private lateinit var dependencies: AppDependencies
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
-		startAppShell()
+		dependencies = startAppShell()
 		launchTarget.value = consumeLaunchTarget(intent)
 		setContent {
-			SchlMgrApp(launchTarget.value) { launchTarget.value = null }
-			NotificationPermissionPrompt()
+			SchlMgrApp(dependencies, launchTarget.value) { launchTarget.value = null }
+			NotificationPermissionPrompt(dependencies.settings)
 		}
 	}
 

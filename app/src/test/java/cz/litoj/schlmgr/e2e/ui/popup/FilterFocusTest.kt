@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.room.Room
+import cz.litoj.schlmgr.app.AppDependencies
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
@@ -37,13 +38,17 @@ class FilterFocusTest {
 	val rule = createComposeRule()
 
 	private lateinit var db: ItemDatabase
+	private lateinit var dependencies: AppDependencies
 
 	@Before
 	fun setUp() {
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
 		db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
 			.allowMainThreadQueries()
+			.setQueryExecutor(Runnable::run)
+			.setTransactionExecutor(Runnable::run)
 			.build()
+		dependencies = AppDependencies(RuntimeEnvironment.getApplication(), db)
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 		val subject = ItemRepository.createSubject("A", null)
@@ -58,9 +63,17 @@ class FilterFocusTest {
 	}
 
 	private fun show() {
-		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		val model = MainExplorerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			editor = dependencies.itemEditor,
+			itemTransferService = dependencies.itemTransfer,
+			flipper = dependencies.flipper,
+			settings = dependencies.settings,
+			userMessages = dependencies.userMessages,
+		)
 		rule.setContent {
-			SubjectsScreen(model, {}, {}, {})
+			SubjectsScreen(model, dependencies.settings, dependencies.userMessages, {}, {}, {})
 			DialogHost()
 		}
 		rule.waitForIdle()

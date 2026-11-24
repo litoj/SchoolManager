@@ -15,7 +15,6 @@ import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ratio
 import cz.litoj.schlmgr.data.db.testedCount
 import cz.litoj.schlmgr.testing.AnswerComparison
-import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestItemModel
 import cz.litoj.schlmgr.ui.activity.TestActivity
 import cz.litoj.schlmgr.ui.component.HairlineDivider
@@ -37,7 +36,9 @@ import cz.litoj.schlmgr.ui.viewmodel.RowKind
  *
  * @param success success percentage from 0 to 100, not a fraction
  */
-class TestResultsPopup(items: List<TestItemModel>, private val success: Float) : DialogSpec {
+class TestResultsPopup(
+	items: List<TestItemModel>, private val success: Float, private val reversed: Boolean,
+) : DialogSpec {
 
 	private class ResultRow(
 		val model: StaticRow,
@@ -49,9 +50,6 @@ class TestResultsPopup(items: List<TestItemModel>, private val success: Float) :
 		val passed: Int,
 		val tested: Int,
 	)
-
-	// the setting can change while the report stays open, so the rows keep the direction of the run
-	private val reversed = TestEngine.isReversed
 
 	// built eagerly, since reset clears the tested list right after this constructor
 	private val rows: List<ResultRow> = items.mapIndexed { index, item -> toRow(item, index + 1) }

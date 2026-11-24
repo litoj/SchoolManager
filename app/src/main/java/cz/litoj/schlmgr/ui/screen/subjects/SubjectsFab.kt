@@ -5,8 +5,8 @@ import androidx.compose.ui.Modifier
 import cz.litoj.schlmgr.ui.component.FabVisibility
 import cz.litoj.schlmgr.ui.component.NewItemFab
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerMenuKind
+import cz.litoj.schlmgr.ui.viewmodel.ExplorerAction
 import cz.litoj.schlmgr.ui.viewmodel.ItemListState
-import cz.litoj.schlmgr.ui.viewmodel.MenuId
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 
 /**
@@ -27,7 +27,7 @@ internal fun SubjectsFab(
 			listState.selectionActive, viewModel.pasteArmed, viewModel.menuKind),
 		visible = visibility.shown,
 		onPick = { kind -> viewModel.onMenuItemClick(newMenuIdOf(kind)) },
-		onImport = { viewModel.onMenuItemClick(MenuId.IMPORT_FILE) },
+		onImport = { viewModel.onMenuItemClick(ExplorerAction.IMPORT_FILE.menuId) },
 		onReference = if (viewModel.menuKind == ExplorerMenuKind.CONTAINER)
 			viewModel::pickReferences else null,
 		modifier = modifier,
@@ -51,8 +51,8 @@ private fun newKinds(
 }
 
 private fun newMenuIdOf(kind: RowKind): Int = when (kind) {
-	RowKind.SUBJECT -> MenuId.NEW_SUBJECT
-	RowKind.CHAPTER -> MenuId.NEW_CHAPTER
-	RowKind.WORD -> MenuId.NEW_WORD
-	RowKind.NOTE -> MenuId.NEW_NOTE
+	RowKind.SUBJECT -> ExplorerAction.NEW_SUBJECT.menuId
+	RowKind.CHAPTER -> ExplorerAction.NEW_CHAPTER.menuId
+	RowKind.WORD -> ExplorerAction.NEW_WORD.menuId
+	RowKind.NOTE -> ExplorerAction.NEW_NOTE.menuId
 }

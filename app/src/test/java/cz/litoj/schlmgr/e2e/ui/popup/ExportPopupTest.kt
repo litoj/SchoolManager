@@ -4,8 +4,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import cz.litoj.schlmgr.app.AppSettings
-import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.app.Settings
 import cz.litoj.schlmgr.data.transfer.ExportFormat
 import cz.litoj.schlmgr.ui.popup.Dialogs
 import cz.litoj.schlmgr.ui.popup.ExportPopup
@@ -33,10 +32,11 @@ class ExportPopupTest {
 
 	private val saved = mutableListOf<ExportFormat>()
 	private val shared = mutableListOf<ExportFormat>()
+	private lateinit var settings: Settings
 
 	@Before
 	fun setUp() {
-		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
+		settings = Settings(RuntimeEnvironment.getApplication())
 	}
 
 	@After
@@ -45,7 +45,7 @@ class ExportPopupTest {
 	}
 
 	private fun openSheet(): ExportPopup {
-		val popup = ExportPopup(saved::add, shared::add)
+		val popup = ExportPopup(settings, saved::add, shared::add)
 		rule.setContent { popup.Content() }
 		return popup
 	}
@@ -93,7 +93,7 @@ class ExportPopupTest {
 			assertEquals(listOf(ExportFormat.WORD), saved)
 			assertEquals(
 				ExportFormat.WORD.name,
-				AppSettings.getString("exportFormat", ExportFormat.JSON.name),
+				settings.getString("exportFormat", ExportFormat.JSON.name),
 			)
 		}
 	}
@@ -106,7 +106,7 @@ class ExportPopupTest {
 
 		// the next sheet takes its format from the store, so a repeat needs no toggle
 		rule.runOnIdle {
-			assertEquals(ExportFormat.JSON, ExportPopup(saved::add, shared::add).format)
+			assertEquals(ExportFormat.JSON, ExportPopup(settings, saved::add, shared::add).format)
 		}
 	}
 }

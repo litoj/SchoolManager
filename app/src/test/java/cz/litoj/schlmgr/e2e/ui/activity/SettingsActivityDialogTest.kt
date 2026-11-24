@@ -4,7 +4,8 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import cz.litoj.schlmgr.data.ItemRepository
-import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.app.Startup
+import cz.litoj.schlmgr.app.UserMessages.UiMessage
 import cz.litoj.schlmgr.ui.activity.SettingsActivity
 import cz.litoj.schlmgr.ui.popup.Dialogs
 import cz.litoj.schlmgr.ui.popup.MessagePopup
@@ -39,7 +40,7 @@ class SettingsActivityDialogTest {
 	@Test
 	fun `the full text snackbar action renders its dialog here`() {
 		rule.runOnIdle {
-			GlobalDependencies.messages.tryEmit(GlobalDependencies.UiMessage.Text("short", "full details"))
+			Startup.dependencies.userMessages.messages.tryEmit(UiMessage.Text("short", "full details"))
 		}
 		rule.waitForIdle()
 

@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.ui.component.ExplorerSearchControls
 import cz.litoj.schlmgr.ui.shell.MenuEntry
 import cz.litoj.schlmgr.ui.shell.TopBarActions
@@ -21,6 +22,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
@@ -30,10 +32,14 @@ class TopBarActionsTest {
 	@get:Rule
 	val rule = createComposeRule()
 
+	private val userMessages by lazy(LazyThreadSafetyMode.NONE) {
+		UserMessages(RuntimeEnvironment.getApplication())
+	}
+
 	private fun show(entries: List<MenuEntry>, width: androidx.compose.ui.unit.Dp = 320.dp) {
 		rule.setContent {
 			Row(Modifier.height(55.dp)) {
-				TopBarActions(entries = entries, width = width, onPick = {})
+				TopBarActions(entries = entries, width = width, userMessages = userMessages, onPick = {})
 			}
 		}
 	}
@@ -50,6 +56,7 @@ class TopBarActionsTest {
 		rule.setContent {
 			Row(Modifier.height(55.dp)) {
 				ExplorerSearchControls(
+					userMessages = userMessages,
 					title = "Items", query = "", fieldOpen = true, searchBlockedReason = 0,
 					entries = listOf(
 						MenuEntry(2, R.string.sort, icon = R.drawable.ic_sort_black),

@@ -5,7 +5,8 @@ import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.db.KeptTranslation
 import cz.litoj.schlmgr.data.db.ROOT_ID
 import cz.litoj.schlmgr.data.db.WordEdit
-import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.data.ItemEditor
+import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.data.WordNames
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel.Request
 import cz.litoj.schlmgr.ui.viewmodel.CreatorResult
@@ -24,6 +25,8 @@ internal class SubjectsWordEdit(
 	private val scope: CoroutineScope,
 	private val io: CoroutineDispatcher,
 	private val host: Host,
+	private val editor: ItemEditor? = null,
+	private val graphs: GraphQueries? = null,
 ) {
 
 	interface Host : SubjectsHost {
@@ -50,7 +53,7 @@ internal class SubjectsWordEdit(
 		if (item.type == ItemKind.WORD) {
 			scope.launch(io) {
 				val rows = ArrayList<TranslationRow>()
-				for (trl in ItemRepository.translations(item.id)) {
+				for (trl in checkNotNull(graphs).translations(item.id)) {
 					rows.add(TranslationRow(trl.name, trl.description, trl))
 				}
 				host.postToUi { host.emitRequest(Request.EditWord(row, rows)) }
@@ -68,9 +71,8 @@ internal class SubjectsWordEdit(
 		val edit = wordEditOf(result, row) ?: return false
 		val rowId = row.item.id
 		scope.launch(io) {
-			val references =
-				if (ItemRepository.editForks(edit)) ItemRepository.referencesOf(rowId)
-				else emptyList()
+			val editor = checkNotNull(editor)
+			val references = if (editor.editForks(edit)) editor.referencesOf(rowId) else emptyList()
 			if (references.isEmpty()) commitWordEditNow(row, edit, rowId)
 			else host.postToUi { host.emitRequest(Request.ForkReferences(row, edit, references)) }
 		}
@@ -92,12 +94,15 @@ internal class SubjectsWordEdit(
 	 * - the edited row leaves and the rows behind it renumber, like any other removal.
 	 */
 	private suspend fun commitWordEditNow(row: ItemRow, edit: WordEdit, rowId: Int) {
-		val word = ItemRepository.editWord(edit)
-		val flip = ItemRow.flipContentOf(word)
+		val graphs = checkNotNull(graphs)
+		val word = checkNotNull(editor).editWord(edit)
+		val flip = ItemRow.readFlipContent(word, graphs)
 		// a touched shared translation re-renders the rows that show it
 		val touched = edit.kept.map { it.id } + edit.removed
-		val contents = (touched.flatMap { ItemRepository.parentIds(it) }.toSet() - rowId)
-			.associateWith { id -> ItemRepository.get(id)?.let { ItemRow.flipContentOf(it) } }
+		val contents = (touched.flatMap { graphs.parentIds(it) }.toSet() - rowId)
+			.associateWith { id ->
+				graphs.get(id)?.let { ItemRow.readFlipContent(it, graphs) }
+			}
 		host.postToUi {
 			val survivor = host.items().firstOrNull { it !== row && it.item.id == word.id }
 			if (survivor == null) row.applyFresh(word, flip)
@@ -124,12 +129,14 @@ internal class SubjectsWordEdit(
 		// snapshot on main
 		val rowId = row.item.id
 		scope.launch(io) {
-			ItemRepository.setDescription(rowId, description)
-			if (rename) ItemRepository.rename(rowId, result.name)
-			val fresh = ItemRepository.get(rowId)
+			val editor = checkNotNull(editor)
+			val graphs = checkNotNull(graphs)
+			editor.setDescription(rowId, description)
+			if (rename) editor.rename(rowId, result.name)
+			val fresh = graphs.get(rowId)
 			// a word or a translation re-renders through its flip content
 			val flip = if (fresh != null && (fresh.type == ItemKind.WORD || fresh.type == ItemKind.TRANSLATION))
-				ItemRow.flipContentOf(fresh) else emptyList()
+				ItemRow.readFlipContent(fresh, graphs) else emptyList()
 			host.postToUi {
 				row.applyFresh(fresh, flip)
 				host.notifyChanged()
@@ -155,13 +162,16 @@ internal class SubjectsWordEdit(
 		val descs = WordNames.splitEscaped(result.description)
 		scope.launch(io) {
 			val created = ArrayList<ItemRow>()
+			val editor = checkNotNull(editor)
+			val graphs = checkNotNull(graphs)
 			for (i in names.indices) {
-				val w = ItemRepository.createWord(
+				val w = editor.createWord(
 					parentId, names[i],
 					if (i < descs.size) descs[i].replace("\\t", "\t") else null,
 					additions,
 				)
-				created.add(ItemRow(w, parentId, 0))
+				val links = graphs.childLinksOf(parentId).filter { it.childId == w.id }
+				created.add(ItemRow.ofBrowse(w, parentId, 0, links, graphs.translations(w.id)))
 			}
 			// the live list renumbers on insert, so the rows append in order
 			host.postToUi {
@@ -195,9 +205,8 @@ internal class SubjectsWordEdit(
 				val origin = host.path.lastOrNull()
 				val description = result.description.replace("\\t", "\t")
 				scope.launch(io) {
-					val mch = ItemRepository.createSubject(result.name, description)
-					// the row builds here, since this reads the database.
-					val row = ItemRow(mch, ROOT_ID, 0)
+					val mch = checkNotNull(editor).createSubject(result.name, description)
+					val row = ItemRow.ofBrowse(mch, ROOT_ID, 0, emptyList(), emptyList())
 					host.postToUi {
 						if (host.path.lastOrNull() !== origin) return@postToUi
 						host.addItem(row)
@@ -208,10 +217,10 @@ internal class SubjectsWordEdit(
 				val par = host.path.lastOrNull() ?: return false
 				val description = result.description.replace("\\t", "\t")
 				scope.launch(io) {
-					val created = ItemRepository.createNote(par.id, result.name, description)
+					val created = checkNotNull(editor).createNote(par.id, result.name, description)
 					host.postToUi {
 						if (host.path.lastOrNull() !== par) return@postToUi
-						host.addItem(ItemRow(created, par.id, 0))
+						host.addItem(ItemRow.ofBrowse(created, par.id, 0, emptyList(), emptyList()))
 					}
 				}
 			}
@@ -219,10 +228,10 @@ internal class SubjectsWordEdit(
 				val par = host.path.lastOrNull() ?: return false
 				val description = result.description.replace("\\t", "\t")
 				scope.launch(io) {
-					val created = ItemRepository.createChapter(par.id, result.name, description)
+					val created = checkNotNull(editor).createChapter(par.id, result.name, description)
 					host.postToUi {
 						if (host.path.lastOrNull() !== par) return@postToUi
-						host.addItem(ItemRow(created, par.id, 0))
+						host.addItem(ItemRow.ofBrowse(created, par.id, 0, emptyList(), emptyList()))
 						host.openContainer(created)
 					}
 				}

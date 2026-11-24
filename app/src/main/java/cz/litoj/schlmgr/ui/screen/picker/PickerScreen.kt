@@ -12,6 +12,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.app.Settings
+import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.ui.component.ExplorerScaffold
 import cz.litoj.schlmgr.ui.component.ExplorerSearchControls
 import cz.litoj.schlmgr.ui.component.ItemListCallbacks
@@ -41,6 +43,8 @@ import cz.litoj.schlmgr.ui.viewmodel.SearchUi
 @Composable
 fun PickerScreen(
 	viewModel: PickerViewModel,
+	settings: Settings,
+	userMessages: UserMessages,
 	onExit: () -> Unit,
 	@StringRes title: Int = R.string.test_add,
 ) {
@@ -67,18 +71,20 @@ fun PickerScreen(
 		TopBar {
 			// the arrow ends a search, then walks up the folder chain, and the picks stay
 			TopBarNav(
+				userMessages = userMessages,
 				up = true,
 				onNavigate = { explorerBack(viewModel, onExit, context) },
 				contentDescription = stringResource(R.string.back),
 			)
 		ExplorerSearchControls(
+			userMessages = userMessages,
 			title = stringResource(title),
 			query = query,
 			fieldOpen = fieldOpen,
 			searchBlockedReason = searchBlockedReason,
 			entries = explorerMenu(
 				viewModel.menuKind, selecting = false, singleSelected = false,
-				ActionConfig.load(),
+				ActionConfig.load(settings),
 				filterActive = (state.info as? InfoBar.Search)?.criteria?.isNotEmpty() == true,
 				searchBlockedReason = searchBlockedReason,
 			),
@@ -90,7 +96,7 @@ fun PickerScreen(
 			onMenuPick = { pickExplorerMenu(viewModel, it) },
 		)
 		}
-		PickerContent(viewModel, Modifier.weight(1f).headerShadow())
+		PickerContent(viewModel, userMessages, Modifier.weight(1f).headerShadow())
 		}
 	}
 }
@@ -101,7 +107,11 @@ fun PickerScreen(
  * - the strip shows only while rows are picked, in this folder or any other.
  */
 @Composable
-private fun PickerContent(viewModel: PickerViewModel, modifier: Modifier = Modifier) {
+private fun PickerContent(
+	viewModel: PickerViewModel,
+	userMessages: UserMessages,
+	modifier: Modifier = Modifier,
+) {
 	val state by viewModel.state.collectAsStateWithLifecycle()
 	val listState by viewModel.listState.collectAsStateWithLifecycle()
 	val picked = viewModel.batchRows().size
@@ -120,6 +130,7 @@ private fun PickerContent(viewModel: PickerViewModel, modifier: Modifier = Modif
 		statusLine = if (picked > 0) stringResource(R.string.data_selected, picked) else null,
 	) {
 		if (picked > 0) PickerActionBar(
+			userMessages = userMessages,
 			onCancel = viewModel::cancel,
 			onSelect = viewModel::onSelect,
 		)

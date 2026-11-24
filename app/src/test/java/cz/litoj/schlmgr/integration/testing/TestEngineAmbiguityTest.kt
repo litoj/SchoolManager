@@ -8,8 +8,10 @@ import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestEntry
 import cz.litoj.schlmgr.testing.TestItemModel
+import cz.litoj.schlmgr.testing.TestRunner
 import cz.litoj.schlmgr.testing.TestTaskModel
 import kotlin.math.abs
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -49,7 +51,7 @@ class TestEngineAmbiguityTest {
 		ItemRepository.resetForTest()
 	}
 
-	private fun entry(word: DbItem) = TestEntry(word, listOf(word))
+	private fun entry(word: DbItem) = TestEntry(word, listOf(word), ItemRepository.translations(word.id))
 
 	private fun subjectWith(name: String, words: List<Pair<String, List<String>>>): Pair<DbItem, DbItem> {
 		val subject = ItemRepository.createSubject("s", null)
@@ -76,8 +78,8 @@ class TestEngineAmbiguityTest {
 		ItemRepository.legacyLinkAtEnd(chapter.id, second.id)
 		ItemRepository.legacyLinkAtEnd(second.id, translation.id)
 		return listOf(
-			TestEntry(first, listOf(subject, chapter, first)),
-			TestEntry(second, listOf(subject, chapter, second)),
+			TestEntry(first, listOf(subject, chapter, first), ItemRepository.translations(first.id)),
+			TestEntry(second, listOf(subject, chapter, second), ItemRepository.translations(second.id)),
 		)
 	}
 
@@ -94,13 +96,14 @@ class TestEngineAmbiguityTest {
 		ItemRepository.legacyLinkAtEnd(chapter.id, second.id)
 		ItemRepository.legacyLinkAtEnd(second.id, translationId)
 		return listOf(
-			TestEntry(first, listOf(subject, chapter, first)),
-			TestEntry(second, listOf(subject, chapter, second)),
+			TestEntry(first, listOf(subject, chapter, first), ItemRepository.translations(first.id)),
+			TestEntry(second, listOf(subject, chapter, second), ItemRepository.translations(second.id)),
 		)
 	}
 
 	/** Grades like the screen: assign each task's typed answers, then answer every member. */
-	private fun grades(engine: TestEngine, raw: List<List<String>>): List<Boolean> {
+	private fun grades(engine: TestEngine, raw: List<List<String>>): List<Boolean> = runBlocking {
+		val runner = TestRunner(engine, ItemRepository.counterService())
 		val models = engine.getTestSrc().map(::TestItemModel)
 		val tasks = TestTaskModel.flatten(models, engine.getTestGroups())
 		val results = ArrayList<Boolean>()
@@ -108,11 +111,11 @@ class TestEngineAmbiguityTest {
 		for ((taskIndex, task) in tasks.withIndex()) {
 			val assigned = task.assign(raw.getOrElse(taskIndex) { emptyList() })
 			for (member in task.members) {
-				results.add(engine.isAnswer(index, assigned[member].orEmpty(), member.translations))
+				results.add(runner.answer(index, assigned[member].orEmpty(), member.translations))
 				index++
 			}
 		}
-		return results
+		results
 	}
 
 	private fun answerFirstAndRepeat(entries: List<TestEntry>): Pair<Boolean, Boolean> {
@@ -221,10 +224,14 @@ class TestEngineAmbiguityTest {
 		engine.setTested(-1, null, 1f, entries)
 		val picked = engine.getTestSrc()
 
-		assertTrue("the first different answer passes",
-			engine.isAnswer(0, picked[0].word.name, picked[0].translations()))
-		assertTrue("the second different answer passes",
-			engine.isAnswer(1, picked[1].word.name, picked[1].translations()))
+		assertTrue("the first different answer passes", runBlocking {
+			TestRunner(engine, ItemRepository.counterService())
+				.answer(0, listOf(picked[0].word.name), picked[0].translations())
+		})
+		assertTrue("the second different answer passes", runBlocking {
+			TestRunner(engine, ItemRepository.counterService())
+				.answer(1, listOf(picked[1].word.name), picked[1].translations())
+		})
 		for (pickedEntry in picked) {
 			assertEquals("each synonym gets its own credit", 1,
 				ItemRepository.get(pickedEntry.word.id)!!.passedTests)
@@ -368,7 +375,10 @@ class TestEngineAmbiguityTest {
 			val engine = TestEngine()
 			engine.setTested(1, null, 1f, entries)
 
-			assertTrue(engine.isAnswer(0, listOf("I smile.", "You smile.", "smile."), entries[0].translations()))
+			assertTrue(runBlocking {
+				TestRunner(engine, ItemRepository.counterService())
+					.answer(0, listOf("I smile.", "You smile.", "smile."), entries[0].translations())
+			})
 			assertEquals(1, ItemRepository.get(entries[0].word.id)!!.passedTests)
 			assertEquals(0, ItemRepository.get(entries[0].word.id)!!.failedTests)
 		} finally {
@@ -385,7 +395,10 @@ class TestEngineAmbiguityTest {
 			val engine = TestEngine()
 			engine.setTested(1, null, 1f, entries)
 
-			assertFalse(engine.isAnswer(0, "I smile.", entries[0].translations()))
+			assertFalse(runBlocking {
+				TestRunner(engine, ItemRepository.counterService())
+					.answer(0, listOf("I smile."), entries[0].translations())
+			})
 			assertEquals(1, ItemRepository.get(entries[0].word.id)!!.failedTests)
 			assertEquals(0, ItemRepository.get(entries[0].word.id)!!.passedTests)
 		} finally {
@@ -443,7 +456,10 @@ class TestEngineAmbiguityTest {
 			val engine = TestEngine()
 			engine.setTested(1, null, 1f, entries)
 
-			assertTrue(engine.isAnswer(0, listOf("dům", "domov"), entries[0].translations()))
+			assertTrue(runBlocking {
+				TestRunner(engine, ItemRepository.counterService())
+					.answer(0, listOf("dům", "domov"), entries[0].translations())
+			})
 
 			for (translation in entries[0].translations()) {
 				val fresh = ItemRepository.get(translation.id)!!

@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.ui.component.CrumbChain
 import cz.litoj.schlmgr.ui.component.BigHeader
 import cz.litoj.schlmgr.ui.component.sectionStyle
@@ -50,7 +51,7 @@ import cz.litoj.schlmgr.ui.shell.headerShadow
  * @param openDrawer the hamburger press, since the shell owns the drawer
  */
 @Composable
-fun AboutScreen(viewModel: AboutViewModel, openDrawer: () -> Unit) {
+fun AboutScreen(viewModel: AboutViewModel, userMessages: UserMessages, openDrawer: () -> Unit) {
 	val context = LocalContext.current
 	LaunchedEffect(viewModel) { viewModel.loadVersion(context) }
 	// the search owns the back press, so the screen survives a cancel
@@ -58,6 +59,7 @@ fun AboutScreen(viewModel: AboutViewModel, openDrawer: () -> Unit) {
 	Column(Modifier.fillMaxSize()) {
 		TopBar {
 			TopBarNav(
+				userMessages = userMessages,
 				up = viewModel.searchOpen,
 				onNavigate = if (viewModel.searchOpen) viewModel::closeSearchField else openDrawer,
 				contentDescription = stringResource(
@@ -78,6 +80,7 @@ fun AboutScreen(viewModel: AboutViewModel, openDrawer: () -> Unit) {
 				TopBarTitle(stringResource(R.string.app_name) + (viewModel.version?.let { " v$it" } ?: ""))
 			}
 			TopBarIconButton(
+				userMessages = userMessages,
 				icon = R.drawable.ic_search,
 				contentDescription = stringResource(R.string.help_search_hint),
 				visible = !viewModel.searchOpen,

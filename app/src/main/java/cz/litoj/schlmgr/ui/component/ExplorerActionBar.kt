@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.ui.shell.MenuEntry
 import cz.litoj.schlmgr.ui.shell.MenuHost
 import cz.litoj.schlmgr.ui.viewmodel.ACTION_SLOT_RATIO
@@ -62,6 +63,7 @@ fun SelectionActionBar(
 	onAction: (SelectionAction) -> Unit,
 	overflowEntries: (Int) -> List<MenuEntry>,
 	onOverflow: (Int) -> Unit,
+	userMessages: UserMessages,
 	modifier: Modifier = Modifier,
 	exportBlockedReason: Int = 0,
 ) {
@@ -81,21 +83,26 @@ fun SelectionActionBar(
 					else -> 0
 				}
 				ActionButton(
+					userMessages,
 					Action(action.icon, action.label) { onAction(action) },
 					blockedReason,
 					Modifier.weight(1f),
 				)
 			}
-			if (layout.showMore) OverflowStripButton(overflowEntries(layout.direct), onOverflow)
+			if (layout.showMore) OverflowStripButton(overflowEntries(layout.direct), onOverflow, userMessages)
 		}
 	}
 }
 
 /** The More slot, which hosts the overflow actions as a dropdown. */
 @Composable
-private fun RowScope.OverflowStripButton(entries: List<MenuEntry>, onPick: (Int) -> Unit) {
-	MenuHost(entries, onPick, Modifier.weight(1f).fillMaxHeight()) { open ->
-		ActionButton(Action(R.drawable.ic_more, R.string.more, open), 0, Modifier.fillMaxWidth())
+private fun RowScope.OverflowStripButton(
+	entries: List<MenuEntry>,
+	onPick: (Int) -> Unit,
+	userMessages: UserMessages,
+) {
+	MenuHost(entries, onPick, Modifier.weight(1f).fillMaxHeight(), userMessages) { open ->
+		ActionButton(userMessages, Action(R.drawable.ic_more, R.string.more, open), 0, Modifier.fillMaxWidth())
 	}
 }
 
@@ -109,15 +116,18 @@ fun PasteActionBar(
 	onCancel: () -> Unit,
 	onPaste: () -> Unit,
 	blockedReason: Int,
+	userMessages: UserMessages,
 	modifier: Modifier = Modifier,
 ) {
 	ActionStrip(modifier) {
 		ActionButton(
+			userMessages,
 			Action(R.drawable.ic_cancel, R.string.objects_cancel, onCancel),
 			0,
 			Modifier.weight(1f),
 		)
 		ActionButton(
+			userMessages,
 			Action(R.drawable.ic_paste, R.string.paste, onPaste),
 			blockedReason,
 			Modifier.weight(1f),
@@ -130,15 +140,18 @@ fun PasteActionBar(
 fun PickerActionBar(
 	onCancel: () -> Unit,
 	onSelect: () -> Unit,
+	userMessages: UserMessages,
 	modifier: Modifier = Modifier,
 ) {
 	ActionStrip(modifier) {
 		ActionButton(
+			userMessages,
 			Action(R.drawable.ic_cancel, R.string.objects_cancel, onCancel),
 			0,
 			Modifier.weight(1f),
 		)
 		ActionButton(
+			userMessages,
 			Action(R.drawable.ic_check, R.string.select, onSelect),
 			0,
 			Modifier.weight(1f),
@@ -154,11 +167,13 @@ fun ImportActionBar(
 	onCancel: () -> Unit,
 	onImport: () -> Unit,
 	onDone: () -> Unit,
+	userMessages: UserMessages,
 	modifier: Modifier = Modifier,
 ) {
 	ActionStrip(modifier) {
 		if (imported) {
 			ActionButton(
+				userMessages,
 				Action(R.drawable.ic_check, R.string.done, onDone),
 				0,
 				Modifier.weight(1f),
@@ -167,11 +182,13 @@ fun ImportActionBar(
 			// a busy mover keeps both buttons in place, so cancel and import explain their wait
 			val blockedReason = if (busy) R.string.unavailable_import_busy else 0
 			ActionButton(
+				userMessages,
 				Action(R.drawable.ic_cancel, R.string.objects_cancel, onCancel),
 				blockedReason,
 				Modifier.weight(1f),
 			)
 			ActionButton(
+				userMessages,
 				Action(0, R.string.import_here, onImport),
 				blockedReason,
 				Modifier.weight(1f),
@@ -200,6 +217,7 @@ private fun ActionStrip(
 /** One icon-over-label button. A non-zero blocked reason mutes it and explains the tap. */
 @Composable
 private fun ActionButton(
+	userMessages: UserMessages,
 	action: Action,
 	blockedReason: Int,
 	modifier: Modifier = Modifier,
@@ -208,7 +226,7 @@ private fun ActionButton(
 	Column(
 		modifier
 			.fillMaxHeight()
-			.clickable { if (enabled) action.onClick() else reportUnavailable(blockedReason) },
+			.clickable { if (enabled) action.onClick() else reportUnavailable(userMessages, blockedReason) },
 		horizontalAlignment = Alignment.CenterHorizontally,
 		verticalArrangement = Arrangement.Center,
 	) {

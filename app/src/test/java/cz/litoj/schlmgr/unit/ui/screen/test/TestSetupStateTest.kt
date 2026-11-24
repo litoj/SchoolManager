@@ -1,7 +1,8 @@
 package cz.litoj.schlmgr.unit.ui.screen.test
 
 import androidx.room.Room
-import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.app.Settings
+import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemDatabase
@@ -31,13 +32,16 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 class TestSetupStateTest {
 
+	private val testSetup get() = TestSetupState.shared
+
 	private lateinit var db: ItemDatabase
+	private lateinit var settings: Settings
 
 	/** Process-wide state: every test leaves it empty, failure included. */
 	@After
 	fun resetState() {
-		TestSetupState.reset()
-		TestSetupState.childrenLookup = ItemRepository::children
+		testSetup.reset()
+		testSetup.childrenLookup = ItemRepository::children
 		db.close()
 		ItemRepository.resetForTest()
 	}
@@ -45,13 +49,13 @@ class TestSetupStateTest {
 	/** The doors refresh the counts, which read the database. */
 	@Before
 	fun fakeTree() {
-		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
+		settings = Settings(RuntimeEnvironment.getApplication())
 		db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
 			.allowMainThreadQueries()
 			.build()
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
-		TestSetupState.childrenLookup = { emptyList() }
+		testSetup.childrenLookup = { emptyList() }
 	}
 
 	private fun item(id: Int, name: String = "i$id") =
@@ -59,28 +63,28 @@ class TestSetupStateTest {
 
 	@Test
 	fun `an emptied field falls back to the engine setting at the start`() {
-		TestSetupState.setAmount("5")
-		TestSetupState.setTime("1.5")
+		testSetup.setAmount("5")
+		testSetup.setTime("1.5")
 
-		TestSetupState.setAmount("0")
-		TestSetupState.setTime("")
+		testSetup.setAmount("0")
+		testSetup.setTime("")
 
 		// committed as typed, and the field can be emptied and refilled
-		assertEquals("0", TestSetupState.amountText)
-		assertEquals("", TestSetupState.timeText)
+		assertEquals("0", testSetup.amountText)
+		assertEquals("", testSetup.timeText)
 		// the fresh-entry reset re-reads the settings of the engine
-		TestSetupState.reset()
-		assertEquals(TestEngine.amount.toString(), TestSetupState.amountText)
-		assertEquals(TestEngine.getSecondsPerChar().toString(), TestSetupState.timeText)
+		testSetup.reset()
+		assertEquals(TestEngine.amount.toString(), testSetup.amountText)
+		assertEquals(TestEngine.getSecondsPerChar().toString(), testSetup.timeText)
 	}
 
 	@Test
 	fun `the fresh-entry reset re-reads the saved direction`() {
 		TestEngine.applyReversed(true)
 		try {
-			TestSetupState.setReverse(false)
-			TestSetupState.reset()
-			assertTrue("the reset takes the engine direction", TestSetupState.reverseTest)
+			testSetup.setReverse(false)
+			testSetup.reset()
+			assertTrue("the reset takes the engine direction", testSetup.reverseTest)
 		} finally {
 			TestEngine.applyReversed(false)
 		}
@@ -88,50 +92,52 @@ class TestSetupStateTest {
 
 	@Test
 	fun `the focus-lost doors restore an unusable field, keeping a valid one`() {
-		val model = TestSetupViewModel()
-		TestSetupState.setAmount("0")
-		TestSetupState.setTime("")
+		val model = TestSetupViewModel(
+			settings = settings, userMessages = UserMessages(RuntimeEnvironment.getApplication()))
+		testSetup.setAmount("0")
+		testSetup.setTime("")
 
 		model.restoreAmount()
 		model.restoreTime()
 
-		assertEquals(TestEngine.amount.toString(), TestSetupState.amountText)
-		assertEquals(TestEngine.getSecondsPerChar().toString(), TestSetupState.timeText)
+		assertEquals(TestEngine.amount.toString(), testSetup.amountText)
+		assertEquals(TestEngine.getSecondsPerChar().toString(), testSetup.timeText)
 
-		TestSetupState.setAmount("7")
-		TestSetupState.setTime("0.8")
+		testSetup.setAmount("7")
+		testSetup.setTime("0.8")
 		model.restoreAmount()
 		model.restoreTime()
-		assertEquals("7", TestSetupState.amountText)
-		assertEquals("0.8", TestSetupState.timeText)
+		assertEquals("7", testSetup.amountText)
+		assertEquals("0.8", testSetup.timeText)
 	}
 
 	@Test
 	fun `a written separator stands for a dot and a zero restores the setting`() {
-		TestSetupState.setTime("2,5")
-		assertEquals("2.5", TestSetupState.timeText)
+		testSetup.setTime("2,5")
+		assertEquals("2.5", testSetup.timeText)
 
-		TestSetupState.setTime("0")
-		TestSetupViewModel().restoreTime()
-		assertEquals(TestEngine.getSecondsPerChar().toString(), TestSetupState.timeText)
+		testSetup.setTime("0")
+		TestSetupViewModel(
+			settings = settings, userMessages = UserMessages(RuntimeEnvironment.getApplication())).restoreTime()
+		assertEquals(TestEngine.getSecondsPerChar().toString(), testSetup.timeText)
 	}
 
 	@Test
 	fun `within matches a chain prefix by row id`() {
 		val a = item(1)
 		val b = item(2)
-		assertTrue(TestSetupState.within(listOf(a), listOf(a, b)))
-		assertTrue(TestSetupState.within(listOf(a, b), listOf(a, b)))
-		assertTrue(TestSetupState.within(emptyList(), listOf(a)))
+		assertTrue(testSetup.within(listOf(a), listOf(a, b)))
+		assertTrue(testSetup.within(listOf(a, b), listOf(a, b)))
+		assertTrue(testSetup.within(emptyList(), listOf(a)))
 	}
 
 	@Test
 	fun `within rejects a longer prefix and a diverging id`() {
 		val a = item(1)
 		val b = item(2)
-		assertFalse(TestSetupState.within(listOf(a, b), listOf(a)))
-		assertFalse(TestSetupState.within(listOf(item(9)), listOf(a, b)))
-		assertFalse(TestSetupState.within(listOf(b), listOf(a, b)))
+		assertFalse(testSetup.within(listOf(a, b), listOf(a)))
+		assertFalse(testSetup.within(listOf(item(9)), listOf(a, b)))
+		assertFalse(testSetup.within(listOf(b), listOf(a, b)))
 	}
 
 	@Test
@@ -139,7 +145,7 @@ class TestSetupStateTest {
 		val chain = listOf(item(1), item(2))
 		val list = arrayListOf(chain, listOf(item(1), item(2)))
 
-		TestSetupState.dedup(list)
+		testSetup.dedup(list)
 
 		assertEquals(1, list.size)
 		assertEquals(chain, list.single())
@@ -151,26 +157,26 @@ class TestSetupStateTest {
 		val covered = listOf(item(1), item(2))
 
 		val listed = arrayListOf(ancestor, covered)
-		TestSetupState.dedup(listed)
+		testSetup.dedup(listed)
 		assertEquals(listOf(ancestor), listed)
 
 		val reversed = arrayListOf(covered, ancestor)
-		TestSetupState.dedup(reversed)
+		testSetup.dedup(reversed)
 		assertEquals(listOf(ancestor), reversed)
 	}
 
 	@Test
 	fun `dedup keeps disjoint chains and short lists`() {
 		val disjoint = arrayListOf(listOf(item(1)), listOf(item(2)))
-		TestSetupState.dedup(disjoint)
+		testSetup.dedup(disjoint)
 		assertEquals(2, disjoint.size)
 
 		val single = arrayListOf(listOf(item(1)))
-		TestSetupState.dedup(single)
+		testSetup.dedup(single)
 		assertEquals(1, single.size)
 
 		val empty = arrayListOf<List<DbItem>>()
-		TestSetupState.dedup(empty)
+		testSetup.dedup(empty)
 		assertTrue(empty.isEmpty())
 	}
 
@@ -181,7 +187,7 @@ class TestSetupStateTest {
 		val hit = item(3, "word")
 		val row = ItemRow.ofSearchHit(hit, listOf(root, parent), 1, emptyList())
 
-		assertEquals(listOf(root, parent, hit), TestSetupState.chainOfSeed(TestSetupState.seedOf(row)))
+		assertEquals(listOf(root, parent, hit), testSetup.chainOfSeed(testSetup.seedOf(row)))
 	}
 
 	@Test
@@ -189,7 +195,7 @@ class TestSetupStateTest {
 		val subject = item(1, "subject")
 		val row = ItemRow(subject, null, 1)
 
-		assertEquals(listOf(subject), TestSetupState.chainOfSeed(TestSetupState.seedOf(row)))
+		assertEquals(listOf(subject), testSetup.chainOfSeed(testSetup.seedOf(row)))
 	}
 
 	@Test
@@ -210,13 +216,13 @@ class TestSetupStateTest {
 		val coveredWord = ItemRow.ofSearchHit(item(3, "word"), listOf(subject, chapter), 1, emptyList())
 		val wholeSubject = ItemRow.ofSearchHit(subject, emptyList(), 1, emptyList())
 
-		TestSetupState.fillFromSelection(listOf(coveredWord, wholeSubject).map(TestSetupState::seedOf))
+		testSetup.fillFromSelection(listOf(coveredWord, wholeSubject).map(testSetup::seedOf))
 
-		assertEquals(1, TestSetupState.list.size)
-		assertEquals(listOf(subject), TestSetupState.list.single())
+		assertEquals(1, testSetup.list.size)
+		assertEquals(listOf(subject), testSetup.list.single())
 
-		TestSetupState.reset()
-		assertFalse(TestSetupState.hasSources())
+		testSetup.reset()
+		assertFalse(testSetup.hasSources())
 	}
 
 	@Test
@@ -225,60 +231,60 @@ class TestSetupStateTest {
 		val first = ItemRow.ofSearchHit(item(2, "chapter"), listOf(subject), 1, emptyList())
 		val second = ItemRow.ofSearchHit(item(3, "note"), listOf(subject), 2, emptyList())
 
-		TestSetupState.addPicked(listOf(TestSetupState.seedOf(first)))
-		TestSetupState.addPicked(listOf(TestSetupState.seedOf(second)))
+		testSetup.addPicked(listOf(testSetup.seedOf(first)))
+		testSetup.addPicked(listOf(testSetup.seedOf(second)))
 
-		assertEquals(listOf(subject, item(3, "note")), TestSetupState.list[0])
-		assertEquals(listOf(subject, item(2, "chapter")), TestSetupState.list[1])
-		assertEquals(2, TestSetupState.list.size)
+		assertEquals(listOf(subject, item(3, "note")), testSetup.list[0])
+		assertEquals(listOf(subject, item(2, "chapter")), testSetup.list[1])
+		assertEquals(2, testSetup.list.size)
 
-		TestSetupState.removeSource(TestSetupState.list[0])
-		assertEquals(1, TestSetupState.list.size)
-		TestSetupState.reset()
+		testSetup.removeSource(testSetup.list[0])
+		assertEquals(1, testSetup.list.size)
+		testSetup.reset()
 	}
 
 	@Test
 	fun `fillFromSelection refuses a selection spanning several subjects`() {
-		TestSetupState.reset()
+		testSetup.reset()
 		val a = ItemRow.ofSearchHit(item(2, "chapter"), listOf(item(1, "a")), 1, emptyList())
 		val b = ItemRow.ofSearchHit(item(4, "word"), listOf(item(3, "b")), 1, emptyList())
 
-		val refused = TestSetupState.fillFromSelection(listOf(a, b).map(TestSetupState::seedOf))
+		val refused = testSetup.fillFromSelection(listOf(a, b).map(testSetup::seedOf))
 
 		assertFalse(refused.isEmpty())
-		assertFalse(TestSetupState.hasSources())
+		assertFalse(testSetup.hasSources())
 	}
 
 	@Test
 	fun `addPicked refuses rows of another subject whole`() {
-		TestSetupState.reset()
+		testSetup.reset()
 		val subject = item(1, "subject")
-		TestSetupState.addPicked(listOf(TestSetupState.seedOf(ItemRow.ofSearchHit(item(2, "chapter"), listOf(subject), 1, emptyList()))))
+		testSetup.addPicked(listOf(testSetup.seedOf(ItemRow.ofSearchHit(item(2, "chapter"), listOf(subject), 1, emptyList()))))
 		val foreign = ItemRow.ofSearchHit(item(4, "word"), listOf(item(3, "other")), 1, emptyList())
 
-		val refused = TestSetupState.addPicked(listOf(TestSetupState.seedOf(foreign)))
+		val refused = testSetup.addPicked(listOf(testSetup.seedOf(foreign)))
 
 		assertEquals(listOf(foreign), refused)
 		// the whole pick is refused, so the kept sources stay unchanged
-		assertEquals(1, TestSetupState.list.size)
-		TestSetupState.reset()
+		assertEquals(1, testSetup.list.size)
+		testSetup.reset()
 	}
 
 	@Test
 	fun `addPicked refuses a mixed first pick entirely`() {
-		TestSetupState.reset()
+		testSetup.reset()
 		val a = ItemRow.ofSearchHit(item(2, "chapter"), listOf(item(1, "a")), 1, emptyList())
 		val b = ItemRow.ofSearchHit(item(4, "word"), listOf(item(3, "b")), 1, emptyList())
 
-		val refused = TestSetupState.addPicked(listOf(a, b).map(TestSetupState::seedOf))
+		val refused = testSetup.addPicked(listOf(a, b).map(testSetup::seedOf))
 
 		assertFalse(refused.isEmpty())
-		assertFalse(TestSetupState.hasSources())
+		assertFalse(testSetup.hasSources())
 	}
 
 	private fun pick(vararg chains: List<DbItem>) {
-		TestSetupState.addPicked(chains.map {
-			TestSetupState.seedOf(ItemRow.ofSearchHit(it.last(), it.dropLast(1), 1, emptyList()))
+		testSetup.addPicked(chains.map {
+			testSetup.seedOf(ItemRow.ofSearchHit(it.last(), it.dropLast(1), 1, emptyList()))
 		})
 	}
 
@@ -289,10 +295,10 @@ class TestSetupStateTest {
 		val second = listOf(subject, item(3))
 		pick(first, second)
 
-		assertEquals(1, TestSetupState.removeSource(second))
+		assertEquals(1, testSetup.removeSource(second))
 
-		assertEquals(null, TestSetupState.removeSource(second))
-		assertEquals(listOf(first), TestSetupState.list)
+		assertEquals(null, testSetup.removeSource(second))
+		assertEquals(listOf(first), testSetup.list)
 	}
 
 	@Test
@@ -300,7 +306,7 @@ class TestSetupStateTest {
 		val subject = item(1, "subject")
 		val chapter = item(2, "chapter")
 		val word = DbItem(id = 3, name = "w", description = "", type = ItemKind.WORD)
-		TestSetupState.childrenLookup = { id ->
+		testSetup.childrenLookup = { id ->
 			when (id) {
 				1 -> listOf(chapter)
 				2 -> listOf(word)
@@ -308,14 +314,14 @@ class TestSetupStateTest {
 			}
 		}
 		pick(listOf(subject, chapter))
-		assertEquals(1, TestSetupState.poolCount)
-		assertEquals(1, TestSetupState.sourceCounts.size)
+		assertEquals(1, testSetup.poolCount)
+		assertEquals(1, testSetup.sourceCounts.size)
 
-		TestSetupState.clearSources()
+		testSetup.clearSources()
 
-		assertFalse(TestSetupState.hasSources())
-		assertEquals(0, TestSetupState.poolCount)
-		assertTrue(TestSetupState.sourceCounts.isEmpty())
+		assertFalse(testSetup.hasSources())
+		assertEquals(0, testSetup.poolCount)
+		assertTrue(testSetup.sourceCounts.isEmpty())
 	}
 
 	@Test
@@ -325,11 +331,11 @@ class TestSetupStateTest {
 		val middle = listOf(subject, item(3))
 		val last = listOf(subject, item(4))
 		pick(first, middle, last)
-		val index = TestSetupState.removeSource(middle)!!
+		val index = testSetup.removeSource(middle)!!
 
-		assertTrue(TestSetupState.restoreSource(middle, index))
+		assertTrue(testSetup.restoreSource(middle, index))
 
-		assertEquals(listOf(first, middle, last), TestSetupState.list)
+		assertEquals(listOf(first, middle, last), testSetup.list)
 	}
 
 	@Test
@@ -338,25 +344,25 @@ class TestSetupStateTest {
 		val first = listOf(subject, item(2))
 		val last = listOf(subject, item(3))
 		pick(first, last)
-		val index = TestSetupState.removeSource(last)!!
-		TestSetupState.removeSource(first)
+		val index = testSetup.removeSource(last)!!
+		testSetup.removeSource(first)
 
-		assertTrue(TestSetupState.restoreSource(last, index))
+		assertTrue(testSetup.restoreSource(last, index))
 
-		assertEquals(listOf(last), TestSetupState.list)
+		assertEquals(listOf(last), testSetup.list)
 	}
 
 	@Test
 	fun `restoreSource refuses a chain of another subject`() {
 		val removed = listOf(item(1, "a"), item(2))
 		pick(removed)
-		val index = TestSetupState.removeSource(removed)!!
+		val index = testSetup.removeSource(removed)!!
 		val other = listOf(item(3, "b"), item(4))
 		pick(other)
 
-		assertFalse(TestSetupState.restoreSource(removed, index))
+		assertFalse(testSetup.restoreSource(removed, index))
 
-		assertEquals(listOf(other), TestSetupState.list)
+		assertEquals(listOf(other), testSetup.list)
 	}
 
 	@Test
@@ -364,22 +370,22 @@ class TestSetupStateTest {
 		val subject = item(1, "subject")
 		val word = listOf(subject, item(2), item(3))
 		pick(word)
-		val index = TestSetupState.removeSource(word)!!
+		val index = testSetup.removeSource(word)!!
 		val chapter = listOf(subject, item(2))
 		pick(chapter)
 
-		TestSetupState.restoreSource(word, index)
+		testSetup.restoreSource(word, index)
 
-		assertEquals(listOf(chapter), TestSetupState.list)
+		assertEquals(listOf(chapter), testSetup.list)
 	}
 
 	@Test
 	fun `hierarchyPicked reports a whole subject source`() {
-		assertFalse(TestSetupState.hierarchyPicked())
+		assertFalse(testSetup.hierarchyPicked())
 		val subject = item(1, "subject")
-		TestSetupState.addPicked(listOf(TestSetupState.seedOf(ItemRow.ofSearchHit(subject, emptyList(), 1, emptyList()))))
-		assertTrue(TestSetupState.hierarchyPicked())
-		TestSetupState.reset()
+		testSetup.addPicked(listOf(testSetup.seedOf(ItemRow.ofSearchHit(subject, emptyList(), 1, emptyList()))))
+		assertTrue(testSetup.hierarchyPicked())
+		testSetup.reset()
 	}
 
 	@Test
@@ -389,7 +395,7 @@ class TestSetupStateTest {
 		val word3 = DbItem(id = 3, name = "w3", description = "", type = ItemKind.WORD)
 		val word4 = DbItem(id = 4, name = "w4", description = "", type = ItemKind.WORD)
 		val word9 = DbItem(id = 9, name = "w9", description = "", type = ItemKind.WORD)
-		TestSetupState.childrenLookup = { id ->
+		testSetup.childrenLookup = { id ->
 			when (id) {
 				1 -> listOf(chapter, word9)
 				2 -> listOf(word3, word4)
@@ -399,43 +405,74 @@ class TestSetupStateTest {
 		val chapterSource = ItemRow.ofSearchHit(chapter, listOf(subject), 1, emptyList())
 		val wordSource = ItemRow.ofSearchHit(word9, listOf(subject), 1, emptyList())
 
-		TestSetupState.fillFromSelection(listOf(chapterSource, wordSource).map(TestSetupState::seedOf))
+		testSetup.fillFromSelection(listOf(chapterSource, wordSource).map(testSetup::seedOf))
 
 		// the chapter holds two words and the word source one, with none shared
-		assertEquals(3, TestSetupState.poolCount)
-		assertEquals(2, TestSetupState.sourceCounts[listOf(subject, chapter)])
-		assertEquals(1, TestSetupState.sourceCounts[listOf(subject, word9)])
+		assertEquals(3, testSetup.poolCount)
+		assertEquals(2, testSetup.sourceCounts[listOf(subject, chapter)])
+		assertEquals(1, testSetup.sourceCounts[listOf(subject, word9)])
 	}
 
 	@Test
 	fun `the caption time follows the typed multiplier and the picked pool`() {
-		TestSetupState.childrenLookup = { emptyList() }
+		testSetup.childrenLookup = { emptyList() }
 		val subject = item(1, "subject")
 		val first = DbItem(id = 2, name = "plain", description = "", type = ItemKind.WORD)
 		val second = DbItem(id = 3, name = "other", description = "", type = ItemKind.WORD)
-		TestSetupState.addPicked(listOf(
-			TestSetupState.seedOf(ItemRow.ofSearchHit(first, listOf(subject), 1, emptyList()))))
-		TestSetupState.setAmount("1")
-		TestSetupState.setTime("2")
+		testSetup.addPicked(listOf(
+			testSetup.seedOf(ItemRow.ofSearchHit(first, listOf(subject), 1, emptyList()))))
+		testSetup.setAmount("1")
+		testSetup.setTime("2")
 		val one = TestEntry(first, listOf(subject, first))
 
 		// the seconds are the engine's, so the caption only shows the typed multiplier
 		assertEquals("the typed multiplier times the picked word",
-			TestEngine.testTime(2f, listOf(one)), TestSetupState.timeSeconds())
+			TestEngine.testTime(2f, listOf(one)), testSetup.timeSeconds())
 
 		// an empty field times with the seconds-per-character setting of the engine
-		TestSetupState.setTime("")
+		testSetup.setTime("")
 		assertEquals("an empty field falls back to the engine setting",
-			TestEngine.testTime(TestEngine.getSecondsPerChar(), listOf(one)), TestSetupState.timeSeconds())
+			TestEngine.testTime(TestEngine.getSecondsPerChar(), listOf(one)), testSetup.timeSeconds())
 
 		// the caption times the pool the picker holds, not only the first pick
-		TestSetupState.addPicked(listOf(
-			TestSetupState.seedOf(ItemRow.ofSearchHit(second, listOf(subject), 2, emptyList()))))
-		TestSetupState.setAmount("2")
-		TestSetupState.setTime("2")
+		testSetup.addPicked(listOf(
+			testSetup.seedOf(ItemRow.ofSearchHit(second, listOf(subject), 2, emptyList()))))
+		testSetup.setAmount("2")
+		testSetup.setTime("2")
 		assertEquals("the caption times every picked word",
 			TestEngine.testTime(2f, listOf(TestEntry(second, listOf(subject, second)), one)),
-			TestSetupState.timeSeconds())
+			testSetup.timeSeconds())
+	}
+
+	@Test
+	fun `captured translations time a reversed source and survive clear with undo`() {
+		val subject = item(1, "subject")
+		val word = DbItem(id = 2, name = "w", description = "", type = ItemKind.WORD)
+		val chain = listOf(subject, word)
+		val translation = DbItem(id = 3, name = "long translation", description = "", type = ItemKind.TRANSLATION)
+		val entry = TestEntry(word, chain, listOf(translation))
+		val reversed = TestEngine.isReversed
+		TestEngine.applyReversed(true)
+		try {
+			testSetup.addPicked(
+				listOf(testSetup.seedOf(ItemRow.ofSearchHit(word, listOf(subject), 1, emptyList()))),
+				entries = mapOf(chain to listOf(entry)),
+			)
+			testSetup.setAmount("1")
+			testSetup.setTime("2")
+			val expected = TestEngine.testTime(2f, listOf(entry))
+			assertEquals(expected, testSetup.timeSeconds())
+
+			testSetup.clearSources()
+			assertTrue(testSetup.restoreSource(chain, 0))
+			assertEquals(expected, testSetup.timeSeconds())
+
+			testSetup.childrenLookup = null
+			testSetup.reset()
+			assertFalse(testSetup.restoreSource(chain, 0))
+		} finally {
+			TestEngine.applyReversed(reversed)
+		}
 	}
 
 	@Test
@@ -445,7 +482,7 @@ class TestSetupStateTest {
 		val second = DbItem(id = 3, name = "second", description = "", type = ItemKind.CHAPTER)
 		val one = DbItem(id = 4, name = "one", description = "", type = ItemKind.WORD)
 		val shared = DbItem(id = 5, name = "shared", description = "", type = ItemKind.WORD)
-		TestSetupState.childrenLookup = { id ->
+		testSetup.childrenLookup = { id ->
 			when (id) {
 				1 -> listOf(first, second)
 				2 -> listOf(one, shared)
@@ -455,17 +492,17 @@ class TestSetupStateTest {
 		}
 		val chains = listOf(first, second)
 			.map { ItemRow.ofSearchHit(it, listOf(subject), 1, emptyList()) }
-			.map(TestSetupState::seedOf)
-		TestSetupState.fillFromSelection(chains)
+			.map(testSetup::seedOf)
+		testSetup.fillFromSelection(chains)
 
-		assertEquals(2, TestSetupState.poolCount)
-		TestSetupState.childrenLookup = { id -> throw AssertionError("removal looked up $id") }
-		TestSetupState.removeSource(listOf(subject, first))
+		assertEquals(2, testSetup.poolCount)
+		testSetup.childrenLookup = { id -> throw AssertionError("removal looked up $id") }
+		testSetup.removeSource(listOf(subject, first))
 		assertEquals("a shared word remains while the unique word leaves",
-			1, TestSetupState.poolCount)
-		assertEquals(1, TestSetupState.sourceCounts[listOf(subject, second)])
-		TestSetupState.removeSource(listOf(subject, second))
-		assertEquals(0, TestSetupState.poolCount)
+			1, testSetup.poolCount)
+		assertEquals(1, testSetup.sourceCounts[listOf(subject, second)])
+		testSetup.removeSource(listOf(subject, second))
+		assertEquals(0, testSetup.poolCount)
 	}
 
 	@Test
@@ -475,7 +512,7 @@ class TestSetupStateTest {
 		val second = DbItem(id = 3, name = "second", description = "", type = ItemKind.CHAPTER)
 		val one = DbItem(id = 4, name = "one", description = "", type = ItemKind.WORD)
 		val shared = DbItem(id = 5, name = "shared", description = "", type = ItemKind.WORD)
-		TestSetupState.childrenLookup = { id ->
+		testSetup.childrenLookup = { id ->
 			when (id) {
 				1 -> listOf(first, second)
 				2 -> listOf(one, shared)
@@ -483,22 +520,22 @@ class TestSetupStateTest {
 				else -> emptyList()
 			}
 		}
-		TestSetupState.fillFromSelection(listOf(first, second)
+		testSetup.fillFromSelection(listOf(first, second)
 			.map { ItemRow.ofSearchHit(it, listOf(subject), 1, emptyList()) }
-			.map(TestSetupState::seedOf))
-		TestSetupState.setAmount("1")
-		TestSetupState.setTime("2")
+			.map(testSetup::seedOf))
+		testSetup.setAmount("1")
+		testSetup.setTime("2")
 
-		TestSetupState.removeSource(listOf(subject, first))
-		val afterRemoval = TestSetupState.timeSeconds()
+		testSetup.removeSource(listOf(subject, first))
+		val afterRemoval = testSetup.timeSeconds()
 
 		// the same setup picked fresh holds only the remaining words
-		TestSetupState.reset()
-		TestSetupState.fillFromSelection(listOf(ItemRow.ofSearchHit(second, listOf(subject), 1, emptyList()))
-			.map(TestSetupState::seedOf))
-		TestSetupState.setAmount("1")
-		TestSetupState.setTime("2")
-		assertEquals("the pool drops the removed words", TestSetupState.timeSeconds(), afterRemoval)
+		testSetup.reset()
+		testSetup.fillFromSelection(listOf(ItemRow.ofSearchHit(second, listOf(subject), 1, emptyList()))
+			.map(testSetup::seedOf))
+		testSetup.setAmount("1")
+		testSetup.setTime("2")
+		assertEquals("the pool drops the removed words", testSetup.timeSeconds(), afterRemoval)
 	}
 
 	@Test
@@ -506,7 +543,7 @@ class TestSetupStateTest {
 		val subject = DbItem(id = 1, name = "subject", description = "", type = ItemKind.CHAPTER)
 		val chapter = DbItem(id = 2, name = "chapter", description = "", type = ItemKind.CHAPTER)
 		val word = DbItem(id = 3, name = "word", description = "", type = ItemKind.WORD)
-		TestSetupState.childrenLookup = { id ->
+		testSetup.childrenLookup = { id ->
 			when (id) {
 				1 -> listOf(chapter)
 				2 -> listOf(word)
@@ -515,12 +552,12 @@ class TestSetupStateTest {
 		}
 		val directSource = ItemRow.ofSearchHit(word, listOf(subject), 1, emptyList())
 		val chapterSource = ItemRow.ofSearchHit(chapter, listOf(subject), 1, emptyList())
-		TestSetupState.fillFromSelection(listOf(directSource, chapterSource).map(TestSetupState::seedOf))
+		testSetup.fillFromSelection(listOf(directSource, chapterSource).map(testSetup::seedOf))
 
-		assertEquals(1, TestSetupState.poolCount)
-		TestSetupState.removeSource(listOf(subject, word))
-		assertEquals("chapter", TestSetupState.list.single().last().name)
-		assertEquals(1, TestSetupState.poolCount)
+		assertEquals(1, testSetup.poolCount)
+		testSetup.removeSource(listOf(subject, word))
+		assertEquals("chapter", testSetup.list.single().last().name)
+		assertEquals(1, testSetup.poolCount)
 	}
 
 	@Test
@@ -529,7 +566,7 @@ class TestSetupStateTest {
 		val firstLookup = CountDownLatch(1)
 		val secondLookup = CountDownLatch(1)
 		val releaseFirst = CountDownLatch(1)
-		TestSetupState.childrenLookup = {
+		testSetup.childrenLookup = {
 			when (Thread.currentThread().name) {
 				"setup-first" -> {
 					firstLookup.countDown()
@@ -539,13 +576,13 @@ class TestSetupStateTest {
 			}
 			emptyList()
 		}
-		val seed = TestSetupState.seedOf(ItemRow.ofSearchHit(subject, emptyList(), 1, emptyList()))
+		val seed = testSetup.seedOf(ItemRow.ofSearchHit(subject, emptyList(), 1, emptyList()))
 		val first = thread(name = "setup-first", isDaemon = true) {
-			TestSetupState.addPicked(listOf(seed))
+			testSetup.addPicked(listOf(seed))
 		}
 		assertTrue(firstLookup.await(5, TimeUnit.SECONDS))
 		val second = thread(name = "setup-second", isDaemon = true) {
-			TestSetupState.addPicked(listOf(seed))
+			testSetup.addPicked(listOf(seed))
 		}
 
 		assertFalse("a second source mutation entered its lookup concurrently",

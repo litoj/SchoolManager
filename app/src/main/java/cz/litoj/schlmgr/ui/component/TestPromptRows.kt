@@ -23,15 +23,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.db.DbItem
-import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestTaskModel
 import cz.litoj.schlmgr.ui.screen.test.TestRunState
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import kotlinx.coroutines.launch
 
 /** The side the run shows: the word reversed, its translations by default. */
-internal fun promptItems(word: DbItem, translations: List<DbItem>): List<DbItem> =
-	if (TestEngine.isReversed) listOf(word) else translations
+internal fun promptItems(word: DbItem, translations: List<DbItem>, reversed: Boolean = TestRunState.testConfig.reversed): List<DbItem> =
+	if (reversed) listOf(word) else translations
 
 /**
  * The prompt of one row, parsed like the explorer rows.
@@ -83,14 +82,14 @@ internal fun SharedPromptRow(
 		Column(Modifier.fillMaxWidth().padding(5.dp)) {
 			val shown = task.members.first()
 			Row(verticalAlignment = Alignment.CenterVertically) {
-				PromptLines(promptItems(shown.word, shown.translations), Modifier.weight(1f))
+				PromptLines(promptItems(shown.word, shown.translations, task.config.reversed), Modifier.weight(1f))
 				Text(
 					pluralStringResource(R.plurals.test_synonyms, task.answerFields.size, task.answerFields.size),
 					style = TextStyle(fontSize = 13.sp, color = colorResource(R.color.colorPrimaryFg)),
 				)
 			}
 			// a required variant can repeat across two words, so only the ordinary block asks for different texts
-			if (!TestEngine.requireAllVariants) Text(
+			if (!task.config.requireAllVariants) Text(
 				stringResource(R.string.test_answers_different),
 				style = TextStyle(fontSize = 13.sp, color = colorResource(R.color.colorPrimaryFg)),
 			)
@@ -106,9 +105,9 @@ internal fun SharedPromptRow(
 			AnswerField(
 				index,
 				when {
-					TestEngine.isReversed && TestEngine.requireAllVariants -> R.string.test_variants_translation
-					TestEngine.isReversed -> R.string.data_translate
-					TestEngine.requireAllVariants -> R.string.test_variants_word
+					task.config.reversed && task.config.requireAllVariants -> R.string.test_variants_translation
+					task.config.reversed -> R.string.data_translate
+					task.config.requireAllVariants -> R.string.test_variants_word
 					else -> R.string.data_word
 				},
 				answerFocus, isLast && offset == task.answerFields.lastIndex,

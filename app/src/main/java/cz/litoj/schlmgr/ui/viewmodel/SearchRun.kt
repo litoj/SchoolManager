@@ -1,7 +1,7 @@
 package cz.litoj.schlmgr.ui.viewmodel
 
 import cz.litoj.schlmgr.data.db.DbItem
-import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.ui.search.SearchEngine
 import cz.litoj.schlmgr.ui.search.SearchIndex
 import kotlinx.coroutines.CoroutineDispatcher
@@ -21,6 +21,7 @@ internal class SearchRun(
 	private val scope: CoroutineScope,
 	private val io: CoroutineDispatcher,
 	private val host: Host,
+	private val graphs: GraphQueries? = null,
 ) {
 
 	interface Host {
@@ -39,15 +40,13 @@ internal class SearchRun(
 
 	fun start(engine: SearchEngine, path: List<DbItem>, marked: Set<Int> = emptySet()) {
 		this.engine = engine
+		val rowOptions = ItemRow.currentSearchOptions()
 		job = scope.launch {
 			// a run always has a root.
 			val root = path.lastOrNull() ?: return@launch
 			val index = withContext(io) {
-				SearchIndex(
-					ItemRepository.subgraph(root.id),
-					ItemRepository.subgraphLinks(root.id),
-					ItemRepository.subgraphChildLinks(root.id),
-				)
+				val snapshot = checkNotNull(graphs).snapshot(root.id)
+				SearchIndex(snapshot.items, snapshot.links, snapshot.childLinks)
 			}
 			// the run may have been superseded in preload.
 			if (!engine.isActive) return@launch
@@ -60,7 +59,7 @@ internal class SearchRun(
 				engine.search(index, path, inside) { item, hitPath, matchedTranslation ->
 					rows.trySend(ItemRow.ofSearchHit(item, hitPath, ++position, index.linksOf(item.id),
 						index.wordTranslations(item), matchedTranslation,
-						shownPath = hitPath.drop(path.size)))
+						shownPath = hitPath.drop(path.size), options = rowOptions))
 				}
 				rows.close()
 			}

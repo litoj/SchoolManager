@@ -52,7 +52,7 @@ class TestEngineTimeTest {
 		val chapter = ItemRepository.createChapter(subject.id, "c", null)
 		return words.map { (name, translations) ->
 			val word = ItemRepository.createWord(chapter.id, name, null, translations.map { it to null })
-			TestEntry(word, listOf(subject, chapter, word))
+			TestEntry(word, listOf(subject, chapter, word), ItemRepository.translations(word.id))
 		}
 	}
 

@@ -63,9 +63,9 @@ class TestResultsHelpTest {
 		val subject = ItemRepository.createSubject("A", null)
 		val chapter = ItemRepository.createChapter(subject.id, "c1", null)
 		val word = ItemRepository.createWord(chapter.id, "chleba", null, listOf("bread" to null))
-		val model = TestItemModel(TestEntry(word, listOf(word)))
+		val model = TestItemModel(TestEntry(word, listOf(word), ItemRepository.translations(word.id)))
 		model.answer = "chleba"
-		return TestResultsPopup(listOf(model), 100f)
+		return TestResultsPopup(listOf(model), 100f, false)
 	}
 
 	private fun text(res: Int, vararg args: Any): String =

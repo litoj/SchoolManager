@@ -18,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -28,7 +27,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.runtime.toMutableStateList
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,11 +46,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.data.WordNames
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.component.HairlineDivider
 import cz.litoj.schlmgr.ui.component.IconSize
+import cz.litoj.schlmgr.ui.viewmodel.CreatorEditorState
 import cz.litoj.schlmgr.ui.viewmodel.CreatorResult
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.TranslationRow
@@ -92,72 +90,15 @@ class CreatorPopup(
 	 * - so nothing of the committed word survives it.
 	 * - the screen keys the composed fields on the instance, so they are rebuilt with it too.
 	 */
-	@Stable
-	private class EditorState(
-		edited: ItemRow?,
-		rows: List<TranslationRow>,
-	) {
-		/** One shot, so a rotation cannot pop the keyboard back open. */
-		var focusNameOnOpen by mutableStateOf(true)
-		var name by mutableStateOf(edited?.item?.name ?: "")
-		var description by mutableStateOf(edited?.item?.description ?: "")
-		var showRequired by mutableStateOf(false)
-
-		val translations: SnapshotStateList<TranslationRow> =
-			rows.toMutableStateList()
-				// a new word always starts with one empty translation ready to type into.
-				.apply { if (isEmpty()) add(TranslationRow("", "", null)) }
-
-		val removedTranslations = mutableListOf<DbItem>()
-
-		// snapshots of the last committed state, used for the unsaved-changes guard.
-		private val initialName = name
-		private val initialDescription = description
-		private val initialRows = translations.map { it.name to it.description }
-
-		val isDirty: Boolean
-			get() = name != initialName || description != initialDescription ||
-				removedTranslations.isNotEmpty() ||
-				translations.map { it.name to it.description } != initialRows
-
-		// the row-focus plumbing of the Enter chain, held by the editor.
-		// so a renewal drops the dead handles with the rows they belonged to
-		val nameFieldFocus = mutableStateMapOf<Long, FocusRequester>()
-		var pendingFocusId by mutableStateOf<Long?>(null)
-		var pendingKeyboardShow by mutableStateOf(false)
-
-		fun discardBlankTranslations() {
-			val blanks = translations.filter { it.name.isBlank() }
-			blanks.forEach {
-				it.source?.let(removedTranslations::add)
-				nameFieldFocus.remove(it.id)
-			}
-			translations.removeAll(blanks.toSet())
-		}
-
-		fun swapWithTranslations() {
-			discardBlankTranslations()
-			val nextName = translations.joinToString("\\") { it.name }
-			val nextDescription = translations.joinToString("\\") { it.description }
-			val rowDescriptions = WordNames.splitEscaped(description)
-			translations.clear()
-			WordNames.splitEscaped(name).forEachIndexed { index, word ->
-				translations.add(TranslationRow(word, rowDescriptions.getOrNull(index) ?: "", null))
-			}
-			name = nextName
-			description = nextDescription
-			nameFieldFocus.clear()
-			pendingFocusId = null
-		}
-	}
-
 	/**
 	 * One construction path of the editor, for the first word of a run and its renewals.
 	 * - the renewals come from [resetForNextWord].
 	 */
-	private fun freshEditor() = EditorState(
+	private fun freshEditor() = CreatorEditorState(
 		edited,
 		(content as? CreatorContent.Word)?.initial ?: emptyList(),
+		content is CreatorContent.Word,
+		isNote,
 	)
 
 	// every editor opens with the keyboard in its name field, a new item and an edit alike
@@ -227,11 +168,11 @@ class CreatorPopup(
 
 	/** A refused confirm sends the keyboard to the first missing required field. */
 	private fun focusFirstMissing() {
-		if (itemNameMissing) {
+		if (editor.itemNameMissing) {
 			runCatching { nameFocus.requestFocus() }
 			return
 		}
-		if (descriptionMissing) {
+		if (editor.descriptionMissing) {
 			runCatching { descriptionFocus.requestFocus() }
 			return
 		}
@@ -259,20 +200,7 @@ class CreatorPopup(
 			else -> R.string.data_name_word
 		}
 
-	private val itemNameMissing: Boolean
-		get() = if (content is CreatorContent.Word)
-			WordNames.splitEscaped(name).any { it.isBlank() }
-		else name.isBlank()
-
-	private val descriptionMissing: Boolean
-		get() = isNote && description.isBlank()
-
-	fun result() = CreatorResult(
-		name = name,
-		description = description,
-		translations = translations.map { TranslationValue(it.name, it.description, it.source) },
-		removedTranslations = removedTranslations.toList(),
-	)
+	fun result() = editor.result()
 
 	fun dismiss() = Dialogs.dismiss(this)
 
@@ -380,7 +308,7 @@ class CreatorPopup(
 						imeAction = ImeAction.Next,
 						focusRequester = nameFocus,
 						required = true,
-						isError = editor.showRequired && itemNameMissing,
+						isError = editor.showRequired && editor.itemNameMissing,
 					)
 					if (kind == Kind.NEW_WORD) Icon(
 						painterResource(R.drawable.ic_flip_black),
@@ -409,7 +337,7 @@ class CreatorPopup(
 					onEmptyImeAction = { onDescriptionEnter(null) },
 					imeAction = if (content is CreatorContent.Word) ImeAction.Next else ImeAction.Done,
 					required = isNote,
-					isError = editor.showRequired && descriptionMissing,
+					isError = editor.showRequired && editor.descriptionMissing,
 				)
 				// the variable middle holds the type-specific editor.
 				// - it scrolls when it outgrows the window, which the keyboard resizes.
@@ -566,9 +494,7 @@ class CreatorPopup(
 			editor.discardBlankTranslations()
 			if (translations.isEmpty()) translations.add(TranslationRow("", "", null))
 		}
-		if (itemNameMissing || descriptionMissing ||
-			content is CreatorContent.Word && translations.none { it.name.isNotBlank() }
-		) {
+		if (!editor.canSubmit) {
 			focusFirstMissing()
 			return
 		}

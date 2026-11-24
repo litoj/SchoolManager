@@ -7,13 +7,17 @@ import cz.litoj.schlmgr.R
 /** The process-wide crash sink, and the stored report the next launch reads. */
 object CrashReporter {
 
+	private lateinit var settings: Settings
+
 	/**
 	 * Installs the process-wide crash sink without calling the platform handler.
 	 * - [onUncaught] owns the report and the exit.
 	 * - delegating would double-report and double-kill.
 	 */
+
 	@SuppressLint("DefaultUncaughtExceptionDelegation")
-	fun install() {
+	fun install(settings: Settings) {
+		this.settings = settings
 		Thread.setDefaultUncaughtExceptionHandler { t, e -> onUncaught(t, e) }
 	}
 
@@ -42,7 +46,7 @@ object CrashReporter {
 				.getOrElse { "${e.toString()}\n[the trace was lost: ${it.message}]" }
 			val report = boundReport(GlobalDependencies.appContext.getString(R.string.exception_handler) +
 				(Throwables.getFirstCause(e) ?: e.toString()) + "\n\n$fullMsg")
-			AppSettings.setNow("uncaughtException", report)
+			settings.setNow("uncaughtException", report)
 			if (isDebugBuild()) Log.e("Unexpected failure", fullMsg)
 		} catch (_: Throwable) {
 			// the handler itself must stay inert, and the kill below still ends the process
@@ -62,5 +66,5 @@ object CrashReporter {
 	/** Stored crash report from the previous run, or null when there is none. */
 	@JvmStatic
 	fun getCrashReport(): String? =
-		AppSettings.getString("uncaughtException")
+		settings.getString("uncaughtException")
 }

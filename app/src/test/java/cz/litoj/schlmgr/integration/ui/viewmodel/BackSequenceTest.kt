@@ -40,7 +40,7 @@ class BackSequenceTest {
 	}
 
 	private fun row(name: String, position: Int) =
-		ItemRow(DbItem(name = name, description = "", type = ItemKind.WORD), null, position, false)
+		ItemRow(DbItem(name = name, description = "", type = ItemKind.WORD), null, position)
 
 	private fun vm(): RecordingVm {
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()

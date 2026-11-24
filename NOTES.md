@@ -295,7 +295,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 ### Test
 
 - A source is a container chain, so a picked chapter covers its words and chains dedup.
-- Source word coverage is cached per source, so removal updates counts without walking remaining sources.
+- Source entries and word coverage are cached per source, so timing includes translations and undo after Clear needs no reads.
 - Source doors serialize across the explorer, picker and setup, and a run converts an immutable source snapshot.
 - The sources header carries a clear action, which drops the whole list.
 - The picker starts at the explorer position without moving it.
@@ -348,6 +348,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 
 - A `DialogSpec` stack uses one window per dialog, so dialogs survive rotation.
 - A message dialog of a known file offers Edit in place of Copy and stays open through it.
+- `CreatorEditorState` owns field state and editing rules, while `CreatorPopup` owns rendering and focus lifecycle.
 - Every dialog title takes one header band, as tall as its button row.
 - The band is a floor, so a long title takes its second line instead of losing text.
 - A header icon holds one square tap slot at the row end, so its tap is not the glyph size.

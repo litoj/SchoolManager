@@ -2,6 +2,7 @@ package cz.litoj.schlmgr.integration.ui.screen.subjects
 
 import android.net.Uri
 import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.app.Settings
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.transfer.ExportDestination
@@ -26,9 +27,12 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 class SubjectsTransferTest {
 
+	private lateinit var settings: Settings
+
 	@Before
 	fun setUp() {
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
+		settings = Settings(RuntimeEnvironment.getApplication())
 	}
 
 	@After
@@ -38,7 +42,7 @@ class SubjectsTransferTest {
 
 	private class Host : SubjectsTransfer.Host {
 		private val rows = listOf(
-			ItemRow(DbItem(name = "A", description = "", type = ItemKind.CHAPTER), null, 1, false),
+			ItemRow(DbItem(name = "A", description = "", type = ItemKind.CHAPTER), null, 1),
 		)
 		val requests = mutableListOf<MainExplorerViewModel.Request>()
 
@@ -68,7 +72,7 @@ class SubjectsTransferTest {
 	private val started = mutableListOf<Started>()
 
 	private fun transfer(host: Host): SubjectsTransfer =
-		SubjectsTransfer(CoroutineScope(Dispatchers.Unconfined), Dispatchers.Unconfined, host) {
+		SubjectsTransfer(CoroutineScope(Dispatchers.Unconfined), Dispatchers.Unconfined, host, settings) {
 			_, _, destination, format, selected, _ ->
 			started += Started(destination, format, selected())
 		}

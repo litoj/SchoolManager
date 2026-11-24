@@ -1,6 +1,7 @@
 package cz.litoj.schlmgr.integration.data.db
 
 import androidx.room.Room
+import cz.litoj.schlmgr.app.AppDependencies
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
@@ -34,6 +35,7 @@ import org.robolectric.annotation.Config
 class FlipPerformanceTest {
 
 	private lateinit var db: ItemDatabase
+	private lateinit var dependencies: AppDependencies
 
 	/** Keeps unmeasured queries out of the count. */
 	private var counting = false
@@ -55,7 +57,10 @@ class FlipPerformanceTest {
 			// the direct executor runs the callback inline, so the count is exact on return
 			.setQueryCallback({ sql, _ -> if (counting && isDataStatement(sql)) queries.incrementAndGet() },
 				Executor(Runnable::run))
+			.setQueryExecutor(Runnable::run)
+			.setTransactionExecutor(Runnable::run)
 			.build()
+		dependencies = AppDependencies(RuntimeEnvironment.getApplication(), db)
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 		val nj = File(javaClass.getResource("/perf/nj.hjson")!!.toURI())
@@ -124,7 +129,15 @@ class FlipPerformanceTest {
 	@Test
 	fun `the flips of a loaded wide chapter read no database`() {
 		val deck = wideChapter()
-		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		val model = MainExplorerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			editor = dependencies.itemEditor,
+			itemTransferService = dependencies.itemTransfer,
+			flipper = dependencies.flipper,
+			settings = dependencies.settings,
+			userMessages = dependencies.userMessages,
+		)
 		model.onItemClick(model.items().single { it.item.name == "NJ" })
 		model.onItemClick(model.items().single { it.item.name == "wide" })
 

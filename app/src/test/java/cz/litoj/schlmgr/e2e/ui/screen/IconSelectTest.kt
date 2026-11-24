@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.room.Room
+import cz.litoj.schlmgr.app.AppDependencies
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
@@ -40,12 +41,16 @@ class IconSelectTest {
 	val rule = createComposeRule()
 
 	private lateinit var db: ItemDatabase
+	private lateinit var dependencies: AppDependencies
 
 	@Before
 	fun setUp() {
 		db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
 			.allowMainThreadQueries()
+			.setQueryExecutor(Runnable::run)
+			.setTransactionExecutor(Runnable::run)
 			.build()
+		dependencies = AppDependencies(RuntimeEnvironment.getApplication(), db)
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
@@ -63,8 +68,13 @@ class IconSelectTest {
 
 	@Test
 	fun `picker - the icon picks the row, the row tap still flips the word`() {
-		val model = PickerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		rule.setContent { PickerScreen(model, {}) }
+		val model = PickerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			transfer = dependencies.itemTransfer,
+			userMessages = dependencies.userMessages,
+		)
+		rule.setContent { PickerScreen(model, dependencies.settings, dependencies.userMessages, {}) }
 		rule.waitForIdle()
 		rule.onNodeWithText("A").performClick()
 		rule.waitForIdle()
@@ -87,8 +97,16 @@ class IconSelectTest {
 
 	@Test
 	fun `browse - an icon tap starts the selection`() {
-		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		rule.setContent { SubjectsScreen(model, {}, {}, {}) }
+		val model = MainExplorerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			editor = dependencies.itemEditor,
+			itemTransferService = dependencies.itemTransfer,
+			flipper = dependencies.flipper,
+			settings = dependencies.settings,
+			userMessages = dependencies.userMessages,
+		)
+		rule.setContent { SubjectsScreen(model, dependencies.settings, dependencies.userMessages, {}, {}, {}) }
 		rule.waitForIdle()
 		rule.onNodeWithText("A").performClick()
 		rule.waitForIdle()
@@ -109,8 +127,16 @@ class IconSelectTest {
 
 	@Test
 	fun `selection - a tap on the icon toggles the row`() {
-		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		rule.setContent { SubjectsScreen(model, {}, {}, {}) }
+		val model = MainExplorerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			editor = dependencies.itemEditor,
+			itemTransferService = dependencies.itemTransfer,
+			flipper = dependencies.flipper,
+			settings = dependencies.settings,
+			userMessages = dependencies.userMessages,
+		)
+		rule.setContent { SubjectsScreen(model, dependencies.settings, dependencies.userMessages, {}, {}, {}) }
 		rule.waitForIdle()
 		rule.onNodeWithText("A").performClick()
 		rule.waitForIdle()

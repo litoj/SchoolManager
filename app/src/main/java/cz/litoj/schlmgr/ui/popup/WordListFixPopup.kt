@@ -1,5 +1,6 @@
 package cz.litoj.schlmgr.ui.popup
 
+import android.content.Context
 import android.net.Uri
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.border
@@ -31,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
@@ -83,6 +85,7 @@ internal class WordListFixPopup(
 
 	@Composable
 	override fun Content() {
+		val ctx = LocalContext.current
 		PopupCard(atTop = true) {
 			PopupTitle(title)
 			HairlineDivider()
@@ -95,7 +98,7 @@ internal class WordListFixPopup(
 					Dialogs.dismiss(this@WordListFixPopup)
 				}
 				VerticalButtonSeparator()
-				PopupButton(stringResource(R.string.popup_save_retry), Modifier.weight(1f)) { save() }
+				PopupButton(stringResource(R.string.popup_save_retry), Modifier.weight(1f)) { save(ctx) }
 			}
 		}
 	}
@@ -207,10 +210,10 @@ internal class WordListFixPopup(
 		horizontal.scrollTo((column - viewport.width / 3).coerceIn(0, horizontal.maxValue))
 	}
 
-	private fun save() {
+	private fun save(ctx: Context) {
 		// the document is written on the click, the way the clipboard button reaches its
 		// binder service: the fix has to land before the re-import reads the same file
-		refused = !FileText.writeText(file, text.text)
+		refused = !FileText.writeText(ctx, file, text.text)
 		if (refused) return
 		Dialogs.dismiss(this)
 		onReimport(file)

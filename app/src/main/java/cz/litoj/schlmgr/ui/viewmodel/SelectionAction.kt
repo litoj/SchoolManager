@@ -1,15 +1,21 @@
 package cz.litoj.schlmgr.ui.viewmodel
 
-import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.app.AppSettings
+import cz.litoj.schlmgr.app.Settings
 
 /**
  * One action of the selection strip and the more menu.
  * - direct slots fill in the picked order, as width allows.
  * - Cut applies to a browse list, Go-to to a search list.
  */
-enum class SelectionAction {
-	TEST, CUT, EDIT, DELETE, REFERENCE, FLIP, EXPORT, GOTO;
+enum class SelectionAction(val action: ExplorerAction) {
+	TEST(ExplorerAction.TEST),
+	CUT(ExplorerAction.CUT),
+	EDIT(ExplorerAction.EDIT),
+	DELETE(ExplorerAction.DELETE),
+	REFERENCE(ExplorerAction.REFERENCE),
+	FLIP(ExplorerAction.FLIP),
+	EXPORT(ExplorerAction.EXPORT),
+	GOTO(ExplorerAction.GOTO);
 
 	/** Cut never runs in a search list, Go-to never in a browse one. */
 	fun applies(search: Boolean): Boolean = when (this) {
@@ -24,41 +30,11 @@ enum class SelectionAction {
 }
 
 /** The shared presentation of one action, one source for its icon and texts. */
-val SelectionAction.icon: Int
-	get() = when (this) {
-		SelectionAction.TEST -> R.drawable.ic_test
-		SelectionAction.CUT -> R.drawable.ic_cut
-		SelectionAction.EDIT -> R.drawable.ic_edit
-		SelectionAction.DELETE -> R.drawable.ic_delete
-		SelectionAction.REFERENCE -> R.drawable.ic_reference_black
-		SelectionAction.FLIP -> R.drawable.ic_flip_black
-		SelectionAction.EXPORT -> R.drawable.ic_export_black
-		SelectionAction.GOTO -> R.drawable.ic_goto
-	}
+val SelectionAction.icon: Int get() = action.icon
 
-val SelectionAction.label: Int
-	get() = when (this) {
-		SelectionAction.TEST -> R.string.select_test
-		SelectionAction.CUT -> R.string.cut
-		SelectionAction.EDIT -> R.string.edit
-		SelectionAction.DELETE -> R.string.delete
-		SelectionAction.REFERENCE -> R.string.action_reference
-		SelectionAction.FLIP -> R.string.action_flip
-		SelectionAction.EXPORT -> R.string.more_export
-		SelectionAction.GOTO -> R.string.more_go_to
-	}
+val SelectionAction.label: Int get() = action.label
 
-val SelectionAction.description: Int
-	get() = when (this) {
-		SelectionAction.TEST -> R.string.setts_act_test
-		SelectionAction.CUT -> R.string.setts_act_cut
-		SelectionAction.EDIT -> R.string.setts_act_edit
-		SelectionAction.DELETE -> R.string.setts_act_delete
-		SelectionAction.REFERENCE -> R.string.setts_act_reference
-		SelectionAction.FLIP -> R.string.setts_act_flip
-		SelectionAction.EXPORT -> R.string.setts_act_export
-		SelectionAction.GOTO -> R.string.setts_act_goto
-	}
+val SelectionAction.description: Int get() = action.description
 
 /**
  * The ordered selection actions.
@@ -104,8 +80,8 @@ class ActionConfig(val order: List<SelectionAction>) {
 		 * Reads the stored order, where a damaged record falls back to the default.
 		 * - a stored legacy order gains Go-to after Cut, so search keeps its place.
 		 */
-		fun load(): ActionConfig {
-			val stored = AppSettings.getString(ORDER_KEY, "").split(',').mapNotNull(SelectionAction::of)
+		fun load(settings: Settings): ActionConfig {
+			val stored = settings.getString(ORDER_KEY, "").split(',').mapNotNull(SelectionAction::of)
 			val order = when {
 				stored.size == DEFAULT_ORDER.size && stored.toSet() == DEFAULT_ORDER.toSet() -> stored
 				stored.size == LEGACY_ORDER.size && stored.toSet() == LEGACY_ORDER.toSet() ->
@@ -118,8 +94,8 @@ class ActionConfig(val order: List<SelectionAction>) {
 		}
 
 		/** Writes the order, which the loader validates anyway. */
-		fun save(order: List<SelectionAction>) {
-			AppSettings.set(ORDER_KEY, order.joinToString(",") { it.name })
+		fun save(settings: Settings, order: List<SelectionAction>) {
+			settings.set(ORDER_KEY, order.joinToString(",") { it.name })
 		}
 
 		private const val ORDER_KEY = "selection_actions"

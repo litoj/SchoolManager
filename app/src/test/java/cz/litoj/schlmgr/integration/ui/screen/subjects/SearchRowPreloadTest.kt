@@ -1,6 +1,7 @@
 package cz.litoj.schlmgr.integration.ui.screen.subjects
 
 import androidx.room.Room
+import cz.litoj.schlmgr.app.AppDependencies
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
@@ -26,12 +27,16 @@ import org.robolectric.annotation.Config
 class SearchRowPreloadTest {
 
 	private lateinit var db: ItemDatabase
+	private lateinit var dependencies: AppDependencies
 
 	@Before
 	fun setUp() {
 		db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
 			.allowMainThreadQueries()
+			.setQueryExecutor(Runnable::run)
+			.setTransactionExecutor(Runnable::run)
 			.build()
+		dependencies = AppDependencies(RuntimeEnvironment.getApplication(), db)
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
@@ -50,7 +55,15 @@ class SearchRowPreloadTest {
 		ItemRepository.createWord(c.id, "w1", null, listOf("t1" to null))
 		// the repository reads run inline on an unconfined dispatcher, so the
 		// run finishes before the assertions
-		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		val model = MainExplorerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			editor = dependencies.itemEditor,
+			itemTransferService = dependencies.itemTransfer,
+			flipper = dependencies.flipper,
+			settings = dependencies.settings,
+			userMessages = dependencies.userMessages,
+		)
 		model.onItemClick(model.items().single { it.item.name == "A" })
 		model.openSearchField()
 		model.onQuerySubmit("w1")

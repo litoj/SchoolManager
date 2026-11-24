@@ -10,7 +10,8 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.app.Settings
+import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
@@ -38,30 +39,36 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 class TestSetupScreenUnavailableTest {
 
+	private val testSetup get() = TestSetupState.shared
+
 	@get:Rule
 	val rule = createComposeRule()
 
 	private var opened = false
+	private lateinit var settings: Settings
+	private lateinit var userMessages: UserMessages
 
 	@Before
 	fun setUp() {
-		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
-		TestSetupState.reset()
-		TestSetupState.childrenLookup = { emptyList() }
+		val app = RuntimeEnvironment.getApplication()
+		settings = Settings(app)
+		userMessages = UserMessages(app)
+		testSetup.reset()
+		testSetup.childrenLookup = { emptyList() }
 	}
 
 	@After
 	fun tearDown() {
-		TestSetupState.reset()
-		TestSetupState.childrenLookup = ItemRepository::children
+		testSetup.reset()
+		testSetup.childrenLookup = ItemRepository::children
 	}
 
 	/** The screen with the shell snackbar, since a muted tap reports through it. */
 	private fun showScreen(model: TestSetupViewModel) {
 		rule.setContent {
-			val snackbar = messageSnackbarHost()
+			val snackbar = messageSnackbarHost(userMessages)
 			Box {
-				TestSetupScreen(model, openPicker = { opened = true }, openDrawer = {})
+				TestSetupScreen(model, userMessages, openPicker = { opened = true }, openDrawer = {})
 				SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
 			}
 		}
@@ -78,7 +85,7 @@ class TestSetupScreenUnavailableTest {
 
 	@Test
 	fun `the add source tile stays and explains a fully picked hierarchy`() {
-		val model = TestSetupViewModel()
+		val model = TestSetupViewModel(settings = settings, userMessages = userMessages)
 		showScreen(model)
 		val add = label(R.string.test_add)
 		rule.onNodeWithText(add).assertIsDisplayed()
@@ -86,7 +93,7 @@ class TestSetupScreenUnavailableTest {
 		// a whole subject source leaves nothing left to add
 		val subject = DbItem(id = 1, name = "A", description = "", type = ItemKind.CHAPTER)
 		rule.runOnIdle {
-			TestSetupState.addPicked(listOf(TestSetupState.seedOf(
+			testSetup.addPicked(listOf(testSetup.seedOf(
 				ItemRow.ofSearchHit(subject, emptyList(), 1, emptyList()))))
 		}
 		rule.waitForIdle()
@@ -100,7 +107,7 @@ class TestSetupScreenUnavailableTest {
 
 	@Test
 	fun `start without sources stays and explains the tap`() {
-		showScreen(TestSetupViewModel())
+		showScreen(TestSetupViewModel(settings = settings, userMessages = userMessages))
 
 		rule.onNodeWithText(label(R.string.start)).performClick()
 		rule.waitForIdle()

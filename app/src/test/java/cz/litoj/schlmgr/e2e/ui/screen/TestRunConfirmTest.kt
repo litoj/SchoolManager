@@ -3,6 +3,9 @@ package cz.litoj.schlmgr.e2e.ui.screen
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import cz.litoj.schlmgr.app.AppDependencies
+import cz.litoj.schlmgr.data.CounterService
+import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.testing.TestItemModel
 import cz.litoj.schlmgr.ui.popup.Dialogs
 import cz.litoj.schlmgr.ui.screen.test.TestRunState
@@ -14,6 +17,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
 /**
@@ -28,7 +32,10 @@ class TestRunConfirmTest {
 	val rule = createComposeRule()
 
 	private class FakeHost : TestRunState.Host {
+		private val dependencies = AppDependencies(RuntimeEnvironment.getApplication())
 		override val scope = CoroutineScope(Dispatchers.Unconfined)
+		override val graphs: GraphQueries get() = dependencies.graphQueries
+		override val counters: CounterService get() = dependencies.counterService
 		override fun isAlive() = true
 		override fun onNoObjects() {}
 		override fun onTimeUp() {}

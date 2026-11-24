@@ -15,11 +15,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextLayoutResult
@@ -31,12 +33,14 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 
 import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.ui.component.HairlineDivider
 
 /** A raw source line and its marked character, apart from the explanatory text. */
 data class MessageSource(val location: String, val line: String, val problemIndex: Int)
+
+/** The application message owner available to message dialogs. */
+val LocalUserMessages = compositionLocalOf<UserMessages> { error("UserMessages is not provided") }
 
 /**
  * A message dialog with Copy and dismiss.
@@ -84,15 +88,17 @@ open class MessagePopup(
 	private fun RowScope.CopyButton() {
 		val truncationNote = stringResource(R.string.popup_copy_truncated)
 		val copyFailed = stringResource(R.string.popup_copy_failed)
+		val context = LocalContext.current
+		val userMessages = LocalUserMessages.current
 		PopupButton(stringResource(R.string.popup_copy), Modifier.weight(1f)) {
 			// the popup never emits on the bus directly
 			if (!copyToClipboard(
-					GlobalDependencies.appContext,
+					context,
 					// the clip description of the UI: a snippet, not the content.
 					// the label rides in the same binder parcel
 					msg.take(CLIPBOARD_LABEL_CHARS),
 					capForClipboard(copyText, truncationNote),
-				)) UserMessages.showMsg(copyFailed, copyFailed)
+				)) userMessages.showMsg(copyFailed, copyFailed)
 			Dialogs.dismiss(this@MessagePopup)
 		}
 	}

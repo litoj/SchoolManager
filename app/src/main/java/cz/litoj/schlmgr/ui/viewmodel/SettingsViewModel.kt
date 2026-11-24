@@ -4,7 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import cz.litoj.schlmgr.app.AppSettings
+import cz.litoj.schlmgr.app.Settings
 import cz.litoj.schlmgr.data.wordlist.WordListWriter
 import cz.litoj.schlmgr.ui.component.CrumbSize
 import cz.litoj.schlmgr.ui.component.SuccessBand
@@ -16,9 +16,10 @@ import cz.litoj.schlmgr.ui.viewmodel.ItemRow
  * The values shown and edited by the settings screen.
  * - every change applies to the backing statics and persists at once.
  * - so nothing is lost on process death, and no save is deferred.
- * - [SettingsViewModel] fills the plain-value constructor from the state.
+ * - [SettingsViewModel] fills the display values from current state.
  */
 class SettingsState(
+	private val settings: Settings,
 	parse: Boolean = true,
 	defFlip: Boolean = true,
 	searchDefFlip: Boolean = true,
@@ -77,36 +78,36 @@ class SettingsState(
 	fun toggleParse() {
 		parse = !parse
 		applyRowOptions()
-		AppSettings.set("parseNames", parse)
+		settings.set("parseNames", parse)
 	}
 
 	fun toggleDefFlip() {
 		defFlip = !defFlip
 		applyRowOptions()
-		AppSettings.set("flipWord", defFlip)
+		settings.set("flipWord", defFlip)
 	}
 
 	fun toggleSearchDefFlip() {
 		searchDefFlip = !searchDefFlip
 		applyRowOptions()
-		AppSettings.set("flipSearch", searchDefFlip)
+		settings.set("flipSearch", searchDefFlip)
 	}
 
 	fun toggleSearchShowPath() {
 		searchShowPath = !searchShowPath
 		applyRowOptions()
-		AppSettings.set("searchShowPath", searchShowPath)
+		settings.set("searchShowPath", searchShowPath)
 	}
 
 	fun cycleCrumbSize() {
 		crumbSize = CrumbSize.next()
-		CrumbSize.select(crumbSize)
+		CrumbSize.select(settings, crumbSize)
 	}
 
 	/** The band re-renders live, so the list darkens while the slider moves. */
 	fun changeBandIntensity(percent: Int) {
 		bandIntensity = percent
-		SuccessBand.setPeak(percent)
+		SuccessBand.setPeak(settings, percent)
 	}
 
 	/** Zero stands for the icon-only display. */
@@ -114,7 +115,7 @@ class SettingsState(
 		descLinesText = digitsOnly(text)
 		descLinesText.toIntOrNull()?.let {
 			applyRowOptions()
-			AppSettings.set("descLines", it)
+			settings.set("descLines", it)
 		}
 	}
 
@@ -128,7 +129,7 @@ class SettingsState(
 		doubleTapMsText = digitsOnly(text)
 		doubleTapMsText.toIntOrNull()?.let {
 			applyRowOptions()
-			AppSettings.set("doubleTapMs", it)
+			settings.set("doubleTapMs", it)
 		}
 	}
 
@@ -140,13 +141,13 @@ class SettingsState(
 	fun toggleRequireVariants() {
 		requireVariants = !requireVariants
 		TestEngine.applyRequireAllVariants(requireVariants)
-		AppSettings.set("testRequireAllVariants", requireVariants)
+		settings.set("testRequireAllVariants", requireVariants)
 	}
 
 	fun setIgnoredMistakes(text: String) {
 		ignoredMistakesText = text
 		TestEngine.applyIgnoredMistakes(text)
-		AppSettings.set("testIgnoredMistakes", text)
+		settings.set("testIgnoredMistakes", text)
 	}
 
 	fun setIgnoredMistake(index: Int, text: String) {
@@ -163,7 +164,7 @@ class SettingsState(
 	fun toggleDefaultReverse() {
 		defaultReverse = !defaultReverse
 		TestEngine.applyReversed(defaultReverse)
-		AppSettings.set("reverseTest", defaultReverse)
+		settings.set("reverseTest", defaultReverse)
 	}
 
 	/**
@@ -175,7 +176,7 @@ class SettingsState(
 		wordSplitText = text
 		WordListWriter.setWordTranslationSplitter(text)
 		if (WordListWriter.wordTranslationSplitter == text)
-			AppSettings.set("exportWordSplit", text)
+			settings.set("exportWordSplit", text)
 	}
 
 	fun wordSplitFocusLost() {
@@ -188,7 +189,7 @@ class SettingsState(
 		amountText.toIntOrNull()?.let {
 			if (it >= 1) {
 				TestEngine.applyOptions(TestEngine.isClever, it)
-				AppSettings.set("testAmount", it)
+				settings.set("testAmount", it)
 			}
 		}
 	}
@@ -202,7 +203,7 @@ class SettingsState(
 		timeText = NumberInput.decimal(text)
 		NumberInput.amount(timeText)?.let {
 			TestEngine.setSecondsPerChar(it)
-			AppSettings.set("testSecondsPerChar", it)
+			settings.set("testSecondsPerChar", it)
 		}
 	}
 
@@ -214,13 +215,13 @@ class SettingsState(
 	/** The search reads the flag per run, so nothing else needs to react. */
 	fun toggleSearchDiacritics() {
 		searchDiacritics = !searchDiacritics
-		AppSettings.set("searchNoDiacritics", searchDiacritics)
+		settings.set("searchNoDiacritics", searchDiacritics)
 	}
 
 	/** Moves one action in the order. */
 	fun moveSelectionAction(from: Int, to: Int) {
 		selectionOrder = ActionConfig(selectionOrder).moved(from, to).order
-		ActionConfig.save(selectionOrder)
+		ActionConfig.save(settings, selectionOrder)
 	}
 
 	/** The row options move through the one door of ItemRow. */
@@ -242,10 +243,11 @@ class SettingsState(
 /**
  * The state survives rotation and the back stack, so edits stay visible on return.
  */
-class SettingsViewModel : ViewModel() {
-	private val config = ActionConfig.load()
+class SettingsViewModel(private val settings: Settings) : ViewModel() {
+	private val config = ActionConfig.load(settings)
 
 	val state = SettingsState(
+		settings = settings,
 		parse = ItemRow.parse,
 		defFlip = ItemRow.defFlip,
 		searchDefFlip = ItemRow.searchDefFlip,
@@ -253,12 +255,12 @@ class SettingsViewModel : ViewModel() {
 		descLinesText = ItemRow.descLines.toString(),
 		doubleTapMsText = ItemRow.doubleTapMs.toString(),
 		wordSplitText = WordListWriter.wordTranslationSplitter,
-		requireVariants = AppSettings.getBool("testRequireAllVariants", false),
+		requireVariants = settings.getBool("testRequireAllVariants", false),
 		ignoredMistakesText = TestEngine.ignoredMistakesText,
 		amountText = TestEngine.amount.toString(),
 		timeText = TestEngine.getSecondsPerChar().toString(),
 		defaultReverse = TestEngine.isReversed,
-		searchDiacritics = AppSettings.getBool("searchNoDiacritics", false),
+		searchDiacritics = settings.getBool("searchNoDiacritics", false),
 		selectionOrder = config.order,
 		bandIntensity = SuccessBand.intensity,
 	)

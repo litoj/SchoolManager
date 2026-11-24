@@ -1,7 +1,7 @@
 package cz.litoj.schlmgr.ui.viewmodel
 
-import cz.litoj.schlmgr.app.AppSettings
-import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.app.Settings
+import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.ui.search.Criterion
 import cz.litoj.schlmgr.ui.search.SearchEngine
@@ -25,7 +25,10 @@ internal class SearchFlow(
 	private val io: CoroutineDispatcher,
 	private val history: NavigationHistory,
 	private val host: Host,
+	private val settings: Settings? = null,
+	graphs: GraphQueries? = null,
 ) {
+	private val graphs = graphs
 
 	interface Host {
 
@@ -70,7 +73,7 @@ internal class SearchFlow(
 
 	val query: StateFlow<String> get() = searchInput.query
 
-	internal val run = SearchRun(scope, io, RunHost())
+	internal val run = SearchRun(scope, io, RunHost(), graphs)
 
 	private var lastSearchRows: List<ItemRow> = emptyList()
 
@@ -108,7 +111,7 @@ internal class SearchFlow(
 		val alreadySearching = history.onSearchHop()
 		run.abort()
 		// the search reads the toggle per run, so a settings change applies to the next one
-		val eng = SearchEngine(query, AppSettings.getBool("searchNoDiacritics", false))
+		val eng = SearchEngine(query, settings?.getBool("searchNoDiacritics", false) ?: false)
 		// a live re-run keeps a single stacked hop.
 		if (!alreadySearching) history.hop(null)
 		// a new query starts at the top, unlike a history restore.
@@ -225,9 +228,9 @@ internal class SearchFlow(
 		scope.launch {
 			val fresh = withContext(io) {
 				ids.map { id ->
-					val row = ItemRepository.get(id)
+					val row = checkNotNull(graphs).get(id)
 					// the flip content of a translation hit is its words
-					row to (row?.let(ItemRow::flipContentOf) ?: emptyList())
+					row to (row?.let { ItemRow.readFlipContent(it, checkNotNull(graphs)) } ?: emptyList())
 				}
 			}
 			// apply on main, since gone rows leave the list.

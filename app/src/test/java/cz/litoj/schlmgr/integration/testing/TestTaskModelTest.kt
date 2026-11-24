@@ -49,7 +49,7 @@ class TestTaskModelTest {
 		val words = listOf("hund", "hond", "hunt").map {
 			ItemRepository.createWord(chapter.id, it, null, listOf("pes" to null))
 		}
-		val models = words.map { TestItemModel(TestEntry(it, listOf(subject, chapter, it))) }
+		val models = words.map { TestItemModel(TestEntry(it, listOf(subject, chapter, it), ItemRepository.translations(it.id))) }
 		val tasks = TestTaskModel.flatten(models, listOf(
 			TestTask(listOf(models[0].entry, models[1].entry)),
 			TestTask(listOf(models[2].entry)),
@@ -67,7 +67,7 @@ class TestTaskModelTest {
 		val expanded = ItemRepository.createWord(chapter.id, "/I/You smile.", null, listOf("laugh" to null))
 		val ordinary = ItemRepository.createWord(chapter.id, "house", null, listOf("dům" to null))
 		val models = listOf(expanded, ordinary).map {
-			TestItemModel(TestEntry(it, listOf(subject, chapter, it)))
+			TestItemModel(TestEntry(it, listOf(subject, chapter, it), ItemRepository.translations(it.id)))
 		}
 		TestEngine.applyRequireAllVariants(true)
 		try {

@@ -1,6 +1,7 @@
 package cz.litoj.schlmgr.integration.ui.screen.picker
 
 import androidx.room.Room
+import cz.litoj.schlmgr.app.AppDependencies
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
@@ -33,13 +34,17 @@ import org.robolectric.annotation.Config
 class PickerViewModelTest {
 
 	private lateinit var db: ItemDatabase
+	private lateinit var dependencies: AppDependencies
 	private var now = 1_000_000L
 
 	@Before
 	fun setUp() {
 		db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
 			.allowMainThreadQueries()
+			.setQueryExecutor(Runnable::run)
+			.setTransactionExecutor(Runnable::run)
 			.build()
+		dependencies = AppDependencies(RuntimeEnvironment.getApplication(), db)
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
@@ -52,7 +57,12 @@ class PickerViewModelTest {
 	}
 
 	private fun vm(source: NavigationHistory = NavigationHistory()): PickerViewModel {
-		val model = PickerViewModel(source, Dispatchers.Unconfined)
+		val model = PickerViewModel(
+			source, Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			transfer = dependencies.itemTransfer,
+			userMessages = dependencies.userMessages,
+		)
 		model.clock = { now }
 		return model
 	}

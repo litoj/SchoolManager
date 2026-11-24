@@ -3,10 +3,14 @@ package cz.litoj.schlmgr.integration.ui.screen.test
 import android.os.Looper
 import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.data.CounterService
+import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestItemModel
+import cz.litoj.schlmgr.testing.TestRunData
+import kotlinx.coroutines.runBlocking
 import cz.litoj.schlmgr.ui.popup.ContinuePopup
 import cz.litoj.schlmgr.ui.popup.Dialogs
 import cz.litoj.schlmgr.ui.screen.test.TestRunState
@@ -35,14 +39,21 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 class TestRunStateTest {
 
-	private class FakeHost : TestRunState.Host {
+	private val testSetup get() = TestSetupState.shared
+
+	private inner class FakeHost : TestRunState.Host {
 		override val scope = CoroutineScope(Dispatchers.Unconfined)
+		override val graphs = GraphQueries(db)
+		override val counters = CounterService(db)
 		var foreground = true
+		var results: List<TestItemModel>? = null
 		override fun isAlive() = true
 		override fun isForeground() = foreground
 		override fun onNoObjects() {}
 		override fun onTimeUp() {}
-		override fun onResults(items: List<TestItemModel>, ratio: Float) {}
+		override fun onResults(items: List<TestItemModel>, ratio: Float) {
+			results = items
+		}
 		override fun onAborted() {}
 	}
 
@@ -51,7 +62,7 @@ class TestRunStateTest {
 	@Before
 	fun setUp() {
 		TestRunState.reset()
-		TestSetupState.reset()
+		testSetup.reset()
 		TestEngine.applyReversed(false)
 		TestEngine.applyRequireAllVariants(false)
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
@@ -64,14 +75,20 @@ class TestRunStateTest {
 		val chapter = ItemRepository.createChapter(subject.id, "c", null)
 		val word = ItemRepository.createWord(chapter.id, "house", null, listOf("dům" to null))
 		val row = ItemRow(word, chapter.id, 1)
-		TestSetupState.addPicked(listOf(TestSetupState.seedOf(row)))
+		val chain = listOf(subject, chapter, word)
+		val entries = runBlocking {
+			mapOf(chain to TestRunData.readEntries(listOf(chain), GraphQueries(db)))
+		}
+		testSetup.addPicked(
+			listOf(testSetup.seedOf(row)), mapOf(chapter.id to listOf(subject, chapter)), entries)
+		ItemRepository.resetForTest()
 		shadowOf(Looper.getMainLooper()).pause()
 	}
 
 	@After
 	fun tearDown() {
 		TestRunState.reset()
-		TestSetupState.reset()
+		testSetup.reset()
 		Dialogs.clear()
 		db.close()
 		ItemRepository.resetForTest()
@@ -106,14 +123,16 @@ class TestRunStateTest {
 		assertEquals(1, blankAnswerCount(mapOf(0 to "house"), 2))
 	}
 
-	private fun awaitRun() {
+	private fun await(landed: () -> Boolean) {
 		var remaining = 100
-		while (!TestRunState.hasRun() && remaining-- > 0) {
+		while (!landed() && remaining-- > 0) {
 			Thread.sleep(10)
 			shadowOf(Looper.getMainLooper()).idle()
 		}
-		assertTrue("the source landing arrived", TestRunState.hasRun())
+		assertTrue("the state landing arrived", landed())
 	}
+
+	private fun awaitRun() = await(TestRunState::hasRun)
 
 	@Test
 	fun `an engine landing in the background starts paused`() {
@@ -128,6 +147,21 @@ class TestRunStateTest {
 		shadowOf(Looper.getMainLooper()).idle()
 
 		assertEquals("a background landing never ticks", held, TestRunState.secondsLeft)
+	}
+
+	@Test
+	fun `grading and result statistics need no compatibility repository`() {
+		val host = FakeHost()
+		TestRunState.start(host)
+		awaitRun()
+		TestRunState.setAnswer(0, "house")
+
+		TestRunState.submit(host)
+		await { host.results != null }
+
+		val result = host.results!!.single()
+		assertTrue(result.correct)
+		assertEquals(1, result.word.passedTests)
 	}
 
 	@Test

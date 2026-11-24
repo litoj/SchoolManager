@@ -11,8 +11,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.app.AppSettings
-import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.app.Settings
 import cz.litoj.schlmgr.ui.popup.DialogHost
 import cz.litoj.schlmgr.ui.popup.Dialogs
 import cz.litoj.schlmgr.ui.shell.NOTIFICATION_PROMPT_SEEN
@@ -43,25 +42,26 @@ class NotificationPermissionPromptTest {
 	val rule = createAndroidComposeRule<ComponentActivity>()
 
 	private val app get() = RuntimeEnvironment.getApplication()
+	private lateinit var settings: Settings
 
 	@Before
 	fun setUp() {
-		GlobalDependencies.appContext = app
-		AppSettings.remove(NOTIFICATION_PROMPT_SEEN)
+		settings = Settings(app)
+		settings.remove(NOTIFICATION_PROMPT_SEEN)
 		shadowOf(app).denyPermissions(Manifest.permission.POST_NOTIFICATIONS)
 	}
 
 	@After
 	fun tearDown() {
 		Dialogs.clear()
-		AppSettings.remove(NOTIFICATION_PROMPT_SEEN)
+		settings.remove(NOTIFICATION_PROMPT_SEEN)
 	}
 
 	private fun showPrompt() {
 		rule.setContent {
 			Box(Modifier.fillMaxSize()) {
 				DialogHost()
-				NotificationPermissionPrompt()
+				NotificationPermissionPrompt(settings)
 			}
 		}
 		rule.waitForIdle()
@@ -76,7 +76,7 @@ class NotificationPermissionPromptTest {
 		rule.onNodeWithText(label(R.string.notification_permission_title)).assertIsDisplayed()
 		rule.onNodeWithText(label(R.string.notification_permission_body)).assertIsDisplayed()
 		rule.runOnIdle {
-			assertTrue(AppSettings.getBool(NOTIFICATION_PROMPT_SEEN, false))
+			assertTrue(settings.getBool(NOTIFICATION_PROMPT_SEEN, false))
 			assertNull("the system is asked only after the explanation",
 				shadowOf(rule.activity).lastRequestedPermission)
 		}
@@ -116,7 +116,7 @@ class NotificationPermissionPromptTest {
 		assertTrue(rule.onAllNodesWithText(label(R.string.notification_permission_title))
 			.fetchSemanticsNodes().isEmpty())
 		rule.runOnIdle {
-			assertEquals(false, AppSettings.getBool(NOTIFICATION_PROMPT_SEEN, false))
+			assertEquals(false, settings.getBool(NOTIFICATION_PROMPT_SEEN, false))
 			assertNull(shadowOf(rule.activity).lastRequestedPermission)
 		}
 	}

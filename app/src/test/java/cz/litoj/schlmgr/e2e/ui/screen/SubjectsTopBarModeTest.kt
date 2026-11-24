@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.room.Room
+import cz.litoj.schlmgr.app.AppDependencies
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
@@ -37,12 +38,16 @@ class SubjectsTopBarModeTest {
 	val rule = createComposeRule()
 
 	private lateinit var db: ItemDatabase
+	private lateinit var dependencies: AppDependencies
 
 	@Before
 	fun setUp() {
 		db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
 			.allowMainThreadQueries()
+			.setQueryExecutor(Runnable::run)
+			.setTransactionExecutor(Runnable::run)
 			.build()
+		dependencies = AppDependencies(RuntimeEnvironment.getApplication(), db)
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
@@ -59,8 +64,16 @@ class SubjectsTopBarModeTest {
 		val a = ItemRepository.createSubject("A", null)
 		val c1 = ItemRepository.createChapter(a.id, "c1", null)
 		ItemRepository.createWord(c1.id, "xyz", null, listOf("t1" to null))
-		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		rule.setContent { SubjectsScreen(model, {}, {}, {}) }
+		val model = MainExplorerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			editor = dependencies.itemEditor,
+			itemTransferService = dependencies.itemTransfer,
+			flipper = dependencies.flipper,
+			settings = dependencies.settings,
+			userMessages = dependencies.userMessages,
+		)
+		rule.setContent { SubjectsScreen(model, dependencies.settings, dependencies.userMessages, {}, {}, {}) }
 		rule.waitForIdle()
 		model.onItemClick(model.items().single { it.item.name == "A" })
 		rule.waitForIdle()
@@ -82,8 +95,16 @@ class SubjectsTopBarModeTest {
 		val a = ItemRepository.createSubject("A", null)
 		val c1 = ItemRepository.createChapter(a.id, "c1", null)
 		ItemRepository.createWord(c1.id, "xyz", null, listOf("t1" to null))
-		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
-		rule.setContent { SubjectsScreen(model, {}, {}, {}) }
+		val model = MainExplorerViewModel(
+			NavigationHistory(), Dispatchers.Unconfined,
+			graphs = dependencies.graphQueries,
+			editor = dependencies.itemEditor,
+			itemTransferService = dependencies.itemTransfer,
+			flipper = dependencies.flipper,
+			settings = dependencies.settings,
+			userMessages = dependencies.userMessages,
+		)
+		rule.setContent { SubjectsScreen(model, dependencies.settings, dependencies.userMessages, {}, {}, {}) }
 		rule.waitForIdle()
 		rule.onNodeWithText("A").performClick()
 		rule.waitForIdle()

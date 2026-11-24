@@ -1,5 +1,6 @@
 package cz.litoj.schlmgr.support
 
+import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
@@ -14,15 +15,15 @@ import kotlinx.coroutines.Dispatchers
  * - SearchModeLadderTest derives from it to watch its content switch.
  * - repository reads run inline on an unconfined dispatcher.
  */
-internal open class TestExplorerViewModel(history: NavigationHistory) :
-	ExplorerViewModel<Nothing>(history, io = Dispatchers.Unconfined) {
+internal open class TestExplorerViewModel(history: NavigationHistory, graphs: GraphQueries? = null) :
+	ExplorerViewModel<Nothing>(history, io = Dispatchers.Unconfined, graphs = graphs) {
 	protected override fun setContent(container: DbItem?, pulseItemId: Int?) {}
 }
 
 /** Word rows for a list-only test: no database behind them, so a load stays pure. */
 internal fun wordRows(count: Int): List<ItemRow> =
 	(0 until count).map { i ->
-		ItemRow(DbItem(name = "w$i", description = "", type = ItemKind.WORD), null, i + 1, false)
+		ItemRow(DbItem(name = "w$i", description = "", type = ItemKind.WORD), null, i + 1)
 	}
 
 internal fun wordVm(count: Int): TestExplorerViewModel =

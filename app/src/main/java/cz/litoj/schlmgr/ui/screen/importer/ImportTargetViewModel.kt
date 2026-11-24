@@ -1,9 +1,12 @@
 package cz.litoj.schlmgr.ui.screen.importer
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import cz.litoj.schlmgr.R
-import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.app.Settings
+import cz.litoj.schlmgr.data.DataExchangeService
+import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.transfer.FileGateway
@@ -30,10 +33,14 @@ import kotlinx.coroutines.withContext
 class ImportTargetViewModel(
 	private val fileUri: Uri,
 	io: CoroutineDispatcher = Dispatchers.IO,
+	private val appContext: Context? = null,
 	nameOf: (Uri) -> String = {
-		FileGateway.displayName(GlobalDependencies.appContext, it, "")
+		FileGateway.displayName(checkNotNull(appContext), it, "")
 	},
-) : ExplorerViewModel<Nothing>(NavigationHistory(), picker = true, io = io) {
+	settings: Settings? = null,
+	private val dataExchange: DataExchangeService? = null,
+	graphs: GraphQueries? = null,
+) : ExplorerViewModel<Nothing>(NavigationHistory(), picker = true, io = io, settings = settings, graphs = graphs) {
 
 	/**
 	 * The state of the mover bar and the resolved document name.
@@ -74,7 +81,7 @@ class ImportTargetViewModel(
 		if (_targetState.value.busy || _targetState.value.imported) return
 		_targetState.update { it.copy(busy = true) }
 		viewModelScope.launch {
-			val context = GlobalDependencies.appContext
+			val context = checkNotNull(appContext)
 			val open = history.path.lastOrNull()
 			val worker = withContext(io) {
 				ImporterFactory.createPickedImport(
@@ -86,6 +93,8 @@ class ImportTargetViewModel(
 						reloadAfterImport(open)
 						refreshInfo()
 					},
+					dataExchange = checkNotNull(dataExchange),
+					graphs = checkNotNull(graphs),
 				)
 			}
 			worker.onImported = { result -> postToUi { openSingleTop(result.topLevel) } }

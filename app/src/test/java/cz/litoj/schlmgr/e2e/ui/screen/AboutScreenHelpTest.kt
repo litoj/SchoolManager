@@ -4,6 +4,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.ui.screen.about.AboutScreen
 import cz.litoj.schlmgr.ui.screen.about.AboutViewModel
 import org.junit.Rule
@@ -25,10 +26,14 @@ class AboutScreenHelpTest {
 	@get:Rule
 	val rule = createComposeRule()
 
+	private val userMessages by lazy(LazyThreadSafetyMode.NONE) {
+		UserMessages(RuntimeEnvironment.getApplication())
+	}
+
 	private fun text(res: Int): String = RuntimeEnvironment.getApplication().getString(res)
 
 	private fun screen(viewModel: AboutViewModel) {
-		rule.setContent { AboutScreen(viewModel, {}) }
+		rule.setContent { AboutScreen(viewModel, userMessages, {}) }
 		rule.waitForIdle()
 	}
 

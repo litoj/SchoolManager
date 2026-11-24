@@ -1,7 +1,6 @@
 package cz.litoj.schlmgr.unit.ui.viewmodel
 
-import cz.litoj.schlmgr.app.AppSettings
-import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.app.Settings
 import cz.litoj.schlmgr.ui.viewmodel.ActionConfig
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction.CUT
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction.DELETE
@@ -25,43 +24,45 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 class ActionConfigLoadTest {
 
+	private lateinit var settings: Settings
+
 	@Before
 	fun setUp() {
-		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
-		AppSettings.remove(ORDER_KEY)
+		settings = Settings(RuntimeEnvironment.getApplication())
+		settings.remove(ORDER_KEY)
 	}
 
 	@After
 	fun tearDown() {
-		AppSettings.remove(ORDER_KEY)
+		settings.remove(ORDER_KEY)
 	}
 
 	@Test
 	fun `a legacy order gains goto after cut`() {
-		AppSettings.set(ORDER_KEY, legacy.joinToString(",") { it.name })
+		settings.set(ORDER_KEY, legacy.joinToString(",") { it.name })
 
 		assertEquals(
 			listOf(TEST, CUT, GOTO, EDIT, DELETE, REFERENCE, FLIP, EXPORT),
-			ActionConfig.load().order,
+			ActionConfig.load(settings).order,
 		)
 	}
 
 	@Test
 	fun `a custom legacy order keeps its pick order`() {
 		val custom = listOf(EDIT, TEST, CUT, DELETE, REFERENCE, FLIP, EXPORT)
-		AppSettings.set(ORDER_KEY, custom.joinToString(",") { it.name })
+		settings.set(ORDER_KEY, custom.joinToString(",") { it.name })
 
 		assertEquals(
 			listOf(EDIT, TEST, CUT, GOTO, DELETE, REFERENCE, FLIP, EXPORT),
-			ActionConfig.load().order,
+			ActionConfig.load(settings).order,
 		)
 	}
 
 	@Test
 	fun `a damaged record falls back to the default`() {
-		AppSettings.set(ORDER_KEY, "TEST,CUT,UNKNOWN")
+		settings.set(ORDER_KEY, "TEST,CUT,UNKNOWN")
 
-		assertEquals(ActionConfig.DEFAULT_ORDER, ActionConfig.load().order)
+		assertEquals(ActionConfig.DEFAULT_ORDER, ActionConfig.load(settings).order)
 	}
 
 	private val legacy = listOf(TEST, CUT, EDIT, DELETE, REFERENCE, FLIP, EXPORT)

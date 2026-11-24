@@ -21,11 +21,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.app.AppDependencies
 import cz.litoj.schlmgr.app.CrashReporter
 import cz.litoj.schlmgr.ui.activity.SettingsActivity
 import cz.litoj.schlmgr.ui.popup.CrashReportPopup
 import cz.litoj.schlmgr.ui.popup.DialogHost
 import cz.litoj.schlmgr.ui.popup.Dialogs
+import cz.litoj.schlmgr.ui.popup.LocalUserMessages
 import cz.litoj.schlmgr.ui.screen.about.AboutScreen
 import cz.litoj.schlmgr.ui.screen.about.AboutViewModel
 import cz.litoj.schlmgr.ui.screen.picker.PickerScreen
@@ -33,8 +35,9 @@ import cz.litoj.schlmgr.ui.screen.picker.PickerViewModel
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
 import cz.litoj.schlmgr.ui.screen.subjects.SubjectsScreen
 import cz.litoj.schlmgr.ui.screen.test.TestSetupScreen
+import cz.litoj.schlmgr.ui.screen.test.TestSetupOwner
 import cz.litoj.schlmgr.ui.screen.test.TestSetupViewModel
-import cz.litoj.schlmgr.ui.viewmodel.mainHistory
+import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
 import kotlinx.coroutines.launch
 
 /**
@@ -44,28 +47,44 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun SchlMgrApp(
+	dependencies: AppDependencies,
 	launchTarget: MainLaunchTarget? = null,
 	onLaunchHandled: () -> Unit = {},
 ) {
 	// the presses of the app arm faster than the platform default, see [QuickLongPress]
 	val system = LocalViewConfiguration.current
-	CompositionLocalProvider(LocalViewConfiguration provides QuickLongPress(system)) {
+	CompositionLocalProvider(
+		LocalViewConfiguration provides QuickLongPress(system),
+		LocalUserMessages provides dependencies.userMessages,
+	) {
 		// the transient user messages, which every screen shows over the content
-		val snackbar = messageSnackbarHost()
+		val snackbar = messageSnackbarHost(dependencies.userMessages)
 
 		// the crash report of the previous session, once per composition.
 		// a composed window is attached, so the popup cannot hit a missing window token
 		LaunchedEffect(Unit) {
 			val crash = CrashReporter.getCrashReport() ?: return@LaunchedEffect
-			if (!Dialogs.isShowing<CrashReportPopup>()) CrashReportPopup(crash)
+			if (!Dialogs.isShowing<CrashReportPopup>()) CrashReportPopup(dependencies.settings, crash)
 		}
 
 		val drawer = rememberDrawerLayerState()
 		val navController = rememberNavController()
+		val setupOwner: TestSetupOwner = viewModel()
 		fun openDrawer() = drawer.open()
 
 		// the one explorer model of the shell, so the drawer can reset it in place
-		val subjectsViewModel: MainExplorerViewModel = viewModel { MainExplorerViewModel(mainHistory) }
+		val subjectsViewModel: MainExplorerViewModel = viewModel {
+			MainExplorerViewModel(
+				NavigationHistory(),
+				graphs = dependencies.graphQueries,
+				editor = dependencies.itemEditor,
+				itemTransferService = dependencies.itemTransfer,
+				flipper = dependencies.flipper,
+				settings = dependencies.settings,
+				userMessages = dependencies.userMessages,
+				testSetup = setupOwner.state,
+			)
+		}
 
 		// an import Done returns to the subjects screen, which applies the target path.
 		LaunchedEffect(launchTarget) {
@@ -125,6 +144,8 @@ fun SchlMgrApp(
 							val activity = LocalActivity.current
 							SubjectsScreen(
 								viewModel = subjectsViewModel,
+								settings = dependencies.settings,
+								userMessages = dependencies.userMessages,
 								openDrawer = ::openDrawer,
 								onOpenTest = { navController.navigate(Destination.TEST.name) },
 								onPickReferences = { navController.navigate(PICKER_ROUTE) },
@@ -134,9 +155,16 @@ fun SchlMgrApp(
 							)
 						}
 						composable(Destination.TEST.name) { entry ->
-							val vm: TestSetupViewModel = viewModel(entry) { TestSetupViewModel() }
+							val vm: TestSetupViewModel = viewModel(entry) {
+								TestSetupViewModel(
+									testSetup = setupOwner.state,
+									settings = dependencies.settings,
+									userMessages = dependencies.userMessages,
+								)
+							}
 							TestSetupScreen(
 								viewModel = vm,
+								userMessages = dependencies.userMessages,
 								openPicker = { navController.navigate(PICKER_ROUTE) },
 								openDrawer = ::openDrawer,
 							)
@@ -144,10 +172,20 @@ fun SchlMgrApp(
 						composable(PICKER_ROUTE) { entry ->
 							// a reference pick links into the captured chapter, otherwise sources feed the test
 							val vm: PickerViewModel = viewModel(entry) {
-								PickerViewModel(mainHistory, referenceTarget = subjectsViewModel.referenceTarget)
+								PickerViewModel(
+									subjectsViewModel.history,
+									referenceTarget = subjectsViewModel.referenceTarget,
+									settings = dependencies.settings,
+									userMessages = dependencies.userMessages,
+									graphs = dependencies.graphQueries,
+									transfer = dependencies.itemTransfer,
+									testSetup = setupOwner.state,
+								)
 							}
 							PickerScreen(
 								viewModel = vm,
+								settings = dependencies.settings,
+								userMessages = dependencies.userMessages,
 								onExit = {
 									subjectsViewModel.finishReferencePicker(vm.didReference)
 									navController.popBackStack()
@@ -158,7 +196,7 @@ fun SchlMgrApp(
 						}
 						composable(Destination.ABOUT.name) { entry ->
 							val vm: AboutViewModel = viewModel(entry) { AboutViewModel() }
-							AboutScreen(vm, ::openDrawer)
+							AboutScreen(vm, dependencies.userMessages, ::openDrawer)
 						}
 					}
 					// the snackbar sits above everything except the windows of the dialogs.

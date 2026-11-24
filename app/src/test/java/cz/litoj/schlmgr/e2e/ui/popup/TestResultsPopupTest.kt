@@ -73,9 +73,9 @@ class TestResultsPopupTest {
 	}
 
 	private fun popupOf(word: DbItem): TestResultsPopup {
-		val model = TestItemModel(TestEntry(word, listOf(word)))
+		val model = TestItemModel(TestEntry(word, listOf(word), ItemRepository.translations(word.id)))
 		model.answer = "a"
-		return TestResultsPopup(listOf(model), 0f)
+		return TestResultsPopup(listOf(model), 0f, TestEngine.isReversed)
 	}
 
 	private fun show(popup: TestResultsPopup) = rule.setContent { popup.Content() }
@@ -133,7 +133,7 @@ class TestResultsPopupTest {
 			)
 			TestItemModel(TestEntry(word, listOf(word))).apply { answer = "a" }
 		}
-		show(TestResultsPopup(models, 0f))
+		show(TestResultsPopup(models, 0f, TestEngine.isReversed))
 
 		rule.onNodeWithText("1.").assertExists()
 		rule.onNodeWithText("2.").assertExists()
@@ -148,11 +148,11 @@ class TestResultsPopupTest {
 		val chapter = ItemRepository.createChapter(subject.id, "c1", null)
 		val word = ItemRepository.createWord(
 			chapter.id, "laufen/rennen", null, listOf("run" to null))
-		val model = TestItemModel(TestEntry(word, listOf(word)))
+		val model = TestItemModel(TestEntry(word, listOf(word), ItemRepository.translations(word.id)))
 		model.correct = true
 		model.answer = "laufen"
 
-		show(TestResultsPopup(listOf(model), 100f))
+		show(TestResultsPopup(listOf(model), 100f, TestEngine.isReversed))
 
 		rule.onNodeWithText("Correct: laufen/rennen").assertExists()
 		rule.onNodeWithText("Your answer: laufen").assertExists()

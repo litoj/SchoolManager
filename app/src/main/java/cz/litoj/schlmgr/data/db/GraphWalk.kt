@@ -4,7 +4,7 @@ import cz.litoj.schlmgr.data.StreamItem
 
 /**
  * The single pre-order graph walk behind exports and the subject merge.
- * - [ItemRepository] delegates its stream building here, so the walk exists exactly once.
+ * - [cz.litoj.schlmgr.data.DataExchangeService] delegates its stream building here, so the walk exists exactly once.
  */
 internal object GraphWalk {
 

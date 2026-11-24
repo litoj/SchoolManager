@@ -2,7 +2,7 @@ package cz.litoj.schlmgr.ui.viewmodel
 
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
-import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.data.db.ROOT_ID
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -25,6 +25,7 @@ internal class ExplorerList(
 	private val scope: CoroutineScope,
 	private val io: CoroutineDispatcher,
 	private val host: Host,
+	private val graphs: GraphQueries? = null,
 ) {
 
 	interface Host {
@@ -114,8 +115,8 @@ internal class ExplorerList(
 	fun clearSortOrder() = viewStates.clearOrder(currentContainerId)
 
 	/** Sibling order of the current view, falling back to repository order on a first visit. */
-	fun sortedChildren(parentId: Int): List<DbItem> {
-		val children = ItemRepository.children(parentId)
+	suspend fun sortedChildren(parentId: Int): List<DbItem> {
+		val children = checkNotNull(graphs).children(parentId)
 		val order = (if (parentId == ROOT_ID) viewStates.rootOrder else viewStates.orderOf(parentId)) ?: return children
 		val position = HashMap<Int, Int>()
 		for ((index, id) in order.withIndex()) position[id] = index
@@ -215,7 +216,7 @@ internal class ExplorerList(
 			while (true) {
 				val content = withContext(io) {
 					val rows = readRows(container) ?: return@withContext null
-					val fresh = if (container == null) null else ItemRepository.get(container.id)
+					val fresh = if (container == null) null else checkNotNull(graphs).get(container.id)
 					Triple(rows, ownRow(container, pathIds), fresh)
 				} ?: return@launch
 				val (rows, own, fresh) = content
@@ -250,18 +251,17 @@ internal class ExplorerList(
 		}
 	}
 
-	private fun readRows(container: DbItem?): List<ItemRow>? {
+	private suspend fun readRows(container: DbItem?): List<ItemRow>? {
 		if (container != null && container.type != ItemKind.CHAPTER) return null
 		val parentId = container?.id ?: ROOT_ID
-		val children = ItemRepository.children(parentId)
+		val graphs = checkNotNull(graphs)
+		val children = graphs.children(parentId)
 		// one batch read covers the container: the default render and every later flip.
 		// a read per word would be too slow
 		val translations =
-			if (children.any { it.type == ItemKind.WORD })
-				ItemRepository.childTranslations(parentId) else emptyMap()
+			if (children.any { it.type == ItemKind.WORD }) graphs.childTranslations(parentId) else emptyMap()
 		return ItemRow.convert(
-			children, parentId,
-			ItemRepository.childLinksOf(parentId), translations,
+			children, parentId, graphs.childLinksOf(parentId), translations,
 		)
 	}
 
@@ -269,8 +269,10 @@ internal class ExplorerList(
 	 * The row of [container] itself, so a wholly held view can collapse into it.
 	 * - its parent reads from the path above it, and the read belongs on [io] with the rows.
 	 */
-	private fun ownRow(container: DbItem?, pathIds: List<Int>): ItemRow? = container?.let {
-		ItemRow(it, pathIds.getOrNull(pathIds.size - 2) ?: ROOT_ID, 0, applyDefFlip = false)
+	private suspend fun ownRow(container: DbItem?, pathIds: List<Int>): ItemRow? = container?.let {
+		val parentId = pathIds.getOrNull(pathIds.size - 2) ?: ROOT_ID
+		val links = checkNotNull(graphs).childLinksOf(parentId).filter { link -> link.childId == it.id }
+		ItemRow.ofBrowse(it, parentId, 0, links, emptyList())
 	}
 
 	fun addItem(item: ItemRow) = insertItem(models.size, item)
@@ -336,7 +338,7 @@ internal class ExplorerList(
 		val flippedTo = !row.flipped
 		val generation = row.reserveFlip(flippedTo) ?: return
 		scope.launch {
-			val content = withContext(io) { ItemRow.flipContentOf(row.item) }
+			val content = withContext(io) { ItemRow.readFlipContent(row.item, checkNotNull(graphs)) }
 			row.completeFlip(generation, content, flippedTo)
 		}
 	}
@@ -369,7 +371,7 @@ internal class ExplorerList(
 		if (unpreloaded.isNotEmpty()) scope.launch {
 			// one io hop reads every missing row, a hop per row repeats the dispatch
 			val contents = withContext(io) {
-				unpreloaded.map { (row, _) -> ItemRow.flipContentOf(row.item) }
+				unpreloaded.map { (row, _) -> ItemRow.readFlipContent(row.item, checkNotNull(graphs)) }
 			}
 			unpreloaded.forEachIndexed { i, pendingFlip ->
 				val (row, generation) = pendingFlip

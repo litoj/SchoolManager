@@ -2,7 +2,6 @@ package cz.litoj.schlmgr.testing
 
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
-import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.WordNames
 import cz.litoj.schlmgr.data.db.ratio
 import cz.litoj.schlmgr.data.db.testedCount
@@ -13,7 +12,12 @@ import kotlin.math.roundToInt
 /**
  * All run state lives for one run, and [setTested] prepares it.
  */
-class TestEngine {
+class TestEngine(
+	private val parentsOf: (Int) -> List<DbItem> = { emptyList() },
+) {
+
+	internal var config = TestRunConfig.current()
+		private set
 
 	private var source: List<TestEntry> = emptyList()
 	private var answered: BooleanArray = BooleanArray(0)
@@ -34,17 +38,19 @@ class TestEngine {
 	 * @param doOnSec tick callback, null for none
 	 * @param timePerChar seconds one answer character takes
 	 * @param source the candidate entries
+	 * @param config immutable answer rules of this run
 	 */
-	fun setTested(amount: Int, doOnSec: Timer?, timePerChar: Float, source: List<TestEntry>) {
+	fun setTested(amount: Int, doOnSec: Timer?, timePerChar: Float, source: List<TestEntry>, config: TestRunConfig = TestRunConfig.current()) {
+		this.config = config
 		require(amount == -1 || amount >= 1) { "Amount of tested elements must be >= 1!" }
 		require(timePerChar > 0f) { "Seconds per answer character must be > 0!" }
 		// an amount that covers the whole source uses all of it,
 		// a single-entry source included
 		val useAmount = if (amount == -1 || amount >= source.size) source.size else amount
-		val selected = if (isClever) cleverTest(source, useAmount) else rndTest(source.toMutableList(), useAmount)
+		val selected = if (config.cleverSelection) cleverTest(source, useAmount) else rndTest(source.toMutableList(), useAmount)
 		groups = groupByWholePrompt(selected)
 		this.source = groups.flatMap(TestTask::entries)
-		time = testTime(timePerChar, this.source)
+		time = testTime(timePerChar, this.source, config)
 		this.doOnSec = doOnSec
 		answered = BooleanArray(this.source.size)
 		usedAnswers.clear()
@@ -52,18 +58,16 @@ class TestEngine {
 
 	/**
 	 * Merges only entries with exactly the same translation set.
-	 * - one batch read supplies every prompt set, so each word needs no separate lookup.
+	 * - preparation supplies every prompt set, so grouping needs no persistence.
 	 * - partial overlap stays separate, since the shown prompts are not the same.
 	 */
 	private fun groupByWholePrompt(source: List<TestEntry>): List<TestTask> {
-		if (source.size < 2 || !ItemRepository.initialized) return source.map { TestTask(listOf(it)) }
-		val promptSets = if (isReversed) emptyMap()
-		else ItemRepository.translationsForWords(source.map { it.word.id })
+		if (source.size < 2) return source.map { TestTask(listOf(it)) }
 		val groups = LinkedHashMap<Any, MutableList<Int>>()
 		for ((index, entry) in source.withIndex()) {
 			// the prompt is a translation set normally and the word name when reversed
-			val signature: Any = if (isReversed) entry.word.name.trim()
-			else promptSets[entry.word.id]?.map { it.id }?.toSet() ?: emptySet<Int>()
+			val signature: Any = if (config.reversed) entry.word.name.trim()
+			else entry.translations().map { it.id }.toSet()
 			groups.getOrPut(signature) { mutableListOf() }.add(index)
 		}
 		val ids = IntArray(source.size) { -1 }
@@ -133,11 +137,12 @@ class TestEngine {
 		answered[index] = true
 		val entry = source[index]
 		val texts = answers.map { it.trim() }
-		var correct = if (requireAllVariants) matchesAllVariants(entry.word, translations, texts)
-		else matchesEntry(entry.word, translations, texts.firstOrNull())
+		val grader = AnswerGrader(config.reversed, config.ignoredMistakes, parentsOf)
+		var correct = if (config.requireAllVariants) grader.matchesAllVariants(entry.word, translations, texts)
+		else grader.matchesEntry(entry.word, translations, texts.firstOrNull())
 		// required variant lists may repeat one text across different words
-		if (!requireAllVariants) for (rawText in texts) {
-			val text = normalizeAnswer(rawText)
+		if (!config.requireAllVariants) for (rawText in texts) {
+			val text = grader.normalize(rawText)
 			if (text.isEmpty()) continue
 			val group = groupIds.getOrElse(index) { -1 }
 			if (group >= 0 && !usedAnswers.getOrPut(group) { HashSet() }.add(text)) {
@@ -145,29 +150,14 @@ class TestEngine {
 				correct = false
 			}
 		}
-		// the test updates the word and every container holding it.
-		// - plain ancestors only, since a reference never counts.
-		// - the translations take only the knowledge that the answer demonstrated.
-		ItemRepository.bumpWordCounters(entry.word.id, correct)
-		bumpTranslations(translations, texts, correct)
 		return correct
-	}
-
-	/**
-	 * Records the answer on the translations of the word.
-	 * - on success it records the ones that any supplied answer demonstrated.
-	 * - see [creditedTranslations] for that pick.
-	 * - on a fail it records all of them, since the answer named no correct translation.
-	 */
-	private fun bumpTranslations(translations: List<DbItem>, answers: List<String>, correct: Boolean) {
-		if (correct) {
-			val demonstrated = answers.flatMap { creditedTranslations(translations, it) }.distinctBy { it.id }
-			ItemRepository.bumpCounters(demonstrated.map { it.id }, true)
-		} else ItemRepository.bumpCounters(translations.map { it.id }, false)
 	}
 
 	/** The tested entries of the run, as a defensive copy. */
 	fun getTestSrc(): List<TestEntry> = ArrayList(source)
+
+	fun creditedTranslationsForRun(translations: List<DbItem>, answer: String?): List<DbItem> =
+		AnswerGrader(config.reversed, config.ignoredMistakes).creditedTranslations(translations, answer)
 
 	/** The prompt groups of the run, where each group has one shared prompt. */
 	fun getTestGroups(): List<TestTask> = groups.toList()
@@ -257,7 +247,7 @@ class TestEngine {
 		}
 
 		/** The answers an entry asks for when the option requires every answer side. */
-		private fun variantCount(entry: TestEntry): Int = if (isReversed)
+		private fun variantCount(entry: TestEntry, reversed: Boolean): Int = if (reversed)
 			entry.translations().sumOf { WordNames.requiredVariantCount(it.name) }
 		else WordNames.requiredVariantCount(entry.word.name)
 
@@ -265,8 +255,8 @@ class TestEngine {
 		 * The characters the answer of [entry] writes.
 		 * - the tested side is the written one, and the longest text it offers decides.
 		 */
-		private fun answerChars(entry: TestEntry): Int =
-			(if (isReversed) entry.translations().map { it.name } else listOf(entry.word.name))
+		private fun answerChars(entry: TestEntry, reversed: Boolean): Int =
+			(if (reversed) entry.translations().map { it.name } else listOf(entry.word.name))
 				.maxOfOrNull { it.length } ?: 1
 
 		/** The seconds every word asks for besides the length of its answer. */
@@ -277,11 +267,14 @@ class TestEngine {
 		 * - the option requiring every name variant adds 1.5 times per added answer field.
 		 */
 		@JvmStatic
-		fun testTime(perChar: Float, entries: List<TestEntry>): Int {
+		fun testTime(
+			perChar: Float, entries: List<TestEntry>, config: TestRunConfig = TestRunConfig.current(),
+		): Int {
 			var total = 0.0
 			for (entry in entries) {
-				val exponent = if (requireAllVariants) (variantCount(entry) - 1).coerceAtLeast(0) else 0
-				total += (BASE_SECONDS_PER_WORD + perChar * answerChars(entry)) * 1.5.pow(exponent)
+				val exponent = if (config.requireAllVariants)
+					(variantCount(entry, config.reversed) - 1).coerceAtLeast(0) else 0
+				total += (BASE_SECONDS_PER_WORD + perChar * answerChars(entry, config.reversed)) * 1.5.pow(exponent)
 			}
 			return total.coerceAtMost(Int.MAX_VALUE.toDouble()).roundToInt()
 		}
@@ -294,10 +287,9 @@ class TestEngine {
 		 * @param children container-children lookup, a fake tree in tests
 		 */
 		@JvmStatic
-		@JvmOverloads
 		fun convertAll(
 			sources: List<List<DbItem>>,
-			children: (Int) -> List<DbItem> = ItemRepository::children,
+			children: (Int) -> List<DbItem>,
 		): List<TestEntry> {
 			val entries = ArrayList<TestEntry>()
 			val visited = HashSet<Int>()
@@ -361,6 +353,9 @@ class TestEngine {
 
 		private var ignoredMistakes: List<String> = emptyList()
 
+		private val activeGrader: AnswerGrader
+			get() = AnswerGrader(isReversed, ignoredMistakes)
+
 		/**
 		 * Whether a test shows the tested word and expects one of its translations,
 		 * instead of the default of showing the translations and expecting the word.
@@ -376,11 +371,7 @@ class TestEngine {
 
 		/** The comparison form after configured literals disappear and outer space trims. */
 		@JvmStatic
-		fun normalizeAnswer(text: String): String {
-			var normalized = text
-			for (mistake in ignoredMistakes) normalized = normalized.replace(mistake, "")
-			return normalized.trim()
-		}
+		fun normalizeAnswer(text: String): String = activeGrader.normalize(text)
 
 		/**
 		 * Whether [answer] names the tested word in the current direction.
@@ -389,28 +380,16 @@ class TestEngine {
 		 * - null or empty never matches.
 		 */
 		@JvmStatic
-		fun matchesAnswer(word: DbItem, translations: List<DbItem>, answer: String?): Boolean {
-			if (answer.isNullOrEmpty()) return false
-			return if (isReversed) translations.any { matchesName(it.name, answer) }
-			else matchesName(word.name, answer)
-		}
+		fun matchesAnswer(word: DbItem, translations: List<DbItem>, answer: String?): Boolean =
+			activeGrader.matchesAnswer(word, translations, answer)
 
 		/**
 		 * Whether [answer] proves [word] in the current direction.
 		 * - the word name, its variants and a synonym linked to every shown translation count.
 		 */
 		@JvmStatic
-		fun matchesEntry(word: DbItem, translations: List<DbItem>, answer: String?): Boolean {
-			if (matchesAnswer(word, translations, answer)) return true
-			if (isReversed || answer.isNullOrEmpty() || translations.isEmpty()) return false
-			// a synonym must be linked to every shown translation, not just one
-			return translations.all { translation ->
-				ItemRepository.parentIds(translation.id).any { parentId ->
-					val parent = ItemRepository.get(parentId)
-					parent != null && parent.type == ItemKind.WORD && matchesName(parent.name, answer)
-				}
-			}
-		}
+		fun matchesEntry(word: DbItem, translations: List<DbItem>, answer: String?): Boolean =
+			activeGrader.matchesEntry(word, translations, answer)
 
 		/**
 		 * Translations that a correct [answer] demonstrated knowledge of.
@@ -419,25 +398,13 @@ class TestEngine {
 		 */
 		@JvmStatic
 		fun creditedTranslations(translations: List<DbItem>, answer: String?): List<DbItem> =
-			if (isReversed) translations.filter { matchesName(it.name, answer ?: "") } else translations
+			activeGrader.creditedTranslations(translations, answer)
 
 		/**
 		 * Whether supplied valid variants cover every answer side once.
 		 * - extra answers are allowed, while an uncovered side fails the word.
 		 */
-		private fun matchesAllVariants(word: DbItem, translations: List<DbItem>, answers: List<String>): Boolean {
-			if (answers.isEmpty()) return false
-			val supplied = answers.map { it.trim() }
-			val names = if (isReversed) translations.map { it.name } else listOf(word.name)
-			return names.all { WordNames.coversAllVariants(it, supplied, ::normalizeAnswer) }
-		}
-
-		private fun matchesName(name: String, answer: String): Boolean {
-			val expected = normalizeAnswer(name)
-			val candidate = normalizeAnswer(answer)
-			return candidate == expected || WordNames.parseVariants(name.trim()).any {
-				normalizeAnswer(it) == candidate
-			}
-		}
+		private fun matchesAllVariants(word: DbItem, translations: List<DbItem>, answers: List<String>): Boolean =
+			activeGrader.matchesAllVariants(word, translations, answers)
 	}
 }

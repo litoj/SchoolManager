@@ -6,6 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.ui.shell.MenuEntry
 import cz.litoj.schlmgr.ui.shell.TopBarActions
 import cz.litoj.schlmgr.ui.shell.TopBarEntryAction
@@ -25,6 +26,7 @@ fun RowScope.ExplorerSearchControls(
 	searchBlockedReason: Int,
 	entries: List<MenuEntry>,
 	width: Dp,
+	userMessages: UserMessages,
 	onOpenSearch: () -> Unit,
 	onQueryChange: (String) -> Unit,
 	onQuerySubmit: (String) -> Unit,
@@ -37,8 +39,9 @@ fun RowScope.ExplorerSearchControls(
 	)
 	else TopBarTitle(title)
 	val filter = entries.single { it.label == R.string.filter_tag }
-	if (fieldOpen) TopBarEntryAction(filter, onMenuPick)
+	if (fieldOpen) TopBarEntryAction(filter, userMessages, onMenuPick)
 	else TopBarIconButton(
+		userMessages = userMessages,
 		icon = R.drawable.ic_search,
 		contentDescription = stringResource(R.string.search),
 		enabled = searchBlockedReason == 0,
@@ -46,5 +49,5 @@ fun RowScope.ExplorerSearchControls(
 		onClick = onOpenSearch,
 	)
 	val unpinned = if (fieldOpen) entries.filterNot { it === filter } else entries
-	TopBarActions(unpinned, width, onMenuPick, pinned = 1)
+	TopBarActions(unpinned, width, userMessages, onMenuPick, pinned = 1)
 }

@@ -1,6 +1,6 @@
 package cz.litoj.schlmgr.ui.screen.subjects
 
-import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel.Request
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
@@ -17,6 +17,7 @@ internal class SubjectsNavigation(
 	private val io: CoroutineDispatcher,
 	private val history: NavigationHistory,
 	private val host: Host,
+	private val graphs: GraphQueries? = null,
 ) {
 
 	interface Host : SubjectsHost {
@@ -39,7 +40,8 @@ internal class SubjectsNavigation(
 		val originPath = history.path.toList()
 		val origin = originPath.lastOrNull()
 		scope.launch(io) {
-			val paths = ItemRepository.parentIds(row.item.id).map { ItemRepository.pathTo(it) }
+			val graphs = checkNotNull(graphs)
+			val paths = graphs.parentIds(row.item.id).map { graphs.pathTo(it) }
 			if (paths.isEmpty()) return@launch
 			host.postToUi {
 				// own navigation wins.
@@ -55,9 +57,10 @@ internal class SubjectsNavigation(
 		val originPath = history.path.toList()
 		val origin = originPath.lastOrNull()
 		scope.launch(io) {
-			val sources = ItemRepository.parentIds(itemId).filter { it != exclude }
+			val graphs = checkNotNull(graphs)
+			val sources = graphs.parentIds(itemId).filter { it != exclude }
 			if (sources.isEmpty()) return@launch
-			val paths = sources.map { ItemRepository.pathTo(it) }
+			val paths = sources.map { graphs.pathTo(it) }
 			host.postToUi {
 				if (history.path.lastOrNull() !== origin) return@postToUi
 				if (host.searching || host.selectionCount() > 0 || host.pasteArmed) return@postToUi

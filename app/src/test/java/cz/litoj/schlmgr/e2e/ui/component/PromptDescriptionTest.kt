@@ -65,7 +65,8 @@ class PromptDescriptionTest {
 			listOf("house" to "noun: building", "roof" to "noun: top"),
 		)
 		TestEngine.applyReversed(reversed)
-		val task = TestTaskModel(listOf(TestItemModel(TestEntry(word, listOf(subject, chapter, word)))), 0)
+		val entry = TestEntry(word, listOf(subject, chapter, word), ItemRepository.translations(word.id))
+		val task = TestTaskModel(listOf(TestItemModel(entry)), 0)
 		rule.setContent {
 			SharedPromptRow(task, -1, hashMapOf(), false, rememberLazyListState(), {})
 		}

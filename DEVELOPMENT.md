@@ -2,20 +2,33 @@
 
 ## Architecture
 
-`ui → view models → ItemRepository → Room, codecs, SAF, test engine`
+`ui → view models → injected data services → Room, codecs, SAF, test engine`
 
 | Layer | Owns | Does not |
 |-------|------|----------|
 | `ui.shell`, `ui.activity` | the single Compose root, navigation and chrome | data logic |
-| `ui.screen`, `ui.viewmodel` | screen state and row actions | database access |
-| `ItemRepository` | all data access and invariants | UI state |
+| `ui.screen`, `ui.viewmodel` | screen state and row actions | direct database access |
+| `data` services | data access and invariants | UI state |
 | `data.db` | schema, DAOs, graph operations, counters | UI, codecs |
 | `data.transfer` | SAF picking, import and export workers | codec formats |
 | `data.json`, `data.wordlist` | pure parse and render of item streams | DB, SAF, UI |
-| `testing` | test run, grading, selection | persistence |
+| `CounterService` | counter writes and plain-parent chains | UI, codecs |
+| `ItemEditor` | item creation and edits | UI, codecs |
+| `ItemTransferService` | moves, references and subject merges | UI, codecs |
+| `FlipRunner` | flip plans and commits | UI, codecs |
+| `DataExchangeService` | item-stream imports and exports | UI, SAF |
+| `testing` | test run, pure grading, selection | counter writes and UI state |
 
 - View models emit `Request` and `UiNotice`. The shell resolves the strings.
-- Screen state is synchronous. The repository blocks on IO and callers see a blocking facade.
+- `Startup.init` returns the process-scoped `AppDependencies`, whose activities keep it for constructor injection.
+- `AppDependencies.userMessages` owns the message flow. Screens collect that instance instead of a process-global bus.
+- New code receives `Settings` through that container.
+- `GraphQueries` supplies graph snapshots and container reads through a caller-owned suspend scope.
+- `ExplorerAction` defines menu ids and selection action presentation once. The widget callback keeps only the integer transport.
+- One `TestSetupOwner` instance shares setup state with the picker and running test through constructor parameters.
+- Every test run captures an immutable `TestRunConfig`. Settings and reference lookups apply to its next run only.
+- Screen state is synchronous. View models call suspend data services on their chosen IO dispatcher.
+- `FileWorker` keeps its named thread and calls its suspend service from that boundary.
 
 Component behavior and design live in `NOTES.md`.
 

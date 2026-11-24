@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.room.Room
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.app.AppDependencies
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
@@ -49,12 +50,16 @@ class ImportTargetScreenTest {
 	val rule = createAndroidComposeRule<ComponentActivity>()
 
 	private lateinit var db: ItemDatabase
+	private lateinit var dependencies: AppDependencies
 
 	@Before
 	fun setUp() {
 		db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
 			.allowMainThreadQueries()
+			.setQueryExecutor(Runnable::run)
+			.setTransactionExecutor(Runnable::run)
 			.build()
+		dependencies = AppDependencies(RuntimeEnvironment.getApplication(), db)
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 		GlobalDependencies.appContext = RuntimeEnvironment.getApplication()
@@ -74,8 +79,17 @@ class ImportTargetScreenTest {
 	): ImportTargetViewModel {
 		val subject = ItemRepository.createSubject("A", null)
 		ItemRepository.createChapter(subject.id, "B", null)
-		val model = ImportTargetViewModel(picked(text), Dispatchers.Unconfined) { name }
-		rule.setContent { ImportTargetScreen(model, {}, onDone) }
+		val model = ImportTargetViewModel(
+			picked(text), Dispatchers.Unconfined,
+			appContext = dependencies.appContext,
+			nameOf = { name },
+			settings = dependencies.settings,
+			dataExchange = dependencies.dataExchange,
+			graphs = dependencies.graphQueries,
+		)
+		rule.setContent {
+			ImportTargetScreen(model, dependencies.settings, dependencies.userMessages, {}, onDone)
+		}
 		rule.waitForIdle()
 		return model
 	}
@@ -167,9 +181,21 @@ class ImportTargetScreenTest {
 	fun `a busy import locks the target rows and the cancel`() {
 		ItemRepository.createSubject("A", null)
 		val gate = CountDownLatch(1)
-		val model = ImportTargetViewModel(blocked(gate), Dispatchers.IO) { "list.txt" }
+		val model = ImportTargetViewModel(
+			blocked(gate), Dispatchers.IO,
+			appContext = dependencies.appContext,
+			nameOf = { "list.txt" },
+			settings = dependencies.settings,
+			dataExchange = dependencies.dataExchange,
+			graphs = dependencies.graphQueries,
+		)
 		var exited = false
-		rule.setContent { ImportTargetScreen(model, onExit = { exited = true }, onDone = {}) }
+		rule.setContent {
+			ImportTargetScreen(
+				model, dependencies.settings, dependencies.userMessages,
+				onExit = { exited = true }, onDone = {},
+			)
+		}
 		rule.waitForIdle()
 
 		rule.onNodeWithText(label(R.string.import_here)).performClick()

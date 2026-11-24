@@ -30,6 +30,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.ui.component.BareTextField
 import cz.litoj.schlmgr.ui.component.BigHeader
 import cz.litoj.schlmgr.ui.component.SectionHeader
@@ -56,10 +57,11 @@ import cz.litoj.schlmgr.ui.shell.headerShadow
  * @param onBack the back arrow press, the host owns the back stack
  */
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit) {
+fun SettingsScreen(viewModel: SettingsViewModel, userMessages: UserMessages, onBack: () -> Unit) {
 	Column(Modifier.fillMaxSize()) {
 		TopBar {
 			TopBarNav(
+				userMessages = userMessages,
 				up = true,
 				onNavigate = onBack,
 				contentDescription = stringResource(R.string.back),

@@ -2,8 +2,10 @@ package cz.litoj.schlmgr.integration.ui.screen.subjects
 
 import android.os.Looper
 import androidx.room.Room
+import cz.litoj.schlmgr.app.AppDependencies
 import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.app.UiNotice
+import cz.litoj.schlmgr.app.UserMessages.UiMessage
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.FlipResolution
@@ -58,6 +60,7 @@ import org.robolectric.annotation.Config
 class MainExplorerViewModelTest {
 
 	private lateinit var db: ItemDatabase
+	private lateinit var dependencies: AppDependencies
 	private var now = 1_000_000L
 
 	/** The search pins run from the word side. */
@@ -86,15 +89,26 @@ class MainExplorerViewModelTest {
 		if (::db.isInitialized) db.close()
 		db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), ItemDatabase::class.java)
 			.allowMainThreadQueries()
+			.setQueryExecutor(Runnable::run)
+			.setTransactionExecutor(Runnable::run)
 			.build()
+		dependencies = AppDependencies(RuntimeEnvironment.getApplication(), db)
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 	}
 
-	private fun vm(): MainExplorerViewModel {
+	private fun vm(io: CoroutineDispatcher = Dispatchers.Unconfined): MainExplorerViewModel {
 		// the repository reads run inline on an unconfined dispatcher, so the
 		// construction-time load lands before the assertions
-		val model = MainExplorerViewModel(NavigationHistory(), Dispatchers.Unconfined)
+		val model = MainExplorerViewModel(
+			NavigationHistory(), io,
+			graphs = dependencies.graphQueries,
+			editor = dependencies.itemEditor,
+			itemTransferService = dependencies.itemTransfer,
+			flipper = dependencies.flipper,
+			settings = dependencies.settings,
+			userMessages = dependencies.userMessages,
+		)
 		// a root back press would read the wall clock through the exit window
 		model.clock = { now }
 		return model
@@ -471,7 +485,7 @@ class MainExplorerViewModelTest {
 		val io = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 		try {
 			seed()
-			val model = MainExplorerViewModel(NavigationHistory(), io)
+			val model = vm(io)
 			model.clock = { now }
 			settle(io)
 			model.onItemClick(model.items().single { it.item.name == "A" })
@@ -487,6 +501,44 @@ class MainExplorerViewModelTest {
 			assertTrue(model.state.value.info !is InfoBar.Search)
 		} finally {
 			io.close()
+		}
+	}
+
+	@Test
+	fun `a search keeps its row options for the whole run and only refreshes the next one`() {
+		val io = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+		val parseWas = ItemRow.parse
+		val searchFlipWas = ItemRow.searchDefFlip
+		try {
+			val aId = ItemRepository.createSubject("A", null).id
+			val c1 = ItemRepository.createChapter(aId, "c1", null)
+			ItemRepository.createWord(c1.id, "dog", null, listOf("t/(u) v" to null))
+			val model = vm(io)
+			model.clock = { now }
+			settle(io)
+			model.onItemClick(model.items().single { it.item.name == "A" })
+			settle(io)
+			setRowOptions(parse = true, searchDefFlip = true)
+			val flipped = ItemRow.nameParser("t/(u) v")
+			model.openSearchField()
+			model.onQuerySubmit("dog")
+			setRowOptions(parse = false, searchDefFlip = false)
+
+			settle(io)
+			var turns = 0
+			while ((model.state.value.info as? InfoBar.Search)?.done != true && turns++ < 100) settle(io)
+
+			assertEquals("the completed run kept its original row options",
+				flipped, model.items().single().toShow)
+			model.onQuerySubmit("do")
+			settle(io)
+			turns = 0
+			while ((model.state.value.info as? InfoBar.Search)?.done != true && turns++ < 100) settle(io)
+			assertEquals("the next run took the new options",
+				"dog", model.items().single().toShow)
+		} finally {
+			io.close()
+			setRowOptions(parse = parseWas, searchDefFlip = searchFlipWas)
 		}
 	}
 
@@ -848,12 +900,12 @@ class MainExplorerViewModelTest {
 
 		runBlocking {
 			val notice = async(start = CoroutineStart.UNDISPATCHED) {
-				GlobalDependencies.messages.first()
+				dependencies.userMessages.messages.first()
 			}
 			model.doPaste()
 			withTimeout(1_000) {
 				assertEquals(
-					GlobalDependencies.UiMessage.Notice(UiNotice.PasteAlreadyPresent), notice.await())
+					UiMessage.Notice(UiNotice.PasteAlreadyPresent), notice.await())
 			}
 		}
 
@@ -866,7 +918,7 @@ class MainExplorerViewModelTest {
 		val io = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 		try {
 			seed()
-			val model = MainExplorerViewModel(NavigationHistory(), io)
+			val model = vm(io)
 			model.clock = { now }
 			settle(io)
 			model.onItemClick(model.items().single { it.item.name == "A" })
@@ -1350,12 +1402,12 @@ class MainExplorerViewModelTest {
 		model.onItemClick(model.items().single { it.item.id == bId })
 		runBlocking {
 			val notice = async(start = CoroutineStart.UNDISPATCHED) {
-				GlobalDependencies.messages.first()
+				dependencies.userMessages.messages.first()
 			}
 			model.doPaste()
 			withTimeout(1_000) {
 				assertEquals(
-					GlobalDependencies.UiMessage.Notice(UiNotice.PasteOtherSubject), notice.await())
+					UiMessage.Notice(UiNotice.PasteOtherSubject), notice.await())
 			}
 		}
 
@@ -1392,11 +1444,11 @@ class MainExplorerViewModelTest {
 
 		runBlocking {
 			val notice = async(start = CoroutineStart.UNDISPATCHED) {
-				GlobalDependencies.messages.first()
+				dependencies.userMessages.messages.first()
 			}
 			model.doPaste()
 			withTimeout(1_000) {
-				assertEquals(GlobalDependencies.UiMessage.Notice(UiNotice.PasteNoTarget), notice.await())
+				assertEquals(UiMessage.Notice(UiNotice.PasteNoTarget), notice.await())
 			}
 		}
 		assertFalse("the refused paste disarmed anyway", model.pasteArmed)
@@ -1417,12 +1469,12 @@ class MainExplorerViewModelTest {
 
 		runBlocking {
 			val notice = async(start = CoroutineStart.UNDISPATCHED) {
-				GlobalDependencies.messages.first()
+				dependencies.userMessages.messages.first()
 			}
 			model.doPaste()
 			withTimeout(1_000) {
 				assertEquals(
-					GlobalDependencies.UiMessage.Notice(UiNotice.PasteInsideItself), notice.await())
+					UiMessage.Notice(UiNotice.PasteInsideItself), notice.await())
 			}
 		}
 
@@ -1506,7 +1558,7 @@ class MainExplorerViewModelTest {
 			model.items().none { it.item.name == "sídlo" })
 		model.endSearch()
 
-		SettingsState(searchDiacritics = false).toggleSearchDiacritics()
+		SettingsState(settings = dependencies.settings, searchDiacritics = false).toggleSearchDiacritics()
 		model.openSearchField()
 		model.onQuerySubmit("sidlo")
 
@@ -1901,12 +1953,12 @@ class MainExplorerViewModelTest {
 		// a blank name refuses the commit, so the popup stays open for a retry
 		runBlocking {
 			val notice = async(start = CoroutineStart.UNDISPATCHED) {
-				GlobalDependencies.messages.first()
+				dependencies.userMessages.messages.first()
 			}
 			assertFalse(model.commitFlipResolutions(analysis,
 				listOf(FlipResolution(conflict.row.id, false, " ", ""))))
 			withTimeout(1_000) {
-				assertEquals(GlobalDependencies.UiMessage.Notice(UiNotice.FlipBlankName), notice.await())
+				assertEquals(UiMessage.Notice(UiNotice.FlipBlankName), notice.await())
 			}
 		}
 
@@ -1994,7 +2046,7 @@ class MainExplorerViewModelTest {
 		val io = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 		try {
 			val (aId, _) = seed()
-			val model = MainExplorerViewModel(NavigationHistory(), io)
+			val model = vm(io)
 			model.clock = { now }
 			settle(io)
 			model.onItemClick(model.items().single { it.item.name == "A" })
@@ -2040,6 +2092,23 @@ class MainExplorerViewModelTest {
 		assertEquals(listOf(1, 2, 3), model.items().map { it.position })
 		assertEquals("each name links at the end in order",
 			listOf("c1", "one", "two"), ItemRepository.children(aId).map { it.name })
+	}
+
+	@Test
+	fun `commitNewItem keeps the reference facts of an existing shared word`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		val word = ItemRepository.createWord(c1.id, "dog", null, listOf("t" to null))
+		val c2 = ItemRepository.createChapter(aId, "c2", null, 1)
+		assertTrue(ItemRepository.reference(word.id, c2.id))
+		val model = vmInSet("c2")
+
+		assertTrue(model.commitNewItem(RowKind.WORD, CreatorResult(
+			"dog", "", listOf(TranslationValue("t2", "", null)), emptyList())))
+
+		val merged = model.items().last { it.item.id == word.id }
+		assertTrue(merged.isReference)
+		assertTrue(merged.hasSource)
 	}
 
 	@Test

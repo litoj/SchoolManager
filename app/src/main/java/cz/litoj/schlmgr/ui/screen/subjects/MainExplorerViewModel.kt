@@ -7,23 +7,28 @@ import android.net.Uri
 import cz.litoj.schlmgr.R
 import androidx.lifecycle.viewModelScope
 import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.app.Settings
 import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.FlipAnalysis
 import cz.litoj.schlmgr.data.db.FlipResolution
 import cz.litoj.schlmgr.data.db.ItemKind
-import cz.litoj.schlmgr.data.ItemRepository
+import cz.litoj.schlmgr.data.ItemEditor
+import cz.litoj.schlmgr.data.ItemTransferService
+import cz.litoj.schlmgr.data.FlipRunner
 import cz.litoj.schlmgr.data.db.ROOT_ID
 import cz.litoj.schlmgr.data.db.WordEdit
+import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.data.db.ratio
+import cz.litoj.schlmgr.testing.TestRunData
 import cz.litoj.schlmgr.ui.viewmodel.CreatorResult
 import cz.litoj.schlmgr.ui.screen.test.TestSetupState
+import cz.litoj.schlmgr.ui.viewmodel.ExplorerAction
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
 import cz.litoj.schlmgr.ui.viewmodel.menuIdOf
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.NavigationHistory
-import cz.litoj.schlmgr.ui.viewmodel.MenuId
 import cz.litoj.schlmgr.ui.viewmodel.SelectionAction
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
 import cz.litoj.schlmgr.ui.viewmodel.TranslationRow
@@ -37,8 +42,18 @@ import kotlinx.coroutines.launch
  *   [SubjectsTransfer] and [SubjectsNavigation].
  * - the file pickers stay behind [Request]s.
  */
-class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher = Dispatchers.IO) :
-	ExplorerViewModel<MainExplorerViewModel.Request>(history, io = io) {
+class MainExplorerViewModel(
+	history: NavigationHistory,
+	io: CoroutineDispatcher = Dispatchers.IO,
+	graphs: GraphQueries? = null,
+	editor: ItemEditor? = null,
+	itemTransferService: ItemTransferService? = null,
+	flipper: FlipRunner? = null,
+	private val settings: Settings,
+	private val userMessages: UserMessages,
+	private val testSetup: TestSetupState = TestSetupState.shared,
+) :
+	ExplorerViewModel<MainExplorerViewModel.Request>(history, io = io, settings = settings, graphs = graphs) {
 
 	/** A view-only step: picker, navigation or dialog. */
 	sealed interface Request {
@@ -111,7 +126,9 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 
 	private val shared = SharedHost()
 
-	private val paste = SubjectsPaste(viewModelScope, io, PasteHost())
+	private val itemTransfer = itemTransferService
+
+	private val paste = SubjectsPaste(viewModelScope, io, PasteHost(), userMessages, itemTransfer, graphs)
 
 	val pasteArmed: Boolean get() = paste.armed
 
@@ -154,7 +171,7 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		override fun batchDragging() = this@MainExplorerViewModel.batchDragging()
 	}
 
-	private val wordEdit = SubjectsWordEdit(viewModelScope, io, WordEditHost())
+	private val wordEdit = SubjectsWordEdit(viewModelScope, io, WordEditHost(), editor, graphs)
 
 	private inner class WordEditHost : SubjectsWordEdit.Host, SubjectsHost by shared {
 		override fun selectionCount() = this@MainExplorerViewModel.selectionCount()
@@ -166,11 +183,11 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 	}
 
 	// the flip needs no own door, only the shared ones
-	private val flip = SubjectsFlip(viewModelScope, io, FlipHost())
+	private val flip = SubjectsFlip(viewModelScope, io, FlipHost(), userMessages, flipper)
 
 	private inner class FlipHost : SubjectsFlip.Host, SubjectsHost by shared
 
-	private val delete = SubjectsDelete(viewModelScope, io, DeleteHost())
+	private val delete = SubjectsDelete(viewModelScope, io, DeleteHost(), itemTransfer, graphs)
 
 	private inner class DeleteHost : SubjectsDelete.Host, SubjectsHost by shared {
 		override fun removeItems(items: Collection<ItemRow>) = this@MainExplorerViewModel.removeItems(items)
@@ -198,7 +215,7 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 	/** The import mover hands over its destination after the worker finished. */
 	fun openImportTarget(pathIds: List<Int>, scrollToBottom: Boolean) {
 		viewModelScope.launch(io) {
-			val path = pathIds.mapNotNull { ItemRepository.get(it) }
+			val path = pathIds.mapNotNull { checkNotNull(graphs).get(it) }
 				.filter { it.type == ItemKind.CHAPTER }
 				.toMutableList()
 			postToUi {
@@ -227,20 +244,20 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 	 */
 	override fun onMenuItemClick(itemId: Int): Boolean {
 		if (super.onMenuItemClick(itemId)) return true
-		return when (itemId) {
-			MenuId.NEW_SUBJECT -> newAction { newSubject() }
-			MenuId.NEW_CHAPTER -> newAction { newChapter() }
-			MenuId.NEW_WORD -> newAction { newWord() }
-			MenuId.NEW_NOTE -> newAction { newNote() }
-			MenuId.IMPORT_FILE -> { emitRequest(Request.PickImportFile); true }
-			MenuId.EXPORT -> { transfer.openExportSheet(); true }
-			MenuId.FLIP -> { flipSelected(); true }
-			MenuId.REFERENCE -> { move(true); true }
-			MenuId.TEST -> { prepareTest(); true }
-			MenuId.CUT -> { move(false); true }
-			MenuId.EDIT -> { onEditAction(); true }
-			MenuId.DELETE -> { onDeleteAction(); true }
-			MenuId.GOTO -> { onGoToAction(); true }
+		return when (ExplorerAction.of(itemId)) {
+			ExplorerAction.NEW_SUBJECT -> newAction { newSubject() }
+			ExplorerAction.NEW_CHAPTER -> newAction { newChapter() }
+			ExplorerAction.NEW_WORD -> newAction { newWord() }
+			ExplorerAction.NEW_NOTE -> newAction { newNote() }
+			ExplorerAction.IMPORT_FILE -> { emitRequest(Request.PickImportFile); true }
+			ExplorerAction.EXPORT -> { transfer.openExportSheet(); true }
+			ExplorerAction.FLIP -> { flipSelected(); true }
+			ExplorerAction.REFERENCE -> { move(true); true }
+			ExplorerAction.TEST -> { prepareTest(); true }
+			ExplorerAction.CUT -> { move(false); true }
+			ExplorerAction.EDIT -> { onEditAction(); true }
+			ExplorerAction.DELETE -> { onDeleteAction(); true }
+			ExplorerAction.GOTO -> { onGoToAction(); true }
 			else -> false
 		}
 	}
@@ -284,7 +301,7 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		val text = item.item.description.ifEmpty { item.item.name }
 		val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 		clipboard.setPrimaryClip(ClipData.newPlainText(item.item.name, text))
-		UserMessages.showNotice(UiNotice.NoteCopied)
+		userMessages.showNotice(UiNotice.NoteCopied)
 	}
 
 	/** A note copies its text, and an inert search hit ends the run. */
@@ -301,7 +318,7 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		navigation.goToSelectedHit(row)
 	}
 
-	private val navigation = SubjectsNavigation(viewModelScope, io, history, NavigationHost())
+	private val navigation = SubjectsNavigation(viewModelScope, io, history, NavigationHost(), graphs)
 
 	private inner class NavigationHost : SubjectsNavigation.Host, SubjectsHost by shared {
 		override fun selectionCount() = this@MainExplorerViewModel.selectionCount()
@@ -322,7 +339,7 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 		// the drop ends the selection at once, so the strip never flashes before the io lands
 		clearSelection()
 		viewModelScope.launch(io) {
-			ItemRepository.setOrder(parentId, ordered)
+			checkNotNull(itemTransfer).setOrder(parentId, ordered)
 			postToUi {
 				// a late read retries via the moved generation.
 				orderPersisted()
@@ -364,16 +381,22 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 	fun cancelFlipRound() = flip.cancelFlipRound()
 
 	fun prepareTest() {
-		val seeds = items().filter(ItemRow::selected).map(TestSetupState::seedOf)
+		val seeds = items().filter(ItemRow::selected).map(testSetup::seedOf)
 		if (seeds.isEmpty()) return
 		viewModelScope.launch(io) {
-			val refused = TestSetupState.fillFromSelection(seeds)
+			val graphs = checkNotNull(graphs)
+			val parentPaths = seeds.mapNotNull { it.parentId }.distinct().associateWith { graphs.pathTo(it) }
+			val entries = seeds.associate { seed ->
+				val chain = testSetup.chainOfSeed(seed, parentPaths)
+				chain to TestRunData.readEntries(listOf(chain), graphs)
+			}
+			val refused = testSetup.fillFromSelection(seeds, parentPaths, entries)
 			if (refused.isNotEmpty()) {
-				postToUi { UserMessages.showNotice(UiNotice.OneSubjectOnly(TestSetupState.pickedSubject()?.name)) }
+				postToUi { userMessages.showNotice(UiNotice.OneSubjectOnly(testSetup.pickedSubject()?.name)) }
 				return@launch
 			}
 			postToUi {
-				TestSetupState.markOpenedWithSelection()
+				testSetup.markOpenedWithSelection()
 				clearSelection()
 				emitRequest(Request.OpenTest)
 			}
@@ -393,7 +416,7 @@ class MainExplorerViewModel(history: NavigationHistory, io: CoroutineDispatcher 
 	 */
 	fun commitNewItem(kind: RowKind, result: CreatorResult): Boolean = wordEdit.commitNewItem(kind, result)
 
-	private val transfer = SubjectsTransfer(viewModelScope, io, TransferHost())
+	private val transfer = SubjectsTransfer(viewModelScope, io, TransferHost(), settings)
 
 	private inner class TransferHost : SubjectsTransfer.Host, SubjectsHost by shared {
 		override val ctx get() = this@MainExplorerViewModel.ctx

@@ -8,10 +8,12 @@ import androidx.compose.runtime.setValue
 import cz.litoj.schlmgr.R
 import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.app.UserMessages
+import cz.litoj.schlmgr.data.GraphQueries
+import cz.litoj.schlmgr.data.ItemTransferService
+import cz.litoj.schlmgr.data.MoveResult
+import cz.litoj.schlmgr.data.PasteFacts
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ROOT_ID
-import cz.litoj.schlmgr.data.ItemRepository
-import cz.litoj.schlmgr.data.ItemRepository.PasteFacts
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.Placement
 import kotlinx.coroutines.CoroutineDispatcher
@@ -28,6 +30,9 @@ internal class SubjectsPaste(
 	private val scope: CoroutineScope,
 	private val io: CoroutineDispatcher,
 	private val host: Host,
+	private val userMessages: UserMessages,
+	private val transfer: ItemTransferService? = null,
+	private val graphs: GraphQueries? = null,
 ) {
 
 	interface Host : SubjectsHost {
@@ -99,7 +104,7 @@ internal class SubjectsPaste(
 		// snapshot on main, so the answer can only describe one container and one batch
 		val src = host.batchRows().map { PasteSrc(it, it.item.id, it.parentId, it.isReference) }
 		blockJob = scope.launch(io) {
-			val facts = ItemRepository.pasteFacts(src.map { it.id }, target.id)
+			val facts = checkNotNull(transfer).pasteFacts(src.map { it.id }, target.id)
 			// the read costs a graph walk per row, so a superseded one must not answer
 			if (!isActive) return@launch
 			// the posted write lands later, so the paste may have ended meanwhile
@@ -151,14 +156,14 @@ internal class SubjectsPaste(
 		armPaste(null, emptyList())
 		val np = host.path.lastOrNull()
 		if (np == null) {
-			UserMessages.showNotice(UiNotice.PasteNoTarget)
+			userMessages.showNotice(UiNotice.PasteNoTarget)
 			return
 		}
 		val searchNow = host.searching
 		scope.launch(io) {
 			val outcome = performPaste(kind, src, np, searchNow)
 			host.postToUi {
-				outcome.notice?.let(UserMessages::showNotice)
+				outcome.notice?.let(userMessages::showNotice)
 				outcome.placements.forEach { (row, placement) -> row.applyPlacement(placement) }
 				if (searchNow) host.notifyChanged() else host.reloadContent()
 				host.refreshInfo()
@@ -172,8 +177,10 @@ internal class SubjectsPaste(
 		np: DbItem,
 		searchNow: Boolean,
 	): PasteOutcome {
+		val transfer = checkNotNull(transfer)
+		val graphs = checkNotNull(graphs)
 		// skips the rows already in the target.
-		val present = ItemRepository.children(np.id).mapTo(HashSet()) { it.id }
+		val present = graphs.children(np.id).mapTo(HashSet()) { it.id }
 		var skipped = false
 		var refusedCycle = false
 		var refusedSubject = false
@@ -188,22 +195,22 @@ internal class SubjectsPaste(
 			when {
 				// a reference and a subject merge refuse on a cycle.
 				referencing || oldParent == null ->
-					if (!ItemRepository.reference(armed.id, np.id)) refusedCycle = true
+					if (!transfer.reference(armed.id, np.id)) refusedCycle = true
 				// a cut subject merges its whole tree.
 				oldParent == ROOT_ID ->
-					if (!ItemRepository.mergeSubject(armed.id, np.id)) refusedCycle = true
-				else -> when (ItemRepository.move(armed.id, oldParent, np.id)) {
-					ItemRepository.MoveResult.MOVED -> moved.add(armed)
-					ItemRepository.MoveResult.REFUSED_CYCLE -> refusedCycle = true
-					ItemRepository.MoveResult.REFUSED_OTHER_SUBJECT -> refusedSubject = true
-					ItemRepository.MoveResult.ALREADY_PRESENT -> skipped = true
+					if (!transfer.mergeSubject(armed.id, np.id)) refusedCycle = true
+				else -> when (transfer.move(armed.id, oldParent, np.id)) {
+					MoveResult.MOVED -> moved.add(armed)
+					MoveResult.REFUSED_CYCLE -> refusedCycle = true
+					MoveResult.REFUSED_OTHER_SUBJECT -> refusedSubject = true
+					MoveResult.ALREADY_PRESENT -> skipped = true
 				}
 			}
 		}
 		// a moved hit carries its new placement for jumps.
 		val placements = if (searchNow) moved.map {
-			val fresh = ItemRepository.get(it.id) ?: return@performPaste PasteOutcome(null, emptyList())
-			it.row to it.row.readPlacement(np.id, fresh)
+			val fresh = graphs.get(it.id) ?: return@performPaste PasteOutcome(null, emptyList())
+			it.row to it.row.readPlacement(np.id, fresh, graphs)
 		} else emptyList()
 		val notice = when {
 			refusedCycle -> UiNotice.PasteInsideItself

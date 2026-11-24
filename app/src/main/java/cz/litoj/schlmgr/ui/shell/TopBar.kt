@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cz.litoj.schlmgr.R
+import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.ui.component.HeaderBandHeight
 import cz.litoj.schlmgr.ui.component.IconSize
 import cz.litoj.schlmgr.ui.component.reportUnavailable
@@ -93,6 +94,7 @@ fun RowScope.TopBarNav(
 	enabled: Boolean = true,
 	blockedReason: Int = 0,
 	contentDescription: String,
+	userMessages: UserMessages,
 ) {
 	val tint = colorResource(R.color.colorOnHeader).let { if (enabled) it else it.copy(alpha = 0.5f) }
 	Box(
@@ -100,7 +102,7 @@ fun RowScope.TopBarNav(
 			.testTag("top_bar_nav")
 			.width(TopBarSizes.nav)
 			.fillMaxHeight()
-			.clickable { if (enabled) onNavigate() else reportUnavailable(blockedReason) },
+			.clickable { if (enabled) onNavigate() else reportUnavailable(userMessages, blockedReason) },
 		contentAlignment = Alignment.Center,
 	) {
 		Icon(
@@ -138,6 +140,7 @@ fun RowScope.TopBarIconButton(
 	visible: Boolean = true,
 	enabled: Boolean = true,
 	blockedReason: Int = 0,
+	userMessages: UserMessages,
 	onClick: () -> Unit,
 ) {
 	if (!visible) return
@@ -146,7 +149,7 @@ fun RowScope.TopBarIconButton(
 		Modifier
 			.width(TopBarSizes.icon)
 			.fillMaxHeight()
-			.clickable { if (enabled) onClick() else reportUnavailable(blockedReason) },
+			.clickable { if (enabled) onClick() else reportUnavailable(userMessages, blockedReason) },
 		contentAlignment = Alignment.Center,
 	) {
 		Image(
@@ -167,6 +170,7 @@ fun RowScope.TopBarIconButton(
 fun RowScope.TopBarActions(
 	entries: List<MenuEntry>,
 	width: Dp,
+	userMessages: UserMessages,
 	onPick: (Int) -> Unit,
 	pinned: Int = 0,
 ) {
@@ -178,34 +182,37 @@ fun RowScope.TopBarActions(
 	)
 	val icons = entries.indices.filter { entries[it].icon != 0 }
 	val direct = if (icons.size <= layout.direct) icons else emptyList()
-	direct.forEach { TopBarEntryAction(entries[it], onPick) }
+	direct.forEach { TopBarEntryAction(entries[it], userMessages, onPick) }
 	if (direct.size < entries.size) {
 		TopBarMoreButton(
 			entries.filterIndexed { index, _ -> index !in direct },
 			stringResource(R.string.more),
+			userMessages,
 			onPick,
 		)
 	}
 }
 
 @Composable
-internal fun RowScope.TopBarEntryAction(entry: MenuEntry, onPick: (Int) -> Unit) {
+internal fun RowScope.TopBarEntryAction(entry: MenuEntry, userMessages: UserMessages, onPick: (Int) -> Unit) {
 	if (entry.children.isEmpty()) {
 		TopBarIconButton(
 			icon = entry.icon,
 			contentDescription = stringResource(entry.label),
 			enabled = entry.enabled,
 			blockedReason = entry.blockedReason,
+			userMessages = userMessages,
 		) { onPick(entry.id) }
 		return
 	}
 	// the menu hangs from this icon, so it must not sit beside it in the bar row
-	MenuHost(entry.children, onPick) { open ->
+	MenuHost(entry.children, onPick, userMessages = userMessages) { open ->
 		TopBarIconButton(
 			icon = entry.icon,
 			contentDescription = stringResource(entry.label),
 			enabled = entry.enabled,
 			blockedReason = entry.blockedReason,
+			userMessages = userMessages,
 			onClick = open,
 		)
 	}
@@ -219,9 +226,15 @@ internal fun RowScope.TopBarEntryAction(entry: MenuEntry, onPick: (Int) -> Unit)
 fun RowScope.TopBarMoreButton(
 	entries: List<MenuEntry>,
 	contentDescription: String,
+	userMessages: UserMessages,
 	onPick: (Int) -> Unit,
 ) {
-	MenuHost(entries, onPick, Modifier.width(TopBarSizes.icon).fillMaxHeight()) { open ->
+	MenuHost(
+		entries,
+		onPick,
+		Modifier.width(TopBarSizes.icon).fillMaxHeight(),
+		userMessages,
+	) { open ->
 		Box(
 			Modifier
 				.fillMaxSize()

@@ -3,6 +3,8 @@ package cz.litoj.schlmgr.integration.data.transfer
 import android.net.Uri
 import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.data.DataExchangeService
+import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemDatabase
@@ -35,6 +37,8 @@ import org.robolectric.annotation.Config
 class ExportImportWorkerRoundTripTest {
 
 	private lateinit var db: ItemDatabase
+	private lateinit var dataExchange: DataExchangeService
+	private lateinit var graphs: GraphQueries
 	private var nextPick = 0
 
 	@Before
@@ -44,6 +48,8 @@ class ExportImportWorkerRoundTripTest {
 		db = Room.inMemoryDatabaseBuilder(app, ItemDatabase::class.java)
 			.allowMainThreadQueries()
 			.build()
+		dataExchange = DataExchangeService(db)
+		graphs = GraphQueries(db)
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 	}
@@ -61,6 +67,8 @@ class ExportImportWorkerRoundTripTest {
 		db = Room.inMemoryDatabaseBuilder(app, ItemDatabase::class.java)
 			.allowMainThreadQueries()
 			.build()
+		dataExchange = DataExchangeService(db)
+		graphs = GraphQueries(db)
 		ItemRepository.initForTest(db)
 		ItemRepository.ensureRoot()
 	}
@@ -77,7 +85,7 @@ class ExportImportWorkerRoundTripTest {
 		shadowOf(RuntimeEnvironment.getApplication().contentResolver)
 			.registerOutputStream(uri, out)
 		ExportPipeline(GlobalDependencies.appContext, { it.run() }, ExportDestination.Document(uri),
-			format, selected) {}
+			format, selected, {}, dataExchange)
 			.start().join()
 		return String(out.toByteArray(), StandardCharsets.UTF_8)
 	}
@@ -93,7 +101,7 @@ class ExportImportWorkerRoundTripTest {
 			GlobalDependencies.appContext, { it.run() }, uri, fileName,
 			FileGateway.startsAsJson(GlobalDependencies.appContext, uri),
 			ImporterFactory.targetFor(open()), open, { open() == null },
-			{}, {}, {},
+			{}, {}, {}, dataExchange, graphs,
 		).start().join()
 	}
 

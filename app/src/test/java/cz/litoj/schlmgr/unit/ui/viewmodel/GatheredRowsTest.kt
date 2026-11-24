@@ -17,7 +17,7 @@ import org.junit.Test
 class GatheredRowsTest {
 
 	private fun row(id: Int, name: String, kind: ItemKind) =
-		ItemRow(DbItem(id = id, name = name, description = "", type = kind), null, 1, false)
+		ItemRow(DbItem(id = id, name = name, description = "", type = kind), null, 1)
 
 	private fun childUnder(id: Int, parent: DbItem) = childUnder(id, "w$id", parent)
 

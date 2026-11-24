@@ -2,6 +2,7 @@ package cz.litoj.schlmgr.integration.ui.viewmodel
 
 import androidx.room.Room
 import cz.litoj.schlmgr.app.GlobalDependencies
+import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemDatabase
@@ -48,7 +49,8 @@ class SearchModeLadderTest {
 	}
 
 	/** The test screen: counts the content switches the doors drive, the rest stays inert. */
-	private class RecordingVm(history: NavigationHistory) : TestExplorerViewModel(history) {
+	private class RecordingVm(history: NavigationHistory, db: ItemDatabase) :
+		TestExplorerViewModel(history, GraphQueries(db)) {
 		var contentReloads = 0
 		override fun setContent(container: DbItem?, pulseItemId: Int?) {
 			contentReloads++
@@ -56,11 +58,11 @@ class SearchModeLadderTest {
 	}
 
 	private fun row(name: String) =
-		ItemRow(DbItem(name = name, description = "", type = ItemKind.WORD), null, 1, false)
+		ItemRow(DbItem(name = name, description = "", type = ItemKind.WORD), null, 1)
 
 	private fun recordingVm(): RecordingVm {
 		// the field opens only inside a container, so seed one into the path
-		return RecordingVm(NavigationHistory()).apply {
+		return RecordingVm(NavigationHistory(), db).apply {
 			history.push(mutableListOf(DbItem(name = "c", description = "", type = ItemKind.CHAPTER)))
 		}
 	}
