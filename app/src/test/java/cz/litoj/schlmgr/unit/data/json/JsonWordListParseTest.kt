@@ -207,6 +207,24 @@ class JsonWordListParseTest {
 	}
 
 	@Test
+	fun `negative testing counters are rejected with their paths`() {
+		val cases = mapOf(
+			"{\"name\":\"w\",\"s\":-1,\"translations\":[]}" to "root.s",
+			"{\"name\":\"w\",\"f\":-1,\"translations\":[]}" to "root.f",
+			"{\"name\":\"c\",\"children\":[{\"name\":\"w\",\"s\":-1,\"translations\":[]}]}" to "root.children[0].s",
+			"{\"name\":\"w\",\"translations\":[{\"name\":\"t\",\"f\":-1}]}" to "root.translations[0].f",
+		)
+
+		for ((document, path) in cases) {
+			val error = assertThrows(IllegalArgumentException::class.java) {
+				JsonWordList.parse(document)
+			}
+			assertTrue("the failure names $path in ${error.message}", error.message!!.contains(path))
+			assertTrue("negative counters never become history", error.message!!.contains("0 or higher"))
+		}
+	}
+
+	@Test
 	fun `a malformed text is reported with a position`() {
 		val error = assertThrows(IllegalArgumentException::class.java) {
 			JsonWordList.parse("{\n  name: \"x\"\n")

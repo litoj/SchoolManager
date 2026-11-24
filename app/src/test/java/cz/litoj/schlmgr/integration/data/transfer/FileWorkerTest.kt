@@ -192,6 +192,17 @@ class FileWorkerTest {
 	}
 
 	@Test
+	fun `a UTF-8 BOM does not change the JSON parser choice`() {
+		val array = importPicked("array.hjson", { null }, "\uFEFF$tree")
+		val objectFile = importPicked("object.hjson", { null },
+			"\uFEFF{\"name\":\"Solo\",\"children\":[]}")
+
+		assertEquals(listOf("A", "B", "Solo"), ItemRepository.subjects().map { it.name })
+		assertEquals(1, array.root)
+		assertEquals(1, objectFile.root)
+	}
+
+	@Test
 	fun `a tree import into the open container lands its top-level chapters inside it`() {
 		val deutsch = ItemRepository.createSubject("Deutsch", null)
 		val lektion = ItemRepository.createChapter(deutsch.id, "Lektion 1", null)

@@ -32,12 +32,13 @@ internal object WordEditService {
 	 * Whether the edit forks, when a shared word is renamed and loses a translation.
 	 * - the word is shared when a chapter holds it through a plain link.
 	 * - the rename licenses the fork, which avoids a duplicate row.
+	 * - name padding is no rename, since the write boundary trims it.
 	 */
 	suspend fun forks(dao: ItemDao, edit: WordEdit): Boolean {
 		val word = dao.get(edit.wordId) ?: throw IllegalArgumentException("No item ${edit.wordId}")
 		val plainParents = dao.plainParentsOf(edit.wordId)
 		return edit.parentId in plainParents && plainParents.any { it != edit.parentId } &&
-			edit.removed.isNotEmpty() && edit.name != word.name
+			edit.removed.isNotEmpty() && edit.name.trim() != word.name
 	}
 
 	/** Applies a committed word edit, behind the repository entry. */

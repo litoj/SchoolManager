@@ -479,10 +479,18 @@ object ItemRepository {
 	 * Moves a whole subject into a container of another subject.
 	 * - the subject row becomes a chapter, and same-named rows merge below.
 	 * - reference links re-create, and outside-shared rows survive.
-	 * - returns false for a target inside the moved subject or the root.
+	 * - returns false for an invalid target or a cycle found after reference remapping.
 	 */
 	@JvmStatic
-	fun mergeSubject(sourceId: Int, targetParentId: Int): Boolean = query {
+	fun mergeSubject(sourceId: Int, targetParentId: Int): Boolean = try {
+		mergeSubjectOrThrow(sourceId, targetParentId)
+	} catch (_: SubjectMergeCycleException) {
+		false
+	}
+
+	private class SubjectMergeCycleException : Exception()
+
+	private fun mergeSubjectOrThrow(sourceId: Int, targetParentId: Int): Boolean = query {
 		it.withTransaction {
 			val dao = it.itemDao()
 			if (targetParentId == ROOT_ID) return@withTransaction false
@@ -522,8 +530,11 @@ object ItemRepository {
 				// keep the dying row alive
 				if (parent == link.parentId && child != link.childId)
 					dao.deleteLink(link.parentId, link.childId)
-				if (dao.linkPosition(parent, child) == null)
+				if (dao.linkPosition(parent, child) == null) {
+					// remapping can close a cycle the source-only check could not see
+					if (closesCycle(dao, child, parent)) throw SubjectMergeCycleException()
 					dao.insertLink(DbLink(parent, child, dao.nextPosition(parent), isReference = true))
+				}
 			}
 			// moved content lives in the target, and the re-created reference links
 			// add no counters, so only the plain chain recomputes

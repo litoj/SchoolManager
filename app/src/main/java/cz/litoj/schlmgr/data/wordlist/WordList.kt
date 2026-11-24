@@ -281,7 +281,11 @@ class WordListReader private constructor(
 						// the root load has no chapter to close, so a stray brace
 						// must not swallow the rest of the file
 						if (chapterOpening == null) throw parseError(WordListProblem.CHAPTER_BRACES)
-						while (++i < src.length && src[i] != '\n' && src[i] != '\r');
+						while (++i < src.length && src[i] != '\n' && src[i] != '\r') {
+							if (!src[i].isWhitespace()) {
+								throw parseError(WordListProblem.CHAPTER_BRACES, characterIndex = i)
+							}
+						}
 						if (i < src.length && src[i] == '\r' && src.getOrNull(i + 1) == '\n') i++
 						lineStart = i + 1
 						line++

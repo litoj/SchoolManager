@@ -220,6 +220,45 @@ class SubjectMergeTest {
 	}
 
 	@Test
+	fun `a remapped self reference refuses the merge and rolls it back`() {
+		val source = ItemRepository.createSubject("A", null)
+		val sourceChapter = ItemRepository.createChapter(source.id, "C", null)
+		val target = ItemRepository.createSubject("B", null)
+		val targetSubject = ItemRepository.createChapter(target.id, "A", null)
+		val targetChapter = ItemRepository.createChapter(targetSubject.id, "C", null)
+		assertTrue(ItemRepository.reference(sourceChapter.id, targetChapter.id))
+
+		assertFalse(ItemRepository.mergeSubject(source.id, target.id))
+
+		assertEquals(setOf("A", "B"), ItemRepository.subjects().map { it.name }.toSet())
+		assertTrue("the target keeps its old reference",
+			ItemRepository.linkIsReference(targetChapter.id, sourceChapter.id))
+		assertFalse("no self link landed",
+			ItemRepository.children(targetChapter.id).any { it.id == targetChapter.id })
+		assertEquals(listOf(sourceChapter.id), ItemRepository.children(source.id).map { it.id })
+	}
+
+	@Test
+	fun `a remapped indirect cycle also rolls the merge back`() {
+		val source = ItemRepository.createSubject("A", null)
+		val sourceOuter = ItemRepository.createChapter(source.id, "Outer", null)
+		ItemRepository.createChapter(source.id, "Inner", null)
+		val target = ItemRepository.createSubject("B", null)
+		val targetSubject = ItemRepository.createChapter(target.id, "A", null)
+		val targetOuter = ItemRepository.createChapter(targetSubject.id, "Outer", null)
+		val targetInner = ItemRepository.createChapter(targetOuter.id, "Inner", null)
+		assertTrue(ItemRepository.reference(sourceOuter.id, targetInner.id))
+
+		assertFalse(ItemRepository.mergeSubject(source.id, target.id))
+
+		assertTrue(ItemRepository.linkIsReference(targetInner.id, sourceOuter.id))
+		assertFalse(ItemRepository.linkIsReference(targetInner.id, targetOuter.id))
+		assertEquals(listOf(targetInner.id), ItemRepository.children(targetOuter.id).map { it.id })
+		assertEquals(setOf("Outer", "Inner"),
+			ItemRepository.children(source.id).map { it.name }.toSet())
+	}
+
+	@Test
 	fun `a target inside the moved subject refuses`() {
 		val a = ItemRepository.createSubject("A", null)
 		val ch = ItemRepository.createChapter(a.id, "ch", null, 0)

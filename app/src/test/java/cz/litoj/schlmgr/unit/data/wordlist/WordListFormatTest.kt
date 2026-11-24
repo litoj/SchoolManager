@@ -5,6 +5,7 @@ import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
 import cz.litoj.schlmgr.data.wordlist.WordListImporter
 import cz.litoj.schlmgr.data.wordlist.WordListParseException
+import cz.litoj.schlmgr.data.wordlist.WordListProblem
 import cz.litoj.schlmgr.data.wordlist.WordListReader
 import cz.litoj.schlmgr.data.wordlist.WordListWriter
 import org.junit.After
@@ -285,6 +286,20 @@ class WordListFormatTest {
 		// no name, so the word keeps its real translation alone
 		val root = WordListReader.parse("w;t\\ \n", "c")
 		assertEquals(listOf("t"), root.words.single().translations.map { it.name })
+	}
+
+	@Test
+	fun `a chapter closer admits only trailing whitespace`() {
+		val root = WordListReader.parse("ch {\nword;t\n} \t\n", "c")
+		assertEquals("word", root.children.single().words.single().name)
+
+		val error = assertThrows(WordListParseException::class.java) {
+			WordListReader.parse("ch {\n} word;translation\n", "c")
+		}
+		assertEquals(2, error.lineNumber)
+		assertEquals(2, error.problemIndex)
+		assertEquals(WordListProblem.CHAPTER_BRACES, error.problem)
+		assertTrue("tail text stays for the user to fix", error.repairs.isEmpty())
 	}
 
 	private fun ItemKind.kindPrefix() = when (this) {

@@ -24,6 +24,7 @@ object FileGateway {
 
 	/**
 	 * The shape of the picked document, read from its first non-whitespace byte.
+	 * - a UTF-8 BOM is an encoding mark, not content.
 	 * - a word list starts with a name.
 	 * - an unreadable document reads as a word list, and the worker read reports the failure.
 	 */
@@ -35,6 +36,7 @@ object FileGateway {
 		} ?: return false
 		return stream.use {
 			var byte = it.read()
+			if (byte == 0xEF && it.read() == 0xBB && it.read() == 0xBF) byte = it.read()
 			while (byte != -1 && Character.isWhitespace(byte.toChar())) byte = it.read()
 			byte == '['.code || byte == '{'.code
 		}

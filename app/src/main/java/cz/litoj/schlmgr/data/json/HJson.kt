@@ -241,7 +241,9 @@ object JsonWordList {
 	private fun optionalInt(obj: JsonObject, key: String, path: String): Int {
 		val value = obj.get(key) ?: return 0
 		if (!value.isNumber) throw IllegalArgumentException("$path.$key: expected a number")
-		return value.asInt()
+		val number = value.asInt()
+		if (number < 0) throw IllegalArgumentException("$path.$key: expected a number 0 or higher")
+		return number
 	}
 
 	private fun optionalArray(obj: JsonObject, key: String, path: String): JsonArray? {

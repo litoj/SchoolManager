@@ -356,6 +356,27 @@ class WordEditTest {
 	}
 
 	@Test
+	fun `padding alone does not fork a shared word removal`() {
+		val subject = ItemRepository.createSubject("english", null)
+		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
+		val c2 = ItemRepository.createChapter(subject.id, "c2", null)
+		val dog = sharedWord(c1.id, c2.id, "dog", "a", "b")
+		ItemRepository.recordPass(listOf(dog.id))
+
+		val edited = ItemRepository.editWord(edit(dog.id, c1.id, " dog ",
+			kept = listOf(KeptTranslation(trl(dog.id, "a").id, "a", "")),
+			removed = listOf(trl(dog.id, "b").id)))
+
+		assertEquals("the original row survives", dog.id, edited.id)
+		assertEquals("dog", edited.name)
+		assertEquals(listOf("a"), names(dog.id))
+		assertEquals(1, ItemRepository.getByName("dog", ItemKind.WORD).size)
+		assertEquals(dog.id, ItemRepository.children(c1.id).single().id)
+		assertEquals(dog.id, ItemRepository.children(c2.id).single().id)
+		assertEquals(1, edited.passedTests)
+	}
+
+	@Test
 	fun `a rename-join adopts the more-tested counters`() {
 		val subject = ItemRepository.createSubject("english", null)
 		val c1 = ItemRepository.createChapter(subject.id, "c1", null)
