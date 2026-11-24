@@ -147,7 +147,8 @@ internal class SubjectsWordEdit(
 	 */
 	private fun applyWord(result: CreatorResult): Boolean {
 		if (result.name.isEmpty() || result.translations.isEmpty()) return false
-		val parentId = host.path.lastOrNull()?.id ?: return false
+		val origin = host.path.lastOrNull() ?: return false
+		val parentId = origin.id
 		val additions = splitRows(result, editing = false)?.third ?: return false
 		val names = WordNames.splitEscaped(result.name)
 		if (names.any { it.isEmpty() }) return false
@@ -163,7 +164,10 @@ internal class SubjectsWordEdit(
 				created.add(ItemRow(w, parentId, 0))
 			}
 			// the live list renumbers on insert, so the rows append in order
-			host.postToUi { created.forEach { host.addItem(it) } }
+			host.postToUi {
+				if (host.path.lastOrNull() !== origin) return@postToUi
+				created.forEach { host.addItem(it) }
+			}
 		}
 		return true
 	}
@@ -188,12 +192,16 @@ internal class SubjectsWordEdit(
 		if (result.name.isEmpty()) return false
 		when (kind) {
 			RowKind.SUBJECT -> {
+				val origin = host.path.lastOrNull()
 				val description = result.description.replace("\\t", "\t")
 				scope.launch(io) {
 					val mch = ItemRepository.createSubject(result.name, description)
 					// the row builds here, since this reads the database.
 					val row = ItemRow(mch, ROOT_ID, 0)
-					host.postToUi { host.addItem(row) }
+					host.postToUi {
+						if (host.path.lastOrNull() !== origin) return@postToUi
+						host.addItem(row)
+					}
 				}
 			}
 			RowKind.NOTE -> {
@@ -201,7 +209,10 @@ internal class SubjectsWordEdit(
 				val description = result.description.replace("\\t", "\t")
 				scope.launch(io) {
 					val created = ItemRepository.createNote(par.id, result.name, description)
-					host.postToUi { host.addItem(ItemRow(created, par.id, 0)) }
+					host.postToUi {
+						if (host.path.lastOrNull() !== par) return@postToUi
+						host.addItem(ItemRow(created, par.id, 0))
+					}
 				}
 			}
 			RowKind.CHAPTER -> {
@@ -210,6 +221,7 @@ internal class SubjectsWordEdit(
 				scope.launch(io) {
 					val created = ItemRepository.createChapter(par.id, result.name, description)
 					host.postToUi {
+						if (host.path.lastOrNull() !== par) return@postToUi
 						host.addItem(ItemRow(created, par.id, 0))
 						host.openContainer(created)
 					}

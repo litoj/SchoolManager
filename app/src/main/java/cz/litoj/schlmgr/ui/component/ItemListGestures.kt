@@ -17,6 +17,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalViewConfiguration
@@ -97,6 +98,7 @@ internal fun Modifier.rememberListDragModifier(
 			// shared with the auto-scroll loop, so the access stays atomic.
 			val pointer = AtomicReference(down.position)
 			var autoScroll: Job? = null
+			var released = false
 
 			fun stillValid() = claimedStep == currentStep
 
@@ -122,7 +124,10 @@ internal fun Modifier.rememberListDragModifier(
 				val event = awaitPointerEvent(PointerEventPass.Initial)
 				// another finger carries no change for the tracked one, so skip it.
 				val change = event.changes.firstOrNull { it.id == down.id } ?: continue
-				if (!change.pressed) break
+				if (!change.pressed) {
+					released = change.changedToUp()
+					break
+				}
 				pointer.set(change.position)
 				if (!dragging) {
 					// the icon press never scrolls, even before the slop claims the drag
@@ -170,7 +175,7 @@ internal fun Modifier.rememberListDragModifier(
 
 			autoScroll?.cancel()
 			pending.reset()
-			if (reported && stillValid()) {
+			if (released && reported && stillValid()) {
 				when (mode) {
 					ListDragMode.Select -> currentSelectEnd()
 					// a round trip back to its own slot is the selection intent of the long-press.

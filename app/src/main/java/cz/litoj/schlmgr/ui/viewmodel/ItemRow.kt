@@ -96,6 +96,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 	 * - null marks an unpreloaded row, the flip path reads on io then.
 	 */
 	private var flipContent: List<DbItem>? = null
+	private var flipGeneration = 0
 
 	/**
 	 * Whether the referenced row still lives in a container besides this one.
@@ -143,8 +144,27 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 
 	fun applyFlip(items: List<DbItem>) {
 		if (item.type != ItemKind.WORD && item.type != ItemKind.TRANSLATION) return
+		flipGeneration++
 		flipped = !flipped
 		if (flipped) toShow = renderTranslations(items) else renderName()
+	}
+
+	/**
+	 * Reserves the next flip and applies it immediately when content is ready.
+	 * - a non-null generation waits for [completeFlip], since it supersedes older reads.
+	 */
+	fun reserveFlip(flippedTo: Boolean): Int? {
+		flipGeneration++
+		if (flipOnto(flippedTo)) return null
+		return flipGeneration
+	}
+
+	/** Applies an IO result only while no newer edit or flip reserves the row. */
+	fun completeFlip(generation: Int, items: List<DbItem>, flippedTo: Boolean): Boolean {
+		if (generation != flipGeneration) return false
+		flipContent = items
+		if (flipped != flippedTo) applyFlip(items)
+		return true
 	}
 
 	/** Preloads the flip content, so the flips of the row read no database. */
@@ -218,6 +238,7 @@ class ItemRow(item: DbItem, parentId: Int?, position: Int, applyDefFlip: Boolean
 
 	fun applyFresh(fresh: DbItem?, items: List<DbItem>) {
 		if (fresh == null) return
+		flipGeneration++
 		item = fresh
 		if (item.type != ItemKind.WORD && item.type != ItemKind.TRANSLATION) {
 			renderName()

@@ -307,6 +307,18 @@ class ItemListDragTest {
 	}
 
 	@Test
+	fun `a cancelled reorder cleans up without dropping its rows`() {
+		showReorder(4) { steps += -1 to -1 }
+		pressAndDrag("item 2", "item 4")
+
+		rule.onRoot().performTouchInput { cancel() }
+		settle()
+
+		assertEquals("the cancellation never reports a drop", emptyList<Pair<Int, Int>>(), steps)
+		assertEquals(listOf("item 1", "item 2", "item 3", "item 4"), items.map { it.name })
+	}
+
+	@Test
 	fun `a tap on the type icon marks the row`() {
 		val clicks = mutableListOf<Int>()
 		items += rows(3)

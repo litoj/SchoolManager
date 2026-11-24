@@ -67,6 +67,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A hidden New button ends its standing palette.
 - The New palette keeps the back key while it shows, so no navigation runs under it.
 - An append reveals its row only when the screen does not show it whole.
+- A delayed create updates the screen only while its originating location stays open.
 - The reveal obeys the phone's animation setting, an off setting places the list at once.
 - Rows appear and leave without a fade, so a fast scroll shows no shimmer.
 - A long-press starts selection, with the row type icon toggling each row.

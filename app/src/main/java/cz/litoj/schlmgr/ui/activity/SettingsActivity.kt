@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import cz.litoj.schlmgr.ui.popup.DialogHost
 import cz.litoj.schlmgr.ui.screen.settings.SettingsScreen
 import cz.litoj.schlmgr.ui.shell.StatusBarBand
 import cz.litoj.schlmgr.ui.shell.MessageSnackbarHost
@@ -41,6 +42,7 @@ class SettingsActivity : ComponentActivity() {
 				// the status band is drawn last, so it covers the band area of the top bar.
 				StatusBarBand()
 			}
+			DialogHost()
 		}
 	}
 }

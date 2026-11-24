@@ -178,6 +178,19 @@ class NewItemFabTest {
 	}
 
 	@Test
+	fun `a cancelled palette drag only cleans up`() {
+		setContent(listOf(RowKind.SUBJECT))
+
+		rule.onRoot().performTouchInput {
+			down(fabCenter())
+			moveTo(fabCenter() + Offset(-200f, -200f))
+			cancel()
+		}
+
+		assertTrue("the cancelled kind never commits", picked.isEmpty())
+	}
+
+	@Test
 	fun `a plain tap leaves the palette standing, the icon's click commits`() {
 		setContent(listOf(RowKind.CHAPTER, RowKind.WORD, RowKind.NOTE))
 

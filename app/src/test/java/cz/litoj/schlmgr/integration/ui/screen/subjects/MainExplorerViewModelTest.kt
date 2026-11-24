@@ -1990,6 +1990,31 @@ class MainExplorerViewModelTest {
 	}
 
 	@Test
+	fun `a late chapter completion does not take over another location`() {
+		val io = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+		try {
+			val (aId, _) = seed()
+			val model = MainExplorerViewModel(NavigationHistory(), io)
+			model.clock = { now }
+			settle(io)
+			model.onItemClick(model.items().single { it.item.name == "A" })
+			settle(io)
+			assertTrue(model.commitNewItem(RowKind.CHAPTER,
+				CreatorResult("c0", "", emptyList(), emptyList())))
+			model.onBackRequested()
+
+			settle(io)
+
+			assertTrue("the landing opened no unsolicited chapter", model.history.path.isEmpty())
+			assertEquals(listOf("A", "B"), model.items().map { it.item.name })
+			assertEquals("the original parent still received the row",
+				listOf("c1", "c0"), ItemRepository.children(aId).map { it.name })
+		} finally {
+			io.close()
+		}
+	}
+
+	@Test
 	fun `commitNewItem lands a new note like a chapter`() {
 		val (aId, _) = seed()
 		val model = vmIn("A")

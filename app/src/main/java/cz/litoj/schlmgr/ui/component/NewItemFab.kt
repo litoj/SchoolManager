@@ -41,6 +41,7 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -163,11 +164,13 @@ fun NewItemFab(
 							pressed = true
 							hovered = -1
 							var pick = -1
+							var released = false
 							try {
 								while (true) {
 									val change = nextChange(down.id) ?: continue
 									if (!change.pressed) {
-										pick = hovered
+										released = change.changedToUp()
+										if (released) pick = hovered
 										break
 									}
 									change.consume()
@@ -184,11 +187,13 @@ fun NewItemFab(
 								pressed = false
 								hovered = -1
 							}
-							if (pick >= 0) commit(pick)
-							else if (standing) {
-								// a centre tap only closes the standing palette
-								standing = false
-							} else standing = true
+							if (released) {
+								if (pick >= 0) commit(pick)
+								else if (standing) {
+									// a centre tap only closes the standing palette
+									standing = false
+								} else standing = true
+							}
 						}
 					},
 			) {

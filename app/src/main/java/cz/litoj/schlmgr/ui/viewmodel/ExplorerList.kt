@@ -333,12 +333,11 @@ internal class ExplorerList(
 	 */
 	fun flipWord(item: ItemRow?) {
 		val row = item ?: return
-		// the flip writes the row, which repaints itself
-		if (row.flipOnto(!row.flipped)) return
+		val flippedTo = !row.flipped
+		val generation = row.reserveFlip(flippedTo) ?: return
 		scope.launch {
 			val content = withContext(io) { ItemRow.flipContentOf(row.item) }
-			row.preloadFlip(content)
-			row.applyFlip(content)
+			row.completeFlip(generation, content, flippedTo)
 		}
 	}
 
@@ -364,13 +363,17 @@ internal class ExplorerList(
 			(it.item.type == ItemKind.WORD || it.item.type == ItemKind.TRANSLATION) &&
 				it.flipped != flipped
 		}
-		val unpreloaded = pending.filterNot { it.flipOnto(flipped) }
+		val unpreloaded = pending.mapNotNull { row ->
+			row.reserveFlip(flipped)?.let { generation -> row to generation }
+		}
 		if (unpreloaded.isNotEmpty()) scope.launch {
 			// one io hop reads every missing row, a hop per row repeats the dispatch
-			val contents = withContext(io) { unpreloaded.map { ItemRow.flipContentOf(it.item) } }
-			unpreloaded.forEachIndexed { i, row ->
-				row.preloadFlip(contents[i])
-				row.flipOnto(flipped)
+			val contents = withContext(io) {
+				unpreloaded.map { (row, _) -> ItemRow.flipContentOf(row.item) }
+			}
+			unpreloaded.forEachIndexed { i, pendingFlip ->
+				val (row, generation) = pendingFlip
+				row.completeFlip(generation, contents[i], flipped)
 			}
 		}
 	}
