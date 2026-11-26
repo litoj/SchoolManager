@@ -1,0 +1,116 @@
+{
+	name: Deutsch
+	children:
+	[
+  {
+    "name": "Německo 20",
+    "children": [
+      { "name": "gesund", "translations": [{ "name": "zdravý" }] },
+      { "name": "der Wind", "translations": [{ "name": "vítr" }] },
+      { "name": "die Fähre", "translations": [{ "name": "trajekt" }] },
+      { "name": "der Bereich", "translations": [{ "name": "oblast" }, { "name": "krajina" }, { "name": "zóna/pásmo" }, { "name": "okrsek/obvod" }] },
+      { "name": "das Gelände", "translations": [{ "name": "terén" }, { "name": "krajina" }, { "name": "území" }] },
+      { "name": "die Nummer", "translations": [{ "name": "číslo" }] },
+      { "name": "betreten", "desc": "perf.\tbetreten", "translations": [{ "name": "vstoupit/vkročit" }, { "name": "vkročit" }, { "name": "vstoupit" }] },
+      { "name": "der/das Ausgang", "translations": [{ "name": "výstup" }, { "name": "východisko/výsledek" }] },
+      { "name": "der Ausstieg", "translations": [{ "name": "výstup" }] },
+      { "name": "gewöhnt", "translations": [{ "name": "zvyklý" }] },
+      { "name": "gesperrt", "translations": [{ "name": "uzavřený" }, { "name": "uzavřený/nepřístupný" }] },
+      { "name": "treiben", "translations": [{ "name": "hnát" }, { "name": "honit/dohnat/zahnat" }] },
+      { "name": "ein Brett vor dem Kopf haben", "translations": [{ "name": "být slepý před řešením" }] },
+      { "name": "die Seilbahn", "translations": [{ "name": "lanovka" }] },
+      { "name": "das Seil", "translations": [{ "name": "lano" }] },
+      { "name": "das Radieschen", "translations": [{ "name": "ředkvička" }] },
+      { "name": "schmales Brett", "translations": [{ "name": "tenké prkno" }] },
+      { "name": "der Diebstahl", "translations": [{ "name": "krádež" }] },
+      { "name": "der Schatten", "translations": [{ "name": "stín" }] },
+      { "name": "verzichten auf etwas", "translations": [{ "name": "vzdát se něčeho" }] }
+    ]
+  },
+    {
+      "name": "Kapitola 1",
+      "children": [
+        { "name": "der Käse", "f": 2, "translations": [{ "name": "sýr" }] },
+        { "name": "das Salz", "s": 1, "f": 2, "translations": [{ "name": "sůl" }] },
+        { "name": "der Apfel", "translations": [{ "name": "jablko" }] },
+        { "name": "die Milch", "f": 1, "translations": [{ "name": "mléko" }] },
+        { "name": "das Fleisch", "s": 3, "translations": [{ "name": "maso" }] },
+        { "name": "die Birne", "translations": [{ "name": "hruška" }] },
+        { "name": "das Ei", "f": 3, "translations": [{ "name": "vejce" }] },
+        { "name": "der Pfeffer", "s": 2, "f": 2, "translations": [{ "name": "pepř" }] },
+        { "name": "das Brot", "translations": [{ "name": "chléb" }] },
+        { "name": "der Zucker", "f": 1, "translations": [{ "name": "cukr" }] },
+        { "name": "die Suppe", "s": 1, "translations": [{ "name": "polévka" }] },
+        { "name": "die Butter", "translations": [{ "name": "máslo" }] }
+      ]
+    },
+    {
+      "name": "Kapitola 2",
+      "children": [
+        { "name": "das Fenster", "translations": [{ "name": "okno" }] },
+        { "name": "der Stuhl", "f": 2, "translations": [{ "name": "židle" }] },
+        { "name": "das Dach", "s": 1, "f": 4, "translations": [{ "name": "střecha" }] },
+        { "name": "die Lampe", "f": 1, "translations": [{ "name": "lampa" }] },
+        { "name": "die Tür", "translations": [{ "name": "dveře" }] },
+        { "name": "die Wand", "s": 2, "f": 1, "translations": [{ "name": "zeď" }] },
+        { "name": "das Bett", "f": 4, "translations": [{ "name": "postel" }] },
+        { "name": "der Boden", "s": 4, "translations": [{ "name": "podlaha" }] },
+        { "name": "der Schrank", "f": 2, "translations": [{ "name": "skříň" }] },
+        { "name": "die Küche", "s": 1, "f": 1, "translations": [{ "name": "kuchyně" }] },
+        { "name": "der Tisch", "translations": [{ "name": "stůl" }] },
+        { "name": "die Treppe", "f": 1, "translations": [{ "name": "schody" }] },
+        { "name": "das Bad", "s": 3, "f": 2, "translations": [{ "name": "koupelna" }] }
+      ]
+    },
+  {
+    "name": "Kochen",
+    "children": [
+      { "name": "abtropfen", "translations": [{ "name": "odkapat" }] },
+      { "name": "hineingeben", "translations": [{ "name": "vložit" }] },
+      { "name": "bestreuen", "translations": [{ "name": "posypat" }] },
+      { "name": "ausrollen", "translations": [{ "name": "vyválet" }] },
+      { "name": "dünsten", "translations": [{ "name": "dusit" }] },
+      { "name": "verkneten", "translations": [{ "name": "hníst" }] },
+      { "name": "schälen", "translations": [{ "name": "loupat" }] },
+      { "name": "reiben", "translations": [{ "name": "strouhat" }] },
+      { "name": "erhitzen", "translations": [{ "name": "rozehřát" }, { "name": "zahřát" }] },
+      { "name": "der Teig", "desc": "pl. -e", "translations": [{ "name": "těsto" }] },
+      { "name": "die Schüssel", "translations": [{ "name": "miska" }] },
+      { "name": "die Scheibe", "translations": [{ "name": "plátek" }] },
+      { "name": "die Hefe", "translations": [{ "name": "droždí" }] },
+      { "name": "der Ofen", "translations": [{ "name": "trouba" }] },
+      { "name": "umarbeiten/umändern", "translations": [{ "name": "přepracovat/předělat" }] },
+      { "name": "Sie sitzen sich an einen Tisch.", "translations": [{ "name": "Sednou si ke stolu." }] },
+      { "name": "proben", "translations": [{ "name": "zkoušet" }, { "name": "testovat" }] },
+      { "name": "die Probe", "translations": [{ "name": "zkouška" }, { "name": "pokus" }] },
+      { "name": "sich beugen", "translations": [{ "name": "ohýbat se" }] },
+      { "name": "hervorragend", "translations": [{ "name": "vynikající" }] }
+    ]
+  },
+  {
+    "name": "Ski",
+    "children": [
+      { "name": "der Abfahrtsski", "desc": "pl. -er", "translations": [{ "name": "lyže" }] },
+      { "name": "die (Skip/P)iste", "translations": [{ "name": "sjezdovka" }] },
+      { "name": "der Abhang", "translations": [{ "name": "svah" }] },
+      { "name": "der Gipfel", "translations": [{ "name": "vrchol" }, { "name": "vrchol/vyvrcholení" }] },
+      { "name": "der Glühwein", "translations": [{ "name": "svařák" }] },
+      { "name": "der Langlaufski", "translations": [{ "name": "běžky" }] },
+      { "name": "die Loipe", "translations": [{ "name": "běžkařská trasa" }] },
+      { "name": "der Gips", "translations": [{ "name": "sádra" }] },
+      { "name": "der Pelz", "translations": [{ "name": "kožich/srst" }] },
+      { "name": "der Skistiefel", "desc": "pl. -", "translations": [{ "name": "přeskáče" }] },
+      { "name": "der Skistock", "desc": "pl. ö-e", "translations": [{ "name": "lyžařská hůlka" }] },
+      { "name": "die Krücke", "translations": [{ "name": "berle" }] },
+      { "name": "das Stirnband", "translations": [{ "name": "čelenka" }] },
+      { "name": "die Tanne", "translations": [{ "name": "jedle" }] },
+      { "name": "der Zapfen", "translations": [{ "name": "šiška" }] },
+      { "name": "die Glübirne", "translations": [{ "name": "žárovka" }] },
+      { "name": "platt", "translations": [{ "name": "plochý" }] },
+      { "name": "niedrig/tiefstehend", "translations": [{ "name": "nízký" }] },
+      { "name": "die Schlitten", "translations": [{ "name": "saně" }] },
+      { "name": "übernachten", "translations": [{ "name": "přespat" }, { "name": "přenocovat" }] }
+    ]
+  }
+	]
+}
