@@ -48,10 +48,12 @@ class ExportPopup(
 				)
 			}
 			HairlineDivider()
+			// share takes the right edge, where every popup waits for its action.
+			// testers missed it on the left
 			PopupButtonRow {
-				PopupButton(stringResource(R.string.action_share), Modifier.weight(1f)) { pickShare() }
-				VerticalButtonSeparator()
 				PopupButton(stringResource(R.string.export_save), Modifier.weight(1f)) { pickSave() }
+				VerticalButtonSeparator()
+				PopupButton(stringResource(R.string.action_share), Modifier.weight(1f)) { pickShare() }
 			}
 		}
 	}

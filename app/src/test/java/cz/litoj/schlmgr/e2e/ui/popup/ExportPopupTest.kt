@@ -11,6 +11,7 @@ import cz.litoj.schlmgr.ui.popup.ExportPopup
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -57,6 +58,15 @@ class ExportPopupTest {
 		rule.onNodeWithText("Omit testing history").assertIsDisplayed()
 		rule.onNodeWithText("Share").assertIsDisplayed()
 		rule.onNodeWithText("Save to file").assertIsDisplayed()
+	}
+
+	@Test
+	fun `the button at the right edge is the one that shares`() {
+		openSheet()
+		val share = rule.onNodeWithText("Share").fetchSemanticsNode().boundsInRoot.center.x
+		val save = rule.onNodeWithText("Save to file").fetchSemanticsNode().boundsInRoot.center.x
+
+		assertTrue("share sits on the right, where every popup waits for its action", share > save)
 	}
 
 	@Test
