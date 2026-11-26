@@ -24,8 +24,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -33,7 +31,6 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextLayoutResult
@@ -55,7 +52,8 @@ import cz.litoj.schlmgr.ui.component.HairlineDivider
  *   never repeated above it.
  * - Save writes the same document and runs the import again, no second app, no re-pick.
  * - a refused write keeps the popup, a typed fix is never lost.
- * - the reported line is marked and brought into view, the field takes the focus on open.
+ * - the reported line is marked and brought into view.
+ * - the keyboard waits for a tap, it would cover the file the user has to read first.
  */
 internal class WordListFixPopup(
 	private val title: String,
@@ -70,9 +68,6 @@ internal class WordListFixPopup(
 
 	/** the editor text, held off the composition so a recomposition keeps a typed fix */
 	private var text by mutableStateOf(TextFieldValue(source, TextRange(caret)))
-
-	/** the field the caret goes to, asked for on open */
-	private val fieldFocus = FocusRequester()
 
 	/** the note of a document that refused the write, the reason the popup stayed open */
 	private var refused by mutableStateOf(false)
@@ -103,7 +98,10 @@ internal class WordListFixPopup(
 		}
 	}
 
-	/** The diagnosis of the spot the editor opened at, capped so the file keeps the screen. */
+	/**
+	 * The diagnosis of the spot the editor opened at, capped so the file keeps the screen.
+	 * - the red notice comes first, testers read the title as a final refusal of the file.
+	 */
 	@Composable
 	private fun IssueBlock() {
 		Column(
@@ -113,6 +111,11 @@ internal class WordListFixPopup(
 				.verticalScroll(rememberScrollState())
 				.padding(12.dp)
 		) {
+			Text(
+				stringResource(R.string.popup_file_has_error),
+				Modifier.padding(bottom = 6.dp),
+				style = TextStyle(fontSize = 20.sp, color = colorResource(R.color.colorDanger)),
+			)
 			PopupBodyText(report.location)
 			PopupBodyText(report.guidance, Modifier.padding(top = 6.dp))
 			if (refused) Text(
@@ -126,7 +129,6 @@ internal class WordListFixPopup(
 	/**
 	 * The file as a text of its own, one line per source line, the reported line marked.
 	 * - the scrolls are the field's own, so the marked line can be brought into view.
-	 * - the field takes the focus on open, the caret is where the user has to look.
 	 */
 	@Composable
 	private fun ColumnScope.FileField() {
@@ -137,13 +139,7 @@ internal class WordListFixPopup(
 		var viewport by remember { mutableStateOf(IntSize.Zero) }
 		var revealed by remember { mutableStateOf(false) }
 		val markColor = colorResource(R.color.colorMarkedLine)
-		val keyboard = LocalSoftwareKeyboardController.current
 
-		LaunchedEffect(Unit) {
-			// the field focus alone does not guarantee the keyboard, so the ask goes out too
-			runCatching { fieldFocus.requestFocus() }
-			keyboard?.show()
-		}
 		LaunchedEffect(laidOut, viewport) {
 			val layout = laidOut ?: return@LaunchedEffect
 			// once only: a later keystroke must not pull the view back from where the user is
@@ -167,7 +163,6 @@ internal class WordListFixPopup(
 				value = text,
 				onValueChange = { text = it },
 				modifier = Modifier
-					.focusRequester(fieldFocus)
 					.drawBehind {
 						drawMarkedLine(laidOut, markedLine, markColor)
 					},

@@ -252,7 +252,8 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A note without a description has no word-list line, so the import refuses its export too.
 - No outside editor on the phone takes a foreign content URI for text, so the app edits the file itself.
 - The failure of a held file opens an editor on its failing character, the report above the file.
-- The editor takes the focus on open, so its caret shows and the keyboard comes.
+- The editor opens without the keyboard, a keyboard on open hid the whole file on a phone.
+- A red notice above the report says the file holds an error that the user can fix.
 - The reported line is marked and brought into view, its failing column reached from the left.
 - The file keeps one line per source line, a long line scrolls aside instead of wrapping.
 - The caret of the editor is the text colour of the theme, the mark of the line reads on both palettes.

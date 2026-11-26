@@ -7,6 +7,12 @@
 - Cut is named Move, so moving a chapter is easy to find.
 - Its icon is a folder with an arrow instead of scissors.
 
+### Import error editor
+
+- The editor opens without the keyboard, so the file and its marked line stay in view.
+- A red notice says the file contains an error to fix below.
+- The save button reads Fix and import, so it fits the button.
+
 ### References from several chapters
 
 - After Move or Add reference, the waiting rows stay marked in every chapter.

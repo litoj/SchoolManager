@@ -118,10 +118,17 @@ class WordListFixPopupTest {
 	}
 
 	@Test
-	fun `the editor holds the focus, so the caret shows and the keyboard comes`() {
+	fun `the editor opens without the keyboard, so the file stays in view`() {
 		showFix()
 
-		rule.onNode(hasSetTextAction() and focused()).assertExists()
+		rule.onNode(hasSetTextAction() and focused(false)).assertExists()
+	}
+
+	@Test
+	fun `the report opens with a notice that the file holds an error`() {
+		showFix()
+
+		rule.onNodeWithText(text(R.string.popup_file_has_error)).assertIsDisplayed()
 	}
 
 	@Test
@@ -194,8 +201,8 @@ class WordListFixPopupTest {
 			SemanticsProperties.TextSelectionRange, TextRange(offset, offset),
 		)
 
-		/** the field holds the focus, so its caret shows and the keyboard was asked for */
-		fun focused() = SemanticsMatcher.expectValue(SemanticsProperties.Focused, true)
+		/** the field holds the focus, which brings the keyboard over the file */
+		fun focused(held: Boolean) = SemanticsMatcher.expectValue(SemanticsProperties.Focused, held)
 
 		/**
 		 * A file scrolled past [minPx] of its top.

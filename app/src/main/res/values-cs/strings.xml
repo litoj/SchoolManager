@@ -330,7 +330,8 @@
     <string name="paste_status_references">Odkazy: %1$d</string>
     <string name="paste_status_move">Přesun: %1$d</string>
     <string name="popup_copy">Kopírovat</string>
-    <string name="popup_save_retry">Uložit a importovat znovu</string>
+    <string name="popup_save_retry">Opravit a importovat</string>
+    <string name="popup_file_has_error">Soubor obsahuje chybu. Opravte ji níže a importujte znovu.</string>
     <string name="popup_save_failed">Soubor text odmítl, nic se nezměnilo</string>
     <string name="popup_copy_failed">Kopírování do schránky se nezdařilo</string>
     <string name="popup_copy_truncated">[kopie byla zkrácena — text je pro schránku příliš dlouhý]</string>
