@@ -13,7 +13,7 @@
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
     <string name="continue_delete">Do you really want to delete the selected items?</string>
-    <string name="cut">Cut</string>
+    <string name="cut">Move</string>
     <string name="data_rate">"Success rate: %1$d%%"</string>
     <string name="data_untested">Success rate: Untested</string>
     <string name="data_search_results">"Results: %1$d"</string>
@@ -266,7 +266,7 @@
         \nA drag from an unselected row selects a range.
         \nA drag of a selected row moves it where the list has an order.
         \nThe top-right check selects all or ends the selection. Back ends it too.</string>
-    <string name="help_select_move">Cut takes the selected rows and shows the paste strip. Open the target and press Paste.
+    <string name="help_select_move">Move takes the selected rows and shows the paste strip. Open the target and press Paste.
         \nThe armed move survives a chapter switch.
         \nA long press or the row icon in any chapter adds a row to the move or takes it out, and Create works the same.
         \nA tap or a drag on a picked row takes its mark back, so the rows it crosses leave the move.</string>

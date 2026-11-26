@@ -2,9 +2,14 @@
 
 ## Usability test fixes
 
+### Move
+
+- Cut is named Move, so moving a chapter is easy to find.
+- Its icon is a folder with an arrow instead of scissors.
+
 ### References from several chapters
 
-- After Cut or Add reference, the waiting rows stay marked in every chapter.
+- After Move or Add reference, the waiting rows stay marked in every chapter.
 - A long press, the row icon or a drag adds a row to the waiting batch or takes it out.
 - One Paste places the rows of every chapter at once.
 - An emptied batch ends the paste like Cancel.

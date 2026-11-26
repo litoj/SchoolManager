@@ -98,7 +98,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - A strip label stays centered and ellipsizes when its slot cannot hold the full text.
 - A label with no glyph keeps the glyph slot, so one strip never splits its labels.
 - The top More button hides while a selection runs.
-- Cut applies only to a browse list.
+- Move applies only to a browse list.
 - The settings editor names the strips that show each action at the current width.
 - Top actions estimate capacity at 1.2 per slot, while titles and search keep 96 dp of intrinsic minimum space.
 - One pinned top-bar slot switches from Search to Filter while the field is open.

@@ -13,7 +13,7 @@
     <string name="ok">OK</string>
     <string name="cancel">Zrušit</string>
     <string name="continue_delete">Opravdu chcete odstranit vybrané položky?</string>
-    <string name="cut">Vyjmout</string>
+    <string name="cut">Přesunout</string>
     <string name="data_rate">"Úspěšnost: %1$d%%"</string>
     <string name="data_untested">Úspěšnost: Netestováno</string>
     <string name="data_search_results">"Výsledků: %1$d"</string>
@@ -253,7 +253,7 @@
         \nTažením z nevybraného řádku vyberete rozsah.
         \nTažením vybraného řádku ho přesunete tam, kde má seznam pořadí.
         \nZaškrtnutí vpravo nahoře vybere vše nebo výběr ukončí. Ukončí ho i zpět.</string>
-    <string name="help_select_move">Vyjmout vezme vybrané řádky a zobrazí vkládací lištu. Otevřete cíl a stiskněte Vložit.
+    <string name="help_select_move">Přesunout vezme vybrané řádky a zobrazí vkládací lištu. Otevřete cíl a stiskněte Vložit.
         \nPřesun přežije přepnutí kapitoly.
         \nDlouhý stisk nebo ikona řádku v libovolné kapitole přidá řádek k přesunu nebo ho odebere, Vytvořit funguje stejně.
         \nKlepnutí nebo tažení po vybraném řádku znaménko odebere, takže řádky pod ním z přesunu vypadnou.</string>
