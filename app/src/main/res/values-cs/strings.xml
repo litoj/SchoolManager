@@ -2,6 +2,7 @@
 <resources>
     <string name="action_full_text">Celý Text</string>
     <string name="action_reference">Vytvořit</string>
+    <string name="action_add_to_test">Do testu</string>
     <string name="action_flip">Překlopit překlady</string>
     <string name="action_sw_success">" zapsáno úspěšně"</string>
     <string name="action_share">Sdílet</string>
@@ -282,7 +283,11 @@
     <string name="help_test_select">Výběr položek do testu</string>
     <string name="help_test_select_how">Přidat zdroj otevře seznam položek. Dlouhým stiskem řádku nebo klepnutím na ikonu typu vyberte zdroj, pak stiskněte Vybrat.
         \nKlepnutí na vybranou položku ji odebere.
-        \nVšechny zdroje musí patřit jednomu předmětu.</string>
+        \nVšechny zdroje musí patřit jednomu předmětu.
+        \nÚspěšnost nejvýš pustí do testu jen slabší slovíčka, 0 nechá jen nezkoušená a vždy chybná.
+        \nPřidat zdroj pak ukáže jen vyhovující slovíčka.
+        \nDo testu v liště výběru přidá vybrané řádky ke zdrojům, takže test jde sestavit z více kapitol.
+        \nZdroje zůstanou, dokud je nevymažete.</string>
     <string name="menu_label">Menu</string>
     <string name="menu_about">Nápověda a o aplikaci</string>
     <string name="menu_objects">Předměty</string>
@@ -385,7 +390,7 @@
     <string name="setts_place_browse">lišta procházení</string>
     <string name="setts_place_search">lišta hledání</string>
     <string name="setts_place_more">menu více</string>
-    <string name="setts_act_test">Spustí test z vybraných řádků</string>
+    <string name="setts_act_test">Přidá vybrané řádky do zdrojů testu</string>
     <string name="setts_act_cut">Přenese řádky do jiné složky ve stejném předmětu</string>
     <string name="setts_act_edit">Otevře jediný vybraný řádek k úpravám</string>
     <string name="setts_act_delete">Smaže vybrané řádky</string>
@@ -413,6 +418,14 @@
     <string name="test_dir_reverse">Překlad</string>
     <string name="test_clever">Upřednostnit slabá slovíčka</string>
     <string name="test_clever_hint">Začne nejslabšími a nejméně testovanými slovíčky.</string>
+    <string name="test_max_rate">Úspěšnost nejvýš (%)</string>
+    <string name="test_advanced">Pokročilé nastavení</string>
+    <plurals name="test_matching">
+        <item quantity="one">Vyhovuje %d slovíčko, nezkoušená počítají jako 0 %%.</item>
+        <item quantity="few">Vyhovují %d slovíčka, nezkoušená počítají jako 0 %%.</item>
+        <item quantity="many">Vyhovuje %d slovíček, nezkoušená počítají jako 0 %%.</item>
+        <item quantity="other">Vyhovuje %d slovíček, nezkoušená počítají jako 0 %%.</item>
+    </plurals>
     <string name="test_variants_word">Varianta slovíčka</string>
     <string name="test_variants_translation">Varianta překladu</string>
     <plurals name="test_blank_answers">

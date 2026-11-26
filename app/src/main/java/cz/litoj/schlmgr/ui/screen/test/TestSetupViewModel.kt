@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 
 /**
  * The logic of the test setup screen.
- * - it holds the amount and duration answers, the reverse and content switches and the fresh-entry decision.
+ * - it holds the amount, duration and rate answers, the reverse and content switches and the fresh-entry decision.
  * - it also holds the two navigation steps, start test and open the source picker.
  * - answers and sources live in [TestSetupState], whose source doors serialize every writer.
  */
@@ -71,12 +71,12 @@ class TestSetupViewModel(
 
 	/**
 	 * The fresh-entry check, run once per entry.
-	 * - a return from the picker, the running test or a Prepare test fill keeps the sources.
-	 * - only a genuine fresh entry resets the setup.
+	 * - a return from the picker, the running test or an Add to test keeps the answers.
+	 * - a genuine fresh entry resets the answers, the sources stay until cleared.
 	 */
 	fun onEntered() {
 		val (fromPicker, fromSelection) = testSetup.consumeEntryMarks()
-		if (!fromPicker && !fromSelection) testSetup.reset()
+		if (!fromPicker && !fromSelection) testSetup.resetAnswers()
 	}
 
 	fun restoreAmount() {
@@ -102,6 +102,22 @@ class TestSetupViewModel(
 		testSetup.setClever(on)
 		TestEngine.applyClever(on)
 		settings.set("isClever", on)
+	}
+
+	/**
+	 * Each usable limit applies at once, so the pool caption follows the typing.
+	 * - the recount reads the database, so it leaves the main thread.
+	 */
+	fun setMaxRate(text: String) {
+		testSetup.setMaxRate(text)
+		val rate = testSetup.maxRateText.toIntOrNull()?.takeIf { it in 0..100 } ?: return
+		TestEngine.applyMaxRate(rate)
+		viewModelScope.launch(io) { testSetup.refreshCounts() }
+	}
+
+	fun restoreMaxRate() {
+		if (testSetup.maxRateText.toIntOrNull() != TestEngine.maxRate)
+			testSetup.setMaxRate(TestEngine.maxRate.toString())
 	}
 
 	/**

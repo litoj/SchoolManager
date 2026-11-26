@@ -14,7 +14,10 @@ internal class TestRunData private constructor(
 
 	companion object {
 
-		suspend fun readEntries(sources: List<List<DbItem>>, graphs: GraphQueries): List<TestEntry> {
+		/** The setup caches entries at the limit 100, so a later limit change needs no reread. */
+		suspend fun readEntries(
+			sources: List<List<DbItem>>, graphs: GraphQueries, limit: Int = TestEngine.maxRate,
+		): List<TestEntry> {
 			val children = mutableMapOf<Int, List<DbItem>>()
 			suspend fun loadChildren(id: Int) {
 				if (children.containsKey(id)) return
@@ -26,7 +29,7 @@ internal class TestRunData private constructor(
 				val selected = path.last()
 				if (selected.type == ItemKind.CHAPTER) loadChildren(selected.id)
 			}
-			val entries = TestEngine.convertAll(sources) { id -> children[id].orEmpty() }
+			val entries = TestEngine.convertAll(sources, limit) { id -> children[id].orEmpty() }
 			val translations = mutableMapOf<Int, List<DbItem>>()
 			val siblingGroups = entries.groupBy { entry -> entry.path.dropLast(1).lastOrNull()?.id }
 			for ((parentId, siblings) in siblingGroups) {

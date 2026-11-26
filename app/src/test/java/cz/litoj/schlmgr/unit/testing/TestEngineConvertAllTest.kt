@@ -64,6 +64,43 @@ class TestEngineConvertAllTest {
 		assertEquals(w.id, entries[0].word.id)
 	}
 
+	/** A word with [passed] of [tests] answers right, no answers meaning untested. */
+	private fun rated(id: Int, passed: Int, tests: Int) =
+		DbItem(id = id, name = "w$id", description = "", type = ItemKind.WORD,
+			passedTests = passed, failedTests = tests - passed)
+
+	/** Converts under [maxRate], then restores the open limit for the other cases. */
+	private fun convertUnder(maxRate: Int, vararg sources: List<DbItem>) = try {
+		TestEngine.applyMaxRate(maxRate)
+		convertAll(*sources).map { it.word.id }
+	} finally {
+		TestEngine.applyMaxRate(100)
+	}
+
+	@Test
+	fun `a rate limit lets in only the words at or below it`() {
+		val s = item(1, "subject", ItemKind.CHAPTER)
+		link(s, rated(2, passed = 0, tests = 2), rated(3, passed = 1, tests = 2), rated(4, passed = 2, tests = 2))
+
+		assertEquals(listOf(2, 3), convertUnder(50, listOf(s)))
+	}
+
+	@Test
+	fun `an untested word counts as 0 percent under the limit`() {
+		val s = item(1, "subject", ItemKind.CHAPTER)
+		link(s, rated(2, passed = 0, tests = 0), rated(3, passed = 0, tests = 3), rated(4, passed = 1, tests = 3))
+
+		assertEquals(listOf(2, 3), convertUnder(0, listOf(s)))
+	}
+
+	@Test
+	fun `the full limit keeps every word`() {
+		val s = item(1, "subject", ItemKind.CHAPTER)
+		link(s, rated(2, passed = 0, tests = 0), rated(3, passed = 3, tests = 3))
+
+		assertEquals(listOf(2, 3), convertUnder(100, listOf(s)))
+	}
+
 	@Test
 	fun `overlapping sources expand each word once`() {
 		val s = item(1, "subject", ItemKind.CHAPTER)

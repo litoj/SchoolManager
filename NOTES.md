@@ -286,7 +286,7 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Several rows in a container use the partial suffix, at the root they use `subjects`.
 - The JSON tree writes bare word and note roots at the top, and the importer accepts them.
 - Export walks pre-order, writes references as paths and keeps path targets outside the export in place.
-- The Export row opens one sheet: a testing-history switch, then Share or Save to file.
+- The Export row opens one sheet: a testing-history switch, then Save to file and Share on the right edge.
 - The switch writes the word file when it omits history, the JSON file when it keeps it.
 - Its caption names the file that lands and what it leaves out.
 - The sheet opens on the format of the last export.
@@ -303,6 +303,13 @@ Layer boundaries, workflows, build instructions and open items live in `DEVELOPM
 - Clever mode ranks by urgency, otherwise the pick is random.
 - The setup screen carries that switch, and its last pick returns with the next setup.
 - The setup rows name their units, and captions derive the pool and total time.
+- A rate limit keeps words above it out of the pool, an untested word counts as 0 %.
+- The pool conversion applies it, so the setup counts and the run agree.
+- The test picker lists only the words within it, chapters stay for the way to them.
+- A fresh setup opens it at 100, it is never stored.
+- Add to test from a selection adds to the sources, testers gathered one test across chapters.
+- The sources stay until cleared, a fresh entry resets only the answers.
+- Amount, time and clever ordering fold under Advanced, testers were distracted by them.
 - The tested side row flips on tap, starting from the setting in a fresh setup, with the word side as default.
 - Start waits for a source and says why.
 - Unavailable Start fades the whole button once.

@@ -7,6 +7,8 @@ import cz.litoj.schlmgr.app.UserMessages
 import cz.litoj.schlmgr.data.GraphQueries
 import cz.litoj.schlmgr.data.ItemTransferService
 import cz.litoj.schlmgr.data.db.DbItem
+import cz.litoj.schlmgr.data.db.ItemKind
+import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.testing.TestRunData
 import cz.litoj.schlmgr.ui.screen.test.TestSetupState
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
@@ -53,6 +55,13 @@ class PickerViewModel(
 	override fun clumpsContainer() = referenceTarget == null
 
 	/**
+	 * A test pick lists only the words the rate limit of the setup lets into the test.
+	 * - chapters stay, since they lead to the words and the test filters their content too.
+	 */
+	override fun showsRow(item: DbItem) = referenceTarget != null || item.type != ItemKind.WORD ||
+		TestEngine.withinMaxRate(item)
+
+	/**
 	 * The strip Select: collects the gathered rows into the source list of the test.
 	 * - it closes the picker, and a refused pick reports and stays open.
 	 * - chain building reads the database, so it runs on IO.
@@ -80,7 +89,7 @@ class PickerViewModel(
 				val parentPaths = picked.mapNotNull { it.parentId }.distinct().associateWith { graphs.pathTo(it) }
 				val entries = picked.associate { seed ->
 					val chain = testSetup.chainOfSeed(seed, parentPaths)
-					chain to TestRunData.readEntries(listOf(chain), graphs)
+					chain to TestRunData.readEntries(listOf(chain), graphs, limit = 100)
 				}
 				testSetup.addPicked(picked, parentPaths, entries)
 			}

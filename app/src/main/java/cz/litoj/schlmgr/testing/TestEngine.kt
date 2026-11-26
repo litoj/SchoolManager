@@ -182,6 +182,12 @@ class TestEngine(
 			isClever = clever
 		}
 
+		/** The rate limit of the next test, the door of the test setup. */
+		@JvmStatic
+		fun applyMaxRate(rate: Int) {
+			maxRate = rate.coerceIn(0, 100)
+		}
+
 		/** Requires every parsed variant of the answer, rather than any one. */
 		@JvmStatic
 		fun applyRequireAllVariants(on: Boolean) {
@@ -282,13 +288,16 @@ class TestEngine(
 		/**
 		 * Selected rows into tested entries.
 		 * - words directly, chapters expanded, and each word at most one entry.
+		 * - only words within [maxRate] enter, so the setup count and the run agree.
 		 *
 		 * @param sources selected rows with container chains, root first
+		 * @param limit the rate limit, where 100 keeps every word for a setup cache
 		 * @param children container-children lookup, a fake tree in tests
 		 */
 		@JvmStatic
 		fun convertAll(
 			sources: List<List<DbItem>>,
+			limit: Int = maxRate,
 			children: (Int) -> List<DbItem>,
 		): List<TestEntry> {
 			val entries = ArrayList<TestEntry>()
@@ -299,8 +308,13 @@ class TestEngine(
 					if (visited.add(last.id)) entries.add(TestEntry(last, path))
 				} else if (last.type == ItemKind.CHAPTER) convertContent(path, children, visited, entries)
 			}
-			return entries
+			if (limit >= 100) return entries
+			return entries.filter { it.word.ratio.coerceAtLeast(0) <= limit }
 		}
+
+		/** Whether [word] may enter a test, an untested word knows nothing yet so it counts as 0 %. */
+		@JvmStatic
+		fun withinMaxRate(word: DbItem): Boolean = word.ratio.coerceAtLeast(0) <= maxRate
 
 		private fun convertContent(
 			path: List<DbItem>,
@@ -341,6 +355,11 @@ class TestEngine(
 		 */
 		@JvmStatic
 		var isClever = true
+			private set
+
+		/** The highest success rate in percent a word may have to enter a test. */
+		@JvmStatic
+		var maxRate = 100
 			private set
 
 		@JvmStatic

@@ -1,6 +1,7 @@
 <resources>
     <string name="action_full_text">Full Text</string>
     <string name="action_reference">Create</string>
+    <string name="action_add_to_test">Add to test</string>
     <string name="action_flip">Flip translations</string>
     <string name="action_sw_success">" written with success"</string>
     <string name="action_share">Share</string>
@@ -295,7 +296,11 @@
     <string name="help_test_select">Selecting items for the test</string>
     <string name="help_test_select_how">Add source opens the picker. Long-press a row or tap its type icon to pick it, then Select.
         \nA tap on a picked row takes the pick back.
-        \nAll sources must belong to one subject.</string>
+        \nAll sources must belong to one subject.
+        \nSuccess rate at most lets only weaker words into the test, 0 keeps the untested and always failed ones.
+        \nAdd source then lists only the matching words.
+        \nAdd to test in the selection strip adds the selected rows to the sources, so one test gathers several chapters.
+        \nThe sources stay until you clear them.</string>
     <string name="menu_label">Menu</string>
     <string name="menu_about">Help &amp; About</string>
     <string name="menu_objects">Subjects</string>
@@ -398,7 +403,7 @@
     <string name="setts_place_browse">browse bar</string>
     <string name="setts_place_search">search bar</string>
     <string name="setts_place_more">more menu</string>
-    <string name="setts_act_test">Starts a test from the selected rows</string>
+    <string name="setts_act_test">Adds the selected rows to the test sources</string>
     <string name="setts_act_cut">Moves the rows to another folder in the same subject</string>
     <string name="setts_act_edit">Opens the one selected row for editing</string>
     <string name="setts_act_delete">Deletes the selected rows</string>
@@ -426,6 +431,12 @@
     <string name="test_dir_reverse">Translation</string>
     <string name="test_clever">Prefer weak words</string>
     <string name="test_clever_hint">Starts with the weakest and least tested words.</string>
+    <string name="test_max_rate">Success rate at most (%)</string>
+    <string name="test_advanced">Advanced settings</string>
+    <plurals name="test_matching">
+        <item quantity="one">%d word matches, untested ones count as 0 %%.</item>
+        <item quantity="other">%d words match, untested ones count as 0 %%.</item>
+    </plurals>
     <string name="test_variants_word">Word variant</string>
     <string name="test_variants_translation">Translation variant</string>
     <plurals name="test_blank_answers">

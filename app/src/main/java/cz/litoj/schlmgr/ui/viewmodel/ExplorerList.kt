@@ -47,6 +47,9 @@ internal class ExplorerList(
 		/** The list leaves the whole container view [rows] behind. */
 		fun viewLeft(rows: List<ItemRow>)
 
+		/** Whether a child of the container becomes a row at all. */
+		fun showsRow(item: DbItem): Boolean
+
 		fun publishChrome(reorderable: Boolean)
 
 		fun publishLoadedInfo(container: DbItem?, fresh: DbItem?)
@@ -255,7 +258,7 @@ internal class ExplorerList(
 		if (container != null && container.type != ItemKind.CHAPTER) return null
 		val parentId = container?.id ?: ROOT_ID
 		val graphs = checkNotNull(graphs)
-		val children = graphs.children(parentId)
+		val children = graphs.children(parentId).filter(host::showsRow)
 		// one batch read covers the container: the default render and every later flip.
 		// a read per word would be too slow
 		val translations =

@@ -18,6 +18,9 @@ import cz.litoj.schlmgr.ui.viewmodel.RowKind
 /**
  * One setup session, whose lifecycle belongs to the shell navigation owner.
  * - [TestSetupState.shared] is the compatibility instance for callers outside it.
+ * - it holds the picked source chains and the amount, duration, reverse, content and rate answers.
+ * - the sources stay until the user clears them, since testers gathered one test across chapters.
+ * - the answers reset only on a genuine fresh entry.
  */
 class TestSetupState {
 
@@ -27,24 +30,24 @@ class TestSetupState {
 
 	/**
 	 * Set when the setup screen launches the picker, and consumed by its fresh-entry check.
-	 * - so a picker return keeps the sources.
-	 * - only a genuine fresh entry from the drawer resets the setup.
+	 * - so a picker return keeps the typed answers.
+	 * - only a genuine fresh entry from the drawer resets them.
 	 */
 	private var openedPicker = false
 
 	/**
-	 * Set when a screen prepares the sources straight from a selection.
-	 * - the fresh-entry check consumes it, so the filled [list] survives like a picker return.
-	 * - the source is the Prepare test action of the subjects screen.
+	 * Set when a screen adds sources straight from a selection.
+	 * - the fresh-entry check consumes it, so the answers survive like a picker return.
+	 * - the source is the Add to test action of the subjects screen.
 	 */
 	private var openedWithSelection = false
 
-	/** Marks the setup as entered from the picker, whose return keeps the sources. */
+	/** Marks the setup as entered from the picker, whose return keeps the answers. */
 	fun markOpenedPicker() {
 		openedPicker = true
 	}
 
-	/** Marks the setup as filled from a selection, so its sources survive the entry. */
+	/** Marks the setup as fed from a selection, so its answers survive the entry. */
 	fun markOpenedWithSelection() {
 		openedWithSelection = true
 	}
@@ -102,6 +105,13 @@ class TestSetupState {
 	var cleverTest by mutableStateOf(TestEngine.isClever)
 		private set
 
+	/**
+	 * The typed rate limit, while the engine keeps the last usable one.
+	 * - a fresh setup opens it at 100, a forgotten low limit would hide words without a trace.
+	 */
+	var maxRateText by mutableStateOf(TestEngine.maxRate.toString())
+		private set
+
 	/** An empty or below-1 field falls back to the engine default at the start. */
 	fun setAmount(text: String) {
 		amountText = text.filter(Char::isDigit)
@@ -120,15 +130,27 @@ class TestSetupState {
 		cleverTest = on
 	}
 
-	/** The engine holds the last picks, so a fresh setup returns to them. */
+	fun setMaxRate(text: String) {
+		maxRateText = text.filter(Char::isDigit)
+	}
+
+	/** The whole setup emptied, the sources with the answers. */
 	@Synchronized
 	fun reset() {
 		clearSources()
 		sourceEntries.clear()
+		resetAnswers()
+	}
+
+	/** The engine holds the last picks, so a fresh setup returns to them and keeps the sources. */
+	@Synchronized
+	fun resetAnswers() {
 		amountText = TestEngine.amount.toString()
 		timeText = TestEngine.getSecondsPerChar().toString()
 		reverseTest = TestEngine.isReversed
 		cleverTest = TestEngine.isClever
+		TestEngine.applyMaxRate(100)
+		maxRateText = TestEngine.maxRate.toString()
 	}
 
 	/** The Clear list action, which drops every source with its counts and pool. */
@@ -155,8 +177,10 @@ class TestSetupState {
 		val seen = HashSet<Int>()
 		val pool = ArrayList<TestEntry>()
 		_list.forEach { chain ->
-			val entries = sourceEntries[chain]
-				?: childrenLookup?.let { lookup -> TestEngine.convertAll(listOf(chain), lookup) }.orEmpty()
+			// the cached entries ignore the limit, so the count follows each limit change
+			val entries = (sourceEntries[chain]
+				?: childrenLookup?.let { lookup -> TestEngine.convertAll(listOf(chain), children = lookup) }.orEmpty())
+				.filter { TestEngine.withinMaxRate(it.word) }
 			val ids = entries.mapTo(HashSet()) { it.word.id }
 			sourceWordIds[chain] = ids
 			_sourceCounts[chain] = ids.size
@@ -205,33 +229,9 @@ class TestSetupState {
 	fun seedOf(row: ItemRow) = ChainSeed(row, row.item, row.path?.toList(), row.parentId)
 
 	/**
-	 * A multi-subject selection is refused whole, and the foreign rows return.
-	 * - a picked chapter covers the words in it, so the chains dedup.
-	 * - callers supply captured parent paths and entries, so this mutation performs no reads.
-	 */
-	@Synchronized
-	fun fillFromSelection(
-		seeds: List<ChainSeed>, parentPaths: Map<Int, List<DbItem>> = emptyMap(),
-		entries: Map<List<DbItem>, List<TestEntry>> = emptyMap(),
-	): List<ItemRow> {
-		if (seeds.isEmpty()) return emptyList()
-		val chains = seeds.map { it.row to chainOfSeed(it, parentPaths) }
-		val subject = chains[0].second[0].id
-		val foreign = chains.filter { it.second[0].id != subject }.map { it.first }
-		if (foreign.isNotEmpty()) return foreign
-		_list.clear()
-		_list.addAll(chains.map { it.second })
-		dedup(_list)
-		sourceEntries.clear()
-		sourceEntries.putAll(entries)
-		refreshCounts()
-		return emptyList()
-	}
-
-	/**
-	 * The picker Select: prepends the chains of the selected rows, so new picks lead.
+	 * The picker Select and the Add to test action: prepends the chains of the rows, so new picks lead.
 	 * - the pick is whole or nothing, so other-subject rows are refused with nothing added.
-	 * - the picker then reports and stays open.
+	 * - a picked chapter covers the words in it, so the chains dedup.
 	 * - callers supply captured parent paths and entries, so this mutation performs no reads.
 	 */
 	@Synchronized

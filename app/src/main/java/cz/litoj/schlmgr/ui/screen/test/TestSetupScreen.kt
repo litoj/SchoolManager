@@ -2,6 +2,7 @@ package cz.litoj.schlmgr.ui.screen.test
 
 import android.content.Intent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,7 +32,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -57,6 +61,7 @@ import cz.litoj.schlmgr.ui.component.SettingNumberRow
 import cz.litoj.schlmgr.ui.component.SettingSwitchRow
 import cz.litoj.schlmgr.ui.component.DefaultTextColor
 import cz.litoj.schlmgr.ui.component.reportUnavailable
+import cz.litoj.schlmgr.ui.component.sectionStyle
 import cz.litoj.schlmgr.ui.shell.TopBar
 import cz.litoj.schlmgr.ui.shell.TopBarNav
 import cz.litoj.schlmgr.ui.shell.TopBarTitle
@@ -113,7 +118,8 @@ fun TestSetupScreen(
 }
 
 /**
- * The setup rows below the bar: amount and duration fields, the sources and the Start button.
+ * The setup rows below the bar: the answer side, the rate limit, the sources and the Start button.
+ * - amount, duration and ordering wait behind Advanced, testers were distracted by them.
  * - answers live in [TestSetupState], and behaviour in [TestSetupViewModel].
  */
 @Composable
@@ -124,30 +130,41 @@ private fun TestSetupContent(
 ) {
 	val keyboard = LocalSoftwareKeyboardController.current
 	val hasSources = viewModel.testSetup.hasSources()
+	var advanced by rememberSaveable { mutableStateOf(false) }
 	Box(modifier.fillMaxSize()) {
 		Column(Modifier.fillMaxSize()) {
-			SettingNumberRow(
-				stringResource(R.string.test_size), viewModel.testSetup.amountText,
-				viewModel::setAmount,
-				{ viewModel.restoreAmount(); keyboard?.hide() },
-				caption = amountCaption(viewModel.testSetup),
-			)
-			HairlineDivider()
-			SettingNumberRow(
-				stringResource(R.string.test_time), viewModel.testSetup.timeText,
-				viewModel::setTime,
-				{ viewModel.restoreTime(); keyboard?.hide() },
-				// the caption times the whole run, the field holds one character's share
-				caption = stringResource(R.string.test_total_time, viewModel.testSetup.timeSeconds()),
-				keyboardType = KeyboardType.Decimal,
-			)
-			HairlineDivider()
 			DirectionRow(viewModel.testSetup.reverseTest, viewModel::toggleReverse)
 			HairlineDivider()
-			SettingSwitchRow(
-				stringResource(R.string.test_clever), viewModel.testSetup.cleverTest, viewModel::toggleClever,
-				caption = stringResource(R.string.test_clever_hint),
+			SettingNumberRow(
+				stringResource(R.string.test_max_rate), viewModel.testSetup.maxRateText,
+				viewModel::setMaxRate,
+				{ viewModel.restoreMaxRate(); keyboard?.hide() },
+				caption = matchingCaption(viewModel.testSetup, hasSources),
 			)
+			HairlineDivider()
+			AdvancedHeader(advanced) { advanced = !advanced }
+			if (advanced) AdvancedGroup {
+				SettingNumberRow(
+					stringResource(R.string.test_size), viewModel.testSetup.amountText,
+					viewModel::setAmount,
+					{ viewModel.restoreAmount(); keyboard?.hide() },
+					caption = amountCaption(viewModel.testSetup),
+				)
+				HairlineDivider()
+				SettingNumberRow(
+					stringResource(R.string.test_time), viewModel.testSetup.timeText,
+					viewModel::setTime,
+					{ viewModel.restoreTime(); keyboard?.hide() },
+					// the caption times the whole run, the field holds one character's share
+					caption = stringResource(R.string.test_total_time, viewModel.testSetup.timeSeconds()),
+					keyboardType = KeyboardType.Decimal,
+				)
+				HairlineDivider()
+				SettingSwitchRow(
+					stringResource(R.string.test_clever), viewModel.testSetup.cleverTest, viewModel::toggleClever,
+					caption = stringResource(R.string.test_clever_hint),
+				)
+			}
 			HairlineDivider()
 			SourcesHeader(hasSources, viewModel::clearSources)
 			SettingCaption(stringResource(R.string.test_sources_hint), Modifier.padding(start = 8.dp))
@@ -213,6 +230,56 @@ private fun SourcesHeader(canClear: Boolean, onClear: () -> Unit) {
 				.padding(horizontal = 8.dp, vertical = 4.dp),
 			style = TextStyle(fontSize = 15.sp, color = colorResource(R.color.colorPrimaryHeader)),
 		)
+	}
+}
+
+/** The words the rate limit lets through, shown once a source is picked. */
+@Composable
+private fun matchingCaption(setup: TestSetupState, hasSources: Boolean): String? {
+	if (!hasSources) return null
+	val pool = setup.poolCount
+	return pluralStringResource(R.plurals.test_matching, pool, pool)
+}
+
+/**
+ * The fold of the rarely changed options, its chevron turned while open.
+ * - it wears the band of a help subsection, so it reads as a heading rather than a setting.
+ */
+@Composable
+private fun AdvancedHeader(open: Boolean, onToggle: () -> Unit) {
+	Row(
+		Modifier
+			.fillMaxWidth()
+			.background(sectionStyle(1).background)
+			.clickable(onClick = onToggle)
+			.padding(5.dp),
+		verticalAlignment = Alignment.CenterVertically,
+	) {
+		Text(
+			stringResource(R.string.test_advanced),
+			Modifier.weight(1f),
+			style = TextStyle(fontSize = 18.sp, color = DefaultTextColor),
+		)
+		Icon(
+			painterResource(R.drawable.ic_expand),
+			null,
+			modifier = Modifier.rotate(if (open) 90f else 0f),
+			tint = DefaultTextColor,
+		)
+	}
+}
+
+/** The opened options, indented behind an accent bar so they read as children of the fold. */
+@Composable
+private fun AdvancedGroup(content: @Composable () -> Unit) {
+	val accent = colorResource(R.color.colorPrimaryHeader)
+	Column(
+		Modifier
+			.fillMaxWidth()
+			.drawBehind { drawRect(accent, size = Size(3.dp.toPx(), size.height)) }
+			.padding(start = 12.dp),
+	) {
+		content()
 	}
 }
 

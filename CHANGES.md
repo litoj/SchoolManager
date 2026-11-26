@@ -13,6 +13,24 @@
 - A red notice says the file contains an error to fix below.
 - The save button reads Fix and import, so it fits the button.
 
+### Export
+
+- Share takes the right edge of the export sheet, where every popup waits for its action.
+
+### Add to test
+
+- The selection strip names its test action Add to test.
+- It adds the selection to the test sources instead of replacing them, so one test gathers several chapters.
+- The sources stay until cleared, opening the test from the menu no longer drops them.
+
+### Test setup
+
+- Success rate at most limits the test to weaker words, untested ones count as 0 %.
+- Its caption counts the matching words.
+- Add source lists only the words within the limit.
+- Every fresh setup starts at 100.
+- Amount, seconds per character and weak-first ordering fold under Advanced settings.
+
 ### References from several chapters
 
 - After Move or Add reference, the waiting rows stay marked in every chapter.

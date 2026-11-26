@@ -6,6 +6,7 @@ import cz.litoj.schlmgr.app.GlobalDependencies
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.ItemDatabase
 import cz.litoj.schlmgr.data.db.ItemKind
+import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.ui.screen.picker.PickerViewModel
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerMenuKind
 import cz.litoj.schlmgr.ui.viewmodel.ExplorerViewModel
@@ -71,6 +72,51 @@ class PickerViewModelTest {
 		val a = ItemRepository.createSubject("A", null)
 		ItemRepository.createChapter(a.id, "c1", null, 0)
 		return a.id
+	}
+
+	/** A subject open in the explorer, holding a failed, a passed and an untested word. */
+	private fun ratedSubject(): NavigationHistory {
+		val a = ItemRepository.createSubject("A", null)
+		val failed = ItemRepository.createWord(a.id, "failed", null, listOf("chybné" to null))
+		val passed = ItemRepository.createWord(a.id, "passed", null, listOf("správné" to null))
+		ItemRepository.createWord(a.id, "untested", null, listOf("nové" to null))
+		ItemRepository.bumpWordCounters(failed.id, passed = false)
+		ItemRepository.bumpWordCounters(passed.id, passed = true)
+		return NavigationHistory().also { it.hop(ItemRepository.subjects().single()) }
+	}
+
+	@Test
+	fun `a test pick lists only the words within the rate limit`() {
+		val explorer = ratedSubject()
+		TestEngine.applyMaxRate(0)
+		try {
+			val model = vm(explorer)
+
+			assertEquals(listOf("failed", "untested"), model.items().map { it.item.name })
+		} finally {
+			TestEngine.applyMaxRate(100)
+		}
+	}
+
+	@Test
+	fun `a reference pick lists every word whatever the rate limit`() {
+		val explorer = ratedSubject()
+		TestEngine.applyMaxRate(0)
+		try {
+			val target = ItemRepository.createChapter(ItemRepository.subjects().single().id, "target", null)
+			val model = PickerViewModel(
+				explorer, Dispatchers.Unconfined,
+				graphs = dependencies.graphQueries,
+				transfer = dependencies.itemTransfer,
+				userMessages = dependencies.userMessages,
+				referenceTarget = target,
+			)
+
+			assertEquals(listOf("failed", "passed", "untested"),
+				model.items().map { it.item.name }.filter { it != "target" })
+		} finally {
+			TestEngine.applyMaxRate(100)
+		}
 	}
 
 	@Test

@@ -14,6 +14,7 @@ import cz.litoj.schlmgr.ui.screen.test.TestSetupViewModel
 import cz.litoj.schlmgr.ui.screen.test.toSourceRowUi
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
 import cz.litoj.schlmgr.ui.viewmodel.RowKind
+import kotlinx.coroutines.Dispatchers
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
@@ -209,23 +210,6 @@ class TestSetupStateTest {
 	}
 
 	@Test
-	fun `fillFromSelection replaces the sources deduped`() {
-		val subject = item(1, "subject")
-		val chapter = item(2, "chapter")
-		// the deeper chain is covered by its ancestor, so the subject alone suffices
-		val coveredWord = ItemRow.ofSearchHit(item(3, "word"), listOf(subject, chapter), 1, emptyList())
-		val wholeSubject = ItemRow.ofSearchHit(subject, emptyList(), 1, emptyList())
-
-		testSetup.fillFromSelection(listOf(coveredWord, wholeSubject).map(testSetup::seedOf))
-
-		assertEquals(1, testSetup.list.size)
-		assertEquals(listOf(subject), testSetup.list.single())
-
-		testSetup.reset()
-		assertFalse(testSetup.hasSources())
-	}
-
-	@Test
 	fun `addPicked prepends each newly picked chain`() {
 		val subject = item(1, "subject")
 		val first = ItemRow.ofSearchHit(item(2, "chapter"), listOf(subject), 1, emptyList())
@@ -241,18 +225,6 @@ class TestSetupStateTest {
 		testSetup.removeSource(testSetup.list[0])
 		assertEquals(1, testSetup.list.size)
 		testSetup.reset()
-	}
-
-	@Test
-	fun `fillFromSelection refuses a selection spanning several subjects`() {
-		testSetup.reset()
-		val a = ItemRow.ofSearchHit(item(2, "chapter"), listOf(item(1, "a")), 1, emptyList())
-		val b = ItemRow.ofSearchHit(item(4, "word"), listOf(item(3, "b")), 1, emptyList())
-
-		val refused = testSetup.fillFromSelection(listOf(a, b).map(testSetup::seedOf))
-
-		assertFalse(refused.isEmpty())
-		assertFalse(testSetup.hasSources())
 	}
 
 	@Test
@@ -405,12 +377,84 @@ class TestSetupStateTest {
 		val chapterSource = ItemRow.ofSearchHit(chapter, listOf(subject), 1, emptyList())
 		val wordSource = ItemRow.ofSearchHit(word9, listOf(subject), 1, emptyList())
 
-		testSetup.fillFromSelection(listOf(chapterSource, wordSource).map(testSetup::seedOf))
+		testSetup.addPicked(listOf(chapterSource, wordSource).map(testSetup::seedOf))
 
 		// the chapter holds two words and the word source one, with none shared
 		assertEquals(3, testSetup.poolCount)
 		assertEquals(2, testSetup.sourceCounts[listOf(subject, chapter)])
 		assertEquals(1, testSetup.sourceCounts[listOf(subject, word9)])
+	}
+
+	@Test
+	fun `a typed rate limit recounts the pool to the matching words`() {
+		val subject = item(1, "subject")
+		val failed = DbItem(id = 3, name = "w3", description = "", type = ItemKind.WORD, failedTests = 2)
+		val untested = DbItem(id = 4, name = "w4", description = "", type = ItemKind.WORD)
+		val known = DbItem(id = 5, name = "w5", description = "", type = ItemKind.WORD, passedTests = 2)
+		testSetup.childrenLookup = { id -> if (id == 1) listOf(failed, untested, known) else emptyList() }
+		testSetup.addPicked(listOf(testSetup.seedOf(
+			ItemRow.ofSearchHit(subject, emptyList(), 1, emptyList()))))
+		val model = TestSetupViewModel(Dispatchers.Unconfined, settings = settings,
+			userMessages = UserMessages(RuntimeEnvironment.getApplication()))
+		try {
+			model.setMaxRate("0")
+			assertEquals("the failed and the untested word match", 2, testSetup.poolCount)
+
+			model.setMaxRate("100")
+			assertEquals(3, testSetup.poolCount)
+		} finally {
+			TestEngine.applyMaxRate(100)
+		}
+	}
+
+	@Test
+	fun `a rate limit recounts the captured entries both ways`() {
+		val subject = item(1, "subject")
+		val failed = DbItem(id = 3, name = "w3", description = "", type = ItemKind.WORD, failedTests = 2)
+		val known = DbItem(id = 5, name = "w5", description = "", type = ItemKind.WORD, passedTests = 2)
+		val chain = listOf(subject)
+		val entries = mapOf(chain to listOf(TestEntry(failed, chain + failed), TestEntry(known, chain + known)))
+		val model = TestSetupViewModel(Dispatchers.Unconfined, settings = settings,
+			userMessages = UserMessages(RuntimeEnvironment.getApplication()))
+		try {
+			model.setMaxRate("0")
+			testSetup.addPicked(listOf(testSetup.seedOf(
+				ItemRow.ofSearchHit(subject, emptyList(), 1, emptyList()))), entries = entries)
+			assertEquals(1, testSetup.poolCount)
+
+			model.setMaxRate("100")
+			assertEquals("a raised limit brings back the cached words", 2, testSetup.poolCount)
+		} finally {
+			TestEngine.applyMaxRate(100)
+		}
+	}
+
+	@Test
+	fun `a fresh setup opens the rate limit at 100`() {
+		val model = TestSetupViewModel(Dispatchers.Unconfined, settings = settings,
+			userMessages = UserMessages(RuntimeEnvironment.getApplication()))
+		model.setMaxRate("0")
+
+		testSetup.reset()
+
+		assertEquals(100, TestEngine.maxRate)
+		assertEquals("100", testSetup.maxRateText)
+	}
+
+	@Test
+	fun `an unusable rate limit keeps the last one and restores the field`() {
+		val model = TestSetupViewModel(Dispatchers.Unconfined, settings = settings,
+			userMessages = UserMessages(RuntimeEnvironment.getApplication()))
+		try {
+			model.setMaxRate("40")
+			model.setMaxRate("400")
+
+			assertEquals(40, TestEngine.maxRate)
+			model.restoreMaxRate()
+			assertEquals("40", testSetup.maxRateText)
+		} finally {
+			TestEngine.applyMaxRate(100)
+		}
 	}
 
 	@Test
@@ -493,7 +537,7 @@ class TestSetupStateTest {
 		val chains = listOf(first, second)
 			.map { ItemRow.ofSearchHit(it, listOf(subject), 1, emptyList()) }
 			.map(testSetup::seedOf)
-		testSetup.fillFromSelection(chains)
+		testSetup.addPicked(chains)
 
 		assertEquals(2, testSetup.poolCount)
 		testSetup.childrenLookup = { id -> throw AssertionError("removal looked up $id") }
@@ -520,7 +564,7 @@ class TestSetupStateTest {
 				else -> emptyList()
 			}
 		}
-		testSetup.fillFromSelection(listOf(first, second)
+		testSetup.addPicked(listOf(first, second)
 			.map { ItemRow.ofSearchHit(it, listOf(subject), 1, emptyList()) }
 			.map(testSetup::seedOf))
 		testSetup.setAmount("1")
@@ -531,7 +575,7 @@ class TestSetupStateTest {
 
 		// the same setup picked fresh holds only the remaining words
 		testSetup.reset()
-		testSetup.fillFromSelection(listOf(ItemRow.ofSearchHit(second, listOf(subject), 1, emptyList()))
+		testSetup.addPicked(listOf(ItemRow.ofSearchHit(second, listOf(subject), 1, emptyList()))
 			.map(testSetup::seedOf))
 		testSetup.setAmount("1")
 		testSetup.setTime("2")
@@ -552,7 +596,7 @@ class TestSetupStateTest {
 		}
 		val directSource = ItemRow.ofSearchHit(word, listOf(subject), 1, emptyList())
 		val chapterSource = ItemRow.ofSearchHit(chapter, listOf(subject), 1, emptyList())
-		testSetup.fillFromSelection(listOf(directSource, chapterSource).map(testSetup::seedOf))
+		testSetup.addPicked(listOf(directSource, chapterSource).map(testSetup::seedOf))
 
 		assertEquals(1, testSetup.poolCount)
 		testSetup.removeSource(listOf(subject, word))

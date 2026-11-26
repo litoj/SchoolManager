@@ -139,6 +139,9 @@ abstract class ExplorerViewModel<R>(
 	/** Whether a wholly held container stands for its rows, the picker of test sources. */
 	protected open fun clumpsContainer() = false
 
+	/** Whether the list shows [item], a browse load and a search batch alike. */
+	protected open fun showsRow(item: DbItem) = true
+
 	private inner class SelectionControllerHost : ExplorerSelectionController.Host {
 		override val models get() = list.items()
 		override fun openContainer() = list.containerRow
@@ -354,7 +357,7 @@ abstract class ExplorerViewModel<R>(
 			else list.items().filter { it.selected }.mapTo(LinkedHashSet()) { it.item.id }
 
 		override val models get() = list.items()
-		override fun appendRows(batch: List<ItemRow>) = list.append(batch)
+		override fun appendRows(batch: List<ItemRow>) = list.append(batch.filter { showsRow(it.item) })
 		override fun removeRows(items: Collection<ItemRow>) = list.removeItems(items)
 		override fun republish() = list.republish()
 		override fun discardSelection(rows: List<ItemRow>) = selectionController.discard(rows)
@@ -544,6 +547,8 @@ abstract class ExplorerViewModel<R>(
 		override fun viewShown(rows: List<ItemRow>) = selectionController.viewShown(rows)
 
 		override fun viewLeft(rows: List<ItemRow>) = selectionController.viewLeft(rows)
+
+		override fun showsRow(item: DbItem) = this@ExplorerViewModel.showsRow(item)
 
 		override fun publishChrome(reorderable: Boolean) {
 			_state.update {
