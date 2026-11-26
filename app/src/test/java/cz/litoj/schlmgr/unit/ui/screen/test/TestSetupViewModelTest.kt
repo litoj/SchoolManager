@@ -7,6 +7,7 @@ import cz.litoj.schlmgr.app.UiNotice
 import cz.litoj.schlmgr.data.ItemRepository
 import cz.litoj.schlmgr.data.db.DbItem
 import cz.litoj.schlmgr.data.db.ItemKind
+import cz.litoj.schlmgr.testing.TestEngine
 import cz.litoj.schlmgr.ui.screen.test.TestSetupState
 import cz.litoj.schlmgr.ui.screen.test.TestSetupViewModel
 import cz.litoj.schlmgr.ui.viewmodel.ItemRow
@@ -41,6 +42,8 @@ class TestSetupViewModelTest {
 	@After
 	fun resetState() {
 		testSetup.reset()
+		// a picker test leaves its mark, which would turn the next fresh entry into a return
+		testSetup.consumeEntryMarks()
 		testSetup.childrenLookup = ItemRepository::children
 	}
 
@@ -51,6 +54,30 @@ class TestSetupViewModelTest {
 		settings = Settings(app)
 		userMessages = UserMessages(app)
 		testSetup.childrenLookup = { emptyList() }
+	}
+
+	@Test
+	fun `a fresh entry keeps the gathered sources and resets the answers`() {
+		testSetup.addPicked(listOf(
+			testSetup.seedOf(ItemRow(DbItem(id = 1, name = "subject", description = "", type = ItemKind.CHAPTER),
+				null, 1))))
+		testSetup.setAmount("3")
+
+		TestSetupViewModel(settings = settings, userMessages = userMessages).onEntered()
+
+		assertTrue("a drawer trip must not drop what the explorer gathered", testSetup.hasSources())
+		assertEquals(TestEngine.amount.toString(), testSetup.amountText)
+	}
+
+	@Test
+	fun `a reset clears a stale selection entry mark`() {
+		testSetup.markOpenedWithSelection()
+		testSetup.reset()
+		testSetup.setAmount("3")
+
+		TestSetupViewModel(settings = settings, userMessages = userMessages).onEntered()
+
+		assertEquals(TestEngine.amount.toString(), testSetup.amountText)
 	}
 
 	@Test

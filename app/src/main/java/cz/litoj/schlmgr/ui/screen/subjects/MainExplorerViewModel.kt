@@ -380,6 +380,7 @@ class MainExplorerViewModel(
 
 	fun cancelFlipRound() = flip.cancelFlipRound()
 
+	/** Adds the selection to the test sources, testers gathered one test across chapters. */
 	fun prepareTest() {
 		val seeds = items().filter(ItemRow::selected).map(testSetup::seedOf)
 		if (seeds.isEmpty()) return
@@ -388,9 +389,9 @@ class MainExplorerViewModel(
 			val parentPaths = seeds.mapNotNull { it.parentId }.distinct().associateWith { graphs.pathTo(it) }
 			val entries = seeds.associate { seed ->
 				val chain = testSetup.chainOfSeed(seed, parentPaths)
-				chain to TestRunData.readEntries(listOf(chain), graphs)
+				chain to TestRunData.readEntries(listOf(chain), graphs, limit = 100)
 			}
-			val refused = testSetup.fillFromSelection(seeds, parentPaths, entries)
+			val refused = testSetup.addPicked(seeds, parentPaths, entries)
 			if (refused.isNotEmpty()) {
 				postToUi { userMessages.showNotice(UiNotice.OneSubjectOnly(testSetup.pickedSubject()?.name)) }
 				return@launch

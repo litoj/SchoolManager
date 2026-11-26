@@ -15,6 +15,7 @@ import cz.litoj.schlmgr.data.db.ROOT_ID
 import cz.litoj.schlmgr.support.setRowOptions
 import cz.litoj.schlmgr.ui.popup.Dialogs
 import cz.litoj.schlmgr.ui.screen.subjects.MainExplorerViewModel
+import cz.litoj.schlmgr.ui.screen.test.TestSetupState
 import cz.litoj.schlmgr.ui.search.Criterion
 import cz.litoj.schlmgr.ui.search.CriterionValue
 import cz.litoj.schlmgr.ui.search.FilterOperator
@@ -1580,6 +1581,27 @@ class MainExplorerViewModelTest {
 		model.prepareTest()
 
 		assertEquals("the test hop finished the selection", 0, model.selectionCount())
+	}
+
+	@Test
+	fun `a second test preparation adds to the sources it already holds`() {
+		val (aId, _) = seed()
+		val c1 = ItemRepository.children(aId).single()
+		ItemRepository.createWord(c1.id, "w1", null, listOf("t1" to null))
+		ItemRepository.createWord(c1.id, "w2", null, listOf("t2" to null))
+		val model = vmIn("A")
+		model.onItemClick(model.items().single { it.item.name == "c1" })
+		try {
+			model.onItemLongClick(model.items().single { it.item.name == "w1" })
+			model.prepareTest()
+			model.onItemLongClick(model.items().single { it.item.name == "w2" })
+			model.prepareTest()
+
+			assertEquals("testers gathered a test across chapters this way",
+				setOf("w1", "w2"), TestSetupState.shared.list.map { it.last().name }.toSet())
+		} finally {
+			TestSetupState.shared.reset()
+		}
 	}
 
 	@Test

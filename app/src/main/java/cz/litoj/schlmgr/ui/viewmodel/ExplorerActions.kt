@@ -27,7 +27,7 @@ enum class ExplorerAction(
 	SORT_LENGTH_10(16, R.string.sort_length_10),
 	SORT_DEFAULT(17, R.string.sort_default),
 	SORT_PRIORITY(19, R.string.sort_priority),
-	TEST(20, R.string.select_test, R.drawable.ic_test, R.string.setts_act_test),
+	TEST(20, R.string.action_add_to_test, R.drawable.ic_test, R.string.setts_act_test),
 	CUT(21, R.string.cut, R.drawable.ic_move, R.string.setts_act_cut),
 	EDIT(22, R.string.edit, R.drawable.ic_edit, R.string.setts_act_edit),
 	GOTO(23, R.string.more_go_to, R.drawable.ic_goto, R.string.setts_act_goto),

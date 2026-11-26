@@ -139,6 +139,7 @@ class TestSetupState {
 	fun reset() {
 		clearSources()
 		sourceEntries.clear()
+		consumeEntryMarks()
 		resetAnswers()
 	}
 
